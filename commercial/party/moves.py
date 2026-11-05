@@ -9,15 +9,16 @@ import bpy, math
 from mathutils import Vector, Quaternion, Euler
 
 TAU = math.tau
-BPM = 124.0
+BPM = 129.2          # the party track, measured with librosa
 BEAT = 60.0 / BPM
+BEAT0 = 0.07         # its first beat (s)
 
 def tri(x):        # 0..1..0 over one period
     x = x % 1.0
     return 1 - abs(2 * x - 1)
 
 def bounce(t, phase=0.0):   # a beat bounce: 1 on the beat, easing back up
-    x = ((t / BEAT) + phase) % 1.0
+    x = (((t - BEAT0) / BEAT) + phase) % 1.0
     return math.sin(math.pi * x) ** 2
 
 class Char:
@@ -32,8 +33,9 @@ class Char:
         self.B = B
         need = ("LeftArm", "LeftForeArm", "LeftHand", "RightArm", "RightForeArm", "RightHand", "LeftLeg", "RightLeg", "LeftFoot", "RightFoot", "Head", "Spine", "Spine1", "Spine2")
         self.ik = all(n in B for n in need)
+        self.clip_actions = {a.name.split("_")[0]: a for a in bpy.data.actions if a.name.endswith("_" + rig.name)}
         if not self.ik:   # a skeleton of its own (a quadruped, a book): it plays the game's clips instead
-            self.T = {}; self.clip_actions = {a.name.split("_")[0]: a for a in bpy.data.actions if a.name.endswith("_" + rig.name)}
+            self.T = {}
             self.hip = Vector(B["Hips"].head_local); self.headp = Vector(B["Head"].head_local) if "Head" in B else self.hip + Vector((0, 0, 0.6))
             hz = max((rig.matrix_world @ Vector(b.tail_local)).z for b in rig.data.bones)
             self.shoulderL = self.shoulderR = Vector((0, 0, hz * 0.7)); self.arm = 0.4; self.leg = self.hip.z
@@ -86,14 +88,16 @@ class Char:
         """Non-IK characters: loop one of the game's own clips from frame f0."""
         act = self.clip_actions.get(clip) or self.clip_actions.get("idle") or next(iter(self.clip_actions.values()))
         ad = self.rig.animation_data
+        for pbn in self.rig.pose.bones:   # its clip drives it now, not the IK
+            for cn in pbn.constraints: cn.mute = True
         tr = ad.nla_tracks.new(); st = tr.strips.new(act.name, f0, act)
         st.repeat = 40; st.scale = 1.0 / speed
         ad.action = None
 
     def key(self, f, pose):
-        if not self.ik:
+        if not self.ik or pose.get("clip_driven"):
             if "loc" in pose: self.ctrl.location = pose["loc"]; self.ctrl.keyframe_insert("location", frame=f)
-            if "rot" in pose: self.ctrl.rotation_euler = (0, 0, pose["rot"]); self.ctrl.keyframe_insert("rotation_euler", frame=f)
+            if "rot" in pose: self.ctrl.rotation_euler = (pose.get("rx", 0.0), 0, pose["rot"]); self.ctrl.keyframe_insert("rotation_euler", frame=f)
             return
         """pose: dict with any of hand_L/hand_R/foot_L/foot_R/look (Vectors), hips (Vector offset), spine (forward bend rad),
         twist (rad), lean (sideways rad), and 'loc'/'rot' for the controller."""
@@ -109,7 +113,7 @@ class Char:
         if "loc" in pose:
             self.ctrl.location = pose["loc"]; self.ctrl.keyframe_insert("location", frame=f)
         if "rot" in pose:
-            self.ctrl.rotation_euler = (0, 0, pose["rot"]); self.ctrl.keyframe_insert("rotation_euler", frame=f)
+            self.ctrl.rotation_euler = (pose.get("rx", 0.0), 0, pose["rot"]); self.ctrl.keyframe_insert("rotation_euler", frame=f)
 
     CLIP_FOR = {"dance_bounce": "win", "dance_wave": "win", "dance_disco": "emote", "dance_step": "win", "dance_shuffle": "win",
                 "hold_cup": "idle", "smoke": "idle", "chat": "idle", "kiss": "idle", "lean_over_table": "idle", "sit_bong": "idle",
@@ -214,7 +218,7 @@ def lean_over_table(c, t, table_z=0.45, phase=0.0):
     x = ((t / 3.0) + phase) % 1.0
     snort = math.sin(math.pi * min(1.0, x / 0.4)) if x < 0.4 else 0.0
     tablept = Vector((0, -0.45, table_z))
-    return {**idle_feet(c, t), "hips": Vector((0, 0.05, -0.1 * c.leg)), "spine": 0.75 + 0.1 * snort,
+    return {**idle_feet(c, t), "hips": Vector((0, 0.12, -0.18 * c.leg)), "spine": 1.25 + 0.2 * snort,
             "hand_R": c.headp.lerp(tablept, 0.55) + Vector((-0.04, -0.15, 0)) , "hand_L": tablept + Vector((0.2, 0, 0.02)),
             "look": tablept + Vector((0.1 * math.sin(TAU * x), 0, 0))}
 
@@ -248,3 +252,18 @@ def tuck(c, t):
     return {"foot_L": c.hip + Vector((0.08, -0.12, -c.leg * 0.45)), "foot_R": c.hip + Vector((-0.08, -0.12, -c.leg * 0.45)),
             "hand_L": knees + Vector((0.1, -0.12, 0.0)), "hand_R": knees + Vector((-0.1, -0.12, 0.0)),
             "spine": 0.5, "look": c.headp + Vector((0, -2, -0.5))}
+
+def make_it_rain(c, t, phase=0.0):
+    """Flinging cash: the right hand whips up and out on every beat, the left fans the stack."""
+    x = (((t - BEAT0) / BEAT) + phase) % 1.0
+    fling = math.sin(math.pi * x) ** 2
+    return {**idle_feet(c, t), "hips": Vector((0, 0, -0.04 * c.leg * bounce(t, phase))),
+            "hand_R": c.arm_at("R", 0.4 + 0.5 * fling, 0.2, -0.1 + 0.9 * fling), "hand_L": c.arm_at("L", 0.5, -0.1, -0.15),
+            "spine": -0.1 * fling, "look": c.headp + Vector((0, -2, -0.3))}
+
+def fart(c, t, phase=0.0):
+    """Bent forward, hands on the knees, aiming."""
+    x = ((t / 3.5) + phase) % 1.0
+    push = math.sin(math.pi * min(1.0, x / 0.3)) if x < 0.3 else 0.0
+    return {**idle_feet(c, t), "hips": Vector((0, 0.06 * push, -0.08 * c.leg)), "spine": 0.55 + 0.15 * push,
+            "hand_L": c.arm_at("L", 0.6, -0.2, -0.75), "hand_R": c.arm_at("R", 0.6, -0.2, -0.75), "look": c.headp + Vector((0.8, 1.5, 0))}

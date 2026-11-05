@@ -56,9 +56,10 @@ def cyl(name, loc, r, d, m, rot=(0, 0, 0), v=24):
 def sphere(name, loc, r, m, seg=16):
     bpy.ops.mesh.primitive_uv_sphere_add(radius=r, location=loc, segments=seg, ring_count=seg // 2)
     o = bpy.context.active_object; o.name = name; o.data.shade_smooth(); return obj_mat(o, m)
-def light(name, kind, loc, energy, color="#FFFFFF", size=0.2, rot=(0, 0, 0), spot=None):
+def light(name, kind, loc, energy, color="#FFFFFF", size=0.2, rot=(0, 0, 0), spot=None, shadow=False):
     L = bpy.data.objects.new(name, bpy.data.lights.new(name, kind)); sc.collection.objects.link(L)
     L.location = loc; L.rotation_euler = rot; L.data.energy = energy; L.data.color = srgb(color)[:3]
+    L.data.use_shadow = shadow
     if kind in ("POINT", "SPOT"): L.data.shadow_soft_size = size
     if kind == "AREA": L.data.size = size
     if spot: L.data.spot_size = spot; L.data.spot_blend = 0.4
@@ -77,17 +78,18 @@ def import_gltf(path, loc, rot_z=0.0, scale=1.0):
 world = bpy.data.worlds.new("night"); sc.world = world; world.use_nodes = True
 wn = world.node_tree; env = wn.nodes.new("ShaderNodeTexEnvironment")
 env.image = bpy.data.images.load(os.path.join(PH, "kloppenheim_02_puresky_2k.hdr"))
-bg = wn.nodes["Background"]; bg.inputs["Strength"].default_value = 0.9
+bg = wn.nodes["Background"]; bg.inputs["Strength"].default_value = 0.35
 wn.links.new(env.outputs["Color"], bg.inputs["Color"])
 
+moon = light("moon", "SUN", (0, 0, 20), 0.6, "#AFC4FF", rot=(math.radians(50), math.radians(-20), math.radians(30)), shadow=True)
 # ------------------------------------------------------------------------------------------------ the villa
-DECK = mat("deck", "#CFC6B8", rough=0.6)
+DECK = mat("deck", "#8E8478", rough=0.6)
 LAWN = mat("lawn", "#1F3A1C", rough=0.9)
 WALL = mat("wall", "#EDEBE6", rough=0.55)
 DARK = mat("frame", "#1B1B1F", rough=0.4, metal=0.5)
 WOOD = mat("wood", "#7A4E2D", rough=0.5)
 GLASS = mat("glass", "#9FC6D8", rough=0.02, alpha=0.16)
-FLOOR = mat("floor", "#BDB7AE", rough=0.2)
+FLOOR = mat("floor", "#6E6760", rough=0.25)
 TILE = mat("tile", "#1AA7D6", rough=0.3, emit=0.6, emit_color="#38C8FF")
 WATER = bpy.data.materials.new("water"); WATER.use_nodes = True
 wnt = WATER.node_tree; wb = wnt.nodes["Principled BSDF"]
@@ -118,15 +120,15 @@ for (a, b_, c_, d) in ((-PX - 0.35, PX + 0.35, -PY - 0.35, -PY), (-PX - 0.35, PX
 bpy.ops.mesh.primitive_plane_add(size=1, location=(0, 0, WZ)); water = bpy.context.active_object; water.name = "water"
 water.scale = (2 * PX, 2 * PY, 1); bpy.ops.object.transform_apply(scale=True)
 bpy.ops.object.modifier_add(type="SUBSURF"); obj_mat(water, WATER)
-for i in range(6):   # the pool's underwater lights
-    x = -PX + 1 + i * (2 * PX - 2) / 5
-    light(f"poolL{i}", "POINT", (x, -PY + 0.3, -0.9), 180, "#4FD8FF", 0.3)
-    light(f"poolR{i}", "POINT", (x, PY - 0.3, -0.9), 180, "#4FD8FF", 0.3)
+for i in range(3):   # the pool's underwater lights
+    x = -PX + 2 + i * (2 * PX - 4) / 2
+    light(f"poolL{i}", "POINT", (x, -PY + 0.3, -0.9), 320, "#4FD8FF", 0.3)
+    light(f"poolR{i}", "POINT", (x, PY - 0.3, -0.9), 320, "#4FD8FF", 0.3)
 
 # the house: ground floor (glass front with the doors slid open), upper floor cantilevered over the deck, flat roofs
 GY0, GY1 = 5.0, 13.0
 box("gf_floor", -9.5, 9.5, GY0, GY1, -0.3, 0.02, FLOOR)
-box("gf_back", -9.5, 9.5, GY1 - 0.3, GY1, 0, 3.4, WALL)
+box("gf_back", -9.5, 9.5, GY1 - 0.3, GY1, 0, 3.4, mat("inwall", "#5A4A6A", rough=0.6))
 box("gf_west", -9.5, -9.2, GY0, GY1, 0, 3.4, WALL); box("gf_east", 9.2, 9.5, GY0, GY1, 0, 3.4, WALL)
 box("gf_ceiling", -9.5, 9.5, GY0 - 0.6, GY1, 3.4, 3.7, WALL)
 for x0 in (-9.2, -6.2, -3.2, 2.6, 5.6):   # glass panes, the middle left open
@@ -140,11 +142,24 @@ box("uf_glass", -6.3, 9.3, 6.48, 6.52, 3.8, 6.7, GLASS)
 box("uf_roof", -7.2, 10.2, 5.6, 13.6, 6.9, 7.15, WALL)
 box("balcony", -6.5, 9.5, 4.4, 6.5, 3.7, 3.85, WALL)
 box("balc_glass", -6.5, 9.5, 4.4, 4.44, 3.85, 4.85, GLASS)
-for x in range(-6, 10, 2):   # warm wall-washers under the eaves
-    light(f"eave{x}", "SPOT", (x, GY0 - 0.4, 3.35), 120, "#FFC98A", 0.1, rot=(0, 0, 0), spot=math.radians(80))
+box("eave_led", -9.4, 9.4, GY0 - 0.55, GY0 - 0.5, 3.36, 3.39, mat("eave_led", "#FFC98A", emit=6.0))
 # inside: warm ceiling light, a sofa and the coffee table, the kitchen island bar with stools, plants, pendant lamps
-for (x, y) in ((-6, 8), (-2, 10.5), (3, 8), (6.5, 10.5)):
-    light(f"room{x}", "AREA", (x, y, 3.3), 260, "#FFD3A0", 2.5, rot=(0, 0, 0))
+for (x, y) in ((-4.5, 9), (4.0, 9)):
+    light(f"room{x}", "AREA", (x, y, 3.3), 260, "#FFC08A", 4.0, rot=(0, 0, 0))
+# a rug, a TV glowing purple, and the game's logo, huge, on the back wall
+box("rug", -7.6, -2.8, 7.4, 11.6, 0.02, 0.035, mat("rug", "#7A1E5A", rough=0.9))
+box("tv", -6.6, -3.8, GY1 - 0.36, GY1 - 0.32, 1.0, 2.6, mat("tv", "#B44BFF", emit=3.0))
+LOGO = os.path.join(os.path.dirname(MODELS), "logo.png")
+if os.path.exists(LOGO):
+    bpy.ops.mesh.primitive_plane_add(size=1, location=(2.6, GY1 - 0.34, 2.3), rotation=(math.pi / 2, 0, 0))
+    lg = bpy.context.active_object; lg.scale = (2.4 * 1024 / 971, 2.4, 1)
+    lm = bpy.data.materials.new("logo"); lm.use_nodes = True; ln = lm.node_tree; ln.nodes.clear()
+    lo = ln.nodes.new("ShaderNodeOutputMaterial"); le = ln.nodes.new("ShaderNodeEmission"); lt = ln.nodes.new("ShaderNodeTexImage")
+    lt.image = bpy.data.images.load(LOGO); le.inputs["Strength"].default_value = 1.2
+    tr = ln.nodes.new("ShaderNodeBsdfTransparent"); mx = ln.nodes.new("ShaderNodeMixShader")
+    ln.links.new(lt.outputs["Color"], le.inputs["Color"]); ln.links.new(lt.outputs["Alpha"], mx.inputs[0])
+    ln.links.new(tr.outputs[0], mx.inputs[1]); ln.links.new(le.outputs[0], mx.inputs[2]); ln.links.new(mx.outputs[0], lo.inputs[0])
+    obj_mat(lg, lm)
 import_gltf(os.path.join(PH, "sofa_03/sofa_03.gltf"), (-5.2, 10.6, 0.02), math.pi, 1.0)
 import_gltf(os.path.join(PH, "modern_coffee_table_01/modern_coffee_table_01.gltf"), (-5.2, 8.9, 0.02), 0, 1.0)
 box("island", 2.2, 6.4, 9.0, 10.0, 0.02, 1.0, mat("island", "#2A2A30", rough=0.3, metal=0.2), bevel=0.02)
@@ -157,7 +172,6 @@ for (x, y, n) in ((-8.6, 12.0, "potted_plant_01"), (8.4, 12.0, "potted_plant_02"
     import_gltf(os.path.join(PH, f"{n}/{n}.gltf"), (x, y, 0.02), 0, 1.4)
 for x in (2.8, 4.3, 5.8):
     import_gltf(os.path.join(PH, "modern_ceiling_lamp_01/modern_ceiling_lamp_01.gltf"), (x, 9.5, 2.3), 0, 1.0)
-    light(f"pend{x}", "POINT", (x, 9.5, 2.1), 60, "#FFC070", 0.1)
 
 # palms: a leaning trunk of rings and a crown of drooping fronds
 TRUNK = mat("trunk", "#6B5038", rough=0.9); FROND = mat("frond", "#2E6B2A", rough=0.7)
@@ -168,12 +182,10 @@ def palm(x, y, h=6.0, lean=(0.4, 0.2)):
         cyl("trunk", p, 0.2 - 0.06 * k, h / 12 + 0.02, TRUNK, v=10)
     for j in range(9):
         a = j / 9 * math.tau
-        bpy.ops.mesh.primitive_plane_add(size=1, location=top)
-        f = bpy.context.active_object; f.scale = (2.6, 0.5, 1); bpy.ops.object.transform_apply(scale=True)
-        f.data.vertices[0].co.z -= 0.0; obj_mat(f, FROND)
-        bd = f.modifiers.new("bend", "SIMPLE_DEFORM"); bd.deform_method = "BEND"; bd.deform_axis = "Y"; bd.angle = math.radians(-60)
-        f.rotation_euler = (0, math.radians(-12), a); f.location = top + Vector((math.cos(a) * 1.25, math.sin(a) * 1.25, -0.1))
-    light(f"palmup{x}", "SPOT", (x + 0.6, y - 0.6, 0.1), 300, "#FFB060", 0.1, rot=(math.radians(10), 0, 0), spot=math.radians(35))
+        for k2 in range(3):   # each frond: three leaf blobs drooping outwards
+            r = 0.55 + k2 * 0.65; p = top + Vector((math.cos(a) * r, math.sin(a) * r, -0.12 * k2 * k2))
+            lf = sphere("frond", p, 0.42, FROND, seg=10); lf.scale = (1.0, 0.35, 0.08)
+            lf.rotation_euler = (0, math.radians(10 + 18 * k2), a)
 for (x, y, l) in ((-11, 3.5, (0.6, -0.3)), (-10.5, -6.5, (0.5, 0.4)), (11, 3.8, (-0.6, -0.2)), (11.2, -6.0, (-0.5, 0.3)), (-12.5, -1.5, (0.3, 0.1)), (12.6, -1.2, (-0.3, 0.1))):
     palm(x, y, 6.2 + random.uniform(-0.6, 0.8), l)
 
@@ -187,15 +199,14 @@ for row, y in enumerate((-3.5, -7.5)):
         sphere("bulb", (x, y, 3.2 - sag), 0.05, BULB, seg=8)
     for x in (-10, 10):
         cyl("pole", (x, y, 1.6), 0.04, 3.2, DARK, v=8)
-    for x in (-6, 0, 6):
-        light(f"string{row}{x}", "POINT", (x, y, 2.7), 90, "#FFC27A", 0.3)
+    light(f"string{row}", "AREA", (0, y, 2.8), 500, "#FFC27A", 6.0, rot=(0, 0, 0))
 box("dj_booth", 7.0, 8.2, -6.0, -3.6, 0.0, 1.05, mat("booth", "#111115", rough=0.3, metal=0.3), bevel=0.03)
 box("dj_led", 6.98, 7.0, -5.9, -3.7, 0.15, 0.95, mat("led", "#FF2BD6", emit=6.0))
 for y in (-6.4, -3.2):
     box("speaker", 7.3, 8.1, y - 0.35, y + 0.35, 0.0, 1.6, mat("spk", "#18181C", rough=0.5), bevel=0.03)
     cyl("cone", (7.28, y, 1.05), 0.22, 0.04, mat("cone", "#333338", rough=0.3), rot=(0, math.pi / 2, 0))
 for i, (x, col) in enumerate(((-2, "#FF2BD6"), (2, "#2BE0FF"), (5, "#FFE02B"), (-6, "#8A2BFF"))):
-    sp = light(f"party{i}", "SPOT", (x, -9.5, 5.5), 1500, col, 0.2, spot=math.radians(28))
+    sp = light(f"party{i}", "SPOT", (x, -9.5, 5.5), 2200, col, 0.2, spot=math.radians(28), shadow=(i < 2))
     for f in range(1, N + 1, 30):
         sp.rotation_euler = (math.radians(45 + 12 * math.sin(f / 23 + i)), math.radians(18 * math.sin(f / 31 + i * 2)), 0)
         sp.keyframe_insert("rotation_euler", frame=f)
@@ -272,7 +283,7 @@ dancers = ["giga", "neet", "alon", "mitch", "mensa", "thisisfine", "toshi", "goa
 spots = [(1.2, -4.0), (2.6, -4.4), (4.0, -3.9), (5.3, -4.6), (1.6, -5.6), (3.1, -6.0), (4.6, -5.5), (2.2, -7.1), (3.8, -7.3), (5.4, -6.8)]
 for i, (cid, (x, y)) in enumerate(zip(dancers, spots)):
     mv = M.DANCES[i % len(M.DANCES)]
-    guest(cid, x + random.uniform(-0.15, 0.15), y, face(7.6 - x, -4.8 - y) + random.uniform(-0.6, 0.6), mv, phase=random.random())
+    guest(cid, x + random.uniform(-0.15, 0.15), y, face(7.6 - x, -4.8 - y) + random.uniform(-0.6, 0.6), mv, phase=random.choice((0.0, 0.5)))
 
 # in the pool: treading water (sunk to the shoulders), one on the donut
 for cid, (x, y) in (("moodeng", (-3.0, 0.8)), ("zcat", (1.5, 1.2)), ("cupsey", (3.4, -0.9)), ("pudgy", (-0.6, -1.1)), ("nyancat", (4.8, 1.4))):
@@ -318,7 +329,6 @@ def cannonball(cid, x, f_jump):
     ring.scale = (0.01,) * 3; ring.keyframe_insert("scale", frame=f_land - 1); ring.scale = (1, 1, 1); ring.keyframe_insert("scale", frame=f_land)
     ring.scale = (5, 5, 1); ring.keyframe_insert("scale", frame=f_land + 40); ring.scale = (0.01,) * 3; ring.keyframe_insert("scale", frame=f_land + 41)
 cannonball("popcat", -1.6, 196)
-cannonball("swordcat", 0.9, 226)
 
 # poolside drinkers, chatting, red cups in hand
 group = [("chillguy", -4.4, -4.3), ("ket", -3.5, -5.1), ("cate", -5.2, -5.2)]
@@ -328,17 +338,43 @@ for i, (cid, x, y) in enumerate(group):
     c.bake(M.hold_cup, 1, N, step=2, phase=i * 0.37, toward=to_local(c, centre + Vector((0, 0, 0.3))))
     attach(c, cyl("cup", (0, 0, 0), 0.045, 0.13, CUP), offset=(0, 0.07, 0.04), rot=(math.pi / 2, 0, 0))
 # chatters by the deck's west side
-group = [("bonk", -1.2, -6.4), ("chillhouse", -0.3, -7.2), ("pnut", -2.0, -7.3)]
-centre = Vector((-1.15, -7.0, 1.2))
-for i, (cid, x, y) in enumerate(group):
-    c = load(cid); guests[cid] = c; place(c, x, y, face(centre.x - x, centre.y - y))
-    c.bake(M.chat, 1, N, step=2, phase=i * 0.31, toward=to_local(c, centre))
+# the conga line: round and round the pool, the game's own walk
+def loop_point(s):   # a rounded rectangle 1 m outside the coping, s in metres along it
+    W2, H2, R = PX + 1.0, PY + 1.0, 1.0
+    segs = [2 * (W2 - R), math.pi * R / 2, 2 * (H2 - R), math.pi * R / 2] * 2
+    L = sum(segs); s %= L
+    corners = [(W2 - R, -(H2 - R)), (W2 - R, H2 - R), (-(W2 - R), H2 - R), (-(W2 - R), -(H2 - R))]
+    starts = [(-(W2 - R), -H2), (W2, -(H2 - R)), (W2 - R, H2), (-W2, H2 - R)]
+    dirs = [(1, 0), (0, 1), (-1, 0), (0, -1)]
+    for k in range(4):
+        st = segs[2 * k]
+        if s < st:
+            x0, y0 = starts[k]; dx, dy = dirs[k]; return Vector((x0 + dx * s, y0 + dy * s, 0)), (dx, dy)
+        s -= st
+        if s < segs[2 * k + 1]:
+            cx, cy = corners[k]; a0 = -math.pi / 2 + k * math.pi / 2; a = a0 + s / R
+            return Vector((cx + R * math.cos(a), cy + R * math.sin(a), 0)), (-math.sin(a), math.cos(a))
+        s -= segs[2 * k + 1]
+    return Vector((0, -H2, 0)), (1, 0)
+for i, cid in enumerate(("useless", "bonk", "chillhouse", "pnut")):
+    c = load(cid); guests[cid] = c; c.play("walk", 1, speed=1.15)
+    for f in range(1, N + 1, 2):
+        p, (dx, dy) = loop_point(1.15 * f / FPS - i * 0.85 + 6.0)
+        c.key(f, {"clip_driven": True, "loc": p, "rot": face(dx, dy)})
+    for fc in c.ctrl.animation_data.action.fcurves:   # no flips where the angle wraps
+        if fc.data_path == "rotation_euler" and fc.array_index == 2:
+            prev = None
+            for k in fc.keyframe_points:
+                if prev is not None:
+                    while k.co.y - prev > math.pi: k.co.y -= math.tau
+                    while k.co.y - prev < -math.pi: k.co.y += math.tau
+                prev = k.co.y
 
 # the kitchen bar: drinks
-for i, (cid, x) in enumerate((("jeanphil", 2.9), ("useless", 4.1), ("dope", 5.3))):
+for i, (cid, x) in enumerate((("jeanphil", 3.2), ("dope", 4.8))):
     c = load(cid); guests[cid] = c; place(c, x, 8.25, face(0.3 * (i - 1), -1))
-    c.bake(M.hold_cup if i != 1 else M.chat, 1, N, step=2, phase=i * 0.29)
-    if i != 1:
+    c.bake(M.hold_cup, 1, N, step=2, phase=i * 0.29)
+    if True:
         attach(c, cyl("cup", (0, 0, 0), 0.045, 0.13, mat("cup2", "#F2C14E", rough=0.2, alpha=0.8)), offset=(0, 0.07, 0.04), rot=(math.pi / 2, 0, 0))
 
 # the two couples
@@ -350,18 +386,70 @@ def couple(a, b, x, y, ang):
     ca.bake(M.kiss, 1, N, step=2, partner_head=look_at(ca, cb))
     cb.bake(M.kiss, 1, N, step=2, partner_head=look_at(cb, ca), phase=0.5)
 couple("pepe", "pippin", 7.4, 0.4, math.pi / 2)      # at the pool's east end
-couple("troll", "michi", -1.6, 7.2, math.pi / 2)     # inside, by the window
+couple("troll", "michi", -7.6, 6.3, math.pi / 2)     # inside, by the west window
+
+
+# THE WHALE on the balcony, making it rain on the pool
+BILL = mat("bill", "#6FBF5A", rough=0.6, emit=0.2)
+wh = load("whale"); guests["whale"] = wh; place(wh, 1.2, 4.75, face(0, -1), z=3.85)
+wh.bake(M.make_it_rain, 1, N, step=2)
+for i in range(140):
+    f0 = 20 + int(i * (N - 60) / 140) + random.randint(0, 4)
+    bpy.ops.mesh.primitive_plane_add(size=1, location=(0, 0, 0)); b = obj_mat(bpy.context.active_object, BILL)
+    b.scale = (0.16, 0.07, 1); b.location = (1.2 + random.uniform(-0.3, 0.3), 4.4, 5.0)
+    b.keyframe_insert("scale", frame=1); b.scale = (0.0001,) * 3; b.keyframe_insert("scale", frame=1)
+    b.keyframe_insert("scale", frame=f0 - 1); b.keyframe_insert("location", frame=f0 - 1)
+    b.scale = (0.16, 0.07, 1); b.keyframe_insert("scale", frame=f0)
+    vx, vy = random.uniform(-2.2, 2.2), random.uniform(-2.6, -0.6)
+    for j in range(0, 90, 6):
+        tt = j / FPS; z = 5.0 + 1.2 * tt - 1.6 * tt * tt
+        if z < WZ + 0.01: z = WZ + 0.01
+        b.location = (1.2 + vx * tt + 0.15 * math.sin(tt * 7 + i), 4.4 + vy * tt, z)
+        b.rotation_euler = (math.sin(tt * 5 + i) * 1.2, math.cos(tt * 4 + i) * 0.9, tt * 2 + i)
+        b.keyframe_insert("location", frame=f0 + j); b.keyframe_insert("rotation_euler", frame=f0 + j)
+
+# SWORDCAT: off the balcony, a backflip, into the pool
+sw = load("swordcat"); guests["swordcat"] = sw
+F_FLIP = 334
+zsink = WZ - sw.shoulderL.z + 0.08
+for f in range(1, N + 1, 2):
+    if f < F_FLIP:
+        pose = M.cheer(sw, f / FPS); p = Vector((-3.0, 4.65, 3.85)); rx = 0.0
+    elif f < F_FLIP + 26:
+        k = (f - F_FLIP) / 26
+        p = Vector((-3.0, 4.65 + (1.4 - 4.65) * k, 3.85 + 2.2 * math.sin(math.pi * k) * (1 - 0.4 * k) - (3.85 - zsink) * k ** 1.6))
+        pose = M.tuck(sw, 0); rx = -math.tau * min(1.0, k * 1.05)
+    else:
+        k = min(1.0, (f - F_FLIP - 26) / 12); p = Vector((-3.0, 1.4, zsink - 0.35 * math.sin(math.pi * k))); pose = M.swim(sw, f / FPS); rx = 0.0
+    pose["loc"] = p; pose["rot"] = face(0, -1); pose["rx"] = rx
+    sw.key(f, pose)
+for i in range(30):
+    a = i / 30 * math.tau; s = sphere("drop", (-3.0, 1.4, WZ), random.uniform(0.04, 0.1), SPL, seg=8)
+    v = Vector((math.cos(a) * random.uniform(0.8, 2.4), math.sin(a) * random.uniform(0.8, 2.4), random.uniform(3.5, 6.0)))
+    fl = F_FLIP + 26
+    s.scale = (0.01,) * 3; s.keyframe_insert("scale", frame=fl - 1); s.keyframe_insert("location", frame=fl - 1)
+    s.scale = (1, 1, 1); s.keyframe_insert("scale", frame=fl)
+    for j in range(1, 30, 3):
+        tt = j / FPS; s.location = (-3.0 + v.x * tt, 1.4 + v.y * tt, max(WZ, WZ + v.z * tt - 4.9 * tt * tt)); s.keyframe_insert("location", frame=fl + j)
+    s.scale = (0.01,) * 3; s.keyframe_insert("scale", frame=fl + 31)
 
 if not CLEAN:
     # the coffee table in the living room: two leaning over it, rolled notes in hand
-    for cid, x, rot in (("farter", -5.75, face(0.3, 1)), ("lmao", -4.65, face(-0.3, 1))):
-        c = load(cid); guests[cid] = c; place(c, x, 8.25, rot)
-        c.bake(M.lean_over_table, 1, N, step=2, table_z=0.42, phase=0.3 if cid == "lmao" else 0.0)
-        attach(c, cyl("note", (0, 0, 0), 0.012, 0.12, NOTE), offset=(0, 0.05, 0.02), rot=(math.pi / 2, 0, 0))
+    c = load("farter"); guests["farter"] = c; place(c, -5.4, 8.25, face(0, 1))
+    c.bake(M.lean_over_table, 1, N, step=2, table_z=0.42)
+    attach(c, cyl("note", (0, 0, 0), 0.012, 0.12, NOTE), offset=(0, 0.05, 0.02), rot=(math.pi / 2, 0, 0))
+    guest("lmao", -4.2, 8.5, face(-1, 0.4), M.cheer, phase=0.25)   # in hysterics beside him
+    GAS = mat("gas", "#7BE04A", rough=1.0, alpha=0.3, emit=0.6)
+    for k in range(8):
+        g = sphere("gas", (-5.9, 7.7, 0.6), 0.18, GAS, seg=8)
+        for f in range(1, N + 1, 35):
+            ph = ((f / 105) + k / 8) % 1.0
+            g.location = (-5.9 + 0.6 * ph * math.sin(k), 7.6 - 0.6 * ph, 0.55 + 0.9 * ph); g.scale = (0.5 + 2.5 * ph,) * 3
+            g.keyframe_insert("location", frame=f); g.keyframe_insert("scale", frame=f)
     for i in range(3):
-        box("line", -5.55 + i * 0.12, -5.52 + i * 0.12, 8.75, 9.0, 0.425, 0.432, POWDER)
+        box("line", -5.62 + i * 0.16, -5.56 + i * 0.16, 8.65, 9.15, 0.425, 0.436, POWDER)
     # smokers on the east deck
-    for i, (cid, x, y, tx, ty) in enumerate((("whale", 9.8, 1.6, 9.0, 2.3), ("walter", 9.0, 2.3, 9.8, 1.6), ("floki", 9.6, -1.0, 8.8, -1.6), ("baton", 8.8, -1.6, 9.6, -1.0))):
+    for i, (cid, x, y, tx, ty) in enumerate((("walter", 9.0, 2.3, 9.8, 1.6), ("floki", 9.6, -1.0, 8.8, -1.6), ("baton", 8.8, -1.6, 9.6, -1.0))):
         c = load(cid); guests[cid] = c; place(c, x, y, face(tx - x, ty - y))
         ph = i * 0.23
         c.bake(M.smoke, 1, N, step=2, period=4.0, phase=ph, toward=to_local(c, Vector((tx, ty, 1.3))))
@@ -398,9 +486,10 @@ tcn = cam.constraints.new("TRACK_TO"); tcn.target = tgt; tcn.track_axis = "TRACK
 path = [  # frame, camera, look-at
     (1, (-15, -19, 10), (0, 2, 1)),
     (110, (-9.5, -9.5, 3.8), (-2.5, 0, 0.4)),
-    (200, (-3.6, -4.4, 1.0), (0.5, -0.6, 0.3)),      # low over the pool: the cannonballs
-    (290, (2.6, -9.2, 1.9), (4.2, -5.0, 1.1)),       # the dance floor and the DJ
-    (370, (0.4, -1.2, 2.0), (0.0, 6.0, 1.2)),        # over the pool to the open doors
+    (200, (-4.6, -5.4, 1.3), (0.5, -0.6, 0.5)),      # low over the pool: the cannonballs
+    (290, (1.4, -11.2, 3.0), (4.2, -5.2, 1.0)),       # the dance floor and the DJ
+    (355, (0.4, -2.4, 1.5), (-2.4, 3.4, 2.4)),       # the balcony backflip
+    (400, (0.3, 0.2, 1.8), (0.0, 6.0, 1.2)),         # over the pool to the open doors
     (450, (-1.2, 5.6, 1.6), (-5.0, 8.8, 0.7)),       # inside: the table, the couple at the window
     (520, (1.6, 6.6, 1.7), (4.2, 8.6, 1.2)),         # the bar
     (610, (7.0, 3.6, 2.0), (9.6, -0.6, 1.0)),        # out east: the smokers, the couple at the pool's end
@@ -417,12 +506,12 @@ for o in (cam, tgt):
 
 # ------------------------------------------------------------------------------------------------ render
 r = sc.render
-r.engine = "BLENDER_EEVEE_NEXT"
-sc.eevee.taa_render_samples = A("--samples", 16, int)
-sc.eevee.use_shadows = True
-sc.eevee.shadow_ray_count = 1; sc.eevee.shadow_step_count = 4
+r.engine = "CYCLES"   # faster than EEVEE on this machine's software GPU, and better glass and water
+sc.cycles.device = "CPU"; sc.cycles.samples = A("--samples", 12, int); sc.cycles.use_denoising = True
+sc.cycles.max_bounces = 4; sc.cycles.transparent_max_bounces = 12; sc.cycles.caustics_reflective = False; sc.cycles.caustics_refractive = False
+r.use_persistent_data = True
 r.resolution_x = A("--w", 1280, int); r.resolution_y = A("--h", 720, int); r.resolution_percentage = 100
-sc.view_settings.view_transform = "AgX"; sc.view_settings.look = "AgX - Punchy"; sc.view_settings.exposure = 0.3
+sc.view_settings.view_transform = "AgX"; sc.view_settings.look = "AgX - Punchy"; sc.view_settings.exposure = 0.0
 r.use_motion_blur = False
 r.image_settings.file_format = "PNG"
 sc.use_nodes = True
