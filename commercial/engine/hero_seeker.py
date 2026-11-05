@@ -71,7 +71,7 @@ cam_b = bpy.context.active_object; cam_b.location.y = -phone_d * 0.55; cam_b.dat
 # the screen: the game's frames, on the side facing -y (toward him after the tilt)
 bpy.ops.mesh.primitive_plane_add(size=1, location=(0, phone_d / 2 + 0.0015, 0), rotation=(-math.pi / 2, 0, 0))
 scr = bpy.context.active_object; scr.name = "Screen"
-scr.scale = (phone_w * 0.92, phone_h * 0.95, 1); bpy.ops.object.transform_apply(scale=True)
+scr.scale = (-phone_w * 0.92, -phone_h * 0.95, 1); bpy.ops.object.transform_apply(scale=True)
 sm = bpy.data.materials.new("screen"); sm.use_nodes = True
 nt = sm.node_tree; nt.nodes.clear()
 outn = nt.nodes.new("ShaderNodeOutputMaterial"); em = nt.nodes.new("ShaderNodeEmission"); tex = nt.nodes.new("ShaderNodeTexImage")
@@ -120,19 +120,59 @@ phone.keyframe_insert("location", frame=N); phone.keyframe_insert("rotation_eule
 look.location = hold + Vector((0, -0.05, 0)); look.keyframe_insert("location", frame=60)
 look.location = Vector((0.3, -3.0, 1.5)); look.keyframe_insert("location", frame=82)
 # ---------------------------------------------------------------- the set: purple studio, gold rim light, his arena behind
-world = bpy.data.worlds.new("w"); sc.world = world; world.use_nodes = True
-world.node_tree.nodes["Background"].inputs["Color"].default_value = hexc("#140636")
-world.node_tree.nodes["Background"].inputs["Strength"].default_value = 0.6
+# deep space: a star field and a purple nebula in the world shader
+world = bpy.data.worlds.new("space"); sc.world = world; world.use_nodes = True
+wn = world.node_tree; wn.nodes.clear()
+wo = wn.nodes.new("ShaderNodeOutputWorld"); bg = wn.nodes.new("ShaderNodeBackground")
+tc = wn.nodes.new("ShaderNodeTexCoord")
+# stars: tiny voronoi cells, kept only very near their centres
+vor = wn.nodes.new("ShaderNodeTexVoronoi"); vor.inputs["Scale"].default_value = 260
+wn.links.new(tc.outputs["Generated"], vor.inputs["Vector"])
+st = wn.nodes.new("ShaderNodeMapRange"); st.inputs["From Min"].default_value = 0.0; st.inputs["From Max"].default_value = 0.14
+st.inputs["To Min"].default_value = 9.0; st.inputs["To Max"].default_value = 0.0; st.clamp = True
+wn.links.new(vor.outputs["Distance"], st.inputs["Value"])
+# only some cells are stars
+cellr = wn.nodes.new("ShaderNodeMath"); cellr.operation = "GREATER_THAN"; cellr.inputs[1].default_value = 0.7
+sepc = wn.nodes.new("ShaderNodeSeparateColor"); wn.links.new(vor.outputs["Color"], sepc.inputs[0]); wn.links.new(sepc.outputs[0], cellr.inputs[0])
+stars = wn.nodes.new("ShaderNodeMath"); stars.operation = "MULTIPLY"
+wn.links.new(st.outputs[0], stars.inputs[0]); wn.links.new(cellr.outputs[0], stars.inputs[1])
+# nebula: layered noise through a purple/magenta/blue ramp
+noi = wn.nodes.new("ShaderNodeTexNoise"); noi.inputs["Scale"].default_value = 2.2; noi.inputs["Detail"].default_value = 8; noi.inputs["Roughness"].default_value = 0.62
+wn.links.new(tc.outputs["Generated"], noi.inputs["Vector"])
+ramp = wn.nodes.new("ShaderNodeValToRGB"); cr = ramp.color_ramp
+cr.elements[0].position = 0.35; cr.elements[0].color = hexc("#05020F")
+cr.elements[1].position = 0.78; cr.elements[1].color = hexc("#C03CFF")
+e = cr.elements.new(0.55); e.color = hexc("#2A0F6E")
+e = cr.elements.new(0.68); e.color = hexc("#3B6BFF")
+wn.links.new(noi.outputs["Fac"], ramp.inputs[0])
+neb = wn.nodes.new("ShaderNodeMixRGB"); neb.blend_type = "ADD"; neb.inputs[0].default_value = 1.0
+wn.links.new(ramp.outputs["Color"], neb.inputs[1]); wn.links.new(stars.outputs[0], neb.inputs[2])
+wn.links.new(neb.outputs[0], bg.inputs["Color"]); bg.inputs["Strength"].default_value = 0.9
+wn.links.new(bg.outputs[0], wo.inputs[0])
+# a ringed planet behind him, and a soft glow on its edge
+def emis(name, color, strength):
+    m = bpy.data.materials.new(name); m.use_nodes = True; nt = m.node_tree; nt.nodes.clear()
+    o = nt.nodes.new("ShaderNodeOutputMaterial"); e = nt.nodes.new("ShaderNodeEmission")
+    e.inputs["Color"].default_value = hexc(color); e.inputs["Strength"].default_value = strength; nt.links.new(e.outputs[0], o.inputs[0]); return m
+bpy.ops.mesh.primitive_uv_sphere_add(radius=1.9, location=(3.4, 13.0, 4.6), segments=96, ring_count=48)
+planet = bpy.context.active_object; planet.data.shade_smooth()
+pm = mat("planet", "#6B2BD9", rough=0.8); pn = pm.node_tree
+pnoise = pn.nodes.new("ShaderNodeTexNoise"); pnoise.inputs["Scale"].default_value = 3.0; pnoise.inputs["Detail"].default_value = 6
+pr = pn.nodes.new("ShaderNodeValToRGB"); pr.color_ramp.elements[0].color = hexc("#3A1690"); pr.color_ramp.elements[1].color = hexc("#E06BFF")
+pn.links.new(pnoise.outputs["Fac"], pr.inputs[0]); pn.links.new(pr.outputs["Color"], pn.nodes["Principled BSDF"].inputs["Base Color"])
+planet.data.materials.append(pm)
+bpy.ops.mesh.primitive_torus_add(major_radius=2.9, minor_radius=0.18, location=(3.4, 13.0, 4.6), rotation=(math.radians(72), math.radians(18), 0))
+ring = bpy.context.active_object; ring.scale = (1, 1, 0.08); ring.data.materials.append(emis("ring", "#FFC52E", 1.4))
+sunL = bpy.data.objects.new("PlanetSun", bpy.data.lights.new("PlanetSun", "SUN")); sc.collection.objects.link(sunL)
+sunL.data.energy = 2.5; sunL.data.color = (1.0, 0.85, 0.7); sunL.rotation_euler = (math.radians(60), math.radians(-40), math.radians(20))
+# a slow drift of the planet through the shot
+planet.keyframe_insert("location", frame=1); ring.keyframe_insert("location", frame=1)
+planet.location.x -= 0.6; ring.location.x -= 0.6
+planet.keyframe_insert("location", frame=N); ring.keyframe_insert("location", frame=N)
 bpy.ops.mesh.primitive_cylinder_add(radius=1.6, depth=0.12, location=(0, 0, -0.06), vertices=96)
 stage = bpy.context.active_object; stage.data.materials.append(mat("stage", "#3A1690", rough=0.45))
 bpy.ops.mesh.primitive_torus_add(major_radius=1.6, minor_radius=0.035, location=(0, 0, 0.0))
 rim = bpy.context.active_object; rim.data.materials.append(mat("rim", "#FFB423", rough=0.2, metal=0.9, emit=0.6))
-bpy.ops.mesh.primitive_plane_add(size=1, location=(0, 5, 2.2), rotation=(math.pi / 2, 0, 0))
-bk = bpy.context.active_object; bk.scale = (12, 8, 1)
-bm = bpy.data.materials.new("back"); bm.use_nodes = True; bn = bm.node_tree; bn.nodes.clear()
-bo = bn.nodes.new("ShaderNodeOutputMaterial"); be = bn.nodes.new("ShaderNodeEmission"); bt = bn.nodes.new("ShaderNodeTexImage")
-bt.image = bpy.data.images.load(os.path.abspath(A("--backdrop"))); be.inputs["Strength"].default_value = 0.55
-bn.links.new(bt.outputs["Color"], be.inputs["Color"]); bn.links.new(be.outputs[0], bo.inputs[0]); bk.data.materials.append(bm)
 def light(name, kind, loc, rot, energy, color=(1, 1, 1), size=1.0):
     L = bpy.data.objects.new(name, bpy.data.lights.new(name, kind)); sc.collection.objects.link(L)
     L.location = loc; L.rotation_euler = rot; L.data.energy = energy; L.data.color = color
