@@ -96,7 +96,8 @@ for seg in CFG["segments"]:
             push(s, t, dur, *seg["push"])
     elif kind == "full":
         s = frames_strip(seg["name"], seg["dir"], seg["from"], dur, 1, t)
-        sound_events.append((seg["log"], seg["from"], dur, t))
+        if seg.get("log"):
+            sound_events.append((seg["log"], seg.get("snd_from", seg["from"]), dur, t, seg.get("snd_gain", 1.0)))
     elif kind == "phone":
         bg = still(seg["name"] + "_bg", CFG["backdrop"], 1, t, dur)
         push(bg, t, dur, 1.02, 1.1)
@@ -106,7 +107,7 @@ for seg in CFG["segments"]:
         fr.blend_type = "ALPHA_OVER"
         for strip in (s, fr):
             strip.transform.offset_x = seg.get("phone_x", 0)
-        sound_events.append((seg["log"], seg["from"], dur, t))
+        sound_events.append((seg["log"], seg.get("snd_from", seg["from"]), dur, t, seg.get("snd_gain", 1.0)))
     elif kind == "endcard":
         bg = still("end_bg", CFG["endcard_bg"], 1, t, dur)
         push(bg, t, dur, 1.0, 1.06)
@@ -156,7 +157,7 @@ if m:
 logs = {}
 used = 0
 chan = [0] * 32   # a free-at frame per channel, so one-shots don't overlap within a channel
-for (logname, src0, dur, at) in sound_events:
+for (logname, src0, dur, at, gain) in sound_events:
     if logname not in logs:
         logs[logname] = json.load(open(P(logname)))
     L = logs[logname]
@@ -168,7 +169,7 @@ for (logname, src0, dur, at) in sound_events:
             continue
         f = at + (idx - src0)
         path = os.path.join(AUD, e["file"])
-        vol = (e.get("vol") or 0.8) * (e["o"].get("vol", 1.0) if e.get("o") else 1.0) * CFG.get("sfx_gain", 1.0)
+        vol = (e.get("vol") or 0.8) * (e["o"].get("vol", 1.0) if e.get("o") else 1.0) * CFG.get("sfx_gain", 1.0) * gain
         for c in range(32):
             if chan[c] <= f:
                 s = snd(path, f, vol, (e.get("o") or {}).get("pan", 0.0), ch=70 + c)

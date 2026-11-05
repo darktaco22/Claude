@@ -1,0 +1,293 @@
+{
+ "font": "/home/user/Claude/commercial/assets/lilita.ttf",
+ "backdrop": "edit/backdrop_blur.png",
+ "phone_frame": "edit/phone_frame.png",
+ "endcard_bg": "edit/endcard_bg.png",
+ "logo": "/home/user/Claude/commercial/assets/logo.png",
+ "audio_dir": "audio",
+ "music": {
+  "file": "mus_battle.mp3",
+  "vol": 0.55
+ },
+ "sfx_gain": 0.9,
+ "segments": [
+  {
+   "kind": "still",
+   "name": "title",
+   "path": "edit/title_screen.png",
+   "dur": 60,
+   "push": [
+    1.0,
+    1.12
+   ],
+   "texts": []
+  },
+  {
+   "kind": "full",
+   "name": "giga_in",
+   "dir": "cap_wide",
+   "from": 108,
+   "dur": 90,
+   "log": "cap_wide/sfx.json",
+   "flash": true,
+   "texts": [
+    {
+     "body": "REAL-TIME",
+     "at": 8,
+     "x": 0.5,
+     "y": 0.86,
+     "size": 64,
+     "color": "#F1E8FF"
+    },
+    {
+     "body": "MEME CARD BATTLES",
+     "at": 14,
+     "x": 0.5,
+     "y": 0.75,
+     "size": 84,
+     "color": "#FFC52E"
+    }
+   ]
+  },
+  {
+   "kind": "full",
+   "name": "clash",
+   "dir": "cap_wide",
+   "from": 200,
+   "dur": 120,
+   "log": "cap_wide/sfx.json"
+  },
+  {
+   "kind": "full",
+   "name": "popcat",
+   "dir": "cap_wide",
+   "from": 330,
+   "dur": 75,
+   "log": "cap_wide/sfx.json",
+   "texts": [
+    {
+     "body": "74 MEME CARDS",
+     "at": 6,
+     "x": 0.5,
+     "y": 0.84,
+     "size": 80,
+     "color": "#FFC52E"
+    }
+   ]
+  },
+  {
+   "kind": "full",
+   "name": "godcandle",
+   "dir": "cap_wide",
+   "from": 410,
+   "dur": 90,
+   "log": "cap_wide/sfx.json",
+   "texts": [
+    {
+     "body": "GOD CANDLE!",
+     "at": 14,
+     "x": 0.5,
+     "y": 0.84,
+     "size": 92,
+     "color": "#7CFF8C"
+    }
+   ]
+  },
+  {
+   "kind": "full",
+   "name": "rug",
+   "dir": "cap_wide",
+   "from": 505,
+   "dur": 60,
+   "log": "cap_wide/sfx.json",
+   "texts": [
+    {
+     "body": "RUG PULL!",
+     "at": 20,
+     "x": 0.5,
+     "y": 0.84,
+     "size": 92,
+     "color": "#FF4F6D"
+    }
+   ]
+  },
+  {
+   "kind": "full",
+   "name": "sweep",
+   "dir": "cap_wide",
+   "from": 570,
+   "dur": 90,
+   "log": "cap_wide/sfx.json",
+   "texts": [
+    {
+     "body": "17 ARENAS. ENDLESS CHAOS.",
+     "at": 8,
+     "x": 0.5,
+     "y": 0.86,
+     "size": 70,
+     "color": "#F1E8FF"
+    }
+   ]
+  },
+  {
+   "kind": "full",
+   "name": "king",
+   "dir": "cap_wide",
+   "from": 700,
+   "dur": 105,
+   "log": "cap_wide/sfx.json",
+   "texts": [
+    {
+     "body": "VICTORY!",
+     "at": 58,
+     "x": 0.5,
+     "y": 0.82,
+     "size": 110,
+     "color": "#FFC52E"
+    }
+   ]
+  },
+  {
+   "kind": "full",
+   "name": "hero",
+   "dir": "hero_frames",
+   "from": 1,
+   "dur": 150,
+   "flash": true,
+   "log": "cap_phone/sfx.json",
+   "snd_from": 88,
+   "snd_gain": 0.45,
+   "texts": [
+    {
+     "body": "COMING TO THE",
+     "at": 10,
+     "dur": 72,
+     "x": 0.5,
+     "y": 0.88,
+     "size": 52,
+     "color": "#F1E8FF"
+    },
+    {
+     "body": "SOLANA dAPP STORE",
+     "at": 16,
+     "dur": 66,
+     "x": 0.5,
+     "y": 0.78,
+     "size": 84,
+     "color": "#FFC52E"
+    },
+    {
+     "body": "PLAY IT ON SEEKER",
+     "at": 88,
+     "dur": 62,
+     "x": 0.5,
+     "y": 0.86,
+     "size": 84,
+     "color": "#FFC52E"
+    }
+   ]
+  },
+  {
+   "kind": "phone",
+   "name": "phone",
+   "dir": "cap_phone_m",
+   "from": 238,
+   "dur": 75,
+   "log": "cap_phone/sfx.json",
+   "texts": [
+    {
+     "body": "BUILT FOR",
+     "at": 4,
+     "x": 0.2,
+     "y": 0.6,
+     "size": 52,
+     "color": "#F1E8FF"
+    },
+    {
+     "body": "SEEKER",
+     "at": 8,
+     "x": 0.2,
+     "y": 0.48,
+     "size": 96,
+     "color": "#FFC52E"
+    },
+    {
+     "body": "TAP. DROP.",
+     "at": 12,
+     "x": 0.8,
+     "y": 0.6,
+     "size": 52,
+     "color": "#F1E8FF"
+    },
+    {
+     "body": "WIN.",
+     "at": 16,
+     "x": 0.8,
+     "y": 0.48,
+     "size": 96,
+     "color": "#7CFF8C"
+    }
+   ]
+  },
+  {
+   "kind": "endcard",
+   "name": "end",
+   "dur": 135,
+   "flash": true,
+   "texts": [
+    {
+     "body": "COMING SOON TO THE SOLANA dAPP STORE",
+     "at": 18,
+     "x": 0.5,
+     "y": 0.2,
+     "size": 46,
+     "color": "#FFC52E"
+    },
+    {
+     "body": "PLAYABLE ON SEEKER",
+     "at": 26,
+     "x": 0.5,
+     "y": 0.12,
+     "size": 40,
+     "color": "#F1E8FF"
+    },
+    {
+     "body": "memeroyale.imaginestudio.fun",
+     "at": 40,
+     "x": 0.5,
+     "y": 0.045,
+     "size": 30,
+     "color": "#F1E8FF",
+     "pop": false
+    }
+   ]
+  }
+ ],
+ "extra_sounds": [
+  {
+   "file": "vo_title.mp3",
+   "at": 8,
+   "vol": 0.9
+  },
+  {
+   "file": "card_reveal_legendary.mp3",
+   "at": 916,
+   "vol": 0.8
+  },
+  {
+   "file": "crowd_cheer.mp3",
+   "at": 918,
+   "vol": 0.5
+  },
+  {
+   "file": "ui_swoosh.mp3",
+   "at": 688,
+   "vol": 0.6
+  },
+  {
+   "file": "ui_swoosh.mp3",
+   "at": 838,
+   "vol": 0.6
+  }
+ ]
+}
