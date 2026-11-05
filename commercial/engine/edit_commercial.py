@@ -21,6 +21,8 @@ sc = bpy.context.scene
 sc.render.resolution_x, sc.render.resolution_y, sc.render.resolution_percentage = W, H, 100
 sc.render.fps = FPS
 se = sc.sequence_editor_create()
+sc.view_settings.view_transform = "Standard"   # the footage is already display-ready: no film look on top
+sc.view_settings.look = "None"
 FONT = bpy.data.fonts.load(P(CFG["font"]))
 
 def hexc(h, a=1.0):
@@ -61,8 +63,8 @@ def text(body, at, dur, x, y, size, color="#FFFFFF", ch=20, outline="#1A0846", p
     t.use_shadow = True
     t.shadow_color = (0, 0, 0, 0.55)
     t.location = (x, y)
-    t.anchor_x = anchor
-    t.anchor_y = "CENTER"
+    t.align_x = anchor
+    t.align_y = "CENTER"
     t.blend_type = "ALPHA_OVER"
     if pop:
         # the game's pop: in big, settle, out fast

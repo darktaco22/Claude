@@ -12,65 +12,27 @@
  "sfx_gain": 0.9,
  "segments": [
   {
-   "kind": "still",
-   "name": "title",
-   "path": "edit/title_screen.png",
-   "dur": 60,
-   "push": [
-    1.0,
-    1.12
-   ],
-   "texts": []
-  },
-  {
    "kind": "full",
-   "name": "giga_in",
+   "name": "clash",
    "dir": "cap_wide",
-   "from": 108,
-   "dur": 90,
+   "from": 214,
+   "dur": 96,
    "log": "cap_wide/sfx.json",
-   "flash": true,
    "texts": [
     {
      "body": "REAL-TIME",
-     "at": 8,
+     "at": 10,
      "x": 0.5,
-     "y": 0.86,
-     "size": 64,
+     "y": 0.87,
+     "size": 60,
      "color": "#F1E8FF"
     },
     {
      "body": "MEME CARD BATTLES",
-     "at": 14,
+     "at": 16,
      "x": 0.5,
-     "y": 0.75,
+     "y": 0.77,
      "size": 84,
-     "color": "#FFC52E"
-    }
-   ]
-  },
-  {
-   "kind": "full",
-   "name": "clash",
-   "dir": "cap_wide",
-   "from": 200,
-   "dur": 120,
-   "log": "cap_wide/sfx.json"
-  },
-  {
-   "kind": "full",
-   "name": "popcat",
-   "dir": "cap_wide",
-   "from": 330,
-   "dur": 75,
-   "log": "cap_wide/sfx.json",
-   "texts": [
-    {
-     "body": "74 MEME CARDS",
-     "at": 6,
-     "x": 0.5,
-     "y": 0.84,
-     "size": 80,
      "color": "#FFC52E"
     }
    ]
@@ -91,7 +53,8 @@
      "size": 92,
      "color": "#7CFF8C"
     }
-   ]
+   ],
+   "flash": false
   },
   {
    "kind": "full",
@@ -113,6 +76,24 @@
   },
   {
    "kind": "full",
+   "name": "popcat",
+   "dir": "cap_wide",
+   "from": 330,
+   "dur": 75,
+   "log": "cap_wide/sfx.json",
+   "texts": [
+    {
+     "body": "74 MEME CARDS",
+     "at": 6,
+     "x": 0.5,
+     "y": 0.84,
+     "size": 80,
+     "color": "#FFC52E"
+    }
+   ]
+  },
+  {
+   "kind": "full",
    "name": "sweep",
    "dir": "cap_wide",
    "from": 570,
@@ -120,11 +101,11 @@
    "log": "cap_wide/sfx.json",
    "texts": [
     {
-     "body": "17 ARENAS. ENDLESS CHAOS.",
+     "body": "17 ARENAS",
      "at": 8,
      "x": 0.5,
-     "y": 0.86,
-     "size": 70,
+     "y": 0.85,
+     "size": 84,
      "color": "#F1E8FF"
     }
    ]
@@ -196,11 +177,11 @@
    "log": "cap_phone/sfx.json",
    "texts": [
     {
-     "body": "BUILT FOR",
+     "body": "PLAYABLE ON",
      "at": 4,
      "x": 0.2,
      "y": 0.6,
-     "size": 52,
+     "size": 50,
      "color": "#F1E8FF"
     },
     {
@@ -212,19 +193,19 @@
      "color": "#FFC52E"
     },
     {
-     "body": "TAP. DROP.",
+     "body": "THE FULL GAME",
      "at": 12,
      "x": 0.8,
      "y": 0.6,
-     "size": 52,
+     "size": 50,
      "color": "#F1E8FF"
     },
     {
-     "body": "WIN.",
+     "body": "ON MOBILE",
      "at": 16,
      "x": 0.8,
      "y": 0.48,
-     "size": 96,
+     "size": 80,
      "color": "#7CFF8C"
     }
    ]
@@ -266,27 +247,27 @@
  "extra_sounds": [
   {
    "file": "vo_title.mp3",
-   "at": 8,
+   "at": 4,
    "vol": 0.9
   },
   {
    "file": "card_reveal_legendary.mp3",
-   "at": 916,
+   "at": 742,
    "vol": 0.8
   },
   {
    "file": "crowd_cheer.mp3",
-   "at": 918,
+   "at": 744,
    "vol": 0.5
   },
   {
    "file": "ui_swoosh.mp3",
-   "at": 688,
+   "at": 514,
    "vol": 0.6
   },
   {
    "file": "ui_swoosh.mp3",
-   "at": 838,
+   "at": 664,
    "vol": 0.6
   }
  ]

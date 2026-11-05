@@ -207,7 +207,7 @@ for o in (cam, tgt):
 # ---------------------------------------------------------------- render
 r = sc.render
 r.engine = "CYCLES"; sc.cycles.device = "CPU"; sc.cycles.samples = A("--samples", 24, int); sc.cycles.use_denoising = True
-sc.cycles.max_bounces = 4; r.use_persistent_data = True
+sc.cycles.max_bounces = 3; sc.cycles.adaptive_threshold = 0.05; r.use_persistent_data = True
 r.resolution_x = A("--w", 1280, int); r.resolution_y = A("--h", 720, int); r.resolution_percentage = 100
 sc.view_settings.view_transform = "AgX"; sc.view_settings.look = "AgX - Punchy"
 r.image_settings.file_format = "PNG"
@@ -218,4 +218,5 @@ if "--stills" in argv:
     for f in fr:
         sc.frame_set(f); r.filepath = os.path.join(od, f"hero_{f:04d}.png"); bpy.ops.render.render(write_still=True)
 if "--render" in argv:
+    r.use_overwrite = False; r.use_placeholder = True
     r.filepath = os.path.join(os.path.abspath(A("--render")), "f_"); bpy.ops.render.render(animation=True)
