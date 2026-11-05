@@ -84,17 +84,17 @@ function Heroes() {
 function OnSeeker() {
   const f = useCurrentFrame(); const { fps } = useVideoConfig();
   const s = spring({ frame: f, fps, config: { damping: 13 } });
-  const pw = 400, ph = 711;   // 540x960 gameplay at 0.74
+  const pw = 340, ph = 604;   // 540x960 gameplay at 0.63
   return (
     <Space>
-      <div style={{ position: "absolute", left: (W - pw - 24) / 2, top: 230, width: pw + 24, height: ph + 24, borderRadius: 44, background: "#15121C",
+      <div style={{ position: "absolute", left: (W - pw - 24) / 2, top: 160, width: pw + 24, height: ph + 24, borderRadius: 44, background: "#15121C",
         border: "4px solid #C9B48A", boxShadow: "0 30px 80px rgba(150,60,255,0.45)", transform: `translateY(${interpolate(s, [0, 1], [700, 0])}px)`, overflow: "hidden" }}>
         <div style={{ position: "absolute", left: 12, top: 12, width: pw, height: ph, borderRadius: 32, overflow: "hidden" }}>
           <Video src={staticFile("gameplay.mp4")} startFrom={0} endAt={120} muted style={{ width: pw, height: ph, objectFit: "cover" }} />
         </div>
       </div>
-      <Word text="PLAYABLE ON" size={50} color={LAV} y={1000} delay={14} />
-      <Word text="SEEKER" size={92} y={1052} delay={20} />
+      <Word text="PLAYABLE ON" size={48} color={LAV} y={812} delay={14} />
+      <Word text="SEEKER" size={92} y={862} delay={20} />
     </Space>
   );
 }
@@ -107,18 +107,18 @@ function EndCard() {
     <Space>
       {CARDS.map((id, i) => {
         const k = spring({ frame: f - i * 3, fps, config: { damping: 12 } });
-        const ang = (i - 2) * 11, x = W / 2 + (i - 2) * 112 - 90, y = 640 + Math.abs(i - 2) * 26;
+        const ang = (i - 2) * 11, x = W / 2 + (i - 2) * 96 - 75, y = 545 + Math.abs(i - 2) * 22;
         return (
-          <div key={id} style={{ position: "absolute", left: x, top: y, width: 180, height: 225, borderRadius: 16, border: `5px solid ${GOLD}`, overflow: "hidden",
+          <div key={id} style={{ position: "absolute", left: x, top: y, width: 150, height: 188, borderRadius: 14, border: `5px solid ${GOLD}`, overflow: "hidden",
             boxShadow: "0 12px 30px rgba(0,0,0,0.5)", transform: `translateY(${interpolate(k, [0, 1], [600, 0])}px) rotate(${ang * k}deg)` }}>
-            <Img src={staticFile(`cards/${id}.png`)} style={{ width: 180, height: 225, objectFit: "cover" }} />
+            <Img src={staticFile(`cards/${id}.png`)} style={{ width: 150, height: 188, objectFit: "cover" }} />
           </div>
         );
       })}
-      <Img src={staticFile("logo.png")} style={{ position: "absolute", left: (W - 470) / 2, top: 175, width: 470, height: 446, transform: `scale(${logo})` }} />
-      <Word text="COMING SOON TO THE" size={42} color={LAV} y={900} delay={16} />
-      <Word text="SOLANA dAPP STORE" size={64} y={948} delay={20} />
-      <div style={{ position: "absolute", left: 40, right: 93, top: 1030, textAlign: "center", fontFamily: "Lilita One", fontSize: 34, color: LAV, textShadow: edge,
+      <Img src={staticFile("logo.png")} style={{ position: "absolute", left: (W - 400) / 2, top: 150, width: 400, height: 380, transform: `scale(${logo})` }} />
+      <Word text="COMING SOON TO THE" size={42} color={LAV} y={792} delay={16} />
+      <Word text="SOLANA dAPP STORE" size={62} y={838} delay={20} />
+      <div style={{ position: "absolute", left: 40, right: 93, top: 902, textAlign: "center", fontFamily: "Lilita One", fontSize: 32, color: LAV, textShadow: edge,
         opacity: interpolate(f, [30, 40], [0, 1], clamp) }}>memeroyale.imaginestudio.fun</div>
     </Space>
   );
