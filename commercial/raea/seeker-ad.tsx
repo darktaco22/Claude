@@ -118,7 +118,7 @@ function EndCard() {
       <Img src={staticFile("logo.png")} style={{ position: "absolute", left: (W - 400) / 2, top: 150, width: 400, height: 380, transform: `scale(${logo})` }} />
       <Word text="COMING SOON TO THE" size={42} color={LAV} y={792} delay={16} />
       <Word text="SOLANA dAPP STORE" size={62} y={838} delay={20} />
-      <div style={{ position: "absolute", left: 40, right: 93, top: 902, textAlign: "center", fontFamily: "Lilita One", fontSize: 32, color: LAV, textShadow: edge,
+      <div style={{ position: "absolute", left: 60, right: 113, top: 902, textAlign: "center", fontFamily: "Lilita One", fontSize: 32, color: LAV, textShadow: edge,
         opacity: interpolate(f, [30, 40], [0, 1], clamp) }}>memeroyale.imaginestudio.fun</div>
     </Space>
   );
