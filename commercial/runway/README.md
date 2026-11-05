@@ -1,5 +1,9 @@
 # MEME ROYALE: the runway
 
+This folder holds two versions: the raea one described here (`runway.tsx`, `cast.ts`, rendered to
+`../output/meme-royale-runway.mp4`), and a Blender one added separately (`runway_showcase.py`, `fetch_models.py`,
+`render_runway.sh`; see `../README.md`).
+
 `../output/meme-royale-runway.mp4`: 2 min 54 s, 1280×720, 30 fps. Every character in the game (all 39 unit models) walks
 the runway one by one, commons first and the legendaries last: in from the left, a turn to the camera, its own pose clip
 (its emote, or its victory loop when the emote is short) with its own voice line and a name/rarity card, a turn back, and
