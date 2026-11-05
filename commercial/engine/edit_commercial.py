@@ -51,7 +51,7 @@ def key(obj, path, frame, value, interp="BEZIER"):
     setattr(target, attr, value)
     target.keyframe_insert(attr, frame=frame)
 
-def text(body, at, dur, x, y, size, color="#FFFFFF", ch=20, outline="#1A0846", pop=True, anchor="CENTER"):
+def text(body, at, dur, x, y, size, color="#FFFFFF", ch=20, outline="#1A0846", pop=True, anchor="CENTER", hold=False):
     t = se.sequences.new_effect(name="T_" + body[:12], type="TEXT", channel=ch, frame_start=at, frame_end=at + dur)
     t.text = body
     t.font = FONT
@@ -71,8 +71,9 @@ def text(body, at, dur, x, y, size, color="#FFFFFF", ch=20, outline="#1A0846", p
         key(t, "font_size", at, size * 0.2)
         key(t, "font_size", at + 5, size * 1.15)
         key(t, "font_size", at + 9, size)
-        key(t, "font_size", at + dur - 4, size)
-        key(t, "font_size", at + dur, size * 0.2)
+        if not hold:
+            key(t, "font_size", at + dur - 4, size)
+            key(t, "font_size", at + dur, size * 0.2)
     return t
 
 def flash(at, ch=30, dur=5, color="#FFFFFF", peak=0.9):
@@ -123,7 +124,7 @@ for seg in CFG["segments"]:
         key(logo, "transform.scale_x", t + dur, k * 1.04); key(logo, "transform.scale_y", t + dur, k * 1.04)
     for tx in seg.get("texts", []):
         text(tx["body"], t + tx.get("at", 0), tx.get("dur", dur - tx.get("at", 0)), tx["x"], tx["y"], tx["size"], tx.get("color", "#FFFFFF"),
-             ch=20 + seg["texts"].index(tx), pop=tx.get("pop", True))
+             ch=20 + seg["texts"].index(tx), pop=tx.get("pop", True), hold=(kind == "endcard"))
     if seg.get("flash"):
         flash(t)
     t += dur
@@ -198,7 +199,13 @@ sc.render.use_sequencer = True
 
 if "--save" in argv:
     bpy.ops.wm.save_as_mainfile(filepath=os.path.abspath(argv[argv.index("--save") + 1]))
-if "--stills" in argv:
+if "--frames" in argv:   # PNG frames + a WAV mixdown, for a final encode with more bits for the darks
+    od = os.path.abspath(argv[argv.index("--frames") + 1]); os.makedirs(od, exist_ok=True)
+    r.image_settings.file_format = "PNG"; r.filepath = os.path.join(od, "f_")
+    bpy.ops.render.render(animation=True)
+    bpy.ops.sound.mixdown(filepath=os.path.join(od, "mix.wav"), container="WAV", codec="PCM", format="S16")
+    print("frames and mix in", od)
+elif "--stills" in argv:
     fr = [int(x) for x in argv[argv.index("--stills") + 1].split(",")]
     od = argv[argv.index("--stills") + 2]
     os.makedirs(od, exist_ok=True)
