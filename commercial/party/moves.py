@@ -213,12 +213,12 @@ def kiss(c, t, partner_head=None, phase=0.0):
             "hand_L": p + Vector((0.18, 0.05, -0.12)), "hand_R": p + Vector((-0.18, 0.05, -0.22)),
             "spine": 0.22, "lean": 0.05 * sway, "look": p + Vector((0, 0, 0.02))}
 
-def lean_over_table(c, t, table_z=0.45, phase=0.0):
+def lean_over_table(c, t, table_z=0.45, phase=0.0, bend=1.25, dip=0.18):
     """Bent over a low table, a rolled note to the nose, the other hand steadying on the table."""
     x = ((t / 3.0) + phase) % 1.0
     snort = math.sin(math.pi * min(1.0, x / 0.4)) if x < 0.4 else 0.0
     tablept = Vector((0, -0.45, table_z))
-    return {**idle_feet(c, t), "hips": Vector((0, 0.12, -0.18 * c.leg)), "spine": 1.25 + 0.2 * snort,
+    return {**idle_feet(c, t), "hips": Vector((0, 0.12 * bend / 1.25, -dip * c.leg)), "spine": bend + 0.2 * snort,
             "hand_R": c.headp.lerp(tablept, 0.55) + Vector((-0.04, -0.15, 0)) , "hand_L": tablept + Vector((0.2, 0, 0.02)),
             "look": tablept + Vector((0.1 * math.sin(TAU * x), 0, 0))}
 

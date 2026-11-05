@@ -151,8 +151,8 @@ box("rug", -7.6, -2.8, 7.4, 11.6, 0.02, 0.035, mat("rug", "#7A1E5A", rough=0.9))
 box("tv", -6.6, -3.8, GY1 - 0.36, GY1 - 0.32, 1.0, 2.6, mat("tv", "#B44BFF", emit=3.0))
 LOGO = os.path.join(os.path.dirname(MODELS), "logo.png")
 if os.path.exists(LOGO):
-    bpy.ops.mesh.primitive_plane_add(size=1, location=(2.6, GY1 - 0.34, 2.3), rotation=(math.pi / 2, 0, 0))
-    lg = bpy.context.active_object; lg.scale = (2.4 * 1024 / 971, 2.4, 1)
+    bpy.ops.mesh.primitive_plane_add(size=1, location=(-0.9, GY1 - 0.34, 2.15), rotation=(math.pi / 2, 0, 0))
+    lg = bpy.context.active_object; lg.scale = (1.9 * 1024 / 971, 1.9, 1)
     lm = bpy.data.materials.new("logo"); lm.use_nodes = True; ln = lm.node_tree; ln.nodes.clear()
     lo = ln.nodes.new("ShaderNodeOutputMaterial"); le = ln.nodes.new("ShaderNodeEmission"); lt = ln.nodes.new("ShaderNodeTexImage")
     lt.image = bpy.data.images.load(LOGO); le.inputs["Strength"].default_value = 1.2
@@ -221,6 +221,10 @@ sphere("fl_body", (-1.8, 1.6, WZ + 0.25), 0.45, FL).scale = (1.3, 0.8, 0.55)
 cyl("fl_neck", (-1.3, 1.6, WZ + 0.8), 0.07, 0.8, FL, rot=(0, math.radians(15), 0))
 sphere("fl_head", (-1.2, 1.6, WZ + 1.2), 0.13, FL)
 cyl("fl_beak", (-1.05, 1.6, WZ + 1.18), 0.04, 0.18, mat("beak", "#222222"), rot=(0, math.radians(70), 0))
+
+# ------------------------------------------------------------------------------------------------ architecture, the kitchen, the mess
+CUP = mat("cup", "#D8232A", rough=0.35)
+exec(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "dressing.py")).read(), globals())
 
 # ------------------------------------------------------------------------------------------------ the guests
 CUP = mat("cup", "#D8232A", rough=0.35); CIG = mat("cig", "#F5F2EA", rough=0.6); EMBER = mat("ember", "#FF6A1A", emit=12.0)
@@ -331,7 +335,7 @@ def cannonball(cid, x, f_jump):
 cannonball("popcat", -1.6, 196)
 
 # poolside drinkers, chatting, red cups in hand
-group = [("chillguy", -4.4, -4.3), ("ket", -3.5, -5.1), ("cate", -5.2, -5.2)]
+group = [("chillguy", -4.2, -4.4), ("jeanphil", -4.9, -5.3)]
 centre = Vector((-4.4, -4.9, 1.2))
 for i, (cid, x, y) in enumerate(group):
     c = load(cid); guests[cid] = c; place(c, x, y, face(centre.x - x, centre.y - y))
@@ -371,8 +375,8 @@ for i, cid in enumerate(("useless", "bonk", "chillhouse", "pnut")):
                 prev = k.co.y
 
 # the kitchen bar: drinks
-for i, (cid, x) in enumerate((("jeanphil", 3.2), ("dope", 4.8))):
-    c = load(cid); guests[cid] = c; place(c, x, 8.25, face(0.3 * (i - 1), -1))
+for i, (cid, x) in enumerate((("dope", 7.4),)):
+    c = load(cid); guests[cid] = c; place(c, x, 8.0, face(-1, 0.6))
     c.bake(M.hold_cup, 1, N, step=2, phase=i * 0.29)
     if True:
         attach(c, cyl("cup", (0, 0, 0), 0.045, 0.13, mat("cup2", "#F2C14E", rough=0.2, alpha=0.8)), offset=(0, 0.07, 0.04), rot=(math.pi / 2, 0, 0))
@@ -439,6 +443,16 @@ if not CLEAN:
     c.bake(M.lean_over_table, 1, N, step=2, table_z=0.42)
     attach(c, cyl("note", (0, 0, 0), 0.012, 0.12, NOTE), offset=(0, 0.05, 0.02), rot=(math.pi / 2, 0, 0))
     guest("lmao", -4.2, 8.5, face(-1, 0.4), M.cheer, phase=0.25)   # in hysterics beside him
+    # KET and CATE behind the kitchen island, lines on the marble
+    for cid, x in (("ket", 3.5), ("cate", 5.1)):
+        c = load(cid); guests[cid] = c; place(c, x, 10.62, face(0, -1))
+        c.bake(M.lean_over_table, 1, N, step=2, table_z=1.06, bend=1.0, dip=0.1, phase=0.0 if cid == "ket" else 0.45)
+        attach(c, cyl("note", (0, 0, 0), 0.012, 0.12, NOTE), offset=(0, 0.05, 0.02), rot=(math.pi / 2, 0, 0))
+    for i in range(4):
+        box("line", 3.1 + i * 0.13, 3.15 + i * 0.13, 9.45, 9.85, 1.06, 1.068, POWDER)
+        box("line", 4.75 + i * 0.13, 4.8 + i * 0.13, 9.45, 9.85, 1.06, 1.068, POWDER)
+    box("card", 3.95, 4.05, 9.55, 9.75, 1.06, 1.064, mat("blackcard", "#111111", rough=0.3, metal=0.5))
+
     GAS = mat("gas", "#7BE04A", rough=1.0, alpha=0.3, emit=0.6)
     for k in range(8):
         g = sphere("gas", (-5.9, 7.7, 0.6), 0.18, GAS, seg=8)
@@ -491,9 +505,9 @@ path = [  # frame, camera, look-at
     (355, (0.4, -2.4, 1.5), (-2.4, 3.4, 2.4)),       # the balcony backflip
     (400, (0.3, 0.2, 1.8), (0.0, 6.0, 1.2)),         # over the pool to the open doors
     (450, (-1.2, 5.6, 1.6), (-5.0, 8.8, 0.7)),       # inside: the table, the couple at the window
-    (520, (1.6, 6.6, 1.7), (4.2, 8.6, 1.2)),         # the bar
+    (525, (3.2, 7.1, 1.85), (4.3, 10.2, 1.0)),        # the kitchen island
     (610, (7.0, 3.6, 2.0), (9.6, -0.6, 1.0)),        # out east: the smokers, the couple at the pool's end
-    (680, (8.6, -6.6, 2.4), (10.6, -3.4, 0.8)),      # the lounge chairs
+    (680, (9.6, -7.6, 3.2), (10.6, -3.4, 0.8)),      # the lounge chairs
     (N, (17, -16, 9), (1, 0, 1)),                    # and up and away
 ]
 for f, p, l in path:
