@@ -1,2 +1,5 @@
 frames/
 *.blend1
+runway/models/
+runway/runway.blend
+__pycache__/

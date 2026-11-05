@@ -63,6 +63,35 @@ raea render raea/seeker-ad.tsx -o meme-royale-seeker-raea.mp4 --quality master &
 
 The large intermediates (captured frames, models, sounds) are re-created by the capture scripts and are not committed.
 
+## Character runway (`runway/`)
+
+A fashion-show walk of every character, with a locked-off camera. Each one walks in from the left, stops at centre,
+turns to the camera and strikes a pose (its own emote / win clip from the game), turns back and walks off to the right;
+the next one enters as the last one leaves. Behind them the backdrop slowly cross-fades into each character's world, and
+their name pops up in Lilita One. The runway lights and rim lights fade to each character's colour too.
+
+| Character | Backdrop |
+|---|---|
+| GIGA | charcoal with slow-turning gold god rays |
+| PEPE | the swamp wizard's night sky: purple-to-green, a drifting green nebula, stars |
+| MOO DENG | teal water with rolling waves and rising bubbles, pink accents |
+| POPCAT | pink-to-orange pop-art halftone dots |
+| anyone else | one of six fallback looks; or drop your own art in a folder as `<name>.png` and pass `BGDIR` |
+
+```bash
+cd runway
+./render_runway.sh                                   # fetches the models from the live site if runway/models/ is empty
+STEP=3 W=960 H=540 SAMPLES=6 ./render_runway.sh       # quick preview first
+ORDER=giga,pepe,moodeng,popcat MUSIC=../audio/mus_battle.mp3 ./render_runway.sh   # with the game's music
+```
+
+Output: `output/meme-royale-runway.mp4`. About 5 s per character plus the last exit (four characters ≈ 22 s,
+roughly 660 frames). Every rigged `.glb` in `runway/models/` walks; props without a rig are skipped. The script prints
+which walk and pose clip it picked for each character; if a model has no walk clip it glides on its idle.
+
+Needs Blender 4.2+ and ffmpeg, plus network access to `memeroyale.imaginestudio.fun` for the models (or put the `.glb`
+files in `runway/models/` yourself).
+
 ## Notes
 
 - The phone is a generic dark handset; no Solana Mobile logos or product design were recreated. Swap in official
