@@ -715,29 +715,134 @@ if not CLEAN:
             ph = ((f / 105) + k / 8) % 1.0
             g.location = (-5.9 + 0.6 * ph * math.sin(k), 7.6 - 0.6 * ph, 0.55 + 0.9 * ph); g.scale = (0.5 + 1.6 * ph,) * 3
             g.keyframe_insert("location", frame=f); g.keyframe_insert("scale", frame=f)
-    # smokers on the east deck
+    # smokers under the pergola: a real drag, the ember flaring, held in, blown at the sky; BATON coughs his lungs out
+    def set_mouth(c):
+        """Where the lips are, in the character's own space, from the head's real mesh (front, lower third)."""
+        hg = bone_geom(c, "Head")
+        if not hg: return
+        C_, h = hg
+        bpy.context.view_layer.update()
+        Mx = c.ctrl.matrix_world.inverted() @ c.rig.matrix_world @ c.rig.data.bones["mixamorig:Head"].matrix_local
+        c.mouth = Mx @ (C_ + Vector((0, -0.4 * h.y, 0.92 * h.z)))
+    def key_emit(m, f, v):
+        i = m.node_tree.nodes["Principled BSDF"].inputs["Emission Strength"]; i.default_value = v; i.keyframe_insert("default_value", frame=f)
+    def cycles(period, phase, x0):
+        """Frames where a cycle reaches phase-fraction x0."""
+        n = 0; out = []
+        while True:
+            t = (n + x0 - phase) * period
+            if t * FPS > N: return out
+            if t >= 0: out.append((n, int(t * FPS) + 1))
+            n += 1
+    def puff(parent, p0, p1, f0, life, r0, r1, name="puff"):
+        s = sphere(name, (0, 0, 0), 0.06, SMOKE, seg=20); s.parent = parent
+        s.location = p0; s.scale = (0.001,) * 3
+        s.keyframe_insert("scale", frame=1); s.keyframe_insert("scale", frame=max(1, f0 - 1)); s.keyframe_insert("location", frame=max(1, f0 - 1))
+        s.scale = (r0,) * 3; s.keyframe_insert("scale", frame=f0 + 2)
+        s.location = p1; s.scale = (r1,) * 3; s.keyframe_insert("location", frame=f0 + life); s.keyframe_insert("scale", frame=f0 + life - 6)
+        s.scale = (0.001,) * 3; s.keyframe_insert("scale", frame=f0 + life + 4)
+    P_SM = 5.0
     for i, (cid, x, y, tx, ty) in enumerate((("walter", 9.0, -0.3, 9.8, -1.1), ("floki", 9.8, -1.1, 9.0, -0.3), ("baton", 9.0, -1.8, 9.6, -0.9))):
-        ph = i * 0.23
-        c = mocap(cid, x, y, face(tx - x, ty - y), "13_09", start=1.0 + i * 1.7, travel=0.0)
-        cig = attach(c, cyl("cig", (0, 0, 0), 0.008, 0.09, CIG), offset=(0.02, 0.07, 0.03), rot=(0, 0, math.pi / 2))
-        ember = attach(c, sphere("ember", (0, 0, 0), 0.011, EMBER, seg=8), offset=(0.065, 0.07, 0.03))
-        puff_loop(c, 4.0, ph, c.headp + Vector((0, -0.18, -0.02)))
-    # the bong, on two lounge chairs by the east palms
+        ph = i * 0.31; cough = (cid == "baton")
+        c = load(cid); guests[cid] = c; place(c, x, y, face(tx - x, ty - y)); set_mouth(c)
+        c.bake(M.smoke_real, 1, N, step=2, period=P_SM, phase=ph, toward=to_local(c, (tx, ty, 1.5)), cough=cough)
+        EM = mat("ember_" + cid, "#FF6A1A", emit=5.0)
+        attach(c, cyl("cig", (0, 0, 0), 0.008, 0.09, CIG), offset=(0.02, 0.07, 0.03), rot=(0, 0, math.pi / 2))
+        attach(c, sphere("ember", (0, 0, 0), 0.011, EM, seg=12), offset=(0.065, 0.07, 0.03))
+        key_emit(EM, 1, 5.0)
+        for n, f in cycles(P_SM, ph, M.SMOKE_T["drag"][0]):      # the ember flares on every drag
+            fd = int((M.SMOKE_T["drag"][1] - M.SMOKE_T["drag"][0]) * P_SM * FPS)
+            key_emit(EM, f, 5.0); key_emit(EM, f + 6, 70.0); key_emit(EM, f + fd, 55.0); key_emit(EM, f + fd + 8, 5.0)
+        m = c.mouth if hasattr(c, "mouth") else c.headp + Vector((0, -0.12, 0.06))
+        for n, f in cycles(P_SM, ph, M.SMOKE_T["exhale"][0]):
+            fe = int((M.SMOKE_T["exhale"][1] - M.SMOKE_T["exhale"][0]) * P_SM * FPS)
+            if cough and n % 2 == 1:   # bursts with each hack
+                for j in range(7):
+                    puff(c.ctrl, m + Vector((0, -0.08, -0.05)), m + Vector((random.uniform(-0.25, 0.25), -0.45, random.uniform(-0.2, 0.15))), f + int(j * fe / 7), 26, 0.6, 1.6)
+            else:              # a long stream, up and away from the tipped-back head
+                for j in range(9):
+                    fj = f + 4 + int(j * (fe - 10) / 9)
+                    puff(c.ctrl, m + Vector((0, -0.06, 0.05)), m + Vector((random.uniform(-0.2, 0.2), -0.35 - 0.04 * j, 0.9 + random.uniform(0, 0.3))), fj, 48, 0.5, 2.4)
+    # the bong: WOJAK and APU in turns, on lounge chairs either side of a little table
+    P_B = 9.0
     for cid, x, y, rot in (("wojak", 10.6, -4.2, face(0, 1)), ("apu", 10.6, -2.6, face(0, -1))):
         import_gltf(os.path.join(PH, "mid_century_lounge_chair/mid_century_lounge_chair.gltf"), (x, y + (0.25 if rot == face(0, 1) else -0.25), 0.0), rot + math.pi, 1.0)
-        c = load(cid); guests[cid] = c; place(c, x, y, rot)
-        c.bake(M.sit_bong, 1, N, step=2, phase=0.0 if cid == "wojak" else 0.5)
     light("bong_lamp", "AREA", (10.6, -3.4, 2.7), 260, "#FFB070", 1.6)        # a warm lamp over the loungers
     light("bong_rim", "POINT", (12.2, -3.4, 1.4), 120, "#9A6BFF", 0.3)        # and a purple rim from the palms
+    cyl("side_table", (10.6, -3.4, 0.2), 0.05, 0.4, OAK, v=16); cyl("side_table_top", (10.6, -3.4, 0.41), 0.22, 0.03, OAK, v=40)
     BONG = mat("bong", "#7FE0C8", rough=0.02, alpha=0.45, emit=0.4)
-    cyl("bong", (10.6, -3.4, 0.35), 0.06, 0.7, BONG); sphere("bong_base", (10.6, -3.4, 0.08), 0.12, BONG)
-    cyl("bong_stem", (10.68, -3.4, 0.25), 0.012, 0.22, BONG, rot=(0, math.radians(40), 0))
-    for k in range(10):   # a cloud drifting up between them
-        s = sphere("cloud", (10.6, -3.4, 1.0), 0.12, SMOKE, seg=20)
-        for f in range(1, N + 1, 40):
-            ph = (f / 40 + k * 0.1) % 1.0
-            s.location = (10.6 + 0.4 * math.sin(k + f / 50), -3.4 + 0.3 * math.cos(k * 2 + f / 60), 0.9 + 1.2 * ph)
-            s.scale = (0.6 + 1.8 * ph,) * 3; s.keyframe_insert("location", frame=f); s.keyframe_insert("scale", frame=f)
+    WATER_B = mat("bong_water", "#3FB8A8", rough=0.05, alpha=0.6, emit=0.3)
+    CHAMBER = soft("chamber", "#F4F4F4", alpha=0.9, emit=0.4)
+    BOWL_EM = mat("bowl_ember", "#FF5A10", emit=3.0)
+    bong = bpy.data.objects.new("bong_root", None); sc.collection.objects.link(bong)
+    def part(o): o.parent = bong; return o
+    part(sphere("bong_base", (0, 0, 0.11), 0.11, BONG, seg=32))
+    part(sphere("bong_water", (0, 0, 0.075), 0.095, WATER_B, seg=24)).scale = (1, 1, 0.55)
+    part(cyl("bong_tube", (0, 0, 0.42), 0.042, 0.5, BONG, v=32))
+    part(cyl("bong_stem", (-0.075, 0, 0.21), 0.011, 0.16, BONG, rot=(0, math.radians(-42), 0), v=12))
+    bpy.ops.mesh.primitive_cone_add(radius1=0.016, radius2=0.03, depth=0.04, vertices=20, location=(-0.13, 0, 0.275))
+    part(obj_mat(bpy.context.active_object, mat("bowl", "#C8CCD2", rough=0.2, metal=0.9)))
+    ember_b = part(sphere("bowl_ember", (-0.13, 0, 0.295), 0.017, BOWL_EM, seg=12))
+    ch = cyl("chamber", (0, 0, 0), 0.036, 1.0, CHAMBER, v=24)
+    for v in ch.data.vertices: v.co.z += 0.5                     # its origin at the bottom so it fills upward
+    part(ch); ch.location = (0, 0, 0.2); ch.scale = (1, 1, 0.001)
+    lighter = part(box("lighter", -0.012, 0.012, -0.007, 0.007, -0.03, 0.03, mat("lighter", "#E8302A", rough=0.3), bevel=0.0))
+    lighter.location = (-0.18, -0.02, 0.22)
+    bpy.ops.mesh.primitive_cone_add(radius1=0.008, radius2=0.0, depth=0.035, vertices=12, location=(-0.18, -0.02, 0.27))
+    flame = part(obj_mat(bpy.context.active_object, mat("lighter_flame", "#FFB23A", emit=30.0)))
+    bubbles = [part(sphere("bubble", (0, 0, 0.06), 0.011, mat("bubble", "#E8FFFA", rough=0.0, alpha=0.5), seg=10)) for _ in range(7)]
+    for o in (lighter, flame, *bubbles): o.scale = (0.001,) * 3; o.keyframe_insert("scale", frame=1)
+    TABLE = (Vector((10.6, -3.4, 0.43)), face(0, 1) - math.pi / 2)
+    bong.location, bong.rotation_euler.z = TABLE[0], TABLE[1]; bong.keyframe_insert("location", frame=1); bong.keyframe_insert("rotation_euler", frame=1)
+    key_emit(BOWL_EM, 1, 3.0)
+    def at_table(f):
+        bong.location = TABLE[0]; bong.rotation_euler = (0, 0, TABLE[1]); bong.scale = (1, 1, 1)
+        for k in ("location", "rotation_euler", "scale"): bong.keyframe_insert(k, frame=f)
+    for cid, x, y, rot, ph in (("wojak", 10.6, -4.2, face(0, 1), 0.0), ("apu", 10.6, -2.6, face(0, -1), 0.5)):
+        c = load(cid); guests[cid] = c; place(c, x, y, rot); set_mouth(c)
+        top = M.bong_rig(c, 0.32) + Vector((0, -0.03, 0.0))   # the mouthpiece at the lips, leaning in
+        s_ = max(0.55, min(1.0, (top.z - 0.02) / 0.67))      # a shorter guest gets a shorter bong (it's the same bong, no one checks)
+        root = top - Vector((0, 0, 0.67 * s_)); bowl = root + Vector((-0.13, 0, 0.295)) * s_
+        c.bake(M.bong_session, 1, N, step=2, period=P_B, phase=ph, bong_top=top, bowl=bowl)
+        bpy.context.view_layer.update(); W = c.ctrl.matrix_world
+        mouth_seat = (c.mouth if hasattr(c, "mouth") else c.headp) + Vector((0, 0.12, -c.leg * 0.45))
+        print(f"BONG {cid}: mouthpiece z {top.z:.2f} bong scale {s_:.2f}")
+        for n, f0 in cycles(P_B, ph, 0.0):
+            fr = lambda xx: f0 + int(xx * P_B * FPS)
+            at_table(f0)
+            for xx in (M.BONG_T["grab"][1], M.BONG_T["put"][0]):
+                bong.location = W @ root; bong.rotation_euler = (0, 0, rot); bong.scale = (s_,) * 3
+                for k in ("location", "rotation_euler", "scale"): bong.keyframe_insert(k, frame=fr(xx))
+            at_table(fr(M.BONG_T["put"][1]))
+            h0, h1 = fr(M.BONG_T["hit"][0]), fr(M.BONG_T["hit"][1]); c0, c1 = fr(M.BONG_T["clear"][0]), fr(M.BONG_T["clear"][1])
+            # the lighter comes up and the flame flickers; the bowl glows; bubbles rise; the chamber fills milky white
+            for o, sz in ((lighter, 1.0), (flame, 1.0)):
+                o.scale = (0.001,) * 3; o.keyframe_insert("scale", frame=h0 - 2)
+                o.scale = (sz,) * 3; o.keyframe_insert("scale", frame=h0 + 2)
+                if o is flame:
+                    for ff in range(h0 + 4, h1, 3):
+                        o.scale = (1.0, 1.0, random.uniform(0.7, 1.4)); o.keyframe_insert("scale", frame=ff)
+                o.scale = (sz,) * 3; o.keyframe_insert("scale", frame=h1 - 1)
+                o.scale = (0.001,) * 3; o.keyframe_insert("scale", frame=h1 + 2)
+            key_emit(BOWL_EM, h0, 3.0); key_emit(BOWL_EM, h0 + 8, 45.0); key_emit(BOWL_EM, h1, 40.0); key_emit(BOWL_EM, h1 + 10, 3.0)
+            for b_ in bubbles:
+                for ff in range(h0, h1, 4):
+                    b_.location = (random.uniform(-0.05, 0.05), random.uniform(-0.05, 0.05), 0.03); b_.scale = (1, 1, 1)
+                    b_.keyframe_insert("location", frame=ff); b_.keyframe_insert("scale", frame=ff)
+                    b_.location.z = 0.11; b_.keyframe_insert("location", frame=ff + 3)
+                b_.scale = (0.001,) * 3; b_.keyframe_insert("scale", frame=h1 + 1)
+            ch.location = (0, 0, 0.2); ch.scale = (1, 1, 0.001); ch.keyframe_insert("location", frame=h0); ch.keyframe_insert("scale", frame=h0)
+            ch.scale = (1, 1, 0.44); ch.keyframe_insert("scale", frame=h1); ch.keyframe_insert("location", frame=h1)
+            ch.location = (0, 0, 0.64); ch.scale = (1, 1, 0.001); ch.keyframe_insert("location", frame=c1); ch.keyframe_insert("scale", frame=c1)   # cleared, up into the mouth
+            # held in, then a huge cloud at the sky, then a coughing fit
+            e0, e1 = fr(M.BONG_T["exhale"][0]), fr(M.BONG_T["exhale"][1])
+            for j in range(12):
+                fj = e0 + int(j * (e1 - e0) / 12)
+                puff(c.ctrl, mouth_seat + Vector((0, 0.05, 0.0)), mouth_seat + Vector((random.uniform(-0.35, 0.35), random.uniform(-0.5, 0.1), 1.3 + random.uniform(0, 0.5))), fj, 60, 0.8, 4.2, "cloud")
+            k0, k1 = fr(M.BONG_T["cough"][0]), fr(M.BONG_T["cough"][1])
+            for j in range(6):
+                puff(c.ctrl, mouth_seat + Vector((0, -0.1, -0.05)), mouth_seat + Vector((random.uniform(-0.3, 0.3), -0.6, random.uniform(-0.3, 0.2))), k0 + int(j * (k1 - k0) / 6), 24, 0.6, 1.8)
+
 else:
     for cid, x in (("farter", -5.6), ("lmao", -4.8)):
         guest(cid, x, 8.3, face(0, -1), M.cheer, phase=random.random())

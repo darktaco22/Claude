@@ -334,3 +334,91 @@ def despair(c, t, phase=0.0):
             "hips": Vector((0, 0.12, -0.32 * c.leg)), "spine": 0.45 + 0.12 * rock, "lean": 0.06 * rock,
             "hand_L": top + Vector((0.1, -0.02, 0.02)), "hand_R": top + Vector((-0.1, -0.02, 0.02)),
             "look": c.headp + Vector((0, -2, -1.2)), "nosafe": True}
+
+# ------------------------------------------------------------------------------------------------ smoking and the bong, for real
+# Both are timed sequences; party.py reads the same timings (SMOKE_T, BONG_T) so the ember, the smoke from the mouth, the
+# bubbles and the chamber filling all happen exactly when the body does them. c.mouth (set by party.py from the head's
+# own mesh) is where the lips are, in the character's space.
+SMOKE_T = {"raise": (0.00, 0.12), "drag": (0.12, 0.34), "lower": (0.34, 0.44), "hold": (0.44, 0.52), "exhale": (0.52, 0.80)}
+BONG_T = {"grab": (0.00, 0.08), "hit": (0.08, 0.38), "clear": (0.38, 0.44), "put": (0.44, 0.52), "hold": (0.52, 0.62),
+          "exhale": (0.62, 0.80), "cough": (0.80, 0.90)}
+
+def _ease(e):
+    e = max(0.0, min(1.0, e)); return e * e * (3 - 2 * e)
+
+def _in(x, span):
+    a, b = span; return a <= x < b, (x - a) / (b - a)
+
+def mouth_of(c):
+    return getattr(c, "mouth", c.headp + Vector((0, -0.12, 0.06)))
+
+def stoned(c, t, phase, k=1.0):
+    """Getting higher as the night goes on: a slow sway and a lolling head that grow over the 30 s."""
+    g = k * (0.4 + t / 30.0)
+    return 0.07 * g * math.sin(t * 0.8 + phase * 7), Vector((0.5 * g * math.sin(t * 0.55 + phase * 5), 0, 0.25 * g * math.sin(t * 0.37 + phase * 3)))
+
+def smoke_real(c, t, period=5.0, phase=0.0, toward=None, cough=False):
+    """A cigarette, properly: up to the lips, a long drag (chest rising, a slight lean back), down, hold it in, then tip the
+    head back and blow it at the sky. With cough=True every other drag ends in a coughing fit, fist to the mouth."""
+    x = ((t / period) + phase) % 1.0; n = int((t / period) + phase)
+    m = mouth_of(c)
+    rest = c.arm_at("R", 0.42, 0.28, -0.22)                      # the classic hold: forearm up, cigarette by the shoulder
+    lips = m + Vector((-0.04, -0.07, -0.06))
+    lean, drift = stoned(c, t, phase)
+    look = (toward if toward is not None else c.headp + Vector((0, -2, 0.2))) + drift
+    hand_R, spine, hips_z = rest, -0.03, 0.0
+    hand_L = c.arm_at("L", 0.35, -0.55, -0.42)                   # the other arm folded under it
+    on, e = _in(x, SMOKE_T["raise"])
+    if on: hand_R = rest.lerp(lips, _ease(e))
+    on, e = _in(x, SMOKE_T["drag"])
+    if on: hand_R = lips + Vector((0, 0, 0.01 * math.sin(e * 9))); spine = -0.03 - 0.1 * e; hips_z = 0.012 * e; look = c.headp + Vector((0, -2, 0.1)) + drift * 0.3
+    on, e = _in(x, SMOKE_T["lower"])
+    if on: hand_R = lips.lerp(rest, _ease(e)); spine = -0.13; hips_z = 0.012
+    on, e = _in(x, SMOKE_T["hold"])
+    if on: spine = -0.13; hips_z = 0.012; look = c.headp + Vector((0, -2, 0.4))
+    on, e = _in(x, SMOKE_T["exhale"])
+    if on:
+        if cough and n % 2 == 1:   # a coughing fit instead: doubled over in jerks, fist to the mouth
+            j = abs(math.sin(e * math.pi * 7))
+            spine = 0.15 + 0.4 * j; hips_z = -0.02 * j; hand_L = m + Vector((0.03, -0.1, -0.05)); look = c.headp + Vector((0, -2, -1.2))
+        else:
+            spine = -0.13 - 0.12 * math.sin(math.pi * e); hips_z = 0.012 * (1 - e); look = c.headp + Vector((0, -1.0, 1.6))
+    return {**idle_feet(c, t), "hand_R": hand_R, "hand_L": hand_L, "spine": spine, "lean": lean,
+            "hips": Vector((0, 0, hips_z)), "look": look, "nosafe": True}
+
+def bong_rig(c, bend=0.32):
+    """Seated, leaning in by `bend`: where the mouth is (character space). The bong's mouthpiece goes there."""
+    hip = c.hip + Vector((0, 0.12, -c.leg * 0.45))
+    v = mouth_of(c) - c.hip; cb, sb = math.cos(bend), math.sin(bend)
+    return hip + Vector((v.x, v.y * cb - v.z * sb, v.y * sb + v.z * cb))
+
+def bong_session(c, t, period=9.0, phase=0.0, bong_top=None, bowl=None):
+    """One turn on the bong, then the other person's turn while this one holds it, blows a huge cloud, coughs, and sinks
+    into the chair. bong_top/bowl: the mouthpiece and bowl in character space while it's in their hands."""
+    x = ((t / period) + phase) % 1.0
+    seat = Vector((0, 0.12, -c.leg * 0.45))
+    feet = {"foot_L": c.footL + Vector((0.03, -0.28, 0)), "foot_R": c.footR + Vector((-0.03, -0.28, 0))}
+    lap_L = c.hip + seat + Vector((0.12, -0.25, 0.05)); lap_R = c.hip + seat + Vector((-0.12, -0.25, 0.05))
+    lean, drift = stoned(c, t, phase, 1.3)
+    neck = bong_top + Vector((0, 0.0, -0.3)); light = bowl + Vector((-0.05, -0.02, -0.06))
+    pose = {**feet, "hips": seat, "hand_L": lap_L, "hand_R": lap_R, "spine": -0.05, "lean": lean,
+            "look": c.headp + Vector((0, -2, 0.3)) + drift, "nosafe": True}
+    on, e = _in(x, BONG_T["grab"])
+    if on: k = _ease(e); pose.update(hand_L=lap_L.lerp(neck, k), hand_R=lap_R.lerp(light, k), spine=0.32 * k)
+    on, e = _in(x, BONG_T["hit"])
+    if on: pose.update(hand_L=neck, hand_R=light + Vector((0, 0, 0.005 * math.sin(e * 40))), spine=0.32, look=bong_top + Vector((0, -0.5, -0.4)))
+    on, e = _in(x, BONG_T["clear"])
+    if on: pose.update(hand_L=neck, hand_R=light.lerp(lap_R, _ease(e)), spine=0.32 - 0.05 * e, look=bong_top + Vector((0, -0.5, -0.2)))
+    on, e = _in(x, BONG_T["put"])
+    if on: k = _ease(e); pose.update(hand_L=neck.lerp(lap_L, k), hand_R=lap_R, spine=0.27 * (1 - k) - 0.15 * k, hips=seat + Vector((0, 0, 0.01)))
+    on, e = _in(x, BONG_T["hold"])
+    if on: pose.update(spine=-0.15, hips=seat + Vector((0, 0, 0.015)), look=c.headp + Vector((0, -2, 0.9)))
+    on, e = _in(x, BONG_T["exhale"])
+    if on: pose.update(spine=-0.15 - 0.15 * math.sin(math.pi * e), look=c.headp + Vector((0, -0.8, 2.0)))
+    on, e = _in(x, BONG_T["cough"])
+    if on:
+        j = abs(math.sin(e * math.pi * 6))
+        pose.update(spine=0.1 + 0.45 * j, hand_L=mouth_of(c) + Vector((0.03, -0.1, -0.08)), look=c.headp + Vector((0, -2, -1.0)))
+    if x >= BONG_T["cough"][1] or x < 0.0:   # melted into the chair, giggling
+        g = 0.01 * abs(math.sin(t * 9)); pose.update(spine=-0.22, hips=seat + Vector((0, 0.02, g)), look=c.headp + Vector((0.9, -1.5, 0.3)) + drift)
+    return pose
