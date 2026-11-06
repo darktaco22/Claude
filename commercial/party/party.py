@@ -986,9 +986,9 @@ for o in bpy.data.objects:
             for (cx, cy), parts in crowns.items():
                 if abs(cx - top.x) < 0.3 and abs(cy - top.y) < 0.3:
                     for p_ in parts: p_.hide_render = True
-    elif o.name.endswith("_inst") and o.instance_collection and ("tree" in o.name):
-        sc_ = o.scale.x
-        if _near(o.location, 5.5 * sc_, o.location.z + 9.0 * sc_): o.hide_render = True; hidden += 1
+    elif o.name.endswith("_inst") and o.instance_collection and any(k in o.name for k in ("tree", "shrub", "fern")):   # foliage only
+        sc_ = o.scale.x; big = "tree" in o.name
+        if _near(o.location, (5.5 if big else 3.5) * sc_, o.location.z + (9.0 if big else 3.0) * sc_): o.hide_render = True; hidden += 1
 print("trees cleared from the camera's path:", hidden)
 
 # ------------------------------------------------------------------------------------------------ render
