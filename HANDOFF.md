@@ -31,6 +31,8 @@ The party has been rebuilt since that render, and the new version **is not rende
 - `retarget.py`: CMU BVH mocap onto the game's Mixamo rigs, relative to each rig's rest pose. Used by dancers, DJ, smokers, chuggers, LMAO, the drunk.
 - `dressing.py`: architecture, the kitchen, and the mess (cups, cans, pizza boxes, confetti, balloons, shopping cart, cones, neon signs).
 - `environment.py`: the city-skyline HDRI, terrain, perimeter wall, Poly Haven trees and plants (instanced), and PBR textures on every surface.
+- `scan.py`: automatic glitch scan (intersections, blocked featured guests).
+- `coins.py`, `flamingo.py`: meme-coin decorations; the inflatable flamingo.
 - `qa.py`: glitch check. Hides every other guest and frames one character's real head at chosen frames.
 - `checkpoint.sh`: builds the scene and saves `party.blend`, renders scene stills, then runs the QA close-ups for all 45 guests.
 - `mix.py`: the soundtrack. Club track plus the game's crowd and effects sounds, no voices.
@@ -52,18 +54,33 @@ What the new party contains (30 s, 900 frames at 30 fps):
 - **Set:** a villa with a kitchen (cabinets, fridge, hood, island), parquet, a stone wing, a pergola, a fire pit, a perimeter wall, city lights, and hills with neighbours' houses.
 - **Music:** Kevin MacLeod, "Cut and Run" (CC BY 4.0, credited on the end card). It was the bassiest of the candidates measured with librosa, cut to its strongest 30 s from a beat at 101.05 s.
 
+## Since the first handoff (checkpoints 3 to 11)
+
+- **Props on bones:** new Child Of constraints auto-set an inverse, which threw every cup, cigarette, note, the beanie and the laser eyes metres away. `attach()` clears it.
+- **Snort stations** (`snort_station`): the bend is solved per character, short ones stand on a beer crate, and the lines sit under the nose along the slide.
+- **Smoking and bong, for real** (`M.smoke_real`, `M.bong_session`, timings `SMOKE_T`/`BONG_T`):
+  - smokers: drag with a flaring ember, hold, blow it at the sky; TOSHI coughs every other drag
+  - bong: WOJAK and APU take turns on bean bags. The lighter and bowl glow, water bubbles, the chamber fills and clears, then a big cloud, a cough and a slump.
+  - The mouthpiece is placed where the mouth really is mid-hit (bake, measure, re-bake).
+  - BATON's model has no hand bones, so it dances instead.
+- **Balcony:** WOJAK GIRL and DOOMER GIRL (Wojak model plus hair, dress and bow sized by `bone_geom`) throw money beside the Whale. 480 bills.
+- **Meme-coin decor** (`coins.py`): ticker coins, coin floats and balloons, a PUMP IT chart behind the DJ, HODL / WEN LAMBO? / 1 $MEME = 1 $MEME neons, a TO THE MOON rocket, a BUY THE DIP sign.
+- **Floats:** the flamingo was rebuilt (`flamingo.py`: sculpted body, S-neck, beak, vinyl); smooth vinyl donut and ring.
+- **`scan.py` glitch scan:** guests inside props or each other, and featured guests hidden from the camera. Everything it found is fixed:
+  - DJ booth, coffee table, balcony glass, the pizza float landing, the speaker, loungers
+  - conga spacing and path, litter under feet, the drunk walking on the spot, the rocket in the fire pit
+  - trees the camera flew through
+  - What it still reports is intended contact: Fwog on his float, the kisses, the DJ's hands on the decks, the snort face on the table.
+- QA camera (`qa.py`) swings round to find a clear view.
+
 ## Left to do
 
-1. **Finish checkpoint 3 and review it.** It was running at handoff, output in `$W/ck3`. Look at every scene still and every `qa_<name>_<frame>.png`. Check:
-   - the snort reads: nose at the line, puff, line shrinking
-   - the new characters' colors and the WIF beanie's fit on the head bone (tune the offset in `beanie()`)
-   - Fwog on the float, the DOGE words, the DJ's lasers
-   - no limbs through bodies, nobody overlapping, the camera not inside anything
+1. Review checkpoint 11 (the opening and closing aerials with the tree fix, and close-ups of all 47 guests).
+2. **Final render** from `party.blend`: 900 frames, 1280x720, 12 samples, about 9–10 h, resumable. Check frames at 25/50/75%.
+3. `mix.py`, then `assemble.sh`, then the loudness check (-14 LUFS, TP ≤ -1.5).
+4. Commit `commercial/output/meme-royale-house-party.mp4` with a contact sheet, and send it.
 
-   Fix, then repeat the checkpoint until clean. The person explicitly wants these checkpoints.
-2. **Final render** from `party.blend`, 900 frames at 1280×720, 12 samples. At about 35–41 s a frame that's about 9–10 h. It resumes: frames that exist are skipped (`use_overwrite = False`). Check finished frames mid-way, for example at 25%, 50% and 75%.
-3. **Mix, assemble and check.** Run `mix.py`, then `assemble.sh` (the end card comes in at 27.2 s), then `raea check` or ffmpeg loudness. Target is -14 LUFS with true peak ≤ -1.5 dB. AAC overshoots, so the mix already masters to TP -3.
-4. **Deliver.** Commit `commercial/output/meme-royale-house-party.mp4`, replacing the old one, plus a contact sheet. Send it to the person.
+Checkpoint pipeline used in the session: build plus stills, then focused QA (smokers and bong at chosen cycle frames), then `scan.py` on the saved blend, then the full QA.
 
 ## Key decisions
 
