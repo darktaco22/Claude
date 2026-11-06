@@ -914,14 +914,15 @@ tgt = bpy.data.objects.new("CamTarget", None); sc.collection.objects.link(tgt)
 tcn = cam.constraints.new("TRACK_TO"); tcn.target = tgt; tcn.track_axis = "TRACK_NEGATIVE_Z"; tcn.up_axis = "UP_Y"
 
 # DOGE by the pool's south-west corner, the doge words floating round him (they turn to face the camera)
-dg = mocap("doge", -5.9, -4.35, face(0.6, -1), "120_05", start=1.0, travel=0.05, model="bonk", look=LOOKS["doge"][1])
+DOGE_AT = (-7.4, -3.9)   # off the camera's path down to the pool (it brushed past him), clear of the conga and the loungers
+dg = mocap("doge", DOGE_AT[0], DOGE_AT[1], face(0.9, -0.6), "120_05", start=1.0, travel=0.05, model="bonk", look=LOOKS["doge"][1])
 COMIC = bpy.data.fonts.load(os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "ComicNeue-Bold.ttf"))
 for k, (word, col, off) in enumerate((("wow", "#FF4FD8", (-0.9, 0, 2.3)), ("such party", "#3BE8FF", (0.8, 0, 2.0)),
                                        ("much rich", "#FFE23B", (-0.7, 0, 1.4)), ("very bass", "#7CFF4A", (0.9, 0, 1.1)))):
     cu = bpy.data.curves.new("doge_" + word, "FONT"); cu.body = word; cu.font = COMIC; cu.size = 0.28; cu.align_x = "CENTER"; cu.extrude = 0.01
     o = bpy.data.objects.new("doge_" + word, cu); sc.collection.objects.link(o)
     o.data.materials.append(mat("doge_" + col, col, emit=3.0))
-    base = Vector((-5.7, -3.35, 0)) + Vector(off)
+    base = Vector((DOGE_AT[0], DOGE_AT[1], 0)) + Vector(off)   # the words float round DOGE himself
     for f in range(1, N + 1, 15):
         o.location = base + Vector((0.08 * math.sin(f / 13 + k), 0, 0.08 * math.sin(f / 9 + k * 2))); o.keyframe_insert("location", frame=f)
     tc_ = o.constraints.new("TRACK_TO"); tc_.target = cam; tc_.track_axis = "TRACK_Z"; tc_.up_axis = "UP_Y"
@@ -948,7 +949,7 @@ path = [  # frame, camera, look-at: one sweep, slow where the jokes are
     (1, (-17, -21, 11), (0, 2, 1)),
     (110, (-10.5, -10.5, 4.2), (-2.5, 0, 0.4)),
     (170, (-6.4, -5.8, 1.6), (-0.8, -0.4, 0.3)),      # low over the pool: floats, junk, the cannonball
-    (235, (-2.0, -5.6, 1.4), (1.5, -0.6, 0.4)),
+    (235, (-2.0, -6.2, 1.5), (1.5, -0.6, 0.4)),     # a little further back from Pink Wojak and his sign
     (300, (1.0, -11.4, 2.6), (4.0, -5.2, 1.0)),       # the dance floor and the DJ
     (345, (3.6, -10.4, 2.0), (5.0, -4.8, 1.2)),
     (380, (0.6, -3.4, 1.2), (0.0, 3.6, 3.4)),         # look up: the Whale making it rain, the backflip
