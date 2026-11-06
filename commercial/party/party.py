@@ -788,10 +788,12 @@ if not CLEAN:
         bpy.ops.mesh.primitive_uv_sphere_add(radius=1.0, segments=64, ring_count=32)
         b = obj_mat(bpy.context.active_object, BAG_M[color]); b.name = "beanbag"
         for v in b.data.vertices:
-            x, y, z = v.co; back = max(0.0, y)
-            top = seat_z + 0.45 * back ** 1.5
-            Z = (z + 1) / 2 * top - 0.07 * math.exp(-(x * x + (y + 0.1) ** 2) / 0.18) * max(0.0, z)
-            v.co = (0.5 * x * (1 + 0.08 * (1 - z)), 0.48 * y + 0.05, max(0.0, Z))
+            x, y, z = v.co; back = max(0.0, y); front = max(0.0, -y)
+            # high under the hips, rising into a slumped back behind, sloping right down at the front so the thighs lie
+            # on it (a flat-topped front had his thighs straight through the bag and his shins coming out the bottom)
+            top = (seat_z + 0.45 * back ** 1.5) * max(0.15, 1.0 - 1.25 * front ** 1.2)
+            Z = (z + 1) / 2 * top - 0.07 * math.exp(-(x * x + (y - 0.1) ** 2) / 0.18) * max(0.0, z)
+            v.co = (0.5 * x * (1 + 0.08 * (1 - z)), 0.42 * y, max(0.0, Z))   # centred under the hips
         b.data.shade_smooth(); sd = b.modifiers.new("smooth", "SUBSURF"); sd.levels = 1; sd.render_levels = 1
         b.parent = c.ctrl; b.location = (0, 0.12, 0)
         return b
