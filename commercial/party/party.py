@@ -448,7 +448,7 @@ def mocap(cid, x, y, rot, cname, start=0.0, travel=0.12, speed=1.0, z=0.0, model
 # the DJ, and the dance floor in front of the booth
 mocap("triplet", 7.8, -4.8, face(-1, 0), "111_05", start=3.0, travel=0.0)   # the DJ
 dancers = ["giga", "neet", "alon", "mitch", "mensa", "thisisfine", "baton", "goat", "brett", "slerf", "bome", "npcwojak"]   # BOME (a big book) off the camera line to the DJ
-spots = [(1.2, -4.4), (2.6, -4.6), (4.0, -4.35), (5.3, -4.6), (1.6, -5.6), (3.1, -6.0), (4.6, -5.5), (2.2, -7.1), (3.8, -7.3), (5.4, -6.8), (0.4, -6.4), (6.3, -5.7)]
+spots = [(1.2, -4.4), (2.6, -4.6), (4.0, -4.35), (5.3, -4.6), (1.6, -5.6), (3.1, -6.0), (4.6, -5.5), (2.2, -7.1), (3.8, -7.3), (5.4, -6.8), (6.4, -7.8), (6.3, -5.7)]   # BOME (a big book) at the back, out of the camera's corridor (it filled the frame)
 # new memes made from the game's own models
 LOOKS = {"brett": ("pepe", {"hue": 0.78, "sat": 1.15, "val": 1.0}),                    # Brett: the blue frog
          "npcwojak": ("wojak", {"hue": 0.5, "sat": 0.0, "val": 0.95, "tint": "#C9CCD2"}),  # NPC Wojak: grey, blank
@@ -952,7 +952,6 @@ path = [  # frame, camera, look-at: one sweep, slow where the jokes are
     (110, (-10.5, -10.5, 4.2), (-2.5, 0, 0.4)),
     (170, (-6.4, -5.8, 1.6), (-0.8, -0.4, 0.3)),      # low over the pool: floats, junk, the cannonball
     (235, (-2.0, -6.2, 1.5), (1.5, -0.6, 0.4)),     # a little further back from Pink Wojak and his sign
-    (266, (-1.6, -8.6, 2.5), (3.0, -5.2, 1.0)),       # wide and high round BOME (the camera went straight through him)
     (300, (1.0, -11.4, 2.6), (4.0, -5.2, 1.0)),       # the dance floor and the DJ
     (345, (3.6, -10.4, 2.0), (5.0, -4.8, 1.2)),
     (380, (1.0, -1.0, 3.0), (1.0, 5.0, 4.4)),         # up level with the balcony: the Whale and his girls making it rain, the backflip
