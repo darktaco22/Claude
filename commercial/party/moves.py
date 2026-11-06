@@ -330,18 +330,19 @@ def snort(c, t, table_z=0.45, reach=0.6, period=3.2, phase=0.0):
             "look": head + Vector((0, -1.0, -0.6 if x < 0.55 else 0.6)), "nosafe": True}
 
 def despair(c, t, phase=0.0):
-    """Pink Wojak after selling the bottom: down on his knees, doubled over, both hands clutching his head, rocking."""
+    """Pink Wojak after selling the bottom: doubled over at the waist, knees just giving a little, both hands clutching
+    his head, rocking. (A deep kneel put the feet behind the hips and the leg IK flipped his knees backwards.)"""
     rock = math.sin(TAU * (t / 1.6 + phase))
-    bend = 0.55 + 0.12 * rock
-    drop = 0.42 * c.leg
-    hip = c.hip + Vector((0, 0.1, -drop))
+    bend = 0.75 + 0.15 * rock
+    dip = 0.1 * c.leg
+    hip = c.hip + Vector((0, 0.06, -dip))
     v = c.headp - c.hip; cb, sb = math.cos(bend), math.sin(bend)
     head = hip + Vector((0, v.y * cb - v.z * sb, v.y * sb + v.z * cb))     # where the head really is, bent over
     w = max(0.09, 0.45 * (c.shoulderL.x - c.shoulderR.x))
-    return {"foot_L": c.footL + Vector((0.04, 0.3, 0)), "foot_R": c.footR + Vector((-0.04, 0.3, 0)),
-            "hips": Vector((0, 0.1, -drop)), "spine": bend, "lean": 0.05 * rock,
-            "hand_L": head + Vector((w, -0.02, 0.1)), "hand_R": head + Vector((-w, -0.02, 0.1)),
-            "look": head + Vector((0, -1.0, -1.4)), "nosafe": True}
+    return {"foot_L": c.footL + Vector((0.03, 0, 0)), "foot_R": c.footR + Vector((-0.03, 0, 0)),
+            "hips": Vector((0, 0.06, -dip)), "spine": bend, "lean": 0.06 * rock,
+            "hand_L": head + Vector((w, -0.02, 0.08)), "hand_R": head + Vector((-w, -0.02, 0.08)),
+            "look": head + Vector((0, -1.0, -1.6)), "nosafe": True}
 
 # ------------------------------------------------------------------------------------------------ smoking and the bong, for real
 # Both are timed sequences; party.py reads the same timings (SMOKE_T, BONG_T) so the ember, the smoke from the mouth, the
