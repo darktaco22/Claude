@@ -416,15 +416,19 @@ def party_girl(c, hair, dress, bow=None):
         attach(c, bo, bone="Spine1", offset=tuple(C), rot=(-math.pi / 2, 0, 0))
 
 def beanie(c):
-    """dogwifhat's pink knitted beanie, riding the head bone."""
+    """dogwifhat's pink knitted beanie, sized and seated from the head's real mesh (bone_geom)."""
     KNIT = mat("knit", "#FF5FA8", rough=0.95)
     retex(KNIT, "#FF5FA8", "#E0408A", kind="noise", scale=120.0, rough=0.95, bump=0.6)
-    hb = c.rig.data.bones["mixamorig:Head"]; size = max(0.12, (c.headp.z - c.neck.z) * 2.2 + 0.1)
-    cap = sphere("beanie", (0, 0, 0), size * 0.62, KNIT, seg=24); cap.scale = (1.0, 0.8, 1.0)
-    attach(c, cap, bone="Head", offset=(0, size * 0.75, 0.0))
-    bpy.ops.mesh.primitive_torus_add(major_radius=size * 0.6, minor_radius=size * 0.1); band = obj_mat(bpy.context.active_object, KNIT)
-    band.data.shade_smooth(); attach(c, band, bone="Head", offset=(0, size * 0.52, 0.0), rot=(math.pi / 2, 0, 0))
-    attach(c, sphere("pompom", (0, 0, 0), size * 0.2, KNIT, seg=12), bone="Head", offset=(0, size * 1.32, 0.0))
+    hg = bone_geom(c, "Head")
+    if not hg: print("BEANIE: no head mesh"); return
+    C, h = hg; top = C + Vector((0, h.y * 0.55, -0.05 * h.z))
+    cap = sphere("beanie", (0, 0, 0), 1.0, KNIT, seg=32); cap.scale = (h.x * 0.95, h.y * 0.62, h.z * 0.92)
+    attach(c, cap, bone="Head", offset=tuple(top))
+    bpy.ops.mesh.primitive_torus_add(major_radius=1.0, minor_radius=0.12, major_segments=48, minor_segments=12)
+    band = obj_mat(bpy.context.active_object, KNIT); band.data.shade_smooth(); band.scale = (h.x * 0.93, h.z * 0.9, h.y * 0.9)
+    attach(c, band, bone="Head", offset=tuple(top - Vector((0, h.y * 0.08, 0))), rot=(math.pi / 2, 0, 0))
+    attach(c, sphere("pompom", (0, 0, 0), max(h.x, h.z) * 0.22, KNIT, seg=16), bone="Head", offset=tuple(top + Vector((0, h.y * 0.62, 0))))
+    print(f"BEANIE {c.name}: head half-size {tuple(round(v, 3) for v in h)}")
 
 # motion capture (CMU, cgspeed's BVH) for the dancers, drinkers, smokers, the laugh and the drunk; retarget.py
 import retarget as RT
@@ -440,7 +444,7 @@ def mocap(cid, x, y, rot, cname, start=0.0, travel=0.12, speed=1.0, z=0.0, model
 
 # the DJ, and the dance floor in front of the booth
 mocap("triplet", 7.6, -4.8, face(-1, 0), "111_05", start=3.0, travel=0.0)   # the DJ
-dancers = ["giga", "neet", "alon", "mitch", "mensa", "thisisfine", "toshi", "goat", "brett", "slerf", "bome", "npcwojak"]   # BOME (a big book) off the camera line to the DJ
+dancers = ["giga", "neet", "alon", "mitch", "mensa", "thisisfine", "baton", "goat", "brett", "slerf", "bome", "npcwojak"]   # BOME (a big book) off the camera line to the DJ
 spots = [(1.2, -4.0), (2.6, -4.4), (4.0, -3.9), (5.3, -4.6), (1.6, -5.6), (3.1, -6.0), (4.6, -5.5), (2.2, -7.1), (3.8, -7.3), (5.4, -6.8), (0.4, -6.4), (6.3, -5.7)]
 # new memes made from the game's own models
 LOOKS = {"brett": ("pepe", {"hue": 0.78, "sat": 1.15, "val": 1.0}),                    # Brett: the blue frog
@@ -450,7 +454,7 @@ LOOKS = {"brett": ("pepe", {"hue": 0.78, "sat": 1.15, "val": 1.0}),             
          "wif": ("bonk", {"hue": 0.49, "sat": 0.65, "val": 1.1, "tint": "#E8C9A0"}),        # dogwifhat
          "fwog": ("pepe", {"hue": 0.47, "sat": 0.8, "val": 1.25, "tint": "#D8FFC8"})}       # Fwog: a small pale frog
 DANCE_CLIP = {"giga": ("60_01", 2.0), "neet": ("18_15", 1.0), "alon": ("93_08", 0.5), "mitch": ("90_32", 0.5), "thisisfine": ("113_04", 1.0),
-              "toshi": ("85_14", 3.0), "goat": ("90_30", 0.5), "slerf": ("55_02", 1.0), "mensa": ("141_12", 0.0), "bome": ("120_05", 0.0),
+              "baton": ("85_14", 3.0), "goat": ("90_30", 0.5), "slerf": ("55_02", 1.0), "mensa": ("141_12", 0.0), "bome": ("120_05", 0.0),
               "brett": ("141_12", 2.0), "npcwojak": ("120_21", 3.0)}
 for i, (cid, (x, y)) in enumerate(zip(dancers, spots)):
     cl, st = DANCE_CLIP[cid]
@@ -742,8 +746,8 @@ if not CLEAN:
         s.location = p1; s.scale = (r1,) * 3; s.keyframe_insert("location", frame=f0 + life); s.keyframe_insert("scale", frame=f0 + life - 6)
         s.scale = (0.001,) * 3; s.keyframe_insert("scale", frame=f0 + life + 4)
     P_SM = 5.0
-    for i, (cid, x, y, tx, ty) in enumerate((("walter", 9.0, -0.3, 9.8, -1.1), ("floki", 9.8, -1.1, 9.0, -0.3), ("baton", 9.0, -1.8, 9.6, -0.9))):
-        ph = i * 0.31; cough = (cid == "baton")
+    for i, (cid, x, y, tx, ty) in enumerate((("walter", 9.0, -0.3, 9.8, -1.1), ("floki", 9.8, -1.1, 9.0, -0.3), ("toshi", 9.0, -1.8, 9.6, -0.9))):   # BATON has no hand bones
+        ph = i * 0.31; cough = (cid == "toshi")
         c = load(cid); guests[cid] = c; place(c, x, y, face(tx - x, ty - y)); set_mouth(c)
         c.bake(M.smoke_real, 1, N, step=2, period=P_SM, phase=ph, toward=to_local(c, (tx, ty, 1.5)), cough=cough)
         EM = mat("ember_" + cid, "#FF6A1A", emit=5.0)
@@ -765,8 +769,23 @@ if not CLEAN:
                     puff(c.ctrl, m + Vector((0, -0.06, 0.05)), m + Vector((random.uniform(-0.2, 0.2), -0.35 - 0.04 * j, 0.9 + random.uniform(0, 0.3))), fj, 48, 0.5, 2.4)
     # the bong: WOJAK and APU in turns, on lounge chairs either side of a little table
     P_B = 9.0
-    for cid, x, y, rot in (("wojak", 10.6, -4.2, face(0, 1)), ("apu", 10.6, -2.6, face(0, -1))):
-        import_gltf(os.path.join(PH, "mid_century_lounge_chair/mid_century_lounge_chair.gltf"), (x, y + (0.25 if rot == face(0, 1) else -0.25), 0.0), rot + math.pi, 1.0)
+    BAG_M = {}
+    def bean_bag(c, color):
+        """A big squashy bean bag sized to this guest: the seat just under their dropped hips, rising into a slumped
+        back behind them, a dent where they sit. Parented to the guest, so it sits where they sit."""
+        if color not in BAG_M:
+            BAG_M[color] = mat("beanbag_" + color, color, rough=0.85); retex(BAG_M[color], color, color, kind="noise", scale=90.0, rough=0.85, bump=0.5)
+        seat_z = max(0.18, c.hip.z - c.leg * 0.45 - 0.06)
+        bpy.ops.mesh.primitive_uv_sphere_add(radius=1.0, segments=64, ring_count=32)
+        b = obj_mat(bpy.context.active_object, BAG_M[color]); b.name = "beanbag"
+        for v in b.data.vertices:
+            x, y, z = v.co; back = max(0.0, y)
+            top = seat_z + 0.45 * back ** 1.5
+            Z = (z + 1) / 2 * top - 0.07 * math.exp(-(x * x + (y + 0.1) ** 2) / 0.18) * max(0.0, z)
+            v.co = (0.5 * x * (1 + 0.08 * (1 - z)), 0.48 * y + 0.05, max(0.0, Z))
+        b.data.shade_smooth(); sd = b.modifiers.new("smooth", "SUBSURF"); sd.levels = 1; sd.render_levels = 1
+        b.parent = c.ctrl; b.location = (0, 0.12, 0)
+        return b
     light("bong_lamp", "AREA", (10.6, -3.4, 2.7), 260, "#FFB070", 1.6)        # a warm lamp over the loungers
     light("bong_rim", "POINT", (12.2, -3.4, 1.4), 120, "#9A6BFF", 0.3)        # and a purple rim from the palms
     cyl("side_table", (10.6, -3.4, 0.2), 0.05, 0.4, OAK, v=16); cyl("side_table_top", (10.6, -3.4, 0.41), 0.22, 0.03, OAK, v=40)
@@ -800,6 +819,7 @@ if not CLEAN:
         for k in ("location", "rotation_euler", "scale"): bong.keyframe_insert(k, frame=f)
     for cid, x, y, rot, ph in (("wojak", 10.6, -4.2, face(0, 1), 0.0), ("apu", 10.6, -2.6, face(0, -1), 0.5)):
         c = load(cid); guests[cid] = c; place(c, x, y, rot); set_mouth(c)
+        bean_bag(c, "#5B2A86" if cid == "wojak" else "#1F7A5A")
         top = M.bong_rig(c, 0.32) + Vector((0, -0.03, 0.0))   # the mouthpiece at the lips, leaning in
         s_ = max(0.55, min(1.0, (top.z - 0.02) / 0.67))      # a shorter guest gets a shorter bong (it's the same bong, no one checks)
         root = top - Vector((0, 0, 0.67 * s_)); bowl = root + Vector((-0.13, 0, 0.295)) * s_
@@ -903,8 +923,8 @@ path = [  # frame, camera, look-at: one sweep, slow where the jokes are
     (600, (3.2, 7.1, 1.85), (4.3, 10.2, 1.0)),        # the kitchen island
     (650, (6.2, 4.8, 2.0), (9.4, -0.6, 1.1)),         # out east, under the pergola
     (700, (6.4, 0.8, 1.6), (9.8, -1.8, 1.0)),         # the smokers
-    (735, (9.0, -3.3, 1.5), (10.7, -3.5, 0.6)),       # the bong session, side on, past the DJ booth
-    (772, (9.35, -3.2, 1.45), (10.75, -3.45, 0.65)),  # ...and stay with it, creeping in
+    (735, (8.0, -3.4, 2.0), (10.6, -3.4, 0.7)),       # the bong session, side on, from over the DJ's speaker
+    (772, (8.3, -3.35, 1.9), (10.6, -3.4, 0.7)),      # ...and stay with it, creeping in
     (792, (7.4, -2.3, 3.9), (3.0, -7.0, 0.8)),        # then up over the LED wall
     (815, (3.0, -9.4, 2.2), (-1.0, -4.0, 0.8)),       # the conga, the walkers, the drunk on the lawn
     (N, (17, -19, 10), (0, 0, 1)),                    # and up and away over the city
