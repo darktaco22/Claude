@@ -952,6 +952,7 @@ path = [  # frame, camera, look-at: one sweep, slow where the jokes are
     (110, (-10.5, -10.5, 4.2), (-2.5, 0, 0.4)),
     (170, (-6.4, -5.8, 1.6), (-0.8, -0.4, 0.3)),      # low over the pool: floats, junk, the cannonball
     (235, (-2.0, -6.2, 1.5), (1.5, -0.6, 0.4)),     # a little further back from Pink Wojak and his sign
+    (266, (-1.6, -8.6, 2.5), (3.0, -5.2, 1.0)),       # wide and high round BOME (the camera went straight through him)
     (300, (1.0, -11.4, 2.6), (4.0, -5.2, 1.0)),       # the dance floor and the DJ
     (345, (3.6, -10.4, 2.0), (5.0, -4.8, 1.2)),
     (380, (1.0, -1.0, 3.0), (1.0, 5.0, 4.4)),         # up level with the balcony: the Whale and his girls making it rain, the backflip
