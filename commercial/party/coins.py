@@ -64,9 +64,9 @@ neon("WEN LAMBO?", (-5.2, GY1 - 0.3, 2.95), (math.pi / 2, 0, 0), 0.28, "#FFE02B"
 neon("1 $MEME = 1 $MEME", (3.2, GY1 - 0.31, 2.7), (math.pi / 2, 0, 0), 0.17, "#21FF6B", 10.0)  # over the kitchen cabinets
 
 # TO THE MOON: an inflatable rocket on the lawn, tethered, swaying
-gz = tz(-8.6, -12.2)
+gz = tz(-2.5, -13.2)
 WHITE_V = mat("vinyl_w", "#F4F4F0", rough=0.35); RED_V = mat("vinyl_r", "#E8302A", rough=0.35)
-rk = bpy.data.objects.new("rocket", None); sc.collection.objects.link(rk); rk.location = (-8.6, -12.2, gz)
+rk = bpy.data.objects.new("rocket", None); sc.collection.objects.link(rk); rk.location = (-2.5, -13.2, gz)   # (it stood in the fire pit)
 parts = [cyl("rocket_body", (0, 0, 1.75), 0.48, 2.6, WHITE_V, v=40)]
 bpy.ops.mesh.primitive_cone_add(radius1=0.48, radius2=0.0, depth=1.1, location=(0, 0, 3.6), vertices=40); parts.append(obj_mat(bpy.context.active_object, RED_V))
 parts[-1].data.shade_smooth()
@@ -80,8 +80,8 @@ for p_ in parts: p_.parent = rk
 for f in range(1, N + 1, 30):
     rk.rotation_euler = (0.04 * math.sin(f / 23), 0.05 * math.cos(f / 29), 0); rk.keyframe_insert("rotation_euler", frame=f)
 t = label("TO THE MOON", 0.34, mat("neon_#FFFFFF", "#FFFFFF", emit=9.0), 0.02)
-t.location = (-8.6, -12.75, gz + 0.55); t.rotation_euler = (math.pi / 2, 0, 0)
-light("rocket_up", "SPOT", (-8.6, -14.5, gz + 0.3), 600, "#FFD7A0", 0.2, rot=(math.radians(62), 0, 0), spot=math.radians(40))
+t.location = (-2.5, -13.75, gz + 0.55); t.rotation_euler = (math.pi / 2, 0, 0)
+light("rocket_up", "SPOT", (-2.5, -15.5, gz + 0.3), 600, "#FFD7A0", 0.2, rot=(math.radians(62), 0, 0), spot=math.radians(40))
 
 # BUY THE DIP: a sign at the pool edge, an arrow pointing into the water, next to Pink Wojak
 SIGN = mat("sign_board", "#F7F3E8", rough=0.6)

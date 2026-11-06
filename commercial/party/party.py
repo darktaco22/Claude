@@ -553,13 +553,19 @@ def loop_point(s):   # a rounded rectangle 1 m outside the coping, s in metres a
             return Vector((cx + R * math.cos(a), cy + R * math.sin(a), 0)), (-math.sin(a), math.cos(a))
         s -= segs[2 * k + 1]
     return Vector((0, -H2, 0)), (1, 0)
-mocap("chillhouse", -5.5, -11.0, face(1, 0.2), "91_09", start=0.0, travel=0.6)   # staggering drunk on the lawn
+ch_d = mocap("chillhouse", -6.2, -10.2, face(1, -0.2), "91_09", start=0.0, travel=0.25)   # staggering drunk on the lawn...
+for f in range(1, N + 1, 6):   # ...and really getting somewhere: weaving east across the lawn, clear of the fire pit
+    u = (f - 1) / (N - 1)
+    x_, y_ = -6.2 + 6.7 * u, -10.2 - 1.6 * u + 0.35 * math.sin(u * 9)
+    dx_, dy_ = 6.7, -1.6 + 0.35 * 9 * math.cos(u * 9)
+    ch_d.ctrl.location = (x_, y_, 0); ch_d.ctrl.rotation_euler = (0, 0, face(dx_, dy_) + 0.25 * math.sin(u * 23))
+    ch_d.ctrl.keyframe_insert("location", frame=f); ch_d.ctrl.keyframe_insert("rotation_euler", frame=f)
 for i, cid in enumerate(("useless", "wif", "bonk", "pnut")):
     md, lk = LOOKS.get(cid, (None, None))
     c = load(cid, md, lk); guests[cid] = c; c.play("walk", 1, speed=1.15)
     if cid == "wif": beanie(c)
     for f in range(1, N + 1, 2):
-        p, (dx, dy) = loop_point(1.15 * f / FPS - i * 1.6 + 6.0)
+        p, (dx, dy) = loop_point(1.15 * f / FPS - (0.0, 1.6, 3.2, 5.0)[i] + 6.0)   # PNUT (long, a big tail) and BONK (a bat) get extra room
         c.key(f, {"clip_driven": True, "loc": p, "rot": face(dx, dy)})
     for fc in c.ctrl.animation_data.action.fcurves:   # no flips where the angle wraps
         if fc.data_path == "rotation_euler" and fc.array_index == 2:
@@ -890,12 +896,9 @@ gone = 0
 for o in list(bpy.data.objects):
     base = o.name.split(".")[0]
     if base not in ("cup", "can", "pizzabox", "pizza", "pep", "bottle_trash", "cup_trash") or o.constraints or o.parent: continue
-    p = o.matrix_world.translation
+    bb = [o.matrix_world @ Vector(q) for q in o.bound_box]; p = sum(bb, Vector()) / 8   # the real centre (some have origins at 0)
     if p.z > 0.4: continue
-    # CHILL HOUSE staggers east across the lawn on his mocap (it moves the rig, not the ctrl): keep a band clear too
-    d_ = Vector((p.x + 5.5, p.y + 11.0, 0)); along = d_.dot(Vector((1, 0.2, 0)).normalized())
-    near_drunk = -1.0 < along < 14.0 and (d_ - Vector((1, 0.2, 0)).normalized() * along).length < 1.2
-    if near_drunk or any((Vector((p.x, p.y, 0)) - q).length < 0.55 for q in tracks):
+    if any((Vector((p.x, p.y, 0)) - q).length < 0.6 for q in tracks):
         bpy.data.objects.remove(o); gone += 1
 print("litter cleared from paths:", gone)
 print("guests:", len(guests))
