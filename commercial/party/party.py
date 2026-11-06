@@ -12,6 +12,8 @@ import bpy, math, os, random, sys
 from mathutils import Vector, Matrix
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import moves as M
+import resource
+def MEM(tag): print("MEM", tag, int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024), "MB", flush=True)
 
 argv = sys.argv[sys.argv.index("--") + 1:]
 A = lambda k, d=None, t=str: t(argv[argv.index(k) + 1]) if k in argv else d
@@ -43,7 +45,9 @@ def mat(name, color, rough=0.5, metal=0.0, emit=0.0, alpha=1.0, emit_color=None,
     _M[name] = m; return m
 def obj_mat(o, m):
     o.data.materials.clear(); o.data.materials.append(m); return o
-def box(name, x0, x1, y0, y1, z0, z1, m, bevel=0.0):
+def box(name, x0, x1, y0, y1, z0, z1, m, bevel=None):
+    if bevel is None:   # every solid gets a small bevel so its edges catch the light
+        bevel = 0.012 if min(x1 - x0, y1 - y0, z1 - z0) > 0.05 else 0.0
     bpy.ops.mesh.primitive_cube_add(size=1, location=((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2))
     o = bpy.context.active_object; o.name = name; o.scale = (x1 - x0, y1 - y0, z1 - z0)
     bpy.ops.object.transform_apply(scale=True)
@@ -225,6 +229,8 @@ cyl("fl_beak", (-1.05, 1.6, WZ + 1.18), 0.04, 0.18, mat("beak", "#222222"), rot=
 # ------------------------------------------------------------------------------------------------ architecture, the kitchen, the mess
 CUP = mat("cup", "#D8232A", rough=0.35)
 exec(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "dressing.py")).read(), globals())
+exec(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "environment.py")).read(), globals())
+MEM("env")
 
 # ------------------------------------------------------------------------------------------------ the guests
 CUP = mat("cup", "#D8232A", rough=0.35); CIG = mat("cig", "#F5F2EA", rough=0.6); EMBER = mat("ember", "#FF6A1A", emit=12.0)
@@ -236,8 +242,12 @@ def load(cid):
     bpy.ops.import_scene.gltf(filepath=os.path.join(MODELS, cid + ".glb"))
     new = [o for o in bpy.data.objects if o not in before]
     rig = next(o for o in new if o.type == "ARMATURE")
+    keep = [o for o in new if not (o.type == "MESH" and o.parent is None)]
     for o in new:
         if o.type == "MESH" and o.parent is None: bpy.data.objects.remove(o)   # the game's selection sphere
+    for o in keep:
+        if o.type == "MESH" and "--nosubd" not in argv:
+            sd = o.modifiers.new("smooth", "SUBSURF"); sd.levels = 0; sd.render_levels = 1; sd.uv_smooth = "PRESERVE_BOUNDARIES"; sd.quality = 1; sd.use_limit_surface = False; sd.use_creases = False
     return M.Char(rig, cid)
 
 def face(dx, dy):   # the ctrl's z rotation so the character faces (dx, dy)
@@ -281,14 +291,29 @@ def guest(cid, x, y, rot, move, z=0.0, **kw):
 
 look_at = lambda c, other: to_local(c, Vector(other.ctrl.location) + Vector((0, 0, other.headp.z)))
 
+# motion capture (CMU, cgspeed's BVH) for the dancers, drinkers, smokers, the laugh and the drunk; retarget.py
+import retarget as RT
+CMU = os.path.abspath(A("--cmu"))
+USED = ["111_05", "60_01", "18_15", "93_08", "90_32", "120_21", "85_14", "90_30", "55_02", "79_33", "80_29", "13_09", "13_14", "91_09", "141_12", "120_05"]
+CLIPS = {c: RT.sample(os.path.join(CMU, "data", f"{int(c.split('_')[0]):03d}", c + ".bvh")) for c in USED}
+MEM("clips")
+def mocap(cid, x, y, rot, cname, start=0.0, travel=0.12, speed=1.0, z=0.0):
+    c = load(cid); place(c, x, y, rot, z); guests[cid] = c
+    if c.ik: RT.apply(c, CLIPS[cname], 1, N, start=start, travel=travel, speed=speed)
+    else: c.play("win", 1)
+    return c
+
 # the DJ, and the dance floor in front of the booth
-guest("triplet", 7.6, -4.8, face(-1, 0), M.dance_shuffle, phase=0.0)   # the DJ
+mocap("triplet", 7.6, -4.8, face(-1, 0), "111_05", start=3.0, travel=0.0)   # the DJ
 dancers = ["giga", "neet", "alon", "mitch", "mensa", "thisisfine", "toshi", "goat", "bome", "slerf"]
 spots = [(1.2, -4.0), (2.6, -4.4), (4.0, -3.9), (5.3, -4.6), (1.6, -5.6), (3.1, -6.0), (4.6, -5.5), (2.2, -7.1), (3.8, -7.3), (5.4, -6.8)]
+DANCE_CLIP = {"giga": ("60_01", 2.0), "neet": ("18_15", 1.0), "alon": ("93_08", 0.5), "mitch": ("90_32", 0.5), "thisisfine": ("120_21", 1.0),
+              "toshi": ("85_14", 3.0), "goat": ("90_30", 0.5), "slerf": ("55_02", 1.0), "mensa": ("141_12", 0.0), "bome": ("120_05", 0.0)}
 for i, (cid, (x, y)) in enumerate(zip(dancers, spots)):
-    mv = M.DANCES[i % len(M.DANCES)]
-    guest(cid, x + random.uniform(-0.15, 0.15), y, face(7.6 - x, -4.8 - y) + random.uniform(-0.6, 0.6), mv, phase=random.choice((0.0, 0.5)))
+    cl, st = DANCE_CLIP[cid]
+    mocap(cid, x + random.uniform(-0.15, 0.15), y, face(7.6 - x, -4.8 - y) + random.uniform(-0.4, 0.4), cl, start=st, travel=0.1)
 
+MEM("dancers")
 # in the pool: treading water (sunk to the shoulders), one on the donut
 for cid, (x, y) in (("moodeng", (-3.0, 0.8)), ("zcat", (1.5, 1.2)), ("cupsey", (3.4, -0.9)), ("pudgy", (-0.6, -1.1)), ("nyancat", (4.8, 1.4))):
     c = load(cid); guests[cid] = c
@@ -303,7 +328,7 @@ def cannonball(cid, x, f_jump):
     y_run0, y_edge, y_land = -5.8, -2.7, -0.6
     zsink = WZ - c.shoulderL.z + 0.08
     f_run0, f_air, f_land = f_jump - 30, f_jump, f_jump + 22
-    if not c.ik: c.play("run", 1)
+    if not c.ik: c.play_seq([("idle", 1, f_run0), ("run", f_run0, f_land), ("idle", f_land, N)])
     for f in range(1, N + 1, 2):
         if f < f_run0:
             p = Vector((x, y_run0, 0)); pose = M.cheer(c, f / FPS); pose["hips"] = Vector((0, 0, 0))
@@ -334,12 +359,12 @@ def cannonball(cid, x, f_jump):
     ring.scale = (5, 5, 1); ring.keyframe_insert("scale", frame=f_land + 40); ring.scale = (0.01,) * 3; ring.keyframe_insert("scale", frame=f_land + 41)
 cannonball("popcat", -1.6, 196)
 
+MEM("cannonball")
 # poolside drinkers, chatting, red cups in hand
-group = [("chillguy", -4.2, -4.4), ("jeanphil", -4.9, -5.3)]
-centre = Vector((-4.4, -4.9, 1.2))
+group = [("chillguy", -7.2, -5.4), ("jeanphil", -7.9, -6.2)]
+centre = Vector((-7.5, -5.9, 1.2))
 for i, (cid, x, y) in enumerate(group):
-    c = load(cid); guests[cid] = c; place(c, x, y, face(centre.x - x, centre.y - y))
-    c.bake(M.hold_cup, 1, N, step=2, phase=i * 0.37, toward=to_local(c, centre + Vector((0, 0, 0.3))))
+    c = mocap(cid, x, y, face(centre.x - x, centre.y - y), ("79_33", "80_29")[i % 2], start=0.3, travel=0.0)
     attach(c, cyl("cup", (0, 0, 0), 0.045, 0.13, CUP), offset=(0, 0.07, 0.04), rot=(math.pi / 2, 0, 0))
 # chatters by the deck's west side
 # the conga line: round and round the pool, the game's own walk
@@ -360,7 +385,8 @@ def loop_point(s):   # a rounded rectangle 1 m outside the coping, s in metres a
             return Vector((cx + R * math.cos(a), cy + R * math.sin(a), 0)), (-math.sin(a), math.cos(a))
         s -= segs[2 * k + 1]
     return Vector((0, -H2, 0)), (1, 0)
-for i, cid in enumerate(("useless", "bonk", "chillhouse", "pnut")):
+mocap("chillhouse", -5.5, -11.0, face(1, 0.2), "91_09", start=0.0, travel=0.6)   # staggering drunk on the lawn
+for i, cid in enumerate(("useless", "bonk", "pnut")):
     c = load(cid); guests[cid] = c; c.play("walk", 1, speed=1.15)
     for f in range(1, N + 1, 2):
         p, (dx, dy) = loop_point(1.15 * f / FPS - i * 0.85 + 6.0)
@@ -381,6 +407,7 @@ for i, (cid, x) in enumerate((("dope", 7.4),)):
     if True:
         attach(c, cyl("cup", (0, 0, 0), 0.045, 0.13, mat("cup2", "#F2C14E", rough=0.2, alpha=0.8)), offset=(0, 0.07, 0.04), rot=(math.pi / 2, 0, 0))
 
+MEM("bar")
 # the two couples
 def couple(a, b, x, y, ang):
     ca, cb = load(a), load(b); guests[a] = ca; guests[b] = cb
@@ -442,11 +469,11 @@ if not CLEAN:
     c = load("farter"); guests["farter"] = c; place(c, -5.4, 8.25, face(0, 1))
     c.bake(M.lean_over_table, 1, N, step=2, table_z=0.42)
     attach(c, cyl("note", (0, 0, 0), 0.012, 0.12, NOTE), offset=(0, 0.05, 0.02), rot=(math.pi / 2, 0, 0))
-    guest("lmao", -4.2, 8.5, face(-1, 0.4), M.cheer, phase=0.25)   # in hysterics beside him
+    mocap("lmao", -4.2, 8.5, face(-1, 0.4), "13_14", start=1.0, travel=0.0)   # in hysterics beside him
     # KET and CATE behind the kitchen island, lines on the marble
     for cid, x in (("ket", 3.5), ("cate", 5.1)):
-        c = load(cid); guests[cid] = c; place(c, x, 10.62, face(0, -1))
-        c.bake(M.lean_over_table, 1, N, step=2, table_z=1.06, bend=1.0, dip=0.1, phase=0.0 if cid == "ket" else 0.45)
+        c = load(cid); guests[cid] = c; place(c, x, 10.42, face(0, -1))
+        c.bake(M.lean_over_table, 1, N, step=2, table_z=1.06, bend=1.45, dip=0.28, phase=0.0 if cid == "ket" else 0.45)
         attach(c, cyl("note", (0, 0, 0), 0.012, 0.12, NOTE), offset=(0, 0.05, 0.02), rot=(math.pi / 2, 0, 0))
     for i in range(4):
         box("line", 3.1 + i * 0.13, 3.15 + i * 0.13, 9.45, 9.85, 1.06, 1.068, POWDER)
@@ -464,9 +491,8 @@ if not CLEAN:
         box("line", -5.62 + i * 0.16, -5.56 + i * 0.16, 8.65, 9.15, 0.425, 0.436, POWDER)
     # smokers on the east deck
     for i, (cid, x, y, tx, ty) in enumerate((("walter", 9.0, 2.3, 9.8, 1.6), ("floki", 9.6, -1.0, 8.8, -1.6), ("baton", 8.8, -1.6, 9.6, -1.0))):
-        c = load(cid); guests[cid] = c; place(c, x, y, face(tx - x, ty - y))
         ph = i * 0.23
-        c.bake(M.smoke, 1, N, step=2, period=4.0, phase=ph, toward=to_local(c, Vector((tx, ty, 1.3))))
+        c = mocap(cid, x, y, face(tx - x, ty - y), "13_09", start=1.0 + i * 1.7, travel=0.0)
         cig = attach(c, cyl("cig", (0, 0, 0), 0.008, 0.09, CIG), offset=(0.02, 0.07, 0.03), rot=(0, 0, math.pi / 2))
         ember = attach(c, sphere("ember", (0, 0, 0), 0.011, EMBER, seg=8), offset=(0.065, 0.07, 0.03))
         puff_loop(c, 4.0, ph, c.headp + Vector((0, -0.18, -0.02)))
@@ -491,6 +517,7 @@ else:
         guest(cid, 9.2 + (i % 2) * 0.8, 2.0 - i * 1.2, face(-1, -0.3), M.DANCES[i % 5], phase=random.random())
 
 print("guests:", len(guests))
+MEM("guests")
 
 # ------------------------------------------------------------------------------------------------ the camera: one sweep
 cam = bpy.data.objects.new("Cam", bpy.data.cameras.new("Cam")); sc.collection.objects.link(cam); sc.camera = cam

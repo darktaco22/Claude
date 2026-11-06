@@ -176,15 +176,9 @@ for k in range(4):
 lg = box("lounger_adrift", -0.6, 0.1, -1.9, -0.2, WZ - 0.05, WZ + 0.12, mat("lounger", "#F7F7F2"), bevel=0.04); lg.rotation_euler = (0, 0, 0.5)
 # toilet paper over the palms and the balcony, balloons, traffic cones in silly places
 TP = mat("tp", "#FAFAF7", rough=0.9)
-for (x, y) in ((-11, 3.5), (11, 3.8), (11.2, -6.0)):
-    for k in range(4):
-        a = k / 4 * math.tau
-        for j in range(5):
-            box("tp", x + math.cos(a) * (0.6 + 0.3 * j) - 0.06, x + math.cos(a) * (0.6 + 0.3 * j) + 0.06,
-                y + math.sin(a) * (0.6 + 0.3 * j) - 0.01, y + math.sin(a) * (0.6 + 0.3 * j) + 0.01, 5.0 - 0.9 * j - 0.45, 5.0 - 0.9 * j + 0.45, TP)
 for j in range(12):
     x = -6 + j * 1.3
-    box("tp_rail", x - 0.06, x + 0.06, 4.39, 4.41, 3.3 + 0.2 * math.sin(j), 4.85, TP)
+    box("tp_rail", x - 0.035, x + 0.035, 4.395, 4.405, 3.9 + 0.25 * math.sin(j), 4.85, TP)
 BAL = [mat(f"bal{i}", c, rough=0.15, emit=0.2) for i, c in enumerate(("#FF2BD6", "#2BE0FF", "#FFE02B", "#B44BFF", "#FF6A2B"))]
 for i in range(28):
     if i < 16: x, y, z = rng.uniform(-8.5, 8.5), rng.uniform(5.5, 12.3), rng.uniform(2.6, 3.1)

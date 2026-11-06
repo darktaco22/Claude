@@ -94,6 +94,32 @@ class Char:
         st.repeat = 40; st.scale = 1.0 / speed
         ad.action = None
 
+    def play_seq(self, seq):
+        """A sequence of the game's clips: [(clip, frame_from, frame_to), ...], each on its own NLA strip."""
+        for pbn in self.rig.pose.bones:
+            for cn in pbn.constraints: cn.mute = True
+        ad = self.rig.animation_data; tr = ad.nla_tracks.new()
+        for clip, a, b in seq:
+            act = self.clip_actions.get(clip) or self.clip_actions.get("idle")
+            st = tr.strips.new(f"{clip}_{a}", a, act)
+            L = act.frame_range[1] - act.frame_range[0]
+            st.repeat = max(1.0, (b - a) / max(1.0, L)); st.frame_end = b
+        ad.action = None
+
+    def safe(self, side, p):
+        """Keep a hand target out of the torso (big bodies swallowed their own hands)."""
+        if not hasattr(self, "_body"):
+            meshes = [o for o in self.rig.children if o.type == "MESH"]
+            dx = max((o.dimensions.x for o in meshes), default=0.4); dy = max((o.dimensions.y for o in meshes), default=0.3)
+            self._body = (0.42 * dx, -0.42 * dy)
+        w, front = self._body
+        p = p.copy()
+        if self.hip.z * 0.5 < p.z < self.shoulderL.z and abs(p.x) < w and p.y > front:
+            push_x = w + 0.06 - abs(p.x); push_y = p.y - (front - 0.06)
+            if push_x < push_y: p.x = (1 if side == "L" else -1) * (w + 0.06)
+            else: p.y = front - 0.06
+        return p
+
     def key(self, f, pose):
         if not self.ik or pose.get("clip_driven"):
             if "loc" in pose: self.ctrl.location = pose["loc"]; self.ctrl.keyframe_insert("location", frame=f)
@@ -104,7 +130,8 @@ class Char:
         T, rig, pb = self.T, self.rig, self.rig.pose.bones
         for n in ("hand_L", "hand_R", "foot_L", "foot_R", "look"):
             if n in pose:
-                T[n].location = pose[n]; T[n].keyframe_insert("location", frame=f)
+                v = self.safe(n[-1], pose[n]) if n.startswith("hand") else pose[n]
+                T[n].location = v; T[n].keyframe_insert("location", frame=f)
         rig.location = pose.get("hips", Vector()); rig.keyframe_insert("location", frame=f)
         bend, twist, lean = pose.get("spine", 0.0), pose.get("twist", 0.0), pose.get("lean", 0.0)
         for n, k in (("Spine", 0.35), ("Spine1", 0.35), ("Spine2", 0.3)):
