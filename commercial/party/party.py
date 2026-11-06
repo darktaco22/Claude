@@ -956,7 +956,9 @@ path = [  # frame, camera, look-at: one sweep, slow where the jokes are
     (480, (-0.6, 3.4, 1.7), (-4.4, 8.6, 0.8)),        # through the doors: the table, LMAO, the window kiss
     (540, (-2.0, 6.4, 1.6), (-5.2, 8.8, 0.7)),
     (600, (3.2, 7.1, 1.85), (4.3, 10.2, 1.0)),        # the kitchen island
-    (650, (6.2, 4.8, 2.0), (9.4, -0.6, 1.1)),         # out east, under the pergola
+    (622, (1.8, 6.3, 1.9), (7.0, 1.0, 1.0)),          # turn from the kitchen to look out through the open doors...
+    (642, (1.9, 4.3, 2.0), (8.6, 0.0, 1.1)),          # ...and out through them (not through a pane)
+    (664, (6.2, 4.4, 2.0), (9.4, -0.6, 1.1)),         # out east, under the pergola
     (700, (6.4, 0.8, 1.6), (9.8, -1.8, 1.0)),         # the smokers
     (735, (8.0, -3.4, 2.0), (10.6, -3.4, 0.7)),       # the bong session, side on, from over the DJ's speaker
     (772, (8.3, -3.35, 1.9), (10.6, -3.4, 0.7)),      # ...and stay with it, creeping in
