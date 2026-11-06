@@ -63,9 +63,9 @@ class Char:
         for side, s in (("Left", "L"), ("Right", "R")):
             c = pb[f"mixamorig:{side}ForeArm"].constraints.new("IK")
             c.target = self.T["hand_" + s]; c.chain_count = 2; c.pole_target = self.T["pole_" + s]
-            c.pole_angle = math.radians(-90 if s == "L" else -90)
+            c.pole_angle = math.radians(0 if s == "L" else 180)   # measured: elbows back, down and a little out (-90 tucked them into the body)
             c = pb[f"mixamorig:{side}Leg"].constraints.new("IK")
-            c.target = self.T["foot_" + s]; c.chain_count = 2; c.pole_target = self.T["knee_" + s]; c.pole_angle = math.radians(-90)
+            c.target = self.T["foot_" + s]; c.chain_count = 2; c.pole_target = self.T["knee_" + s]; c.pole_angle = math.radians(90)   # measured: knees and toes forward (-90 bent every knee backwards)
         c = pb["mixamorig:Head"].constraints.new("DAMPED_TRACK"); c.target = self.T["look"]; c.track_axis = "TRACK_Z"; c.influence = 0.7
         for n in ("Spine", "Spine1", "Spine2", "Hips"):
             pb["mixamorig:" + n].rotation_mode = "XYZ"
