@@ -173,7 +173,7 @@ pz = cyl("pizza_float", (-3.6, 1.5, WZ + 0.06), 0.7, 0.14, PIZZA, v=3)
 pz.rotation_euler = (0, 0, 0.6)
 for k in range(4):
     cyl("pep_f", (-3.6 + rng.uniform(-0.25, 0.25), 1.5 + rng.uniform(-0.2, 0.2), WZ + 0.14), 0.09, 0.02, PEP, v=12)
-lg = box("lounger_adrift", -0.6, 0.1, -1.9, -0.2, WZ - 0.05, WZ + 0.12, mat("lounger", "#F7F7F2"), bevel=0.04); lg.rotation_euler = (0, 0, 0.5)
+lg = box("lounger_adrift", -5.85, -5.15, 0.45, 2.15, WZ - 0.05, WZ + 0.12, mat("lounger", "#F7F7F2"), bevel=0.04); lg.rotation_euler = (0, 0, 0.12)   # the west end, out of the pool shots' way
 # toilet paper over the palms and the balcony, balloons, traffic cones in silly places
 TP = mat("tp", "#FAFAF7", rough=0.9)
 for j in range(12):

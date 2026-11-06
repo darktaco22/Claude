@@ -185,8 +185,8 @@ box("island", 2.2, 6.4, 9.0, 10.0, 0.02, 1.0, mat("island", "#2A2A30", rough=0.3
 box("island_top", 2.1, 6.5, 8.95, 10.05, 1.0, 1.06, mat("marble", "#F2EFEA", rough=0.15), bevel=0.01)
 for i, x in enumerate((2.6, 3.6, 4.6, 5.6)):
     import_gltf(os.path.join(PH, "bar_chair_round_01/bar_chair_round_01.gltf"), (x, 8.45, 0.02), 0, 1.0)
-for i, (x, col) in enumerate(((2.5, "#3B7A2E"), (2.75, "#8A2A1E"), (3.0, "#C8A93A"), (3.25, "#3A5A8A"), (6.0, "#6A2A6A"), (6.2, "#2A6A5A"))):
-    cyl(f"bottle{i}", (x, 9.6, 1.22), 0.045, 0.32, mat(f"btl{i}", col, rough=0.05, alpha=0.7, emit=0.3))
+for i, (x, y, col) in enumerate(((2.3, 9.15, "#3B7A2E"), (2.3, 9.4, "#8A2A1E"), (2.3, 9.65, "#C8A93A"), (2.3, 9.9, "#3A5A8A"), (6.0, 9.6, "#6A2A6A"), (6.2, 9.6, "#2A6A5A"))):
+    cyl(f"bottle{i}", (x, y, 1.22), 0.045, 0.32, mat(f"btl{i}", col, rough=0.05, alpha=0.7, emit=0.3))   # lined up at the ends, not in front of the snorters
 for (x, y, n) in ((-8.6, 12.0, "potted_plant_01"), (8.4, 12.0, "potted_plant_02"), (-8.4, 5.6, "potted_plant_02"), (8.6, 5.6, "potted_plant_01")):
     import_gltf(os.path.join(PH, f"{n}/{n}.gltf"), (x, y, 0.02), 0, 1.4)
 for x in (2.8, 4.3, 5.8):
@@ -602,7 +602,7 @@ _bt = BILL.node_tree; _bb = _bt.nodes["Principled BSDF"]; _bi = _bt.nodes.new("S
 _bi.image = bpy.data.images.load(os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "bill.png"))
 _bt.links.new(_bi.outputs["Color"], _bb.inputs["Base Color"]); _bt.links.new(_bi.outputs["Color"], _bb.inputs["Emission Color"])
 _bb.inputs["Emission Strength"].default_value = 0.35; _bb.inputs["Roughness"].default_value = 0.6
-wh = load("whale"); guests["whale"] = wh; place(wh, 1.2, 5.05, face(0, -1), z=3.85)
+wh = load("whale"); guests["whale"] = wh; place(wh, 1.2, 5.45, face(0, -1), z=3.85)   # his throwing arm clears the glass
 wh.bake(M.make_it_rain, 1, N, step=2)
 stack = attach(wh, box("cash_stack", -0.09, 0.09, -0.04, 0.04, -0.02, 0.06, BILL), offset=(0, 0.1, 0.02))
 # ...with a party girl on each side of him, flinging it too (both made from the game's Wojak)
