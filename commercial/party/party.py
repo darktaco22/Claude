@@ -271,12 +271,12 @@ bpy.ops.mesh.primitive_torus_add(major_radius=0.55, minor_radius=0.2, location=(
 donut = obj_mat(bpy.context.active_object, mat("donut", "#FF6FB5", rough=0.25))
 bpy.ops.mesh.primitive_torus_add(major_radius=0.6, minor_radius=0.22, location=(-4.2, -1.2, WZ + 0.08))
 obj_mat(bpy.context.active_object, mat("ring", "#FFD23A", rough=0.25))
-# the flamingo: body, neck and head
-FL = mat("flamingo", "#FF5A9A", rough=0.3)
-sphere("fl_body", (-1.8, 1.6, WZ + 0.25), 0.45, FL).scale = (1.3, 0.8, 0.55)
-cyl("fl_neck", (-1.3, 1.6, WZ + 0.8), 0.07, 0.8, FL, rot=(0, math.radians(15), 0))
-sphere("fl_head", (-1.2, 1.6, WZ + 1.2), 0.13, FL)
-cyl("fl_beak", (-1.05, 1.6, WZ + 1.18), 0.04, 0.18, mat("beak", "#222222"), rot=(0, math.radians(70), 0))
+# the flamingo: a proper inflatable (flamingo.py), bobbing and turning slowly
+exec(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "flamingo.py")).read().split("if __name__")[0], globals())
+FLAMINGO = build_flamingo((-1.8, 1.6, WZ + 0.08))
+for f in range(1, N + 1, 24):
+    FLAMINGO.location.z = WZ + 0.08 + 0.025 * math.sin(f / 10); FLAMINGO.rotation_euler = (0.03 * math.sin(f / 13), 0.04 * math.sin(f / 9), 0.15 * math.sin(f / 70))
+    FLAMINGO.keyframe_insert("location", frame=f); FLAMINGO.keyframe_insert("rotation_euler", frame=f)
 
 # ------------------------------------------------------------------------------------------------ architecture, the kitchen, the mess
 CUP = mat("cup", "#D8232A", rough=0.35)

@@ -190,9 +190,9 @@ for i in range(28):
 CONE = mat("cone", "#FF6A00", rough=0.5)
 def cone(x, y, z, rx=0.0):
     bpy.ops.mesh.primitive_cone_add(radius1=0.16, radius2=0.03, depth=0.45, location=(x, y, z + 0.225), rotation=(rx, 0, 0), vertices=16)
-    obj_mat(bpy.context.active_object, CONE)
+    return obj_mat(bpy.context.active_object, CONE)
 cone(2.0, 9.0, 7.55)                      # on the roof
-cone(-1.2, 1.6, 1.25)                     # on the flamingo's head
+_fc = cone(0, 0, 0, rx=math.radians(-14)); _fc.parent = FLAMINGO; _fc.location = (0.66, 0, 1.33)   # on the flamingo's head, bobbing with it
 cone(7.5, -4.4, 1.05, rx=math.pi / 2)     # knocked over on the DJ booth
 cone(-9.0, -6.2, 0.35)                    # on a lounger
 # a trash can that gave up
