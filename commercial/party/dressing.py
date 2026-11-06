@@ -182,7 +182,7 @@ for j in range(12):
 BAL = [mat(f"bal{i}", c, rough=0.15, emit=0.2) for i, c in enumerate(("#FF2BD6", "#2BE0FF", "#FFE02B", "#B44BFF", "#FF6A2B"))]
 for i in range(28):
     if i < 16: x, y, z = rng.uniform(-8.5, 8.5), rng.uniform(5.5, 12.3), rng.uniform(2.6, 3.1)
-    else: x, y, z = rng.uniform(6.8, 8.4), rng.uniform(-6.4, -3.2), rng.uniform(1.6, 2.4)
+    else: x, y, z = rng.uniform(-6.0, 6.0), rng.uniform(3.2, 4.3), rng.uniform(2.2, 3.0)   # along the house front, off the DJ booth
     b = sphere("balloon", (x, y, z), 0.16, rng.choice(BAL), seg=12); b.scale = (1, 1, 1.2)
     cyl("string", (x, y, z - 0.6), 0.003, 1.0, TP, v=6)
     for f in range(1, N + 1, 40):

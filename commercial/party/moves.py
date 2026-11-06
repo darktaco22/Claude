@@ -130,7 +130,7 @@ class Char:
         T, rig, pb = self.T, self.rig, self.rig.pose.bones
         for n in ("hand_L", "hand_R", "foot_L", "foot_R", "look"):
             if n in pose:
-                v = self.safe(n[-1], pose[n]) if n.startswith("hand") else pose[n]
+                v = self.safe(n[-1], pose[n]) if (n.startswith("hand") and not pose.get("nosafe")) else pose[n]
                 T[n].location = v; T[n].keyframe_insert("location", frame=f)
         rig.location = pose.get("hips", Vector()); rig.keyframe_insert("location", frame=f)
         bend, twist, lean = pose.get("spine", 0.0), pose.get("twist", 0.0), pose.get("lean", 0.0)
@@ -294,3 +294,34 @@ def fart(c, t, phase=0.0):
     push = math.sin(math.pi * min(1.0, x / 0.3)) if x < 0.3 else 0.0
     return {**idle_feet(c, t), "hips": Vector((0, 0.06 * push, -0.08 * c.leg)), "spine": 0.55 + 0.15 * push,
             "hand_L": c.arm_at("L", 0.6, -0.2, -0.75), "hand_R": c.arm_at("R", 0.6, -0.2, -0.75), "look": c.headp + Vector((0.8, 1.5, 0))}
+
+def snort_phase(t, period, phase):
+    """Where a snort cycle is: 0-0.22 bend down, 0.22-0.55 nose along the line, 0.55-0.66 the jerk back, then recover."""
+    return ((t / period) + phase) % 1.0
+
+def snort(c, t, table_z=0.45, reach=0.6, period=3.2, phase=0.0):
+    """Bent right down so the nose meets the line on the table, a rolled note at the nose, sliding along it, then the head
+    snaps back. The bend is solved from the character's own proportions so the nose really reaches the surface."""
+    x = snort_phase(t, period, phase)
+    v = c.headp - c.hip                       # hips to head, at rest
+    H = max(0.2, v.z)
+    dip = 0.12 * c.leg
+    hip_z = c.hip.z - dip
+    target = table_z + 0.05                   # the nose just above the surface
+    k = max(-0.95, min(0.95, (target - hip_z) / H))
+    full = math.acos(k)                       # the forward bend that brings the head down to the table
+    full = min(full, 1.65)
+    if x < 0.22:   e = x / 0.22; bend = 0.35 + (full - 0.35) * (e * e * (3 - 2 * e)); slide = 0.0
+    elif x < 0.55: e = (x - 0.22) / 0.33; bend = full; slide = e
+    elif x < 0.66: e = (x - 0.55) / 0.11; bend = full + (-0.25 - full) * min(1.0, e * 1.6); slide = 1.0
+    else:          e = (x - 0.66) / 0.34; bend = -0.25 + 0.6 * e; slide = 0.0
+    # where the head is with that bend (rotating the hips-to-head vector forward about x)
+    cb, sb = math.cos(bend), math.sin(bend)
+    head = Vector((0, 0.1, hip_z)) + Vector((0, v.y * cb - v.z * sb, v.y * sb + v.z * cb))
+    nose = head + Vector((-0.12 + 0.24 * slide, -0.12, -0.04))
+    along = Vector((-0.12 + 0.24 * slide, 0, 0))
+    return {**idle_feet(c, t), "hips": Vector((0.05 * (slide - 0.5) if x < 0.55 else 0.0, 0.1 + 0.12 * min(1.0, bend), -dip)),
+            "spine": bend, "twist": 0.1 * (slide - 0.5) if 0.22 <= x < 0.55 else 0.0,
+            "hand_R": nose + Vector((-0.04, -0.06, -0.03)),
+            "hand_L": Vector((0.25, -reach * 0.8, table_z + 0.02)) if x < 0.6 else c.arm_at("L", 0.3, 0.2, -0.3),
+            "look": head + Vector((0, -1.0, -0.6 if x < 0.55 else 0.6)), "nosafe": True}

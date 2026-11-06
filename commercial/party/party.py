@@ -470,7 +470,7 @@ def couple(a, b, x, y, ang):
     place(ca, x - dx * gap, y - dy * gap, face(dx, dy)); place(cb, x + dx * gap, y + dy * gap, face(-dx, -dy))
     ca.bake(M.kiss, 1, N, step=2, partner_head=look_at(ca, cb))
     cb.bake(M.kiss, 1, N, step=2, partner_head=look_at(cb, ca), phase=0.5)
-couple("pepe", "pippin", 7.4, 0.4, math.pi / 2)      # at the pool's east end
+couple("pepe", "pippin", 6.7, -3.0, math.pi / 2)     # at the pool's south-east corner
 couple("troll", "michi", -7.6, 6.3, math.pi / 2)     # inside, by the west window
 
 
@@ -530,20 +530,45 @@ for i in range(30):
         tt = j / FPS; s.location = (-3.0 + v.x * tt, 1.4 + v.y * tt, max(WZ, WZ + v.z * tt - 4.9 * tt * tt)); s.keyframe_insert("location", frame=fl + j)
     s.scale = (0.01,) * 3; s.keyframe_insert("scale", frame=fl + 31)
 
+
+def snort_fx(lines, line_pts, period, phase, name):
+    """Each snort: the next line on the table shrinks away as the nose slides along it, and a small white puff comes up."""
+    PUFF = mat("powder_puff", "#FFFFFF", rough=1.0, alpha=0.55, emit=0.6)
+    k = 0; t = ((0.22 - phase) % 1.0) * period
+    for ln in lines:
+        ln.scale = (1, 1, 1); ln.keyframe_insert("scale", frame=1)
+    while t * FPS < N:
+        i = k % len(lines); ln = lines[i]; p = line_pts[i]
+        f_a = int(t * FPS) + 1; f_b = int((t + 0.33 * period) * FPS) + 1
+        if i == 0 and k > 0:   # a fresh set racked up
+            for l2 in lines:
+                l2.scale = (1, 1, 1); l2.keyframe_insert("scale", frame=f_a - 2)
+        ln.scale = (1, 1, 1); ln.keyframe_insert("scale", frame=f_a)
+        ln.scale = (1, 0.02, 1); ln.keyframe_insert("scale", frame=f_b)
+        for j in range(9):   # the puff at the end of the line, and a little burst at the snap back
+            s = sphere("puff_" + name, p, 0.025, PUFF, seg=8)
+            s.scale = (0.01,) * 3; s.keyframe_insert("scale", frame=1); s.keyframe_insert("scale", frame=f_b - 2); s.keyframe_insert("location", frame=f_b - 2)
+            s.scale = (1, 1, 1); s.keyframe_insert("scale", frame=f_b)
+            s.location = (p[0] + random.uniform(-0.12, 0.12), p[1] + random.uniform(-0.12, 0.12), p[2] + random.uniform(0.12, 0.3))
+            s.scale = (2.2,) * 3; s.keyframe_insert("location", frame=f_b + 18); s.keyframe_insert("scale", frame=f_b + 14)
+            s.scale = (0.01,) * 3; s.keyframe_insert("scale", frame=f_b + 22)
+        k += 1; t += period
+
 if not CLEAN:
     # the coffee table in the living room: two leaning over it, rolled notes in hand
-    c = load("farter"); guests["farter"] = c; place(c, -5.4, 8.25, face(0, 1))
-    c.bake(M.lean_over_table, 1, N, step=2, table_z=0.42)
+    c = load("farter"); guests["farter"] = c; place(c, -5.43, 8.3, face(0, 1))
+    c.bake(M.snort, 1, N, step=1, table_z=0.43, reach=0.6, period=3.2, phase=0.0)
     attach(c, cyl("note", (0, 0, 0), 0.012, 0.12, NOTE), offset=(0, 0.05, 0.02), rot=(math.pi / 2, 0, 0))
     mocap("lmao", -4.2, 8.5, face(-1, 0.4), "13_14", start=1.0, travel=0.0)   # in hysterics beside him
     # KET and CATE behind the kitchen island, lines on the marble
     for cid, x in (("ket", 3.5), ("cate", 5.1)):
         c = load(cid); guests[cid] = c; place(c, x, 10.42, face(0, -1))
-        c.bake(M.lean_over_table, 1, N, step=2, table_z=1.06, bend=1.45, dip=0.28, phase=0.0 if cid == "ket" else 0.45)
+        c.bake(M.snort, 1, N, step=1, table_z=1.065, reach=0.7, period=3.2, phase=0.0 if cid == "ket" else 0.45)
         attach(c, cyl("note", (0, 0, 0), 0.012, 0.12, NOTE), offset=(0, 0.05, 0.02), rot=(math.pi / 2, 0, 0))
-    for i in range(4):
-        box("line", 3.1 + i * 0.13, 3.15 + i * 0.13, 9.45, 9.85, 1.06, 1.068, POWDER)
-        box("line", 4.75 + i * 0.13, 4.8 + i * 0.13, 9.45, 9.85, 1.06, 1.068, POWDER)
+    kl = [box("line", 3.1 + i * 0.13, 3.15 + i * 0.13, 9.45, 9.85, 1.06, 1.068, POWDER) for i in range(4)]
+    cl = [box("line", 4.75 + i * 0.13, 4.8 + i * 0.13, 9.45, 9.85, 1.06, 1.068, POWDER) for i in range(4)]
+    snort_fx(kl, [(3.125 + i * 0.13, 9.65, 1.07) for i in range(4)], 3.2, 0.0, "ket")
+    snort_fx(cl, [(4.775 + i * 0.13, 9.65, 1.07) for i in range(4)], 3.2, 0.45, "cate")
     box("card", 3.95, 4.05, 9.55, 9.75, 1.06, 1.064, mat("blackcard", "#111111", rough=0.3, metal=0.5))
 
     GAS = mat("gas", "#7BE04A", rough=1.0, alpha=0.3, emit=0.6)
@@ -553,8 +578,10 @@ if not CLEAN:
             ph = ((f / 105) + k / 8) % 1.0
             g.location = (-5.9 + 0.6 * ph * math.sin(k), 7.6 - 0.6 * ph, 0.55 + 0.9 * ph); g.scale = (0.5 + 2.5 * ph,) * 3
             g.keyframe_insert("location", frame=f); g.keyframe_insert("scale", frame=f)
-    for i in range(3):
-        box("line", -5.62 + i * 0.16, -5.56 + i * 0.16, 8.65, 9.15, 0.425, 0.436, POWDER)
+    ct_lines = [box("line", -5.62 + i * 0.16, -5.56 + i * 0.16, 8.65, 9.15, 0.425, 0.436, POWDER) for i in range(3)]
+    for ln in ct_lines:   # scale about each line's far end so it shrinks toward the nose
+        pass
+    snort_fx(ct_lines, [(-5.59 + i * 0.16, 8.9, 0.44) for i in range(3)], 3.2, 0.0, "farter")
     # smokers on the east deck
     for i, (cid, x, y, tx, ty) in enumerate((("walter", 9.0, -0.3, 9.8, -1.1), ("floki", 9.8, -1.1, 9.0, -0.3), ("baton", 9.0, -1.8, 9.6, -0.9))):
         ph = i * 0.23
@@ -604,7 +631,7 @@ path = [  # frame, camera, look-at: one sweep, slow where the jokes are
     (600, (3.2, 7.1, 1.85), (4.3, 10.2, 1.0)),        # the kitchen island
     (650, (6.2, 4.8, 2.0), (9.4, -0.6, 1.1)),         # out east, under the pergola
     (700, (6.4, 0.8, 1.6), (9.8, -1.8, 1.0)),         # the smokers
-    (750, (7.2, -5.4, 1.8), (10.2, -2.6, 0.8)),       # the bong session
+    (750, (8.6, -6.9, 1.9), (10.6, -3.4, 0.7)),       # the bong session
     (800, (3.0, -9.4, 2.2), (-1.0, -4.0, 0.8)),       # the conga, the walkers, the drunk on the lawn
     (N, (17, -19, 10), (0, 0, 1)),                    # and up and away over the city
 ]
