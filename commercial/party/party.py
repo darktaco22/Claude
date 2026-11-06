@@ -253,7 +253,7 @@ for row, y in enumerate((-3.5, -7.5)):
     for i in range(24):
         x = -10 + i * (20 / 23); sag = 0.55 * math.sin(math.pi * i / 23)
         sphere("bulb", (x, y, 3.2 - sag), 0.05, BULB, seg=8)
-    for x in (-10, 10):
+    for x in (-10, 12.3):   # the east pole stands clear of the bong session
         cyl("pole", (x, y, 1.6), 0.04, 3.2, DARK, v=8)
     light(f"string{row}", "AREA", (0, y, 2.8), 500, "#FFC27A", 6.0, rot=(0, 0, 0))
 box("dj_booth", 6.85, 7.35, -6.0, -3.6, 0.0, 1.05, mat("booth", "#111115", rough=0.3, metal=0.3), bevel=0.03)
