@@ -28,7 +28,25 @@ for n in names:
         fwd = -(rig.matrix_world.to_3x3() @ Vector((0, 1, 0))); fwd.z = 0
         fwd = fwd.normalized() if fwd.length > 1e-4 else Vector((0, -1, 0))
         mid = Vector((head.x, head.y, max(0.4, head.z * 0.6)))
-        cam.location = mid + fwd * 3.0 + Vector((0.5, 0, 0.5))
+        mine = set(others[n]); guests_all = set(m for ms in others.values() for m in ms)
+        dg = bpy.context.evaluated_depsgraph_get()
+        def clear(p):   # nothing but guests between this camera spot and the character
+            o, d = p.copy(), (mid - p); L = d.length; d.normalize(); t = 0.0
+            while t < L - 0.35:
+                hit, loc, _, _, ob, _ = sc.ray_cast(dg, o + d * (t + 0.01), d, distance=L - t)
+                if not hit: return True
+                if ob in mine: return True
+                if ob not in guests_all: return False
+                t = (loc - o).length + 0.02
+            return True
+        best = None
+        for dist in (3.0, 2.2, 1.6):   # in front first, then swing round, then closer
+            for a in (0, 30, -30, 60, -60, 90, -90, 135, -135, 180):
+                r = math.radians(a); v = Vector((fwd.x * math.cos(r) - fwd.y * math.sin(r), fwd.x * math.sin(r) + fwd.y * math.cos(r), 0))
+                p = mid + v * dist + Vector((0, 0, 0.5))
+                if clear(p): best = p; break
+            if best: break
+        cam.location = best or (mid + fwd * 3.0 + Vector((0.5, 0, 0.5)))
         cam.rotation_euler = (mid - cam.location).to_track_quat("-Z", "Y").to_euler()
         sc.render.filepath = f"{od}/qa_{n}_{f:04d}.png"; bpy.ops.render.render(write_still=True)
 for ms in others.values():

@@ -43,6 +43,21 @@ def mat(name, color, rough=0.5, metal=0.0, emit=0.0, alpha=1.0, emit_color=None,
     if trans:
         b.inputs["Transmission Weight"].default_value = trans
     _M[name] = m; return m
+def soft(name, color, alpha=0.35, emit=0.0):
+    """Smoke and powder: opaque-ish in the middle, fading to nothing at the silhouette, so a sphere reads as a soft puff."""
+    if name in _M: return _M[name]
+    m = bpy.data.materials.new(name); m.use_nodes = True; nt = m.node_tree; N_ = nt.nodes
+    b = N_["Principled BSDF"]; b.inputs["Base Color"].default_value = srgb(color); b.inputs["Roughness"].default_value = 1.0
+    if emit: b.inputs["Emission Color"].default_value = srgb(color); b.inputs["Emission Strength"].default_value = emit
+    lw = N_.new("ShaderNodeLayerWeight"); lw.inputs["Blend"].default_value = 0.5
+    inv = N_.new("ShaderNodeMath"); inv.operation = "SUBTRACT"; inv.inputs[0].default_value = 1.0
+    pw = N_.new("ShaderNodeMath"); pw.operation = "POWER"; pw.inputs[1].default_value = 2.5
+    mu = N_.new("ShaderNodeMath"); mu.operation = "MULTIPLY"; mu.inputs[1].default_value = alpha
+    tr = N_.new("ShaderNodeBsdfTransparent"); mx = N_.new("ShaderNodeMixShader"); out = N_["Material Output"]
+    nt.links.new(lw.outputs["Facing"], inv.inputs[1]); nt.links.new(inv.outputs[0], pw.inputs[0]); nt.links.new(pw.outputs[0], mu.inputs[0])
+    nt.links.new(mu.outputs[0], mx.inputs[0]); nt.links.new(tr.outputs[0], mx.inputs[1]); nt.links.new(b.outputs[0], mx.inputs[2])
+    nt.links.new(mx.outputs[0], out.inputs["Surface"]); m.surface_render_method = "BLENDED"
+    _M[name] = m; return m
 def obj_mat(o, m):
     o.data.materials.clear(); o.data.materials.append(m); return o
 def box(name, x0, x1, y0, y1, z0, z1, m, bevel=None):
@@ -271,7 +286,7 @@ MEM("env")
 
 # ------------------------------------------------------------------------------------------------ the guests
 CUP = mat("cup", "#D8232A", rough=0.35); CIG = mat("cig", "#F5F2EA", rough=0.6); EMBER = mat("ember", "#FF6A1A", emit=12.0)
-SMOKE = mat("smoke", "#E8E8EE", rough=1.0, alpha=0.28)
+SMOKE = soft("smoke", "#E8E8EE", alpha=0.45)
 NOTE = mat("note", "#7DBF6A", rough=0.6); POWDER = mat("powder", "#FFFFFF", rough=0.8, emit=0.3)
 
 def recolor(rig, hue=0.5, sat=1.0, val=1.0, tint=None):
@@ -320,6 +335,7 @@ def attach(c, obj, bone="RightHand", offset=(0, 0.08, 0.03), rot=(0, 0, 0)):
     if "mixamorig:" + bone not in c.rig.data.bones:
         bpy.data.objects.remove(obj); return None
     cn = obj.constraints.new("CHILD_OF"); cn.target = c.rig; cn.subtarget = "mixamorig:" + bone
+    cn.set_inverse_pending = False; cn.inverse_matrix.identity()   # new Child Of constraints auto-set an inverse: that threw every prop metres off its bone
     obj.location = offset; obj.rotation_euler = rot
     return obj
 
@@ -332,7 +348,7 @@ def puff_loop(c, period, phase, mouth_local, start=1):
     t = t0
     while t * FPS < N:
         f = int(t * FPS) + start
-        s = sphere("puff", (0, 0, 0), 0.08, SMOKE, seg=8); s.parent = c.ctrl
+        s = sphere("puff", (0, 0, 0), 0.08, SMOKE, seg=20); s.parent = c.ctrl
         s.location = mouth_local; s.scale = (0.01,) * 3; s.keyframe_insert("location", frame=max(1, f - 1)); s.keyframe_insert("scale", frame=max(1, f - 1))
         s.scale = (1, 1, 1); s.keyframe_insert("scale", frame=f + 4)
         s.location = mouth_local + Vector((random.uniform(-0.1, 0.1), -0.25, 0.7)); s.scale = (3, 3, 3)
@@ -372,7 +388,7 @@ def mocap(cid, x, y, rot, cname, start=0.0, travel=0.12, speed=1.0, z=0.0, model
 
 # the DJ, and the dance floor in front of the booth
 mocap("triplet", 7.6, -4.8, face(-1, 0), "111_05", start=3.0, travel=0.0)   # the DJ
-dancers = ["giga", "neet", "alon", "mitch", "mensa", "thisisfine", "toshi", "goat", "bome", "slerf", "brett", "npcwojak"]
+dancers = ["giga", "neet", "alon", "mitch", "mensa", "thisisfine", "toshi", "goat", "brett", "slerf", "bome", "npcwojak"]   # BOME (a big book) off the camera line to the DJ
 spots = [(1.2, -4.0), (2.6, -4.4), (4.0, -3.9), (5.3, -4.6), (1.6, -5.6), (3.1, -6.0), (4.6, -5.5), (2.2, -7.1), (3.8, -7.3), (5.4, -6.8), (0.4, -6.4), (6.3, -5.7)]
 # new memes made from the game's own models
 LOOKS = {"brett": ("pepe", {"hue": 0.78, "sat": 1.15, "val": 1.0}),                    # Brett: the blue frog
@@ -574,7 +590,7 @@ for i in range(30):
 
 def snort_fx(lines, line_pts, period, phase, name):
     """Each snort: the next line on the table shrinks away as the nose slides along it, and a small white puff comes up."""
-    PUFF = mat("powder_puff", "#FFFFFF", rough=1.0, alpha=0.55, emit=0.6)
+    PUFF = soft("powder_puff", "#FFFFFF", alpha=0.8, emit=0.5)
     k = 0; t = ((0.22 - phase) % 1.0) * period
     for ln in lines:
         ln.scale = (1, 1, 1); ln.keyframe_insert("scale", frame=1)
@@ -585,9 +601,9 @@ def snort_fx(lines, line_pts, period, phase, name):
             for l2 in lines:
                 l2.scale = (1, 1, 1); l2.keyframe_insert("scale", frame=f_a - 2)
         ln.scale = (1, 1, 1); ln.keyframe_insert("scale", frame=f_a)
-        ln.scale = (1, 0.02, 1); ln.keyframe_insert("scale", frame=f_b)
+        ln.scale = (0.02, 1, 1); ln.keyframe_insert("scale", frame=f_b)
         for j in range(9):   # the puff at the end of the line, and a little burst at the snap back
-            s = sphere("puff_" + name, p, 0.025, PUFF, seg=8)
+            s = sphere("puff_" + name, p, 0.025, PUFF, seg=16)
             s.scale = (0.01,) * 3; s.keyframe_insert("scale", frame=1); s.keyframe_insert("scale", frame=f_b - 2); s.keyframe_insert("location", frame=f_b - 2)
             s.scale = (1, 1, 1); s.keyframe_insert("scale", frame=f_b)
             s.location = (p[0] + random.uniform(-0.12, 0.12), p[1] + random.uniform(-0.12, 0.12), p[2] + random.uniform(0.12, 0.3))
@@ -596,33 +612,47 @@ def snort_fx(lines, line_pts, period, phase, name):
         k += 1; t += period
 
 if not CLEAN:
-    # the coffee table in the living room: two leaning over it, rolled notes in hand
-    c = load("farter"); guests["farter"] = c; place(c, -5.43, 8.3, face(0, 1))
-    c.bake(M.snort, 1, N, step=1, table_z=0.43, reach=0.6, period=3.2, phase=0.0)
-    attach(c, cyl("note", (0, 0, 0), 0.012, 0.12, NOTE), offset=(0, 0.05, 0.02), rot=(math.pi / 2, 0, 0))
-    mocap("lmao", -4.2, 8.5, face(-1, 0.4), "13_14", start=1.0, travel=0.0)   # in hysterics beside him
-    # KET and CATE behind the kitchen island, lines on the marble
-    for cid, x in (("ket", 3.5), ("cate", 5.1)):
-        c = load(cid); guests[cid] = c; place(c, x, 10.42, face(0, -1))
-        c.bake(M.snort, 1, N, step=1, table_z=1.065, reach=0.7, period=3.2, phase=0.0 if cid == "ket" else 0.45)
+    CRATE = mat("crate", "#E0601A", rough=0.6)
+    def snort_station(cid, x, y_edge, toward, table_z, phase, n_lines, model=None):
+        """A snorter at a table. The bend comes from M.snort with the character's own proportions; a short character gets
+        a beer crate to stand on so the bend is deep, and the lines go exactly where that nose lands, running along the
+        slide (local x) so the nose travels down each line."""
+        c = load(cid, model); guests[cid] = c
+        H = max(0.2, (c.headp - c.hip).z); dip = 0.12 * c.leg
+        lift = max(0.0, (table_z + 0.05 - 0.3 * H) - (c.hip.z - dip))
+        k = max(-0.95, min(0.95, (table_z - lift + 0.05 - (c.hip.z - dip)) / H)); full = min(math.acos(k), 1.65)
+        v = c.headp - c.hip
+        d = -(0.1 + v.y * math.cos(full) - v.z * math.sin(full) - 0.12)     # how far in front of the ctrl the nose lands
+        y = y_edge + toward * max(0.3, d - 0.12)                           # stand back from the edge, nose 0.12 inside it
+        place(c, x, y, face(0, -toward), z=lift)
+        if lift > 0.02:
+            box("crate_" + cid, x - 0.26, x + 0.26, y - 0.2, y + 0.24, 0.0, lift, CRATE, bevel=0.02)
+        c.bake(M.snort, 1, N, step=1, table_z=table_z - lift, reach=0.6, period=3.2, phase=phase)
         attach(c, cyl("note", (0, 0, 0), 0.012, 0.12, NOTE), offset=(0, 0.05, 0.02), rot=(math.pi / 2, 0, 0))
-    kl = [box("line", 3.1 + i * 0.13, 3.15 + i * 0.13, 9.45, 9.85, 1.06, 1.068, POWDER) for i in range(4)]
-    cl = [box("line", 4.75 + i * 0.13, 4.8 + i * 0.13, 9.45, 9.85, 1.06, 1.068, POWDER) for i in range(4)]
-    snort_fx(kl, [(3.125 + i * 0.13, 9.65, 1.07) for i in range(4)], 3.2, 0.0, "ket")
-    snort_fx(cl, [(4.775 + i * 0.13, 9.65, 1.07) for i in range(4)], 3.2, 0.45, "cate")
-    box("card", 3.95, 4.05, 9.55, 9.75, 1.06, 1.064, mat("blackcard", "#111111", rough=0.3, metal=0.5))
+        ly = y - toward * d; sx = -toward     # local x in world: +x when facing -y
+        lines, pts = [], []
+        for i in range(n_lines):
+            yy = ly + toward * (i - (n_lines - 1) / 2) * 0.035
+            lines.append(box("line", x - 0.13, x + 0.13, yy - 0.008, yy + 0.008, table_z, table_z + 0.006, POWDER))
+            pts.append((x + sx * 0.12, yy, table_z + 0.01))   # where the nose finishes the line
+        snort_fx(lines, pts, 3.2, phase, cid)
+        print(f"SNORT {cid}: H {H:.2f} lift {lift:.2f} bend {math.degrees(full):.0f} nose {d:.2f} at y {ly:.2f}")
+        return c
+    # the coffee table in the living room (top about y 8.6-9.2), and LMAO in hysterics beside him
+    snort_station("farter", -5.43, 8.62, -1, 0.43, 0.0, 3)
+    mocap("lmao", -4.2, 8.5, face(-1, 0.4), "13_14", start=1.0, travel=0.0)
+    # KET and CATE behind the kitchen island (the marble's back edge is y 10.05)
+    snort_station("ket", 3.5, 10.05, 1, 1.06, 0.0, 4)
+    snort_station("cate", 5.1, 10.05, 1, 1.06, 0.45, 4)
+    box("card", 4.25, 4.35, 9.75, 9.95, 1.06, 1.064, mat("blackcard", "#111111", rough=0.3, metal=0.5))
 
-    GAS = mat("gas", "#7BE04A", rough=1.0, alpha=0.3, emit=0.6)
+    GAS = soft("gas", "#7BE04A", alpha=0.5, emit=0.8)
     for k in range(8):
-        g = sphere("gas", (-5.9, 7.7, 0.6), 0.18, GAS, seg=8)
+        g = sphere("gas", (-5.9, 7.7, 0.6), 0.14, GAS, seg=20)
         for f in range(1, N + 1, 35):
             ph = ((f / 105) + k / 8) % 1.0
-            g.location = (-5.9 + 0.6 * ph * math.sin(k), 7.6 - 0.6 * ph, 0.55 + 0.9 * ph); g.scale = (0.5 + 2.5 * ph,) * 3
+            g.location = (-5.9 + 0.6 * ph * math.sin(k), 7.6 - 0.6 * ph, 0.55 + 0.9 * ph); g.scale = (0.5 + 1.6 * ph,) * 3
             g.keyframe_insert("location", frame=f); g.keyframe_insert("scale", frame=f)
-    ct_lines = [box("line", -5.62 + i * 0.16, -5.56 + i * 0.16, 8.65, 9.15, 0.425, 0.436, POWDER) for i in range(3)]
-    for ln in ct_lines:   # scale about each line's far end so it shrinks toward the nose
-        pass
-    snort_fx(ct_lines, [(-5.59 + i * 0.16, 8.9, 0.44) for i in range(3)], 3.2, 0.0, "farter")
     # smokers on the east deck
     for i, (cid, x, y, tx, ty) in enumerate((("walter", 9.0, -0.3, 9.8, -1.1), ("floki", 9.8, -1.1, 9.0, -0.3), ("baton", 9.0, -1.8, 9.6, -0.9))):
         ph = i * 0.23
@@ -635,15 +665,17 @@ if not CLEAN:
         import_gltf(os.path.join(PH, "mid_century_lounge_chair/mid_century_lounge_chair.gltf"), (x, y + (0.25 if rot == face(0, 1) else -0.25), 0.0), rot + math.pi, 1.0)
         c = load(cid); guests[cid] = c; place(c, x, y, rot)
         c.bake(M.sit_bong, 1, N, step=2, phase=0.0 if cid == "wojak" else 0.5)
+    light("bong_lamp", "AREA", (10.6, -3.4, 2.7), 260, "#FFB070", 1.6)        # a warm lamp over the loungers
+    light("bong_rim", "POINT", (12.2, -3.4, 1.4), 120, "#9A6BFF", 0.3)        # and a purple rim from the palms
     BONG = mat("bong", "#7FE0C8", rough=0.02, alpha=0.45, emit=0.4)
     cyl("bong", (10.6, -3.4, 0.35), 0.06, 0.7, BONG); sphere("bong_base", (10.6, -3.4, 0.08), 0.12, BONG)
     cyl("bong_stem", (10.68, -3.4, 0.25), 0.012, 0.22, BONG, rot=(0, math.radians(40), 0))
     for k in range(10):   # a cloud drifting up between them
-        s = sphere("cloud", (10.6, -3.4, 1.0), 0.15, SMOKE, seg=8)
+        s = sphere("cloud", (10.6, -3.4, 1.0), 0.12, SMOKE, seg=20)
         for f in range(1, N + 1, 40):
             ph = (f / 40 + k * 0.1) % 1.0
-            s.location = (10.6 + 0.4 * math.sin(k + f / 50), -3.4 + 0.3 * math.cos(k * 2 + f / 60), 0.9 + 1.4 * ph)
-            s.scale = (1 + 3 * ph,) * 3; s.keyframe_insert("location", frame=f); s.keyframe_insert("scale", frame=f)
+            s.location = (10.6 + 0.4 * math.sin(k + f / 50), -3.4 + 0.3 * math.cos(k * 2 + f / 60), 0.9 + 1.2 * ph)
+            s.scale = (0.6 + 1.8 * ph,) * 3; s.keyframe_insert("location", frame=f); s.keyframe_insert("scale", frame=f)
 else:
     for cid, x in (("farter", -5.6), ("lmao", -4.8)):
         guest(cid, x, 8.3, face(0, -1), M.cheer, phase=random.random())
@@ -704,7 +736,8 @@ path = [  # frame, camera, look-at: one sweep, slow where the jokes are
     (600, (3.2, 7.1, 1.85), (4.3, 10.2, 1.0)),        # the kitchen island
     (650, (6.2, 4.8, 2.0), (9.4, -0.6, 1.1)),         # out east, under the pergola
     (700, (6.4, 0.8, 1.6), (9.8, -1.8, 1.0)),         # the smokers
-    (750, (8.6, -6.9, 1.9), (10.6, -3.4, 0.7)),       # the bong session
+    (750, (7.3, -2.7, 1.5), (10.6, -3.5, 0.6)),       # the bong session, side on, nothing in between
+    (775, (5.6, -3.6, 3.0), (2.5, -8.0, 0.8)),        # up over the dancers' heads
     (800, (3.0, -9.4, 2.2), (-1.0, -4.0, 0.8)),       # the conga, the walkers, the drunk on the lawn
     (N, (17, -19, 10), (0, 0, 1)),                    # and up and away over the city
 ]
