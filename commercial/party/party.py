@@ -352,7 +352,7 @@ for i, (cid, (x, y)) in enumerate(zip(dancers, spots)):
 
 MEM("dancers")
 # in the pool: treading water (sunk to the shoulders), one on the donut
-for cid, (x, y) in (("moodeng", (-3.0, 0.8)), ("zcat", (1.5, 1.2)), ("cupsey", (3.4, -0.9)), ("pudgy", (-0.6, -1.1)), ("nyancat", (4.8, 1.4))):
+for cid, (x, y) in (("moodeng", (-4.7, -0.7)), ("zcat", (1.5, 1.2)), ("cupsey", (3.4, -0.9)), ("pudgy", (-0.6, -1.1)), ("nyancat", (4.8, 1.4))):
     c = load(cid); guests[cid] = c
     zsink = WZ - c.shoulderL.z + 0.08
     place(c, x, y, face(random.uniform(-1, 1), -1), zsink)
