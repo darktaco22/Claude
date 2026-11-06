@@ -47,7 +47,7 @@ box("led_wall", 8.55, 8.65, -6.2, -3.95, 1.6, 3.4, mat("led_back", "#05060A", ro
 UP, DN = mat("candle_up", "#21FF6B", emit=9.0), mat("candle_dn", "#FF2D4A", emit=9.0)
 lvl = 1.9
 for i in range(11):
-    y = -6.05 + i * 0.2; red = i in (3, 8)
+    y = -4.05 - i * 0.2; red = i in (3, 8)   # read from the dance floor (looking east, north is on the left): rising to the right
     step = -0.06 if red else (0.05 + 0.01 * i)
     lo_, hi_ = (lvl + step, lvl) if red else (lvl, lvl + step)
     box("candle", 8.52, 8.55, y - 0.06, y + 0.06, lo_, hi_ + 0.01, DN if red else UP, bevel=0.0)

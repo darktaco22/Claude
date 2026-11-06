@@ -266,13 +266,13 @@ for i, (x, col) in enumerate(((-2, "#FF2BD6"), (2, "#2BE0FF"), (5, "#FFE02B"), (
     for f in range(1, N + 1, 30):
         sp.rotation_euler = (math.radians(45 + 12 * math.sin(f / 23 + i)), math.radians(18 * math.sin(f / 31 + i * 2)), 0)
         sp.keyframe_insert("rotation_euler", frame=f)
-# floats in the pool
-bpy.ops.mesh.primitive_torus_add(major_radius=0.55, minor_radius=0.2, location=(4.8, 1.4, WZ + 0.08))
-donut = obj_mat(bpy.context.active_object, mat("donut", "#FF6FB5", rough=0.25))
-bpy.ops.mesh.primitive_torus_add(major_radius=0.6, minor_radius=0.22, location=(-4.2, -1.2, WZ + 0.08))
-obj_mat(bpy.context.active_object, mat("ring", "#FFD23A", rough=0.25))
-# the flamingo: a proper inflatable (flamingo.py), bobbing and turning slowly
+# floats in the pool (glossy vinyl, from flamingo.py)
 exec(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "flamingo.py")).read().split("if __name__")[0], globals())
+bpy.ops.mesh.primitive_torus_add(major_radius=0.55, minor_radius=0.2, major_segments=72, minor_segments=28, location=(4.8, 1.4, WZ + 0.08))
+donut = obj_mat(bpy.context.active_object, _vinyl("donut_vinyl", "#FF6FB5")); donut.data.shade_smooth()
+bpy.ops.mesh.primitive_torus_add(major_radius=0.6, minor_radius=0.22, major_segments=72, minor_segments=28, location=(-4.2, -1.2, WZ + 0.08))
+_rg = obj_mat(bpy.context.active_object, _vinyl("ring_vinyl", "#FFD23A")); _rg.data.shade_smooth()
+# the flamingo: a proper inflatable (flamingo.py), bobbing and turning slowly
 FLAMINGO = build_flamingo((-1.8, 1.6, WZ + 0.08))
 for f in range(1, N + 1, 24):
     FLAMINGO.location.z = WZ + 0.08 + 0.025 * math.sin(f / 10); FLAMINGO.rotation_euler = (0.03 * math.sin(f / 13), 0.04 * math.sin(f / 9), 0.15 * math.sin(f / 70))
@@ -903,9 +903,10 @@ path = [  # frame, camera, look-at: one sweep, slow where the jokes are
     (600, (3.2, 7.1, 1.85), (4.3, 10.2, 1.0)),        # the kitchen island
     (650, (6.2, 4.8, 2.0), (9.4, -0.6, 1.1)),         # out east, under the pergola
     (700, (6.4, 0.8, 1.6), (9.8, -1.8, 1.0)),         # the smokers
-    (750, (9.0, -3.3, 1.5), (10.7, -3.5, 0.6)),       # the bong session, side on, past the DJ booth
-    (775, (6.0, -3.0, 3.0), (2.5, -8.0, 0.8)),        # up over the dancers' heads
-    (800, (3.0, -9.4, 2.2), (-1.0, -4.0, 0.8)),       # the conga, the walkers, the drunk on the lawn
+    (735, (9.0, -3.3, 1.5), (10.7, -3.5, 0.6)),       # the bong session, side on, past the DJ booth
+    (772, (9.35, -3.2, 1.45), (10.75, -3.45, 0.65)),  # ...and stay with it, creeping in
+    (792, (7.4, -2.3, 3.9), (3.0, -7.0, 0.8)),        # then up over the LED wall
+    (815, (3.0, -9.4, 2.2), (-1.0, -4.0, 0.8)),       # the conga, the walkers, the drunk on the lawn
     (N, (17, -19, 10), (0, 0, 1)),                    # and up and away over the city
 ]
 for f, p, l in path:
