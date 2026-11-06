@@ -413,13 +413,13 @@ def bong_session(c, t, period=9.0, phase=0.0, bong_top=None, bowl=None):
     pose = {**feet, "hips": seat, "hand_L": lap_L, "hand_R": lap_R, "spine": -0.05, "lean": lean,
             "look": c.headp + Vector((0, -2, 0.3)) + drift, "nosafe": True}
     on, e = _in(x, BONG_T["grab"])
-    if on: k = _ease(e); pose.update(hand_L=lap_L.lerp(neck, k), hand_R=lap_R.lerp(light, k), spine=0.32 * k)
+    if on: k = _ease(e); pose.update(hand_L=lap_L.lerp(neck, k), hand_R=lap_R.lerp(light, k), spine=0.5 * k)
     on, e = _in(x, BONG_T["hit"])
-    if on: pose.update(hand_L=neck, hand_R=light + Vector((0, 0, 0.005 * math.sin(e * 40))), spine=0.32, look=bong_top + Vector((0, -0.5, -0.4)))
+    if on: pose.update(hand_L=neck, hand_R=light + Vector((0, 0, 0.005 * math.sin(e * 40))), spine=0.5, look=bong_top + Vector((0, -0.5, -0.4)))
     on, e = _in(x, BONG_T["clear"])
-    if on: pose.update(hand_L=neck, hand_R=light.lerp(lap_R, _ease(e)), spine=0.32 - 0.05 * e, look=bong_top + Vector((0, -0.5, -0.2)))
+    if on: pose.update(hand_L=neck, hand_R=light.lerp(lap_R, _ease(e)), spine=0.5 - 0.08 * e, look=bong_top + Vector((0, -0.5, -0.2)))
     on, e = _in(x, BONG_T["put"])
-    if on: k = _ease(e); pose.update(hand_L=neck.lerp(lap_L, k), hand_R=lap_R, spine=0.27 * (1 - k) - 0.15 * k, hips=seat + Vector((0, 0, 0.01)))
+    if on: k = _ease(e); pose.update(hand_L=neck.lerp(lap_L, k), hand_R=lap_R, spine=0.42 * (1 - k) - 0.15 * k, hips=seat + Vector((0, 0, 0.01)))
     on, e = _in(x, BONG_T["hold"])
     if on: pose.update(spine=-0.15, hips=seat + Vector((0, 0, 0.015)), look=c.headp + Vector((0, -2, 0.9)))
     on, e = _in(x, BONG_T["exhale"])

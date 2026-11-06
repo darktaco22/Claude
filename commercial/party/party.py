@@ -829,9 +829,9 @@ if not CLEAN:
     for cid, x, y, rot, ph in (("wojak", 10.6, -4.2, face(0, 1), 0.0), ("apu", 10.6, -2.6, face(0, -1), 0.5)):
         c = load(cid); guests[cid] = c; place(c, x, y, rot); set_mouth(c)
         bean_bag(c, "#5B2A86" if cid == "wojak" else "#1F7A5A")
-        top = M.bong_rig(c, 0.32) + Vector((0, -0.03, 0.0))   # the mouthpiece at the lips, leaning in
+        top = M.bong_rig(c, 0.5) + Vector((0, -0.03, 0.0))   # the mouthpiece at the lips, leaning in
         s_ = max(0.55, min(1.0, (top.z - 0.02) / 0.67))      # a shorter guest gets a shorter bong (it's the same bong, no one checks)
-        TILT = math.radians(-19); Rt = Matrix.Rotation(TILT, 3, "X")   # tipped away: lips on the mouthpiece, the base out over the knees
+        TILT = math.radians(-27); Rt = Matrix.Rotation(TILT, 3, "X")   # tipped away: lips on the mouthpiece, the base out over the knees
         root = top - Rt @ Vector((0, 0, 0.67 * s_)); bowl = root + (Rt @ Vector((-0.13, 0, 0.295))) * s_
         c.bake(M.bong_session, 1, N, step=2, period=P_B, phase=ph, bong_top=top, bowl=bowl)
         if hasattr(c, "mouth_bone"):   # measure where the mouth really is mid-hit, put the mouthpiece on the lips, bake again
