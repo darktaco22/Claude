@@ -986,9 +986,31 @@ for o in bpy.data.objects:
             for (cx, cy), parts in crowns.items():
                 if abs(cx - top.x) < 0.3 and abs(cy - top.y) < 0.3:
                     for p_ in parts: p_.hide_render = True
-    elif o.name.endswith("_inst") and o.instance_collection and any(k in o.name for k in ("tree", "shrub", "fern")):   # foliage only
+    elif o.name.endswith("_inst") and o.instance_collection and any(k in o.name for k in ("tree", "shrub", "fern", "potted", "planter")):   # foliage only
         sc_ = o.scale.x; big = "tree" in o.name
         if _near(o.location, (5.5 if big else 3.5) * sc_, o.location.z + (9.0 if big else 3.0) * sc_): o.hide_render = True; hidden += 1
+# and, for the aerial opening and closing, foliage standing in the near half of the view of the house
+_tf = {fc.array_index: fc for fc in tgt.animation_data.action.fcurves if fc.data_path == "location"}
+views = [(Vector([_cf[i].evaluate(f) for i in range(3)]), Vector([_tf[i].evaluate(f) for i in range(3)])) for f in list(range(1, 70, 6)) + list(range(830, N + 1, 6))]
+def _blocks(p, r):
+    """Foliage in the foreground of the frame: inside the 24 mm frustum (widened by its crown) and within 15 m."""
+    for a, b in views:
+        fw = (b - a).normalized(); rt = fw.cross(Vector((0, 0, 1))).normalized(); up = rt.cross(fw)
+        d = p - a; z = d.dot(fw)
+        if 0.5 < z < 15.0 and abs(d.dot(rt)) / z < 0.75 + r / z and abs(d.dot(up)) / z < 0.42 + r / z: return True
+    return False
+for o in bpy.data.objects:
+    if o.hide_render: continue
+    if o.name.startswith("palm_trunk"):
+        top = o.data.splines[0].bezier_points[-1].co
+        if _blocks(Vector(top) - Vector((0, 0, 1.0)), 3.0):
+            o.hide_render = True; hidden += 1
+            for (cx, cy), parts in crowns.items():
+                if abs(cx - top.x) < 0.3 and abs(cy - top.y) < 0.3:
+                    for p_ in parts: p_.hide_render = True
+    elif o.name.endswith("_inst") and o.instance_collection and any(k in o.name for k in ("tree", "shrub", "fern", "potted", "planter")):
+        h_ = (6.0 if "tree" in o.name else 1.2) * o.scale.x
+        if _blocks(o.location + Vector((0, 0, h_)), (7.0 if "tree" in o.name else 2.0) * o.scale.x): o.hide_render = True; hidden += 1   # (a jacaranda crown is wide)
 print("trees cleared from the camera's path:", hidden)
 
 # ------------------------------------------------------------------------------------------------ render
