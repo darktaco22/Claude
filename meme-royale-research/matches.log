@@ -1,0 +1,320 @@
+
+=== MATCH 1/1 style=defend tag=defend-21680 hub: 1 ClaudeScout631 0 0/20 XP DAILY W BAG 0 / 10 Ws 0 + 100 +
+opp {"opp":"SerGremlin","clout":16,"arena":"basement","myDeck":"jeanphil,lmao,ket,rug,chillguy,fud,useless,troll"} queued(s)= 10.8
+  [175s play] towers me 2600/2600/4400 opp 2600/2600/4400 ws 0-0
+  [170s] OPP played: chillguy
+  [170s] ME PUSH chillguy@3.5,28.5 | cop 7.0
+  [153s] OPP played: neet, troll, bonk
+  [153s] ME DEF fud@14.3,21.5 | cop 6.0
+  [153s play] towers me 2600/2600/4400 opp 2600/2600/4400 ws 0-0
+  [147s] ME SPELL useless@14.4,22.3 | cop 5.9
+  [142s] OPP played: lmao
+  [142s] ME SPELL troll@3.6,22.9 | cop 3.8
+  [131s play] towers me 2045/310/4400 opp 2600/2600/4400 ws 0-0
+  [125s] OPP played: chillguy
+  [125s] ME DEF ket@13.1,23.7 | cop 6.7
+  [112s] OPP played: ket, troll
+  [112s] ME DEF lmao@14.0,20.9 | cop 7.0
+  [108s] OPP played: bonk
+  [108s play] towers me 2045/0/4060 opp 2600/2600/4400 ws 0-1
+  [101s] ME PUSH fud@3.5,28.5 | cop 7.0
+  [96s] OPP played: neet
+  [96s] ME DEF rug@13.4,20.2 | cop 4.5
+  [92s] OPP played: chillguy
+  [92s] ME DEF jeanphil@12.6,23.5 | cop 4.0
+  [87s] OPP played: ket
+  [87s] ME SPELL ket@14.2,21.2 | cop 1.6
+  [83s] ME DEF chillguy@3.6,18.0 | cop 1.2
+  [83s play] towers me 995/0/4060 opp 2600/2600/4400 ws 0-1
+  [71s] OPP played: downvotes, troll
+  [71s] ME SPELL lmao@3.4,23.1 | cop 3.5
+  [66s] ME DEF useless@5.3,29.0 | cop 1.1
+  [61s] OPP played: lmao
+  [61s] ME DEF rug@5.2,29.0 | cop 0.9
+  [61s play] towers me 0/0/3760 opp 2600/2600/4400 ws 0-2
+  [56s] ME DEF troll@6.2,29.0 | cop 1.3
+  [51s] OPP played: neet
+  [51s] ME DEF fud@6.2,29.0 | cop 1.9
+  [47s] ME DEF lmao@6.3,25.0 | cop 2.2
+  [42s] OPP played: ket, downvotes
+  [29s] OPP played: troll, rug, bonk, ket
+  [29s] ME DEF useless@12.6,22.8 | cop 6.0
+  [29s play] towers me 0/0/1540 opp 2600/2600/4400 ws 0-2
+  [24s] OPP played: chillguy
+  [24s] ME DEF ket@11.6,25.4 | cop 7.5
+  [18s] ME DEF jeanphil@11.0,27.0 | cop 7.0
+  [14s] OPP played: neet
+  [14s] ME PUSH chillguy@3.5,28.5 | cop 7.0
+  [9s] ME PUSH lmao@3.5,28.5 | cop 7.0
+  [4s] OPP played: downvotes
+  [4s] ME PUSH troll@3.5,28.5 | cop 6.0
+  [4s play] towers me 0/0/1540 opp 2600/2600/4400 ws 0-2
+  [0s] OPP played: troll, bonk
+  [0s] ME DEF ket@3.1,21.5 | cop 5.9
+  END {"winner":1,"why":"time","ws":"0-2"} towers me 0/0/1540 opp 2600/2600/4400 clock 0
+  results: SerGremlin 16 COPIUM x2 0:00 2 0 NEXT 3 3 KET 2 FUD 4 RUG PULL 2 USELESS 6 DEFEAT ClaudeScout631 VS SerGremlin WINNER! REWARDS +0 CLOUT +0 COINS — WIN FOR A BAG +1 XP LEVEL 1 W BAG 0/10 23 CARDS PLAYED 70 COPIUM SPENT 0 TOWER DMG CONTINUE
+
+=== MATCH 1/3 style=defend tag=defend-3007 hub: 1 ClaudeScout631 0 1/20 XP DAILY W BAG 0 / 10 Ws 0 + 100 +
+opp {"opp":"LilChad","clout":0,"arena":"basement","myDeck":"chillguy,lmao,ket,troll,fud,rug,jeanphil,useless"} queued(s)= 11.3
+  [175s play] towers me 2600/2600/4400 opp 2600/2600/4400 ws 0-0
+  [170s] ME PUSH chillguy@3.5,24.0 | cop 7.0
+  [165s] OPP played: troll, useless
+  [151s] OPP played: ket, jeanphil
+  [151s] ME DEF lmao@3.5,17.5 | cop 6.0
+  [151s play] towers me 2600/2600/4400 opp 2600/2600/4400 ws 0-0
+  [146s] OPP played: bonk
+  [146s] ME SPELL fud@3.5,16.0 | cop 5.9
+  [140s] OPP played: troll
+  [140s] ME SPELL rug@3.5,18.6 | cop 3.9
+  [134s] OPP played: useless
+  [129s] OPP played: ket
+  [129s] ME DEF jeanphil@4.3,17.5 | cop 4.9
+  [129s play] towers me 1951/2600/4400 opp 2600/2600/4400 ws 0-0
+  [123s] OPP played: jeanphil
+  [123s] ME DEF chillguy@4.7,17.5 | cop 4.0
+  [109s] OPP played: downvotes, fud
+  [109s] ME DEF lmao@4.9,17.5 | cop 4.9
+  [104s] OPP played: useless, troll
+  [104s] ME SPELL fud@3.7,17.6 | cop 5.8
+  [104s play] towers me 1411/2600/4400 opp 2600/2600/4400 ws 0-0
+  [91s] ME PUSH ket@3.5,24.0 | cop 6.5
+  [87s] OPP played: bonk
+  [82s] OPP played: ket
+  [71s] ME DEF jeanphil@3.7,20.1 | cop 7.0
+  [71s play] towers me 1411/2600/4400 opp 2600/2600/4400 ws 0-0
+  [67s] OPP played: jeanphil
+  [67s] ME SPELL rug@3.5,23.7 | cop 4.6
+  [56s] OPP played: useless, troll
+  [56s] ME DEF lmao@3.9,18.2 | cop 6.0
+  [51s] OPP played: bonk, ket
+  [51s] ME SPELL fud@4.6,15.0 | cop 8.0
+  [51s play] towers me 138/2600/4400 opp 2600/2600/4400 ws 0-0
+  [45s] OPP played: jeanphil
+  [45s] ME DEF ket@3.4,20.9 | cop 7.0
+  [31s] OPP played: useless, troll, bonk, ket
+  [31s] ME DEF jeanphil@4.7,17.5 | cop 7.0
+  [24s] OPP played: jeanphil
+  [24s] ME SPELL rug@6.1,21.9 | cop 6.0
+  [24s play] towers me 0/2600/4400 opp 2600/2600/4400 ws 0-1
+  [19s] OPP played: useless
+  [19s] ME PUSH chillguy@3.5,24.0 | cop 7.0
+  [13s] OPP played: troll, bonk, ket
+  [13s] ME SPELL fud@14.4,22.7 | cop 8.0
+  [7s] OPP played: jeanphil
+  [7s] ME PUSH ket@3.5,24.0 | cop 7.0
+  [2s] OPP played: useless
+  [2s] ME DEF lmao@12.6,29.0 | cop 6.0
+  [2s play] towers me 0/0/3794 opp 2600/2600/4400 ws 0-2
+  END {"winner":1,"why":"time","ws":"0-2"} towers me 0/0/3570 opp 2600/2600/4400 clock 0
+  results: LilChad 0 COPIUM x2 0:00 2 0 NEXT 3 4 RUG PULL 2 USELESS 3 Jean Phil 2 Trollface 6 DEFEAT ClaudeScout631 VS LilChad WINNER! REWARDS +0 CLOUT +0 COINS — WIN FOR A BAG +1 XP LEVEL 1 W BAG 0/10 19 CARDS PLAYED 59 COPIUM SPENT 0 TOWER DMG CONTINUE
+
+=== MATCH 2/3 style=defend tag=defend-39141 hub: 1 ClaudeScout631 0 2/20 XP DAILY W BAG 0 / 10 Ws 0 + 100 +
+opp {"opp":"mememaxi","clout":36,"arena":"basement","myDeck":"jeanphil,chillguy,fud,lmao,troll,useless,rug,ket"} queued(s)= 14.5
+  [172s play] towers me 2600/2600/4400 opp 2600/2600/4400 ws 0-0
+  [167s] OPP played: jeanphil
+  [167s] ME PUSH chillguy@3.5,24.0 | cop 7.0
+  [162s] OPP played: neet, ket
+  [149s] OPP played: troll
+  [149s] ME SPELL fud@15.0,18.6 | cop 8.0
+  [149s play] towers me 2600/2036/4400 opp 2600/2600/4400 ws 0-0
+  [144s] OPP played: lmao
+  [144s] ME DEF lmao@3.5,22.9 | cop 6.0
+  [138s] OPP played: fud, useless
+  [133s] OPP played: ket
+  [133s] ME DEF jeanphil@14.4,24.3 | cop 6.9
+  [127s] OPP played: troll
+  [127s] ME SPELL rug@12.5,26.7 | cop 4.9
+  [127s play] towers me 2547/0/4230 opp 2600/2600/4400 ws 0-1
+  [108s] ME PUSH chillguy@3.5,24.0 | cop 7.0
+  [104s] OPP played: jeanphil
+  [104s play] towers me 2331/0/3210 opp 2600/2600/4400 ws 0-1
+  [99s] OPP played: lmao
+  [99s] ME PUSH ket@3.5,24.0 | cop 7.0
+  [94s] ME SUPSPELL fud@5.3,8.4 | cop 6.6
+  [89s] OPP played: useless
+  [89s] ME DEF lmao@5.4,17.5 | cop 4.4
+  [84s] OPP played: fud
+  [84s] ME SPELL rug@4.1,18.6 | cop 2.3
+  [84s play] towers me 2331/0/3210 opp 2547/2600/4400 ws 0-1
+  [70s] OPP played: neet
+  [61s] ME PUSH chillguy@3.5,24.0 | cop 7.0
+  [61s play] towers me 2331/0/3210 opp 2547/2600/4400 ws 0-1
+  [56s] OPP played: troll, lmao
+  [56s] ME DEF ket@5.5,17.5 | cop 7.0
+  [52s] OPP played: jeanphil, fud
+  [52s] ME SPELL fud@4.3,16.3 | cop 8.0
+  [46s] ME DEF lmao@3.4,23.8 | cop 6.0
+  [33s] OPP played: neet, useless, troll
+  [33s] ME SPELL rug@5.7,23.3 | cop 6.0
+  [33s play] towers me 0/0/3116 opp 2547/2600/4400 ws 0-2
+  [27s] OPP played: lmao, jeanphil
+  [27s] ME DEF chillguy@13.4,17.5 | cop 6.8
+  [22s] OPP played: neet, useless
+  [22s] ME DEF ket@12.7,21.7 | cop 7.0
+  [14s] OPP played: troll
+  [14s] ME SPELL fud@11.8,25.2 | cop 8.1
+  [12s] ME PUSH lmao@3.5,24.0 | cop 5.9
+  [12s end] towers me 0/0/0 opp 2547/2600/4400 ws 0-3
+  END {"winner":1,"why":"hq","ws":"0-3"} towers me 0/0/0 opp 2547/2600/4400 clock 12
+  results: mememaxi 36 COPIUM x2 0:12 3 0 NEXT 3 4 RUG PULL 2 Trollface 2 USELESS 3 Jean Phil 5 DEFEAT ClaudeScout631 VS mememaxi WINNER! REWARDS +0 CLOUT +0 COINS — WIN FOR A BAG +1 XP LEVEL 1 W BAG 0/10 18 CARDS PLAYED 56 COPIUM SPENT 53 TOWER DMG CONTINUE
+
+=== MATCH 3/3 style=defend tag=defend-58359 hub: 1 ClaudeScout631 0 3/20 XP DAILY W BAG 0 / 10 Ws 0 + 100 +
+opp {"opp":"DEGEN_591","clout":0,"arena":"basement","myDeck":"useless,fud,ket,troll,jeanphil,lmao,rug,chillguy"} queued(s)= 15.2
+  [169s] OPP played: chillguy
+  [169s] ME PUSH ket@3.5,24.0 | cop 7.0
+  [169s play] towers me 2600/2600/4400 opp 2600/2600/4400 ws 0-0
+  [165s] OPP played: jeanphil
+  [150s] OPP played: troll, lmao
+  [150s] ME SPELL fud@14.4,21.2 | cop 8.0
+  [145s] ME PUSH lmao@3.5,24.0 | cop 5.8
+  [145s play] towers me 2130/1170/4400 opp 2600/2600/4400 ws 0-0
+  [140s] OPP played: useless, bonk
+  [140s] ME SPELL rug@14.3,19.1 | cop 3.6
+  [134s] OPP played: jeanphil
+  [134s] ME DEF chillguy@3.5,17.5 | cop 2.8
+  [128s] OPP played: downvotes
+  [128s] ME DEF ket@3.0,17.6 | cop 1.9
+  [122s] ME DEF jeanphil@5.3,17.5 | cop 1.0
+  [122s play] towers me 1942/0/4400 opp 2600/2600/4400 ws 0-1
+  [108s] OPP played: troll, chillguy
+  [99s] OPP played: lmao
+  [99s play] towers me 1942/0/4400 opp 2600/2600/4400 ws 0-1
+  [94s] ME DEF lmao@4.1,17.5 | cop 6.0
+  [89s] ME DEF useless@3.7,20.9 | cop 5.8
+  [84s] OPP played: useless, downvotes
+  [84s] ME SPELL fud@3.6,22.8 | cop 5.6
+  [71s] OPP played: troll, chillguy
+  [71s] ME PUSH chillguy@3.5,24.0 | cop 7.0
+  [71s play] towers me 474/0/4400 opp 2600/2600/4400 ws 0-1
+  [65s] OPP played: bonk
+  [60s] OPP played: useless
+  [60s] ME SPELL rug@3.5,14.1 | cop 6.0
+  [55s] OPP played: lmao
+  [55s] ME DEF lmao@3.2,17.5 | cop 5.6
+  [50s] ME DEF jeanphil@4.0,17.5 | cop 6.3
+  [50s play] towers me 474/0/4400 opp 2600/2600/4400 ws 0-1
+  [45s] OPP played: troll, chillguy
+  [45s] ME DEF ket@3.7,20.6 | cop 7.0
+  [31s] OPP played: bonk, useless, jeanphil
+  [31s] ME SPELL fud@11.8,21.6 | cop 8.0
+  [26s] OPP played: lmao, chillguy
+  [26s] ME SPELL rug@6.0,23.0 | cop 6.0
+  [26s play] towers me 0/0/3860 opp 2600/2600/4400 ws 0-2
+  [20s] OPP played: bonk
+  [15s] OPP played: useless
+  [15s] ME PUSH chillguy@3.5,24.0 | cop 7.0
+  END {"winner":1,"why":"hq","ws":"0-3"} towers me 0/0/0 opp 2600/2600/4400 clock 14
+  results: DEGEN_591 0 COPIUM x2 0:14 3 0 NEXT 3 4 LMAO! 3 Jean Phil 2 USELESS 2 Trollface 7 DEFEAT ClaudeScout631 VS DEGEN_591 WINNER! REWARDS +0 CLOUT +0 COINS — WIN FOR A BAG +1 XP LEVEL 1 W BAG 0/10 17 CARDS PLAYED 53 COPIUM SPENT 0 TOWER DMG CONTINUE
+
+=== MATCH 1/2 style=aggro tag=aggro-84216 hub: 1 ClaudeScout631 0 4/20 XP DAILY W BAG 0 / 10 Ws 0 + 100 +
+opp {"opp":"pumpdad","clout":0,"arena":"basement","myDeck":"chillguy,rug,fud,troll,useless,lmao,ket,jeanphil"} queued(s)= 9.2
+  [176s] ME PUSH chillguy@3.5,18.5 | cop 4.0
+  [176s play] towers me 2600/2600/4400 opp 2600/2600/4400 ws 0-0
+  [171s] OPP played: ket, troll
+  [171s] ME DEF useless@3.5,17.5 | cop 4.8
+  [166s] OPP played: fud
+  [166s] ME DEF lmao@3.5,18.1 | cop 3.1
+  [161s] OPP played: useless
+  [161s] ME SPELL rug@3.5,17.6 | cop 1.5
+  [147s] OPP played: neet
+  [147s] ME PUSH ket@3.5,18.5 | cop 4.3
+  [147s play] towers me 2600/2600/4400 opp 2600/2600/4400 ws 0-0
+  [143s] OPP played: ket, troll
+  [137s] ME SPELL fud@3.5,16.1 | cop 5.9
+  [132s] ME PUSH chillguy@3.5,18.5 | cop 4.6
+  [127s] OPP played: chillguy
+  [127s] ME DEF lmao@14.4,22.7 | cop 2.5
+  [127s play] towers me 2492/2600/4400 opp 2600/2600/4400 ws 0-0
+  [122s] OPP played: useless
+  [122s] ME SPELL rug@14.5,24.0 | cop 0.5
+  [108s] OPP played: lmao
+  [108s play] towers me 1668/1400/4400 opp 2600/2600/4400 ws 0-0
+  [101s] OPP played: neet
+  [101s] ME DEF ket@14.3,19.6 | cop 4.9
+  [96s] OPP played: troll, ket
+  [96s] ME PUSH jeanphil@3.5,18.5 | cop 3.5
+  [92s] ME DEF chillguy@14.5,17.5 | cop 2.2
+  [87s] OPP played: useless
+  [87s] ME SPELL fud@14.5,13.3 | cop 2.0
+  [82s] ME DEF useless@4.1,17.5 | cop 1.7
+  [82s play] towers me 1368/1060/4400 opp 2600/2600/4400 ws 0-0
+  [70s] OPP played: downvotes
+  [65s] ME PUSH ket@14.5,18.5 | cop 4.6
+  [60s] OPP played: lmao
+  [60s play] towers me 1128/1060/4400 opp 2600/1700/4400 ws 0-0
+  [56s] OPP played: neet
+  [56s] ME PUSH lmao@14.5,18.5 | cop 6.0
+  [51s] ME DEF chillguy@12.7,17.5 | cop 6.4
+  [46s] OPP played: fud, chillguy
+  [46s] ME DEF jeanphil@12.7,17.5 | cop 6.9
+  [40s] ME DEF useless@12.3,17.5 | cop 8.0
+  [40s play] towers me 1128/1060/4400 opp 2600/1700/4400 ws 0-0
+  [27s] OPP played: downvotes, lmao, useless, troll, chillguy
+  [27s] ME SPELL rug@14.4,23.8 | cop 6.0
+  [20s] OPP played: ket, lmao
+  [20s] ME SPELL fud@11.8,28.5 | cop 8.0
+  [20s play] towers me 1128/0/4076 opp 2600/1700/4400 ws 0-1
+  [14s] ME DEF lmao@10.2,26.9 | cop 6.0
+  [9s] OPP played: neet
+  [9s] ME DEF jeanphil@10.7,27.1 | cop 6.9
+  [3s] OPP played: useless
+  [3s] ME DEF chillguy@12.3,23.8 | cop 7.0
+  [0s] ME SPELL rug@9.6,9.1 | cop 4.0
+  [0s play] towers me 1128/0/776 opp 2600/1700/4400 ws 0-1
+  END {"winner":1,"why":"time","ws":"0-1"} towers me 1128/0/776 opp 2600/1700/4400 clock 0
+  results: pumpdad 0 COPIUM x2 0:00 1 0 NEXT 4 2 USELESS 2 FUD 3 KET 2 Trollface 4 DEFEAT ClaudeScout631 VS pumpdad WINNER! REWARDS +0 CLOUT +0 COINS — WIN FOR A BAG +1 XP LEVEL 1 W BAG 0/10 24 CARDS PLAYED 73 COPIUM SPENT 900 TOWER DMG CONTINUE
+
+=== MATCH 2/2 style=aggro tag=aggro-21359 hub: 1 ClaudeScout631 0 5/20 XP DAILY W BAG 0 / 10 Ws 0 + 100 +
+opp {"opp":"SirWizard","clout":0,"arena":"basement","myDeck":"ket,useless,jeanphil,lmao,rug,fud,chillguy,troll"} queued(s)= 13.3
+  [172s] ME PUSH ket@3.5,18.5 | cop 6.2
+  [172s play] towers me 2600/2600/4400 opp 2600/2600/4400 ws 0-0
+  [167s] OPP played: troll, lmao
+  [167s] ME PUSH lmao@3.5,18.5 | cop 4.5
+  [162s] OPP played: downvotes
+  [162s] ME PUSH jeanphil@3.5,18.5 | cop 3.8
+  [149s] OPP played: useless
+  [149s] ME SPELL rug@3.5,17.8 | cop 5.8
+  [149s play] towers me 2600/2600/4400 opp 2600/2600/4400 ws 0-0
+  [143s] OPP played: neet
+  [143s] ME PUSH chillguy@3.5,18.5 | cop 4.8
+  [138s] OPP played: troll, ket
+  [138s] ME PUSH ket@3.5,18.5 | cop 3.8
+  [132s] OPP played: downvotes
+  [132s] ME DEF lmao@3.5,17.5 | cop 1.8
+  [127s] OPP played: useless
+  [127s] ME SPELL fud@14.0,16.2 | cop 1.7
+  [127s play] towers me 2600/2600/4400 opp 2600/2600/4400 ws 0-0
+  [121s] OPP played: chillguy
+  [121s] ME DEF jeanphil@14.4,23.4 | cop 0.8
+  [107s] OPP played: troll, ket
+  [107s] ME DEF chillguy@3.7,19.5 | cop 2.8
+  [101s] ME DEF ket@3.6,22.7 | cop 1.8
+  [101s play] towers me 2600/1400/4400 opp 986/2600/4400 ws 0-0
+  [96s] OPP played: lmao
+  [84s] ME PUSH lmao@3.5,18.5 | cop 3.9
+  [69s] OPP played: useless
+  [69s] ME DEF troll@3.7,19.6 | cop 7.3
+  [69s play] towers me 2374/1400/4400 opp 712/2130/4400 ws 0-0
+  [64s] OPP played: chillguy
+  [64s] ME DEF jeanphil@3.5,17.5 | cop 6.3
+  [57s] OPP played: troll
+  [57s] ME DEF chillguy@3.9,20.0 | cop 7.0
+  [52s] OPP played: ket, neet
+  [52s] ME DEF ket@3.5,19.8 | cop 7.0
+  [45s] OPP played: downvotes, useless
+  [45s] ME DEF lmao@3.6,17.5 | cop 6.0
+  [45s play] towers me 2374/1400/4400 opp 712/2130/4400 ws 0-0
+  [29s] OPP played: rug, troll, lmao, chillguy
+  [29s] ME DEF troll@14.3,20.4 | cop 8.0
+  [24s] OPP played: useless, ket
+  [24s] ME SPELL fud@14.4,22.8 | cop 8.0
+  [24s play] towers me 2374/990/4400 opp 712/2130/4400 ws 0-0
+  [18s] ME SPELL rug@13.2,24.5 | cop 6.0
+  [12s] OPP played: neet
+  [12s] ME DEF jeanphil@11.1,29.0 | cop 7.0
+  [7s] ME PUSH chillguy@3.5,18.5 | cop 7.0
+  [1s] OPP played: troll, chillguy, useless
+  [1s] ME DEF lmao@3.5,19.5 | cop 6.0
+  [1s play] towers me 2374/0/2140 opp 712/2130/4400 ws 0-1
+  END {"winner":1,"why":"time","ws":"0-1"} towers me 2374/0/2140 opp 712/2130/4400 clock 0
+  results: SirWizard 0 COPIUM x2 0:00 1 0 NEXT 4 2 FUD 2 USELESS 2 Trollface 3 KET 6 DEFEAT ClaudeScout631 VS SirWizard WINNER! REWARDS +0 CLOUT +0 COINS — WIN FOR A BAG +1 XP LEVEL 1 W BAG 0/10 22 CARDS PLAYED 68 COPIUM SPENT 2,234 TOWER DMG CONTINUE
