@@ -185,3 +185,53 @@ class Actor:
     def hand_matrix_for_palm(self, s, palm_world):
         """World matrix the wrist (and so the IK target) must have so the palm frame lands on palm_world."""
         return palm_world @ self.palm[s].inverted()
+
+
+class Hand:
+    """Exact skinned hand of an actor, in its palm frame, for contact solving.
+    Uses the body's morphed rest mesh and its bone weights (linear blend skinning, as Blender does)."""
+    def __init__(self, actor, s):
+        import bpy
+        self.a, self.s = actor, s
+        b = actor.body
+        saved = [(m, m.show_viewport) for m in b.modifiers]
+        for m, _ in saved: m.show_viewport = False
+        bpy.context.view_layer.update()
+        ev = b.evaluated_get(bpy.context.evaluated_depsgraph_get()); me = ev.to_mesh()
+        toarm = actor.rig.matrix_world.inverted() @ b.matrix_world
+        V = [toarm @ v.co for v in me.vertices]; ev.to_mesh_clear()
+        for m, sv in saved: m.show_viewport = sv
+        names = {g.index: g.name for g in b.vertex_groups}
+        bones = set(actor.rest)
+        hand_bones = {n for n in bones if n.endswith('.' + s) and (n.startswith('finger') or n.startswith('metacarpal') or n.startswith('wrist'))}
+        self.verts = []        # (rest pos, [(bone, w)], finger key or None)
+        for v in b.data.vertices:
+            ws = [(names[g.group], g.weight) for g in v.groups if names.get(g.group) in bones and g.weight > 0.01]
+            hw = sum(w for n, w in ws if n in hand_bones)
+            if hw < 0.5: continue
+            tot = sum(w for _, w in ws); ws = [(n, w / tot) for n, w in ws]
+            dom = max(ws, key=lambda x: x[1])[0]
+            fk = dom.split('-')[0] if dom.startswith('finger') else None
+            self.verts.append((V[v.index], ws, fk, dom))
+        self.wr = actor.rest[f'wrist.{s}']
+        self.palm_inv = actor.palm[s].inverted()
+
+    def posed(self, Q):
+        """Hand vertices in palm-frame coordinates for finger rotations Q (wrist at rest)."""
+        a = self.a; cache = {}
+        def skin(n):
+            if n not in cache:
+                cache[n] = a.fk(Q, Vector(), n) @ a.rest[n].inverted() if n in Q or any(k in Q for k in self._ancestors(n)) else Matrix()
+            return cache[n]
+        T = self.palm_inv @ self.wr.inverted()
+        out = []
+        for p, ws, fk, dom in self.verts:
+            acc = Vector()
+            for n, w in ws: acc += (skin(n) @ p) * w
+            out.append((T @ acc, fk, dom))
+        return out
+
+    def _ancestors(self, n):
+        out = []; p = self.a.parent.get(n)
+        while p: out.append(p); p = self.a.parent.get(p)
+        return out

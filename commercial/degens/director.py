@@ -8,7 +8,7 @@ Frame f shows time t = (f - 1) / 30.
 import bpy, sys, os, math, json, random
 from mathutils import Vector, Matrix, Quaternion, Euler
 HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, HERE)
-import humans, rigctl, assets, props, room
+import humans, rigctl, assets, props, room, grips
 
 ARGS = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
 def arg(k, d=None):
@@ -103,13 +103,32 @@ def main():
     NEET = load_neet(SEAT['gary'])
     P = make_props(A)
     place_oxygen(P, SEAT['earl'], A)
+    for k, a in A.items():
+        hs, pk = {'pam': ('L', 'pam_mug'), 'linda': ('L', 'linda_mug'), 'earl': ('R', 'earl_cig'), 'chad': ('R', 'chad_can')}[k]
+        ph = 'R' if k in ('pam', 'linda') else 'L'
+        a.G = {}
+        if pk == 'earl_cig':
+            c, sp, M, cl = grips.cigarette(a, hs); a.G['cig'] = (c, sp, M); print('GRIP', k, 'cig clearance mm', round(cl * 1000, 1))
+        else:
+            o = P[pk]; H = o['H']; z0, z1 = (-H * 0.45, H * 0.55) if 'mug' in pk else (-H * 0.42, H * 0.58)
+            c, M, w = grips.cylinder(a, hs, o['R'], z0, z1); a.G['hold'] = (c, M); print('GRIP', k, pk, {f: round(v * 1000, 1) for f, v in w.items()})
+        c, M, w = grips.phone(a, ph); a.G['phone'] = (c, M); print('GRIP', k, 'phone', {f: round(v * 1000, 1) for f, v in w.items()})
     cam = make_camera()
     smoke = make_smoke()
     # ---------------- per-frame solve
     Kx = rigctl.Keys()
     state = {k: dict(yaw=0.0, pitch=0.0) for k in ORDER}
     HEADS = head_positions(A, NEET, SEAT)
-    for f in range(1, NF + 1):
+    for pas in (0, 1):
+      if pas == 1:
+        for a in A.values(): a.K.flush()
+        Kx.flush()
+        global SEAT_HEADS, SEAT_P, SEAT_NEET
+        SEAT_HEADS, SEAT_P, SEAT_NEET = HEADS, P, NEET
+        seat_fix(A, S, SEAT)
+        for a in A.values(): a.K.d = {}
+        state = {k: dict(yaw=0.0, pitch=0.0) for k in ORDER}
+      for f in (range(1, NF + 1) if pas == 1 else [int(fr(10.0))]):
         t = T(f)
         for k in ['chad', 'earl', 'pam', 'linda']:
             solve_actor(A[k], k, t, f, SEAT[k], state[k], HEADS, P, Kx)
@@ -131,6 +150,7 @@ def main():
             for fc in ad.action.fcurves:
                 for kp in fc.keyframe_points: kp.interpolation = 'CONSTANT'
     verify(A, P)
+    if '--seatcheck' in ARGS: seat_report(A, S)
     bpy.context.scene.frame_set(1)
     bpy.ops.wm.save_as_mainfile(filepath=arg('--out'), compress=False)
     print('SAVED', arg('--out'))
@@ -183,7 +203,7 @@ def load_neet(seat, height=1.82):
     seat_z = min(p.z for p in under if (p - hw).length < 0.35 and p.z < hw.z)
     feet_z = min(p.z for p in under)
     ev.to_mesh_clear()
-    root['sit_dz'] = 0.505 - seat_z
+    root['sit_dz'] = room.SEAT_H + 0.005 - seat_z
     root['feet_z'] = feet_z
     root['hip_dy'] = hw.y - root.location.y
     print('NEET scale', s, 'sit seat z', seat_z, 'feet', feet_z, 'dz', root['sit_dz'])
@@ -204,8 +224,7 @@ def neet_frame(N, t, f, seat, K):
     else:
         sit = 1.0 - (ramp(t, 7.3, 7.6) - ramp(t, 16.4, 16.8))
         # the sit clip sits on air: lift/lower him so he lands on the chair; push back a little onto it
-        z = root['sit_dz'] * sit
-        bk = Matrix.Rotation(face, 3, 'Z') @ Vector((0, 0.06 * sit, 0)); x += bk.x; y += bk.y
+        z = 0.0          # his own sit clip, untouched; his stool is fitted to it
     if t < RUN['gary']:
         K.add(N['mesh'], 'hide_render', 0, f, 0)
     for i, v in enumerate((x, y, z)): K.add(root, 'location', i, f, v)
@@ -366,9 +385,32 @@ def curl_Q(actor, s, kind, Q):
                 Q[bn] = actor.local_q(bn, rigctl.qrot(actor.curl_axis[bn], sh[key][j - 1]))
 
 
+SEAT_FIX = {}
+NEET_FIX = (0.0, 0.0)
+SEAT_S = {}
 def seated_basics(a):
     hipc = (a.hip['L'] + a.hip['R']) / 2
-    return Vector((0, 0.035 - hipc.y, 0.5 + 0.095 - hipc.z))
+    dy, dz = SEAT_FIX.get(a.name, (0.0, 0.0))
+    return Vector((0, 0.035 - hipc.y - dy, 0.5 * SEAT_S.get(a.name, room.CHAIR_S) + 0.095 - hipc.z + dz))
+
+
+def finger_Q(a, s, shape):
+    Q = {}
+    if shape == 'grip': Q.update(grips.curlQ(a, s, a.G['hold'][0]))
+    elif shape == 'phone': Q.update(grips.curlQ(a, s, a.G['phone'][0]))
+    elif shape == 'cig': Q.update(grips.curlQ(a, s, a.G['cig'][0], a.G['cig'][1]))
+    else: curl_Q(a, s, shape, Q)
+    return Q
+
+
+def set_fingers(a, s, shape, Q):
+    if isinstance(shape, tuple):
+        _, s0, s1, w = shape
+        A = finger_Q(a, s, s0) if not isinstance(s0, tuple) else finger_Q(a, s, s0[2]); B = finger_Q(a, s, s1)
+        for bn in set(A) | set(B):
+            Q[bn] = A.get(bn, Quaternion()).slerp(B.get(bn, Quaternion()), w)
+    else:
+        Q.update(finger_Q(a, s, shape))
 
 
 def run_path(k, seat, t):
@@ -489,28 +531,23 @@ def solve_actor(a, k, t, f, seat, st, HEADS, P, K):
         hip = a.hip[s] + root_loc
         knee = hip + Vector((0, -a.thigh * 0.95, -0.06))
         if holding:
-            pos = hip.lerp(knee, 0.55) + Vector((-sx[s] * 0.07, 0, 0.13))
+            pos = hip.lerp(knee, 0.6) + Vector((-sx[s] * 0.035, -0.02, 0.17))
             return a.frame(pos, (sx[s] * 0.25, -1, -0.35), (-sx[s], 0, 0.0))
         pos = hip.lerp(knee, 0.62) + Vector((-sx[s] * 0.01, 0, 0.085))
         return a.frame(pos, (-sx[s] * 0.15, -1, -0.15), (sx[s] * 0.2, 0, -1))
+    G = a.G
     def phone_frame(s):
-        pos = eyes + fwd * 0.29 - up * 0.25 + Vector((-sx[s] * 0.0, 0, 0))
-        n = (eyes - pos).normalized(); y = up - n * up.dot(n)
-        return a.frame(pos, y, n)
-    def cyl_grip(s, palm, R):
-        """Prop matrix (rig space) for a cylinder of radius R gripped in this palm frame."""
-        ax = palm.to_3x3()
-        axis = ax.col[0] * a.idx_sign[s]                       # thumb side up
-        center = palm.translation + ax.col[2] * (R + 0.012) + ax.col[1] * 0.03
-        z = axis.normalized(); xx = ax.col[1].normalized(); xx = (xx - z * xx.dot(z)).normalized(); yy = z.cross(xx)
-        M = Matrix((xx, yy, z)).transposed().to_4x4(); M.translation = center; return M
-    def palm_from_cyl(s, M, R):
-        """Inverse of cyl_grip: the palm frame that grips a cylinder placed at M."""
-        xx = M.to_3x3().col[0].normalized(); z = M.to_3x3().col[2].normalized()
-        X = z * a.idx_sign[s]; Y = xx; n = X.cross(Y)
-        F = Matrix((X, Y, n)).transposed().to_4x4()
-        F.translation = M.translation - n * (R + 0.012) - Y * 0.03
+        tgt = eyes + fwd * 0.31 - up * 0.2
+        n = (eyes - tgt).normalized(); upp = (up - n * up.dot(n)).normalized()
+        X = upp * a.idx_sign[s]; Y = n.cross(X)
+        F = a.frame(Vector(), Y, n)
+        F.translation = tgt - F.to_3x3() @ (G['phone'][1].translation + Vector((0, 0, 0)))
         return F
+    def cyl_grip(s, palm, R):
+        """Prop matrix for the solved grip (fingers touching, never inside)."""
+        return palm @ G['hold'][1]
+    def palm_from_cyl(s, M, R):
+        return M @ G['hold'][1].inverted()
     def blend(F0, F1, k2, arc=Vector((0, -0.12, 0))):
         p = F0.translation.lerp(F1.translation, k2) + arc * math.sin(math.pi * k2)
         q = F0.to_quaternion().slerp(F1.to_quaternion(), k2)
@@ -551,22 +588,15 @@ def solve_actor(a, k, t, f, seat, st, HEADS, P, K):
             hands[hs] = blend(F, Fm, sip); Mprop = cyl_grip(hs, hands[hs], R)
         place[pk] = Mprop
     if pk == 'earl_cig':
-        F = lap('R'); shapes['R'] = 'cig'
+        F = lap('R', True); shapes['R'] = 'cig'      # resting thumb-up, so the cigarette points outward
         hands['R'] = F
         def cig_in_palm(F):
-            ax = F.to_3x3(); p = F.translation + ax.col[1] * 0.062 + ax.col[0] * (a.idx_sign['R'] * 0.011) - ax.col[2] * 0.004
-            z = -ax.col[2]; y = ax.col[1]; x = y.cross(z)
-            M = Matrix((x, y, z)).transposed().to_4x4(); M.translation = p - z * 0.012; return M
+            return F @ G['cig'][2]
         def cig_at_lips(droop=0.35):
             z = (fwd * math.cos(droop) - up * math.sin(droop)).normalized(); y = up - z * up.dot(z); x = y.cross(z)
             M = Matrix((x.normalized(), y.normalized(), z)).transposed().to_4x4(); M.translation = mouth + fwd * 0.004 - z * 0.004; return M
         def palm_for_cig(M):
-            # the palm that holds this cigarette (inverse of cig_in_palm)
-            z = M.to_3x3().col[2]; y = M.to_3x3().col[1]; n = -z; x = y.cross(n)
-            Fp = Matrix((x, y, n)).transposed().to_4x4()
-            p = M.translation + z * 0.012
-            Fp.translation = p - (y * 0.062 + x * (a.idx_sign['R'] * 0.011) - n * 0.004)
-            return Fp
+            return M @ G['cig'][2].inverted()
         drag = max(pulse(t, 13.0, 13.8, 0.3), pulse(t, 25.1, 26.0, 0.3))
         place_in = pulse(t, 22.15, 22.8, 0.25)            # puts it in his mouth (off camera)
         in_mouth = win(t, 22.5, 25.4)
@@ -581,11 +611,8 @@ def solve_actor(a, k, t, f, seat, st, HEADS, P, K):
     pphone = P[k + '_phone']
     if phone_up > 0.01 and not running:
         Fp = phone_frame(phand)
-        hands[phand] = blend(hands[phand], Fp, clamp(phone_up)); shapes[phand] = 'phone' if phone_up > 0.4 else shapes[phand]
-        ax = hands[phand].to_3x3()
-        M = Matrix((ax.col[0], ax.col[1], ax.col[2])).transposed().to_4x4()
-        M = hands[phand].copy(); M.translation = hands[phand].translation + ax.col[2] * 0.004 + ax.col[1] * 0.02
-        place[k + '_phone'] = M
+        hands[phand] = blend(hands[phand], Fp, clamp(phone_up)); shapes[phand] = ('mix', shapes[phand], 'phone', clamp(phone_up * 1.5))
+        place[k + '_phone'] = hands[phand] @ G['phone'][1]
     else:
         place[k + '_phone'] = None
     # Chad wipes his nose (left hand), Pam and Linda clap (right hand pats the mug hand)
@@ -625,7 +652,7 @@ def solve_actor(a, k, t, f, seat, st, HEADS, P, K):
                     place[pk3] = Matrix.Translation(delta) @ place[pk3]
     # ---------------- key it all
     for s in 'LR':
-        curl_Q(a, s, shapes[s], Q)
+        set_fingers(a, s, shapes[s], Q)
     H = {('hand', s): mw @ a.hand_matrix_for_palm(s, hands[s]) for s in 'LR'}
     for s in 'LR':
         poles['hand', s] = mw @ (a.shoulder[s] + root_loc + Vector((sx[s] * 0.7, 0.45, -0.45)))
@@ -708,6 +735,7 @@ class _Direct:
     """A Keys stand-in that sets values immediately (for sampling NEET before his keys exist)."""
     def add(self, idb, path, idx, frame, val):
         if path == 'location': idb.location[idx] = val
+        elif path == 'hide_render': idb.hide_render = bool(val)
         elif path == 'rotation_euler': idb.rotation_euler[idx] = val
 
 
@@ -790,7 +818,7 @@ def chairs(S, t, f, K):
         u = clamp((t - RUN[k] - 0.18) / 0.35) if k in RUN else 0.0
         ang = (1 if i % 2 else -1) * ease(u) * 1.45
         # tip over its side edge: rotate about the edge on the floor
-        edge = Vector((-0.27 if ang > 0 else 0.27, 0, 0))
+        edge = Vector((-0.27 * room.CHAIR_S if ang > 0 else 0.27 * room.CHAIR_S, 0, 0))
         M = Matrix.Translation(edge) @ Matrix.Rotation(ang, 4, 'Y') @ Matrix.Translation(-edge)
         loc = M.translation; e = M.to_euler()
         for j in range(3): K.add(ch, 'location', j, f, loc[j] + (0, 0, math.sin(math.pi * u) * 0.04)[j])
@@ -870,6 +898,160 @@ def verify(A, P):
         for o in a.rig.children:
             if o.type == 'MESH': o.hide_viewport = False
 
+
+
+
+# ================================================================== seat contact
+def _world_mesh(o, dg):
+    ev = o.evaluated_get(dg); me = ev.to_mesh()
+    V = [o.matrix_world @ v.co for v in me.vertices]; F = [tuple(p.vertices) for p in me.polygons]
+    ev.to_mesh_clear(); return V, F
+
+
+def _inside(tree, p):
+    """Behind the nearest surface (against its normal), within 3 cm: works for open shells too."""
+    loc, nrm, idx, dist = tree.find_nearest(p, 0.03)
+    return loc is not None and (p - loc).dot(nrm) < -0.0005
+
+
+def penetration(actor_objs, chair, dg):
+    """Contacts between a character and a chair, both ways: character vertices behind the chair's
+    surface, and chair vertices behind the character's surface (thin chair legs through a calf)."""
+    from mathutils.bvhtree import BVHTree
+    TV, TF = [], []
+    for c in [chair] + list(chair.children_recursive):
+        if c.type == 'MESH':
+            v, fcs = _world_mesh(c, dg); off = len(TV); TV += v; TF += [tuple(i + off for i in x) for x in fcs]
+    tree = BVHTree.FromPolygons(TV, TF)
+    lo = Vector([min(v[i] for v in TV) for i in range(3)]) - Vector((.1, .1, .1)); hi = Vector([max(v[i] for v in TV) for i in range(3)]) + Vector((.1, .1, .1))
+    bad = []
+    for o in actor_objs:
+        V, F = _world_mesh(o, dg)
+        for p in V:
+            if all(lo[i] <= p[i] <= hi[i] for i in range(3)) and _inside(tree, p):
+                bad.append((p, tree.find_nearest(p)[3]))
+        if F:
+            t2 = BVHTree.FromPolygons(V, F)
+            for p in TV:
+                loc, nrm, idx, dist = t2.find_nearest(p, 0.08)
+                if loc is not None and (p - loc).dot(nrm) < -0.001:
+                    bad.append((p, dist))
+    return bad
+
+
+def seat_fix_once(A, S, SEAT):
+    """For each seated actor, the smallest (forward, up) shift of the hips that leaves no vertex of
+    the body or clothes inside the chair, found by grid search at a seated frame."""
+    sc = bpy.context.scene; f = int(fr(10.0))
+    stool_fit(SEAT_NEET, S['chairs'][ORDER.index('gary')], SEAT['gary'])
+    best = {k: None for k in A}
+    combos = sorted(((dy, dz) for dy in [i * 0.01 for i in range(0, 9)] for dz in [i * 0.005 for i in range(0, 9)]), key=lambda c: c[0] * 1.5 + c[1])
+    for dy, dz in combos:
+        todo = [k for k in A if best[k] is None]
+        if not todo: break
+        for k in todo:
+            SEAT_FIX[k] = (dy, dz)
+            sc_ = SEAT_S.get(k, room.CHAIR_S); S['chairs'][ORDER.index(k)]['chair'].scale = (sc_, sc_, sc_)
+            solve_actor(A[k], k, T(f), f, SEAT[k], dict(yaw=0.0, pitch=0.0), SEAT_HEADS, SEAT_P, rigctl.Keys())
+            A[k].K.flush()
+        sc.frame_set(f + 1); sc.frame_set(f); bpy.context.view_layer.update(); dg = bpy.context.evaluated_depsgraph_get()
+        for k in todo:
+            i = ORDER.index(k); a = A[k]
+            objs = [o for o in a.rig.children if o.type == 'MESH' and not any(x in o.name for x in ('high-poly', 'teeth', 'tongue', 'eyelash', 'eyebrow'))]
+            n = len([1 for _, dep in penetration(objs, S['chairs'][i]['chair'], dg) if dep > 0.005])
+            if n == 0:
+                best[k] = (dy + 0.003, dz + 0.003); print('SEAT', k, 'clear at forward', round(dy * 100, 1), 'cm, up', round(dz * 100, 1), 'cm')
+    for k in A:
+        if best[k] is None:
+            print('SEAT', k, 'NOT CLEAR at chair', SEAT_S.get(k, room.CHAIR_S)); best[k] = None
+        else:
+            SEAT_FIX[k] = best[k]
+    return [k for k in A if best[k] is None]
+
+
+def seat_report(A, S):
+    sc = bpy.context.scene
+    for t in (10.0, 20.0, 30.0, 36.0):
+        sc.frame_set(int(fr(t))); dg = bpy.context.evaluated_depsgraph_get()
+        for i, k in enumerate(ORDER):
+            if k not in A: continue
+            a = A[k]; objs = [o for o in a.rig.children if o.type == 'MESH' and not any(x in o.name for x in ('high-poly', 'teeth', 'tongue', 'eyelash', 'eyebrow'))]
+            bad = penetration(objs, S['chairs'][i]['chair'], dg)
+            print('SEATCHECK', t, k, len(bad), 'deepest cm', round(max([d for _, d in bad] + [0]) * 100, 2))
+
+
+
+def seat_fix(A, S, SEAT):
+    """Seat everyone without clipping; a smaller chair for anyone whose legs are too short for it."""
+    left = seat_fix_once(A, S, SEAT)
+    for s_ in (0.88, 0.85, 0.82, 0.79):
+        if not left: break
+        sub = {k: A[k] for k in left}
+        for k in left: SEAT_S[k] = s_
+        left = seat_fix_once(sub, S, SEAT)
+    for k in left: print('SEAT', k, 'STILL NOT CLEAR')
+    for k, s_ in SEAT_S.items(): print('SEAT', k, 'chair scale', s_, 'seat height cm', round(50 * s_, 1))
+
+
+def neet_fit(N, C, seat):
+    """Move NEET (not change him) so his seated clips clear his chair: his back in front of the
+    backrest's face, his seat on top of the seat, measured with rays on the chair (a clean mesh)."""
+    from mathutils.bvhtree import BVHTree
+    global NEET_FIX
+    sc = bpy.context.scene; chair = C['chair']; piv = C['pivot']
+    if NEET_FIX != (0.0, 0.0): return          # already fitted
+    if N['root'].animation_data: N['root'].animation_data_clear()
+    times = [t / 4 for t in range(int(3.4 * 4), int(7.2 * 4))] + [t / 4 for t in range(int(16.9 * 4), int(39.2 * 4))]
+    for rnd in range(4):
+        fwd = up = 0.0
+        sc.frame_set(1); dg = bpy.context.evaluated_depsgraph_get()
+        TV, TF = [], []
+        for c in [chair] + list(chair.children_recursive):
+            if c.type == 'MESH':
+                v, fcs = _world_mesh(c, dg); off = len(TV); TV += v; TF += [tuple(i + off for i in x) for x in fcs]
+        Mi = piv.matrix_world.inverted(); tree = BVHTree.FromPolygons([Mi @ v for v in TV], TF)
+        seat_top = max(v.z for v in (Mi @ w for w in TV) if abs(v.x) < 0.15 and abs(v.y) < 0.12 and v.z < 0.7)
+        for tt in times:
+            ff = int(fr(tt)); neet_frame(N, tt, ff, seat, _Direct()); sc.frame_set(ff); bpy.context.view_layer.update()
+            dg = bpy.context.evaluated_depsgraph_get(); V, _ = _world_mesh(N['mesh'], dg)
+            for w in V:
+                p = Mi @ w
+                if abs(p.x) > 0.24: continue
+                if seat_top + 0.06 < p.z < 0.98:
+                    h = tree.ray_cast(Vector((p.x, -0.6, p.z)), Vector((0, 1, 0)), 1.2)   # the backrest's front face
+                    if h[0] is not None and h[0].y < 0.35 and p.y > h[0].y - 0.004:
+                        fwd = max(fwd, p.y - h[0].y + 0.006)
+                if p.z < seat_top + 0.06 and -0.3 < p.y < 0.2:
+                    h = tree.ray_cast(Vector((p.x, p.y, 1.2)), Vector((0, 0, -1)), 1.5)
+                    if h[0] is not None and h[0].z > p.z - 0.004 and h[0].z - p.z < 0.12:
+                        up = max(up, h[0].z - p.z + 0.006)
+        print('SEAT NEET round', rnd, 'needs forward cm', round(fwd * 100, 1), 'up cm', round(up * 100, 1))
+        if fwd < 0.002 and up < 0.002: break
+        NEET_FIX = (NEET_FIX[0] + fwd, NEET_FIX[1] + up)
+    print('SEAT NEET moved forward', round(NEET_FIX[0] * 100, 1), 'cm, up', round(NEET_FIX[1] * 100, 1), 'cm')
+
+
+
+def stool_fit(N, C, seat):
+    """Put NEET's stool right under him: centred under his hips, top at the lowest his seat goes."""
+    if C.get('fitted'): return
+    sc = bpy.context.scene; rig = N['rig']; hb = rig.pose.bones['mixamorig:Hips']; piv = C['pivot']; st = C['chair']
+    if N['root'].animation_data: N['root'].animation_data_clear()
+    Mi = piv.matrix_world.inverted()
+    times = [t / 4 for t in range(int(3.4 * 4), int(7.2 * 4))] + [t / 4 for t in range(int(16.9 * 4), int(39.2 * 4))]
+    lows, xs, ys = [], [], []
+    for tt in times:
+        ff = int(fr(tt)); neet_frame(N, tt, ff, seat, _Direct()); sc.frame_set(ff); bpy.context.view_layer.update()
+        dg = bpy.context.evaluated_depsgraph_get(); V, _ = _world_mesh(N['mesh'], dg)
+        h = Mi @ (rig.matrix_world @ hb.head)
+        pts = [Mi @ w for w in V]
+        under = [p for p in pts if (Vector((p.x, p.y)) - Vector((h.x, h.y))).length < 0.13 and p.z < h.z]
+        lows.append(min(p.z for p in under)); xs.append(h.x); ys.append(h.y)
+    top = min(lows) - 0.002; cx = sum(xs) / len(xs); cy = sum(ys) / len(ys)
+    s = top / 0.437
+    st.scale = (1.15, 1.15, s); st.location = (cx, cy, 0)
+    C['fitted'] = True
+    print('SEAT NEET stool top cm', round(top * 100, 1), 'gap over his clips cm', round((max(lows) - min(lows)) * 100, 1), 'centre', round(cx, 3), round(cy, 3))
 
 if __name__ == '__main__':
     main()

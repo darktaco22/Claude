@@ -92,6 +92,8 @@ def printed(name, img, rough=0.75):
 
 
 SEAT_ANGLES = [-50, -25, 0, 25, 50]
+CHAIR_S = 0.92            # a slightly smaller school chair: seat at 46 cm
+SEAT_H = 0.5 * CHAIR_S
 def seats():
     out = []
     for d in SEAT_ANGLES:
@@ -219,7 +221,10 @@ def basement():
     # the circle of chairs
     S['seats'] = seats(); S['chairs'] = []
     for s in S['seats']:
-        ch, _ = assets.load('SchoolChair_01')
+        if len(S['chairs']) == 4:       # NEET's seat: a low wooden stool, fitted to his own sitting pose later
+            ch, _ = assets.load('wooden_stool_01')
+        else:
+            ch, _ = assets.load('SchoolChair_01'); ch.scale = (CHAIR_S, CHAIR_S, CHAIR_S)
         piv = bpy.data.objects.new('chair_pivot', None); C().objects.link(piv)
         piv.location = (s['x'], s['y'], 0); piv.rotation_euler.z = s['face']; ch.parent = piv
         S['chairs'].append(dict(pivot=piv, chair=ch))
