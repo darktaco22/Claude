@@ -31,7 +31,8 @@ class Char:
         rig.animation_data_create(); rig.animation_data.action = None
         B = {b.name.split(":")[-1]: b for b in rig.data.bones}
         self.B = B
-        need = ("LeftArm", "LeftForeArm", "LeftHand", "RightArm", "RightForeArm", "RightHand", "LeftLeg", "RightLeg", "LeftFoot", "RightFoot", "Head", "Spine", "Spine1", "Spine2")
+        # hands are optional: a dozen of the game's models end at the wrist (the IK chain is on the forearm anyway)
+        need = ("LeftArm", "LeftForeArm", "RightArm", "RightForeArm", "LeftLeg", "RightLeg", "LeftFoot", "RightFoot", "Head", "Spine", "Spine1", "Spine2")
         self.ik = all(n in B for n in need)
         self.clip_actions = {a.name.split("_")[0]: a for a in bpy.data.actions if a.name.endswith("_" + rig.name)}
         if not self.ik:   # a skeleton of its own (a quadruped, a book): it plays the game's clips instead
@@ -45,7 +46,9 @@ class Char:
         tail = lambda n: Vector(B[n].tail_local)
         self.hip = head("Hips")
         self.shoulderL, self.shoulderR = head("LeftArm"), head("RightArm")
-        self.handL, self.handR = head("LeftHand"), head("RightHand")
+        self.handL = head("LeftHand") if "LeftHand" in B else tail("LeftForeArm")
+        self.handR = head("RightHand") if "RightHand" in B else tail("RightForeArm")
+        self.hand_bone = {s_: (s_ + "Hand") if (s_ + "Hand") in B else (s_ + "ForeArm") for s_ in ("Left", "Right")}
         self.footL, self.footR = head("LeftFoot"), head("RightFoot")
         self.headp = head("Head")
         self.neck = head("Neck")

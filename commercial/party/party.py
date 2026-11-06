@@ -333,6 +333,9 @@ def to_local(c, p):
     return Vector((ca * d.x - sa * d.y, sa * d.x + ca * d.y, d.z))
 
 def attach(c, obj, bone="RightHand", offset=(0, 0.08, 0.03), rot=(0, 0, 0)):
+    if bone.endswith("Hand") and "mixamorig:" + bone not in c.rig.data.bones:   # no hand bone: carry it at the wrist
+        fa = c.rig.data.bones.get("mixamorig:" + bone.replace("Hand", "ForeArm"))
+        if fa: bone = fa.name.split(":")[-1]; offset = (offset[0], offset[1] + fa.length, offset[2])
     if "mixamorig:" + bone not in c.rig.data.bones:
         bpy.data.objects.remove(obj); return None
     cn = obj.constraints.new("CHILD_OF"); cn.target = c.rig; cn.subtarget = "mixamorig:" + bone
