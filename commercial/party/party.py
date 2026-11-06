@@ -969,6 +969,28 @@ for o in (cam, tgt):
         for k in fc.keyframe_points:
             k.interpolation = "BEZIER"; k.handle_left_type = k.handle_right_type = "AUTO"
 
+# trees the camera flies through or brushes past (dark foliage filling the frame): leave them out of the render
+_cf = {fc.array_index: fc for fc in cam.animation_data.action.fcurves if fc.data_path == "location"}
+cam_pts = [Vector([_cf[i].evaluate(f) for i in range(3)]) for f in range(1, N + 1, 3)]
+def _near(p, r, top):
+    return any((Vector((q.x - p.x, q.y - p.y))).length < r and q.z < top + 1.5 for q in cam_pts)
+hidden = 0
+crowns = {}
+for o in bpy.data.objects:
+    if o.name.startswith(("frond", "coconut")): crowns.setdefault((round(o.location.x, 1), round(o.location.y, 1)), []).append(o)
+for o in bpy.data.objects:
+    if o.name.startswith("palm_trunk"):
+        top = o.data.splines[0].bezier_points[-1].co
+        if _near(top, 3.4, top.z):
+            o.hide_render = True; hidden += 1
+            for (cx, cy), parts in crowns.items():
+                if abs(cx - top.x) < 0.3 and abs(cy - top.y) < 0.3:
+                    for p_ in parts: p_.hide_render = True
+    elif o.name.endswith("_inst") and o.instance_collection and ("tree" in o.name):
+        sc_ = o.scale.x
+        if _near(o.location, 5.5 * sc_, o.location.z + 9.0 * sc_): o.hide_render = True; hidden += 1
+print("trees cleared from the camera's path:", hidden)
+
 # ------------------------------------------------------------------------------------------------ render
 r = sc.render
 r.engine = "CYCLES"   # faster than EEVEE on this machine's software GPU, and better glass and water
