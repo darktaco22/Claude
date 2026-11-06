@@ -1019,6 +1019,49 @@ for o in bpy.data.objects:
         if _blocks(o.location + Vector((0, 0, h_)), (7.0 if "tree" in o.name else 2.0) * o.scale.x): o.hide_render = True; hidden += 1   # (a jacaranda crown is wide)
 print("trees cleared from the camera's path:", hidden)
 
+# TO THE MOON: the inflatable rocket on the lawn really launches at the end, into the closing aerial
+F_IGN, F_LIFT = 785, 805
+rk = bpy.data.objects.get("rocket")
+if rk:
+    base = rk.location.copy()
+    flame = next((o for o in rk.children if o.name.startswith("Cone") and o.active_material and o.active_material.name == "flame"), None)
+    glow = bpy.data.objects.new("rocket_glow", bpy.data.lights.new("rocket_glow", "POINT")); sc.collection.objects.link(glow)
+    glow.parent = rk; glow.location = (0, 0, -0.35); glow.data.color = (1.0, 0.55, 0.2); glow.data.shadow_soft_size = 0.4
+    glow.data.energy = 0.0; glow.data.keyframe_insert("energy", frame=F_IGN)
+    for f in range(F_IGN, N + 1, 2):   # ignition flicker, then full thrust
+        k = min(1.0, (f - F_IGN) / (F_LIFT - F_IGN))
+        glow.data.energy = (1500 + 3500 * k) * random.uniform(0.75, 1.15); glow.data.keyframe_insert("energy", frame=f)
+        if flame:
+            flame.scale = (1 + 0.5 * k, 1 + 0.5 * k, (1 + 3.0 * k) * random.uniform(0.85, 1.15)); flame.keyframe_insert("scale", frame=f)
+    if flame:
+        flame.scale = (1, 1, 1); flame.keyframe_insert("scale", frame=F_IGN - 1)
+    rk.location = base; rk.keyframe_insert("location", frame=F_LIFT)
+    rk.keyframe_insert("location", frame=1)
+    for f in range(F_LIFT + 2, N + 1, 2):   # lift-off: slow, then faster and faster, a little wobble
+        t = (f - F_LIFT) / FPS
+        rk.location = base + Vector((0.15 * math.sin(t * 3.0) * t, 0.1 * math.cos(t * 2.3) * t, 0.5 * 5.0 * t * t))
+        rk.keyframe_insert("location", frame=f)
+    for fc in rk.animation_data.action.fcurves:
+        if fc.data_path == "location":
+            for kp in fc.keyframe_points: kp.interpolation = "LINEAR"
+    # the launch cloud billowing out over the grass, and a smoke trail left hanging in the air
+    for j in range(22):
+        a = j / 22 * math.tau; f0 = F_IGN + 4 + int(j * 0.8)
+        s_ = sphere("launch_cloud", (0, 0, 0), 0.25, SMOKE, seg=20)
+        s_.location = base + Vector((0, 0, 0.2)); s_.scale = (0.001,) * 3
+        s_.keyframe_insert("location", frame=1); s_.keyframe_insert("scale", frame=1); s_.keyframe_insert("scale", frame=f0 - 1); s_.keyframe_insert("location", frame=f0 - 1)
+        s_.scale = (1.0,) * 3; s_.keyframe_insert("scale", frame=f0 + 3)
+        s_.location = base + Vector((math.cos(a) * random.uniform(1.6, 2.6), math.sin(a) * random.uniform(1.6, 2.6), random.uniform(0.3, 0.9)))
+        s_.scale = (random.uniform(3.0, 4.5),) * 3; s_.keyframe_insert("location", frame=f0 + 60); s_.keyframe_insert("scale", frame=f0 + 60)
+    for f in range(F_LIFT, N + 1, 2):
+        t = (f - F_LIFT) / FPS; p = base + Vector((0.15 * math.sin(t * 3.0) * t, 0.1 * math.cos(t * 2.3) * t, 0.5 * 5.0 * t * t - 0.3))
+        s_ = sphere("trail", (0, 0, 0), 0.22, SMOKE, seg=16)
+        s_.location = p; s_.scale = (0.001,) * 3; s_.keyframe_insert("scale", frame=1); s_.keyframe_insert("scale", frame=f - 1)
+        s_.scale = (1.0,) * 3; s_.keyframe_insert("scale", frame=f + 1)
+        s_.location = p + Vector((random.uniform(-0.4, 0.4), random.uniform(-0.4, 0.4), -0.2)); s_.scale = (2.6,) * 3
+        s_.keyframe_insert("scale", frame=min(N + 40, f + 50)); s_.keyframe_insert("location", frame=min(N + 40, f + 50))
+    print("rocket launch at", F_LIFT, "flame", flame.name if flame else None)
+
 # ------------------------------------------------------------------------------------------------ render
 r = sc.render
 r.engine = "CYCLES"   # faster than EEVEE on this machine's software GPU, and better glass and water
