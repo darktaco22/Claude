@@ -18,7 +18,7 @@ def MEM(tag): print("MEM", tag, int(resource.getrusage(resource.RUSAGE_SELF).ru_
 argv = sys.argv[sys.argv.index("--") + 1:]
 A = lambda k, d=None, t=str: t(argv[argv.index(k) + 1]) if k in argv else d
 MODELS = os.path.abspath(A("--models")); PH = os.path.abspath(A("--ph"))
-N = A("--frames", 720, int); FPS = 30
+N = A("--frames", 900, int); FPS = 30
 CLEAN = "--clean" in argv
 random.seed(11)
 bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -178,18 +178,55 @@ for x in (2.8, 4.3, 5.8):
     import_gltf(os.path.join(PH, "modern_ceiling_lamp_01/modern_ceiling_lamp_01.gltf"), (x, 9.5, 2.3), 0, 1.0)
 
 # palms: a leaning trunk of rings and a crown of drooping fronds
-TRUNK = mat("trunk", "#6B5038", rough=0.9); FROND = mat("frond", "#2E6B2A", rough=0.7)
+TRUNK = mat("trunk", "#6B5038", rough=0.9); FROND = mat("frond", "#3A7A2E", rough=0.55)
+FROND.node_tree.nodes["Principled BSDF"].inputs["Subsurface Weight"].default_value = 0.0
+import bmesh
+_FROND_MESH = None
+def frond_mesh():
+    """One palm frond: a curving rachis with ~36 pairs of tapering leaflets drooping from it (shared by every palm)."""
+    global _FROND_MESH
+    if _FROND_MESH: return _FROND_MESH
+    bm = bmesh.new(); L = 2.8; n = 36
+    def spine(t):   # along x, arching up then down
+        return Vector((L * t, 0, 0.55 * t - 1.25 * t * t))
+    for i in range(n):
+        t = 0.08 + 0.9 * i / n; p = spine(t); p2 = spine(t + 0.02)
+        tang = (p2 - p).normalized()
+        length = 0.62 * math.sin(math.pi * min(1.0, t * 1.15)) + 0.08
+        for side in (-1, 1):
+            out = Vector((0, side, 0)).lerp(Vector((0, side * 0.7, -0.7)), 0.5).normalized()
+            tip = p + out * length + tang * 0.12
+            w = 0.035 + 0.02 * (1 - t)
+            v1 = bm.verts.new(p - tang * w); v2 = bm.verts.new(p + tang * w)
+            v3 = bm.verts.new(tip + tang * 0.01); v4 = bm.verts.new(p + out * length * 0.5 + tang * w * 1.6)
+            bm.faces.new((v1, v4, v3)); bm.faces.new((v4, v2, v3))
+    for i in range(12):   # the rachis itself, a thin ribbon
+        t0, t1 = i / 12, (i + 1) / 12
+        a0, a1 = spine(t0), spine(t1); w0, w1 = 0.03 * (1 - t0) + 0.008, 0.03 * (1 - t1) + 0.008
+        vs = [bm.verts.new(a0 + Vector((0, -w0, 0))), bm.verts.new(a0 + Vector((0, w0, 0))), bm.verts.new(a1 + Vector((0, w1, 0))), bm.verts.new(a1 + Vector((0, -w1, 0)))]
+        bm.faces.new(vs)
+    me = bpy.data.meshes.new("frond"); bm.to_mesh(me); bm.free()
+    me.materials.append(FROND); _FROND_MESH = me
+    return me
 def palm(x, y, h=6.0, lean=(0.4, 0.2)):
+    """A palm: one continuous tapering, curving trunk with growth rings, a crown of fronds and a few coconuts."""
     top = Vector((x + lean[0], y + lean[1], h))
-    for i in range(12):
-        k = i / 12; p = Vector((x, y, 0)).lerp(top, k) + Vector((lean[0] * 0.3 * math.sin(k * math.pi), 0, 0))
-        cyl("trunk", p, 0.2 - 0.06 * k, h / 12 + 0.02, TRUNK, v=10)
-    for j in range(9):
-        a = j / 9 * math.tau
-        for k2 in range(3):   # each frond: three leaf blobs drooping outwards
-            r = 0.55 + k2 * 0.65; p = top + Vector((math.cos(a) * r, math.sin(a) * r, -0.12 * k2 * k2))
-            lf = sphere("frond", p, 0.42, FROND, seg=10); lf.scale = (1.0, 0.35, 0.08)
-            lf.rotation_euler = (0, math.radians(10 + 18 * k2), a)
+    curve = bpy.data.curves.new("palm_trunk", "CURVE"); curve.dimensions = "3D"
+    sp = curve.splines.new("BEZIER"); sp.bezier_points.add(2)
+    pts = [Vector((x, y, -0.3)), Vector((x + lean[0] * 0.25, y + lean[1] * 0.25, h * 0.5)), top]
+    for bp, p in zip(sp.bezier_points, pts):
+        bp.co = p; bp.handle_left_type = bp.handle_right_type = "AUTO"
+    for bp, r in zip(sp.bezier_points, (1.0, 0.8, 0.6)): bp.radius = r
+    curve.bevel_depth = 0.2; curve.bevel_resolution = 4; curve.resolution_u = 24; curve.use_fill_caps = True
+    o = bpy.data.objects.new("palm_trunk", curve); sc.collection.objects.link(o); o.data.materials.append(TRUNK)
+    me = frond_mesh()
+    for j in range(14):
+        a = j / 14 * math.tau + random.uniform(-0.1, 0.1)
+        f = bpy.data.objects.new("frond", me); sc.collection.objects.link(f)
+        f.location = top; f.rotation_euler = (random.uniform(-0.15, 0.15), math.radians(random.uniform(-25, 10) - (25 if j % 2 else 0)), a)
+        s_ = random.uniform(0.85, 1.15); f.scale = (s_, s_, s_)
+    for k in range(4):
+        sphere("coconut", top + Vector((math.cos(k * 1.6) * 0.18, math.sin(k * 1.6) * 0.18, -0.25)), 0.11, mat("coconut", "#5A3B1E", rough=0.7), seg=10)
 for (x, y, l) in ((-11, 3.5, (0.6, -0.3)), (-10.5, -6.5, (0.5, 0.4)), (11, 3.8, (-0.6, -0.2)), (11.2, -6.0, (-0.5, 0.3)), (-12.5, -1.5, (0.3, 0.1)), (12.6, -1.2, (-0.3, 0.1))):
     palm(x, y, 6.2 + random.uniform(-0.6, 0.8), l)
 
@@ -357,14 +394,34 @@ def cannonball(cid, x, f_jump):
     ring = obj_mat(bpy.context.active_object, SPL)
     ring.scale = (0.01,) * 3; ring.keyframe_insert("scale", frame=f_land - 1); ring.scale = (1, 1, 1); ring.keyframe_insert("scale", frame=f_land)
     ring.scale = (5, 5, 1); ring.keyframe_insert("scale", frame=f_land + 40); ring.scale = (0.01,) * 3; ring.keyframe_insert("scale", frame=f_land + 41)
-cannonball("popcat", -1.6, 196)
+cannonball("popcat", -1.6, 200)
 
 MEM("cannonball")
 # poolside drinkers, chatting, red cups in hand
-group = [("chillguy", -7.2, -5.4), ("jeanphil", -7.9, -6.2)]
-centre = Vector((-7.5, -5.9, 1.2))
-for i, (cid, x, y) in enumerate(group):
-    c = mocap(cid, x, y, face(centre.x - x, centre.y - y), ("79_33", "80_29")[i % 2], start=0.3, travel=0.0)
+# walkers: a slow lap of the west and south deck with a drink in hand, on the game's own walk cycle
+def walk_loop(c, pts, speed, offset=0.0, clip_speed=None):
+    """Walk a closed polyline at `speed` m/s, facing along it; the walk clip's rate matches the pace (no sliding)."""
+    segs = [(Vector(pts[i]), Vector(pts[(i + 1) % len(pts)])) for i in range(len(pts))]
+    L = sum((b - a).length for a, b in segs)
+    c.play("walk", 1, speed=clip_speed or speed / 1.1)
+    prev = None
+    for f in range(1, N + 1, 2):
+        d = (speed * f / FPS + offset) % L
+        for a, b in segs:
+            sl = (b - a).length
+            if d <= sl:
+                p = a.lerp(b, d / sl); dirv = (b - a).normalized(); break
+            d -= sl
+        rot = face(dirv.x, dirv.y)
+        if prev is not None:
+            while rot - prev > math.pi: rot -= math.tau
+            while rot - prev < -math.pi: rot += math.tau
+        prev = rot
+        c.key(f, {"clip_driven": True, "loc": Vector((p.x, p.y, 0)), "rot": rot})
+lap = [(-10.4, -3.4), (-10.4, -8.2), (-0.8, -8.4), (-0.8, -7.2), (-9.0, -7.0), (-9.0, -3.4)]
+for i, cid in enumerate(("chillguy", "jeanphil")):
+    c = load(cid); guests[cid] = c
+    walk_loop(c, lap, 0.9, offset=i * 9.0)
     attach(c, cyl("cup", (0, 0, 0), 0.045, 0.13, CUP), offset=(0, 0.07, 0.04), rot=(math.pi / 2, 0, 0))
 # chatters by the deck's west side
 # the conga line: round and round the pool, the game's own walk
@@ -401,11 +458,8 @@ for i, cid in enumerate(("useless", "bonk", "pnut")):
                 prev = k.co.y
 
 # the kitchen bar: drinks
-for i, (cid, x) in enumerate((("dope", 7.4),)):
-    c = load(cid); guests[cid] = c; place(c, x, 8.0, face(-1, 0.6))
-    c.bake(M.hold_cup, 1, N, step=2, phase=i * 0.29)
-    if True:
-        attach(c, cyl("cup", (0, 0, 0), 0.045, 0.13, mat("cup2", "#F2C14E", rough=0.2, alpha=0.8)), offset=(0, 0.07, 0.04), rot=(math.pi / 2, 0, 0))
+c = load("dope"); guests["dope"] = c   # DOPE wanders the living room
+walk_loop(c, [(-1.5, 6.4), (1.8, 6.4), (1.8, 7.6), (-1.5, 7.6)], 0.7, offset=2.0)
 
 MEM("bar")
 # the two couples
@@ -421,27 +475,39 @@ couple("troll", "michi", -7.6, 6.3, math.pi / 2)     # inside, by the west windo
 
 
 # THE WHALE on the balcony, making it rain on the pool
-BILL = mat("bill", "#6FBF5A", rough=0.6, emit=0.2)
+BILL = bpy.data.materials.new("bill"); BILL.use_nodes = True
+_bt = BILL.node_tree; _bb = _bt.nodes["Principled BSDF"]; _bi = _bt.nodes.new("ShaderNodeTexImage")
+_bi.image = bpy.data.images.load(os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "bill.png"))
+_bt.links.new(_bi.outputs["Color"], _bb.inputs["Base Color"]); _bt.links.new(_bi.outputs["Color"], _bb.inputs["Emission Color"])
+_bb.inputs["Emission Strength"].default_value = 0.35; _bb.inputs["Roughness"].default_value = 0.6
 wh = load("whale"); guests["whale"] = wh; place(wh, 1.2, 4.75, face(0, -1), z=3.85)
 wh.bake(M.make_it_rain, 1, N, step=2)
-for i in range(140):
-    f0 = 20 + int(i * (N - 60) / 140) + random.randint(0, 4)
-    bpy.ops.mesh.primitive_plane_add(size=1, location=(0, 0, 0)); b = obj_mat(bpy.context.active_object, BILL)
-    b.scale = (0.16, 0.07, 1); b.location = (1.2 + random.uniform(-0.3, 0.3), 4.4, 5.0)
-    b.keyframe_insert("scale", frame=1); b.scale = (0.0001,) * 3; b.keyframe_insert("scale", frame=1)
-    b.keyframe_insert("scale", frame=f0 - 1); b.keyframe_insert("location", frame=f0 - 1)
-    b.scale = (0.16, 0.07, 1); b.keyframe_insert("scale", frame=f0)
-    vx, vy = random.uniform(-2.2, 2.2), random.uniform(-2.6, -0.6)
-    for j in range(0, 90, 6):
-        tt = j / FPS; z = 5.0 + 1.2 * tt - 1.6 * tt * tt
-        if z < WZ + 0.01: z = WZ + 0.01
-        b.location = (1.2 + vx * tt + 0.15 * math.sin(tt * 7 + i), 4.4 + vy * tt, z)
-        b.rotation_euler = (math.sin(tt * 5 + i) * 1.2, math.cos(tt * 4 + i) * 0.9, tt * 2 + i)
+stack = attach(wh, box("cash_stack", -0.09, 0.09, -0.04, 0.04, -0.02, 0.06, BILL), offset=(0, 0.1, 0.02))
+bill_mesh = None
+for i in range(350):
+    f0 = 10 + int(i * (N - 70) / 350) + random.randint(0, 3)
+    if bill_mesh is None:
+        bpy.ops.mesh.primitive_plane_add(size=1); tmp = bpy.context.active_object; bill_mesh = tmp.data; bill_mesh.materials.append(BILL); bpy.data.objects.remove(tmp)
+    b = bpy.data.objects.new("bill", bill_mesh); sc.collection.objects.link(b)
+    S0 = (0.32, 0.14, 1)
+    x0 = 1.2 + random.uniform(-0.5, 0.5)
+    b.location = (x0, 4.3, 4.9); b.scale = (0.0001,) * 3; b.keyframe_insert("scale", frame=1); b.keyframe_insert("scale", frame=f0 - 1)
+    b.keyframe_insert("location", frame=f0 - 1)
+    b.scale = S0; b.keyframe_insert("scale", frame=f0)
+    vx, vy = random.uniform(-2.6, 2.6), random.uniform(-3.4, -0.8)
+    land = None
+    for j in range(0, 150, 5):   # a slow flutter down: lift, drag, sway
+        tt = j / FPS; z = 4.9 + 1.0 * tt - 0.85 * tt * tt
+        x = x0 + vx * tt * 0.8 + 0.3 * math.sin(tt * 4 + i); y = 4.3 + vy * tt * 0.8
+        floor = WZ + 0.01 if (abs(x) < PX and abs(y) < PY) else 0.012
+        if z <= floor: z = floor; land = land or j
+        b.location = (x, y, z)
+        b.rotation_euler = ((math.sin(tt * 5 + i) * 1.2) if not land else 0, (math.cos(tt * 4 + i) * 0.9) if not land else 0, tt * 2 + i)
         b.keyframe_insert("location", frame=f0 + j); b.keyframe_insert("rotation_euler", frame=f0 + j)
 
 # SWORDCAT: off the balcony, a backflip, into the pool
 sw = load("swordcat"); guests["swordcat"] = sw
-F_FLIP = 334
+F_FLIP = 384
 zsink = WZ - sw.shoulderL.z + 0.08
 for f in range(1, N + 1, 2):
     if f < F_FLIP:
@@ -490,7 +556,7 @@ if not CLEAN:
     for i in range(3):
         box("line", -5.62 + i * 0.16, -5.56 + i * 0.16, 8.65, 9.15, 0.425, 0.436, POWDER)
     # smokers on the east deck
-    for i, (cid, x, y, tx, ty) in enumerate((("walter", 9.0, 2.3, 9.8, 1.6), ("floki", 9.6, -1.0, 8.8, -1.6), ("baton", 8.8, -1.6, 9.6, -1.0))):
+    for i, (cid, x, y, tx, ty) in enumerate((("walter", 9.0, -0.3, 9.8, -1.1), ("floki", 9.8, -1.1, 9.0, -0.3), ("baton", 9.0, -1.8, 9.6, -0.9))):
         ph = i * 0.23
         c = mocap(cid, x, y, face(tx - x, ty - y), "13_09", start=1.0 + i * 1.7, travel=0.0)
         cig = attach(c, cyl("cig", (0, 0, 0), 0.008, 0.09, CIG), offset=(0.02, 0.07, 0.03), rot=(0, 0, math.pi / 2))
@@ -524,18 +590,23 @@ cam = bpy.data.objects.new("Cam", bpy.data.cameras.new("Cam")); sc.collection.ob
 cam.data.lens = 24; cam.data.clip_end = 300
 tgt = bpy.data.objects.new("CamTarget", None); sc.collection.objects.link(tgt)
 tcn = cam.constraints.new("TRACK_TO"); tcn.target = tgt; tcn.track_axis = "TRACK_NEGATIVE_Z"; tcn.up_axis = "UP_Y"
-path = [  # frame, camera, look-at
-    (1, (-15, -19, 10), (0, 2, 1)),
-    (110, (-9.5, -9.5, 3.8), (-2.5, 0, 0.4)),
-    (200, (-4.6, -5.4, 1.3), (0.5, -0.6, 0.5)),      # low over the pool: the cannonballs
-    (290, (1.4, -11.2, 3.0), (4.2, -5.2, 1.0)),       # the dance floor and the DJ
-    (355, (0.4, -2.4, 1.5), (-2.4, 3.4, 2.4)),       # the balcony backflip
-    (400, (0.3, 0.2, 1.8), (0.0, 6.0, 1.2)),         # over the pool to the open doors
-    (450, (-1.2, 5.6, 1.6), (-5.0, 8.8, 0.7)),       # inside: the table, the couple at the window
-    (525, (3.2, 7.1, 1.85), (4.3, 10.2, 1.0)),        # the kitchen island
-    (610, (7.0, 3.6, 2.0), (9.6, -0.6, 1.0)),        # out east: the smokers, the couple at the pool's end
-    (680, (9.6, -7.6, 3.2), (10.6, -3.4, 0.8)),      # the lounge chairs
-    (N, (17, -16, 9), (1, 0, 1)),                    # and up and away
+path = [  # frame, camera, look-at: one sweep, slow where the jokes are
+    (1, (-17, -21, 11), (0, 2, 1)),
+    (110, (-10.5, -10.5, 4.2), (-2.5, 0, 0.4)),
+    (170, (-6.4, -5.8, 1.6), (-0.8, -0.4, 0.3)),      # low over the pool: floats, junk, the cannonball
+    (235, (-2.0, -5.6, 1.4), (1.5, -0.6, 0.4)),
+    (300, (1.0, -11.4, 2.6), (4.0, -5.2, 1.0)),       # the dance floor and the DJ
+    (345, (3.6, -10.4, 2.0), (5.0, -4.8, 1.2)),
+    (380, (0.6, -3.4, 1.2), (0.0, 3.6, 3.4)),         # look up: the Whale making it rain, the backflip
+    (430, (-0.6, -1.2, 1.5), (-1.8, 3.8, 2.6)),
+    (480, (-0.6, 3.4, 1.7), (-4.4, 8.6, 0.8)),        # through the doors: the table, LMAO, the window kiss
+    (540, (-2.0, 6.4, 1.6), (-5.2, 8.8, 0.7)),
+    (600, (3.2, 7.1, 1.85), (4.3, 10.2, 1.0)),        # the kitchen island
+    (650, (6.2, 4.8, 2.0), (9.4, -0.6, 1.1)),         # out east, under the pergola
+    (700, (6.4, 0.8, 1.6), (9.8, -1.8, 1.0)),         # the smokers
+    (750, (7.2, -5.4, 1.8), (10.2, -2.6, 0.8)),       # the bong session
+    (800, (3.0, -9.4, 2.2), (-1.0, -4.0, 0.8)),       # the conga, the walkers, the drunk on the lawn
+    (N, (17, -19, 10), (0, 0, 1)),                    # and up and away over the city
 ]
 for f, p, l in path:
     cam.location = p; cam.keyframe_insert("location", frame=f)
