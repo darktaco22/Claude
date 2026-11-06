@@ -965,7 +965,7 @@ path = [  # frame, camera, look-at: one sweep, slow where the jokes are
     (772, (8.3, -3.35, 1.9), (10.6, -3.4, 0.7)),      # ...and stay with it, creeping in
     (792, (7.4, -2.3, 3.9), (3.0, -7.0, 0.8)),        # then up over the LED wall
     (815, (3.0, -9.4, 2.2), (-1.0, -4.0, 0.8)),       # the conga, the walkers, the drunk on the lawn
-    (N, (17, -19, 10), (0, 0, 1)),                    # and up and away over the city
+    (N, (17, -19, 10), (-1.5, -2.5, 2.2)),            # and up and away, the rocket climbing in the frame
 ]
 for f, p, l in path:
     cam.location = p; cam.keyframe_insert("location", frame=f)
@@ -1039,7 +1039,7 @@ if rk:
     rk.keyframe_insert("location", frame=1)
     for f in range(F_LIFT + 2, N + 1, 2):   # lift-off: slow, then faster and faster, a little wobble
         t = (f - F_LIFT) / FPS
-        rk.location = base + Vector((0.15 * math.sin(t * 3.0) * t, 0.1 * math.cos(t * 2.3) * t, 0.5 * 5.0 * t * t))
+        rk.location = base + Vector((0.15 * math.sin(t * 3.0) * t, 0.1 * math.cos(t * 2.3) * t, 0.5 * 2.6 * t * t))
         rk.keyframe_insert("location", frame=f)
     for fc in rk.animation_data.action.fcurves:
         if fc.data_path == "location":
@@ -1052,9 +1052,9 @@ if rk:
         s_.keyframe_insert("location", frame=1); s_.keyframe_insert("scale", frame=1); s_.keyframe_insert("scale", frame=f0 - 1); s_.keyframe_insert("location", frame=f0 - 1)
         s_.scale = (1.0,) * 3; s_.keyframe_insert("scale", frame=f0 + 3)
         s_.location = base + Vector((math.cos(a) * random.uniform(1.6, 2.6), math.sin(a) * random.uniform(1.6, 2.6), random.uniform(0.3, 0.9)))
-        s_.scale = (random.uniform(3.0, 4.5),) * 3; s_.keyframe_insert("location", frame=f0 + 60); s_.keyframe_insert("scale", frame=f0 + 60)
+        s_.scale = (random.uniform(1.8, 2.6),) * 3; s_.keyframe_insert("location", frame=f0 + 60); s_.keyframe_insert("scale", frame=f0 + 60)
     for f in range(F_LIFT, N + 1, 2):
-        t = (f - F_LIFT) / FPS; p = base + Vector((0.15 * math.sin(t * 3.0) * t, 0.1 * math.cos(t * 2.3) * t, 0.5 * 5.0 * t * t - 0.3))
+        t = (f - F_LIFT) / FPS; p = base + Vector((0.15 * math.sin(t * 3.0) * t, 0.1 * math.cos(t * 2.3) * t, 0.5 * 2.6 * t * t - 0.3))
         s_ = sphere("trail", (0, 0, 0), 0.22, SMOKE, seg=16)
         s_.location = p; s_.scale = (0.001,) * 3; s_.keyframe_insert("scale", frame=1); s_.keyframe_insert("scale", frame=f - 1)
         s_.scale = (1.0,) * 3; s_.keyframe_insert("scale", frame=f + 1)
