@@ -317,7 +317,7 @@ def to_local(c, p):
     return Vector((ca * d.x - sa * d.y, sa * d.x + ca * d.y, d.z))
 
 def attach(c, obj, bone="RightHand", offset=(0, 0.08, 0.03), rot=(0, 0, 0)):
-    if not c.ik:
+    if "mixamorig:" + bone not in c.rig.data.bones:
         bpy.data.objects.remove(obj); return None
     cn = obj.constraints.new("CHILD_OF"); cn.target = c.rig; cn.subtarget = "mixamorig:" + bone
     obj.location = offset; obj.rotation_euler = rot
@@ -685,7 +685,8 @@ LASER = mat("laser", "#FF1A1A", emit=40.0)
 dj = guests["triplet"]
 for sx in (-1, 1):
     beam = cyl("laser", (0, 0, 0), 0.012, 9.0, LASER, v=8)
-    attach(dj, beam, bone="Head", offset=(sx * 0.06, 0.12, 4.6))
+    if not attach(dj, beam, bone="Head", offset=(sx * 0.06, 0.12, 4.6)):
+        print("LASER: no head bone on", [b.name for b in dj.rig.data.bones][:6]); break
     for f in range(1, N + 1, 6):
         beam.scale = (1 + 0.4 * random.random(), 1 + 0.4 * random.random(), 1); beam.keyframe_insert("scale", frame=f)
 
