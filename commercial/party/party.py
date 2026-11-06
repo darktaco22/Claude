@@ -952,14 +952,15 @@ path = [  # frame, camera, look-at: one sweep, slow where the jokes are
     (235, (-2.0, -6.2, 1.5), (1.5, -0.6, 0.4)),     # a little further back from Pink Wojak and his sign
     (300, (1.0, -11.4, 2.6), (4.0, -5.2, 1.0)),       # the dance floor and the DJ
     (345, (3.6, -10.4, 2.0), (5.0, -4.8, 1.2)),
-    (380, (0.6, -3.4, 1.2), (0.0, 3.6, 3.4)),         # look up: the Whale making it rain, the backflip
+    (380, (1.0, -1.0, 3.0), (1.0, 5.0, 4.4)),         # up level with the balcony: the Whale and his girls making it rain, the backflip
     (430, (-0.6, -1.2, 1.5), (-1.8, 3.8, 2.6)),
     (480, (-0.6, 3.4, 1.7), (-4.4, 8.6, 0.8)),        # through the doors: the table, LMAO, the window kiss
     (540, (-2.0, 6.4, 1.6), (-5.2, 8.8, 0.7)),
-    (600, (3.2, 7.1, 1.85), (4.3, 10.2, 1.0)),        # the kitchen island
-    (622, (1.8, 6.3, 1.9), (7.0, 1.0, 1.0)),          # turn from the kitchen to look out through the open doors...
-    (642, (1.9, 4.3, 2.0), (8.6, 0.0, 1.1)),          # ...and out through them (not through a pane)
-    (664, (6.2, 4.4, 2.0), (9.4, -0.6, 1.1)),         # out east, under the pergola
+    (580, (2.7, 7.0, 1.8), (4.2, 10.2, 1.0)),         # the kitchen island: KET and CATE at their lines...
+    (612, (3.6, 7.25, 1.85), (4.4, 10.2, 1.0)),       # ...held for a good second and a half, creeping along
+    (632, (1.8, 6.3, 1.9), (7.0, 1.0, 1.0)),          # turn from the kitchen to look out through the open doors...
+    (650, (1.9, 4.3, 2.0), (8.6, 0.0, 1.1)),          # ...and out through them (not through a pane)
+    (670, (6.2, 4.4, 2.0), (9.4, -0.6, 1.1)),         # out east, under the pergola
     (700, (6.4, 0.8, 1.6), (9.8, -1.8, 1.0)),         # the smokers
     (735, (8.0, -3.4, 2.0), (10.6, -3.4, 0.7)),       # the bong session, side on, from over the DJ's speaker
     (772, (8.3, -3.35, 1.9), (10.6, -3.4, 0.7)),      # ...and stay with it, creeping in
@@ -1020,7 +1021,7 @@ for o in bpy.data.objects:
 print("trees cleared from the camera's path:", hidden)
 
 # TO THE MOON: the inflatable rocket on the lawn really launches at the end, into the closing aerial
-F_IGN, F_LIFT = 785, 805
+F_IGN, F_LIFT = 818, 838   # while the closing aerial has the rocket in shot
 rk = bpy.data.objects.get("rocket")
 if rk:
     base = rk.location.copy()
@@ -1039,7 +1040,7 @@ if rk:
     rk.keyframe_insert("location", frame=1)
     for f in range(F_LIFT + 2, N + 1, 2):   # lift-off: slow, then faster and faster, a little wobble
         t = (f - F_LIFT) / FPS
-        rk.location = base + Vector((0.15 * math.sin(t * 3.0) * t, 0.1 * math.cos(t * 2.3) * t, 0.5 * 2.6 * t * t))
+        rk.location = base + Vector((0.15 * math.sin(t * 3.0) * t, 0.1 * math.cos(t * 2.3) * t, 0.5 * 4.0 * t * t))
         rk.keyframe_insert("location", frame=f)
     for fc in rk.animation_data.action.fcurves:
         if fc.data_path == "location":
@@ -1054,7 +1055,7 @@ if rk:
         s_.location = base + Vector((math.cos(a) * random.uniform(1.6, 2.6), math.sin(a) * random.uniform(1.6, 2.6), random.uniform(0.3, 0.9)))
         s_.scale = (random.uniform(1.8, 2.6),) * 3; s_.keyframe_insert("location", frame=f0 + 60); s_.keyframe_insert("scale", frame=f0 + 60)
     for f in range(F_LIFT, N + 1, 2):
-        t = (f - F_LIFT) / FPS; p = base + Vector((0.15 * math.sin(t * 3.0) * t, 0.1 * math.cos(t * 2.3) * t, 0.5 * 2.6 * t * t - 0.3))
+        t = (f - F_LIFT) / FPS; p = base + Vector((0.15 * math.sin(t * 3.0) * t, 0.1 * math.cos(t * 2.3) * t, 0.5 * 4.0 * t * t - 0.3))
         s_ = sphere("trail", (0, 0, 0), 0.22, SMOKE, seg=16)
         s_.location = p; s_.scale = (0.001,) * 3; s_.keyframe_insert("scale", frame=1); s_.keyframe_insert("scale", frame=f - 1)
         s_.scale = (1.0,) * 3; s_.keyframe_insert("scale", frame=f + 1)
