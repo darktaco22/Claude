@@ -448,7 +448,7 @@ def mocap(cid, x, y, rot, cname, start=0.0, travel=0.12, speed=1.0, z=0.0, model
 # the DJ, and the dance floor in front of the booth
 mocap("triplet", 7.8, -4.8, face(-1, 0), "111_05", start=3.0, travel=0.0)   # the DJ
 dancers = ["giga", "neet", "alon", "mitch", "mensa", "thisisfine", "baton", "goat", "brett", "slerf", "bome", "npcwojak"]   # BOME (a big book) off the camera line to the DJ
-spots = [(1.2, -4.4), (2.6, -4.6), (4.0, -4.35), (5.3, -4.6), (1.6, -5.6), (3.1, -6.0), (4.6, -5.5), (2.2, -7.1), (3.8, -7.3), (5.4, -6.8), (6.4, -7.8), (6.3, -5.7)]   # BOME (a big book) at the back, out of the camera's corridor (it filled the frame)
+spots = [(1.2, -4.4), (2.6, -4.6), (4.0, -4.35), (5.3, -4.6), (1.6, -5.6), (3.1, -6.0), (4.6, -5.5), (2.2, -7.1), (3.8, -7.3), (5.4, -6.8), (6.7, -8.3), (6.3, -5.7)]   # BOME (a big book) at the back, out of the camera's corridor (it filled the frame)
 # new memes made from the game's own models
 LOOKS = {"brett": ("pepe", {"hue": 0.78, "sat": 1.15, "val": 1.0}),                    # Brett: the blue frog
          "npcwojak": ("wojak", {"hue": 0.5, "sat": 0.0, "val": 0.95, "tint": "#C9CCD2"}),  # NPC Wojak: grey, blank
