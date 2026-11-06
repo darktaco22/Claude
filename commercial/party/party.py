@@ -282,6 +282,7 @@ cyl("fl_beak", (-1.05, 1.6, WZ + 1.18), 0.04, 0.18, mat("beak", "#222222"), rot=
 CUP = mat("cup", "#D8232A", rough=0.35)
 exec(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "dressing.py")).read(), globals())
 exec(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "environment.py")).read(), globals())
+exec(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "coins.py")).read(), globals())
 MEM("env")
 
 # ------------------------------------------------------------------------------------------------ the guests
@@ -362,6 +363,57 @@ def guest(cid, x, y, rot, move, z=0.0, **kw):
     c.bake(move, 1, N, step=2, **kw); return c
 
 look_at = lambda c, other: to_local(c, Vector(other.ctrl.location) + Vector((0, 0, other.headp.z)))
+
+def bone_geom(c, bone="Head", thresh=0.35):
+    """The real extent of the mesh a bone carries, in that bone's own space (x side, y up the bone, z forward): the
+    centre and half-sizes of the vertices weighted to it (and its end/eye children), measured in the rest pose."""
+    bpy.context.view_layer.update()
+    inv = (c.rig.matrix_world @ c.rig.data.bones["mixamorig:" + bone].matrix_local).inverted()
+    names = {"mixamorig:" + bone} | ({"mixamorig:HeadTop_End", "mixamorig:LeftEye", "mixamorig:RightEye"} if bone == "Head" else set())
+    lo = Vector((1e9,) * 3); hi = Vector((-1e9,) * 3); n = 0
+    for o in c.rig.children:
+        if o.type != "MESH": continue
+        idx = {g.index for g in o.vertex_groups if g.name in names}
+        if not idx: continue
+        mw = o.matrix_world
+        for v in o.data.vertices:
+            if any(g.group in idx and g.weight > thresh for g in v.groups):
+                p = inv @ (mw @ v.co); n += 1
+                lo = Vector(map(min, lo, p)); hi = Vector(map(max, hi, p))
+    if n < 10: return None
+    return (lo + hi) / 2, (hi - lo) / 2
+
+def party_girl(c, hair, dress, bow=None):
+    """Long hair (a cap over the top and back of the head and a fall down the back, leaving the face clear), a dress
+    (a flared skirt on the hips, a bodice on the chest) and an optional bow, all sized from the character's own mesh."""
+    HAIR = mat("hair_" + hair, hair, rough=0.45); retex(HAIR, hair, hair, kind="noise", scale=60.0, rough=0.45, bump=0.4)
+    DRESS = mat("dress_" + dress, dress, rough=0.3, metal=0.25)
+    hg = bone_geom(c, "Head")
+    if hg:
+        C, h = hg
+        cap = sphere("hair_cap", (0, 0, 0), 1.0, HAIR, seg=32); cap.scale = (h.x * 1.1, h.y * 0.98, h.z * 0.82)
+        attach(c, cap, bone="Head", offset=tuple(C + Vector((0, 0.2 * h.y, -0.34 * h.z))))
+        fall = sphere("hair_fall", (0, 0, 0), 1.0, HAIR, seg=32); fall.scale = (h.x * 1.02, h.y * 1.25, h.z * 0.42)
+        attach(c, fall, bone="Head", offset=tuple(C + Vector((0, -0.85 * h.y, -0.62 * h.z))))
+        if bow:
+            BOW = mat("bow_" + bow, bow, rough=0.35)
+            for sx in (-1, 1):
+                bpy.ops.mesh.primitive_cone_add(radius1=h.x * 0.28, radius2=0.0, depth=h.x * 0.5, vertices=16)
+                b_ = obj_mat(bpy.context.active_object, BOW); b_.data.shade_smooth()
+                attach(c, b_, bone="Head", offset=tuple(C + Vector((sx * h.x * 0.3, 1.12 * h.y, -0.1 * h.z))), rot=(0, sx * math.pi / 2, 0))
+            attach(c, sphere("bow_knot", (0, 0, 0), h.x * 0.09, BOW, seg=12), bone="Head", offset=tuple(C + Vector((0, 1.12 * h.y, -0.1 * h.z))))
+    hp = bone_geom(c, "Hips")
+    if hp:
+        C, h = hp; r = max(h.x, h.z) * 1.08; d = max(0.15, c.leg * 0.5)
+        bpy.ops.mesh.primitive_cone_add(radius1=r * 1.5, radius2=r, depth=d, vertices=40, end_fill_type="NOTHING")
+        sk = obj_mat(bpy.context.active_object, DRESS); sk.data.shade_smooth()
+        sk.modifiers.new("solid", "SOLIDIFY").thickness = 0.012
+        attach(c, sk, bone="Hips", offset=tuple(C + Vector((0, h.y * 0.5 - d / 2, 0))), rot=(-math.pi / 2, 0, 0))
+    sp = bone_geom(c, "Spine1")
+    if sp:
+        C, h = sp; r = max(h.x, h.z) * 1.06
+        bo = cyl("bodice", (0, 0, 0), 1.0, 1.0, DRESS, v=40); bo.scale = (max(h.x, 0.05) * 1.08, max(h.z, 0.05) * 1.1, max(0.12, h.y * 2.0))
+        attach(c, bo, bone="Spine1", offset=tuple(C), rot=(-math.pi / 2, 0, 0))
 
 def beanie(c):
     """dogwifhat's pink knitted beanie, riding the head bone."""
@@ -540,14 +592,24 @@ _bb.inputs["Emission Strength"].default_value = 0.35; _bb.inputs["Roughness"].de
 wh = load("whale"); guests["whale"] = wh; place(wh, 1.2, 4.75, face(0, -1), z=3.85)
 wh.bake(M.make_it_rain, 1, N, step=2)
 stack = attach(wh, box("cash_stack", -0.09, 0.09, -0.04, 0.04, -0.02, 0.06, BILL), offset=(0, 0.1, 0.02))
+# ...with a party girl on each side of him, flinging it too (both made from the game's Wojak)
+THROWERS = [1.2]
+for cid, x, hair, dress, bow, ph in (("wojakgirl", -0.2, "#F3D27A", "#FF4FA3", "#FF2B8A", 0.33), ("doomergirl", 2.6, "#141218", "#1B1B22", None, 0.66)):
+    g = load(cid, "wojak", {"hue": 0.5, "sat": 0.9, "val": 1.05, "tint": "#FFE4D6"}); guests[cid] = g
+    place(g, x, 4.75, face((1.2 - x) * 0.25, -1), z=3.85)
+    party_girl(g, hair, dress, bow)
+    g.bake(M.make_it_rain, 1, N, step=2, phase=ph)
+    attach(g, box("cash_stack", -0.09, 0.09, -0.04, 0.04, -0.02, 0.06, BILL), offset=(0, 0.1, 0.02))
+    THROWERS.append(x)
 bill_mesh = None
-for i in range(350):
-    f0 = 10 + int(i * (N - 70) / 350) + random.randint(0, 3)
+NB = 480
+for i in range(NB):
+    f0 = 10 + int(i * (N - 70) / NB) + random.randint(0, 3)
     if bill_mesh is None:
         bpy.ops.mesh.primitive_plane_add(size=1); tmp = bpy.context.active_object; bill_mesh = tmp.data; bill_mesh.materials.append(BILL); bpy.data.objects.remove(tmp)
     b = bpy.data.objects.new("bill", bill_mesh); sc.collection.objects.link(b)
     S0 = (0.32, 0.14, 1)
-    x0 = 1.2 + random.uniform(-0.5, 0.5)
+    x0 = THROWERS[i % len(THROWERS)] + random.uniform(-0.4, 0.4)
     b.location = (x0, 4.3, 4.9); b.scale = (0.0001,) * 3; b.keyframe_insert("scale", frame=1); b.keyframe_insert("scale", frame=f0 - 1)
     b.keyframe_insert("location", frame=f0 - 1)
     b.scale = S0; b.keyframe_insert("scale", frame=f0)
@@ -713,11 +775,11 @@ fw.bake(M.cheer, 1, N, step=2)
 for f in range(1, N + 1, 30):
     fw.ctrl.location.z = WZ + 0.12 + 0.02 * math.sin(f / 13); fw.ctrl.keyframe_insert("location", frame=f)
 # laser eyes on the DJ (the Bitcoin meme)
-LASER = mat("laser", "#FF1A1A", emit=40.0)
+LASER = mat("laser", "#FF1A1A", emit=25.0)
 dj = guests["triplet"]
 for sx in (-1, 1):
-    beam = cyl("laser", (0, 0, 0), 0.012, 9.0, LASER, v=8)
-    if not attach(dj, beam, bone="Head", offset=(sx * 0.06, 0.12, 4.6)):
+    beam = cyl("laser", (0, 0, 0), 0.007, 2.2, LASER, v=8)
+    if not attach(dj, beam, bone="Head", offset=(sx * 0.06, 0.12, 1.2)):
         print("LASER: no head bone on", [b.name for b in dj.rig.data.bones][:6]); break
     for f in range(1, N + 1, 6):
         beam.scale = (1 + 0.4 * random.random(), 1 + 0.4 * random.random(), 1); beam.keyframe_insert("scale", frame=f)
@@ -736,8 +798,8 @@ path = [  # frame, camera, look-at: one sweep, slow where the jokes are
     (600, (3.2, 7.1, 1.85), (4.3, 10.2, 1.0)),        # the kitchen island
     (650, (6.2, 4.8, 2.0), (9.4, -0.6, 1.1)),         # out east, under the pergola
     (700, (6.4, 0.8, 1.6), (9.8, -1.8, 1.0)),         # the smokers
-    (750, (7.3, -2.7, 1.5), (10.6, -3.5, 0.6)),       # the bong session, side on, nothing in between
-    (775, (5.6, -3.6, 3.0), (2.5, -8.0, 0.8)),        # up over the dancers' heads
+    (750, (9.0, -3.3, 1.5), (10.7, -3.5, 0.6)),       # the bong session, side on, past the DJ booth
+    (775, (6.0, -3.0, 3.0), (2.5, -8.0, 0.8)),        # up over the dancers' heads
     (800, (3.0, -9.4, 2.2), (-1.0, -4.0, 0.8)),       # the conga, the walkers, the drunk on the lawn
     (N, (17, -19, 10), (0, 0, 1)),                    # and up and away over the city
 ]
