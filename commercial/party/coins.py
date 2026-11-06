@@ -26,7 +26,7 @@ def coin(ticker, loc, rot, r=0.5, depth=0.09):
 for t, x, r in (("$DOGE", -5.7, 0.55), ("$PEPE", -4.5, 0.48), ("$BONK", 4.9, 0.5), ("$WIF", 6.05, 0.44)):
     coin(t, (x, 4.72, r * 0.97 + 0.02), (math.radians(76), 0, random.uniform(-0.15, 0.15)), r)
 # a coin rolled onto the south deck, flat
-coin("$POPCAT", (-4.9, -6.9, 0.05), (0, 0, 0.4), 0.42)
+coin("$POPCAT", (-5.4, -5.8, 0.05), (0, 0, 0.4), 0.42)   # inside the walkers' lap, off their path
 # coin pool floats, bobbing and turning
 for t, x, y in (("$MEME", 1.9, -1.55), ("$BRETT", 5.0, -1.3)):
     f_ = coin(t, (x, y, WZ + 0.05), (0, 0, 0), 0.6, 0.14)

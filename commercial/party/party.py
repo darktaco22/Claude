@@ -445,7 +445,7 @@ def mocap(cid, x, y, rot, cname, start=0.0, travel=0.12, speed=1.0, z=0.0, model
 # the DJ, and the dance floor in front of the booth
 mocap("triplet", 7.8, -4.8, face(-1, 0), "111_05", start=3.0, travel=0.0)   # the DJ
 dancers = ["giga", "neet", "alon", "mitch", "mensa", "thisisfine", "baton", "goat", "brett", "slerf", "bome", "npcwojak"]   # BOME (a big book) off the camera line to the DJ
-spots = [(1.2, -4.0), (2.6, -4.4), (4.0, -3.9), (5.3, -4.6), (1.6, -5.6), (3.1, -6.0), (4.6, -5.5), (2.2, -7.1), (3.8, -7.3), (5.4, -6.8), (0.4, -6.4), (6.3, -5.7)]
+spots = [(1.2, -4.4), (2.6, -4.6), (4.0, -4.35), (5.3, -4.6), (1.6, -5.6), (3.1, -6.0), (4.6, -5.5), (2.2, -7.1), (3.8, -7.3), (5.4, -6.8), (0.4, -6.4), (6.3, -5.7)]
 # new memes made from the game's own models
 LOOKS = {"brett": ("pepe", {"hue": 0.78, "sat": 1.15, "val": 1.0}),                    # Brett: the blue frog
          "npcwojak": ("wojak", {"hue": 0.5, "sat": 0.0, "val": 0.95, "tint": "#C9CCD2"}),  # NPC Wojak: grey, blank
@@ -463,7 +463,7 @@ for i, (cid, (x, y)) in enumerate(zip(dancers, spots)):
 
 MEM("dancers")
 # in the pool: treading water (sunk to the shoulders), one on the donut
-for cid, (x, y) in (("moodeng", (-4.7, -0.7)), ("zcat", (1.5, 1.2)), ("cupsey", (3.4, -0.9)), ("pudgy", (-0.6, -1.1)), ("nyancat", (4.8, 1.4))):
+for cid, (x, y) in (("moodeng", (-4.7, -0.7)), ("zcat", (1.5, 1.2)), ("cupsey", (3.4, -0.9)), ("pudgy", (-0.3, 0.6)), ("nyancat", (4.8, 1.4))):
     c = load(cid); guests[cid] = c
     zsink = WZ - c.shoulderL.z + 0.08
     place(c, x, y, face(random.uniform(-1, 1), -1), zsink)
@@ -559,7 +559,7 @@ for i, cid in enumerate(("useless", "wif", "bonk", "pnut")):
     c = load(cid, md, lk); guests[cid] = c; c.play("walk", 1, speed=1.15)
     if cid == "wif": beanie(c)
     for f in range(1, N + 1, 2):
-        p, (dx, dy) = loop_point(1.15 * f / FPS - i * 1.25 + 6.0)
+        p, (dx, dy) = loop_point(1.15 * f / FPS - i * 1.6 + 6.0)
         c.key(f, {"clip_driven": True, "loc": p, "rot": face(dx, dy)})
     for fc in c.ctrl.animation_data.action.fcurves:   # no flips where the angle wraps
         if fc.data_path == "rotation_euler" and fc.array_index == 2:
@@ -689,7 +689,7 @@ if not CLEAN:
         k = max(-0.95, min(0.95, (table_z - lift + 0.05 - (c.hip.z - dip)) / H)); full = min(math.acos(k), 1.65)
         v = c.headp - c.hip
         d = -(0.1 + v.y * math.cos(full) - v.z * math.sin(full) - 0.12)     # how far in front of the ctrl the nose lands
-        y = y_edge + toward * max(0.3, d - 0.12)                           # stand back from the edge, nose 0.12 inside it
+        y = y_edge + toward * max(0.4, d - 0.05)                           # stand back from the edge (knees clear), nose just inside it
         place(c, x, y, face(0, -toward), z=lift)
         if lift > 0.02:
             box("crate_" + cid, x - 0.26, x + 0.26, y - 0.2, y + 0.24, 0.0, lift, CRATE, bevel=0.02)
@@ -727,7 +727,7 @@ if not CLEAN:
         C_, h = hg
         bpy.context.view_layer.update()
         Mx = c.ctrl.matrix_world.inverted() @ c.rig.matrix_world @ c.rig.data.bones["mixamorig:Head"].matrix_local
-        c.mouth = Mx @ (C_ + Vector((0, -0.4 * h.y, 0.92 * h.z)))
+        c.mouth_bone = C_ + Vector((0, -0.4 * h.y, 0.92 * h.z)); c.mouth = Mx @ c.mouth_bone
     def key_emit(m, f, v):
         i = m.node_tree.nodes["Principled BSDF"].inputs["Emission Strength"]; i.default_value = v; i.keyframe_insert("default_value", frame=f)
     def cycles(period, phase, x0):
@@ -825,6 +825,15 @@ if not CLEAN:
         TILT = math.radians(-19); Rt = Matrix.Rotation(TILT, 3, "X")   # tipped away: lips on the mouthpiece, the base out over the knees
         root = top - Rt @ Vector((0, 0, 0.67 * s_)); bowl = root + (Rt @ Vector((-0.13, 0, 0.295))) * s_
         c.bake(M.bong_session, 1, N, step=2, period=P_B, phase=ph, bong_top=top, bowl=bowl)
+        if hasattr(c, "mouth_bone"):   # measure where the mouth really is mid-hit, put the mouthpiece on the lips, bake again
+            fm = cycles(P_B, ph, 0.25)[0][1]; sc.frame_set(fm); bpy.context.view_layer.update()
+            Hm = c.rig.matrix_world @ c.rig.pose.bones["mixamorig:Head"].matrix
+            m_loc = c.ctrl.matrix_world.inverted() @ (Hm @ c.mouth_bone)
+            top = m_loc + Vector((0, -0.035, -0.03)); s_ = max(0.55, min(1.0, (top.z - 0.02) / 0.67))
+            root = top - Rt @ Vector((0, 0, 0.67 * s_)); bowl = root + (Rt @ Vector((-0.13, 0, 0.295))) * s_
+            c.bake(M.bong_session, 1, N, step=2, period=P_B, phase=ph, bong_top=top, bowl=bowl)
+            sc.frame_set(1)
+            print(f"BONG {cid}: measured mouth {tuple(round(v, 2) for v in m_loc)}")
         bpy.context.view_layer.update(); W = c.ctrl.matrix_world
         mouth_seat = (c.mouth if hasattr(c, "mouth") else c.headp) + Vector((0, 0.12, -c.leg * 0.45))
         print(f"BONG {cid}: mouthpiece z {top.z:.2f} bong scale {s_:.2f}")
@@ -883,7 +892,10 @@ for o in list(bpy.data.objects):
     if base not in ("cup", "can", "pizzabox", "pizza", "pep", "bottle_trash", "cup_trash") or o.constraints or o.parent: continue
     p = o.matrix_world.translation
     if p.z > 0.4: continue
-    if any((Vector((p.x, p.y, 0)) - q).length < 0.55 for q in tracks):
+    # CHILL HOUSE staggers east across the lawn on his mocap (it moves the rig, not the ctrl): keep a band clear too
+    d_ = Vector((p.x + 5.5, p.y + 11.0, 0)); along = d_.dot(Vector((1, 0.2, 0)).normalized())
+    near_drunk = -1.0 < along < 14.0 and (d_ - Vector((1, 0.2, 0)).normalized() * along).length < 1.2
+    if near_drunk or any((Vector((p.x, p.y, 0)) - q).length < 0.55 for q in tracks):
         bpy.data.objects.remove(o); gone += 1
 print("litter cleared from paths:", gone)
 print("guests:", len(guests))
