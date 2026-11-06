@@ -193,8 +193,8 @@ def cone(x, y, z, rx=0.0):
     return obj_mat(bpy.context.active_object, CONE)
 cone(2.0, 9.0, 7.55)                      # on the roof
 _fc = cone(0, 0, 0, rx=math.radians(-14)); _fc.parent = FLAMINGO; _fc.location = (0.66, 0, 1.33)   # on the flamingo's head, bobbing with it
-cone(7.5, -4.4, 1.05, rx=math.pi / 2)     # knocked over on the DJ booth
-cone(-9.0, -6.2, 0.35)                    # on a lounger
+cone(7.1, -4.4, 1.05, rx=math.pi / 2)     # knocked over on the DJ booth
+cone(-8.0, -5.2, 0.35)                    # on a lounger
 # a trash can that gave up
 cyl("bin", (-10.8, -8.0, 0.4), 0.28, 0.8, BLACK)
 for k in range(6):

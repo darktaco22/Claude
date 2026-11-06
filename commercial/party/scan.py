@@ -15,7 +15,7 @@ mine = {m: n for n, ms in gmesh.items() for m in ms}
 # things a guest is allowed to touch: floors, ground, water, the seats they sit on, their own props
 SKIP = ("deck", "lawn", "terrain", "ground", "floor", "rug", "water", "pool", "tile", "coping", "grass", "beanbag", "crate",
         "puff", "cloud", "gas", "smoke", "confetti", "bill", "drop", "splash", "laser", "chamber", "string", "balcony", "hair", "dress",
-        "bodice", "skirt", "beanie", "pompom", "band", "cig", "ember", "note", "cup", "cash", "bow", "parquet", "step", "plane",
+        "bodice", "skirt", "beanie", "pompom", "band", "cig", "ember", "note", "cup", "cash", "bow", "parquet", "step", "plane", "pane", "torus", "lighter", "cone.0", "knot",
         "doge_", "lbl", "line", "powder", "bubble", "fl_", "flamingo", "slab", "terr", "stone_floor", "path", "gravel")
 def skip(o): return any(k in o.name.lower() for k in SKIP)
 dg = bpy.context.evaluated_depsgraph_get()

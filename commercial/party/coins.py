@@ -26,7 +26,7 @@ def coin(ticker, loc, rot, r=0.5, depth=0.09):
 for t, x, r in (("$DOGE", -5.7, 0.55), ("$PEPE", -4.5, 0.48), ("$BONK", 4.9, 0.5), ("$WIF", 6.05, 0.44)):
     coin(t, (x, 4.72, r * 0.97 + 0.02), (math.radians(76), 0, random.uniform(-0.15, 0.15)), r)
 # a coin rolled onto the south deck, flat
-coin("$POPCAT", (-7.4, -6.2, 0.05), (0, 0, 0.4), 0.42)
+coin("$POPCAT", (-4.9, -6.9, 0.05), (0, 0, 0.4), 0.42)
 # coin pool floats, bobbing and turning
 for t, x, y in (("$MEME", 1.9, -1.55), ("$BRETT", 5.0, -1.3)):
     f_ = coin(t, (x, y, WZ + 0.05), (0, 0, 0), 0.6, 0.14)
@@ -85,8 +85,8 @@ light("rocket_up", "SPOT", (-8.6, -14.5, gz + 0.3), 600, "#FFD7A0", 0.2, rot=(ma
 
 # BUY THE DIP: a sign at the pool edge, an arrow pointing into the water, next to Pink Wojak
 SIGN = mat("sign_board", "#F7F3E8", rough=0.6)
-box("sign_post", -3.68, -3.62, -3.05, -2.99, 0.0, 1.3, mat("oak", "#8A5A32"))
-box("sign_board", -4.05, -3.25, -3.06, -3.02, 0.95, 1.45, SIGN)
-t = label("BUY THE DIP", 0.13, mat("sign_ink", "#D41E2A", rough=0.5), 0.004); t.location = (-3.65, -3.065, 1.27); t.rotation_euler = (math.pi / 2, 0, 0)
-bpy.ops.mesh.primitive_cone_add(radius1=0.09, radius2=0.0, depth=0.22, location=(-3.65, -2.9, 1.0), rotation=(-math.radians(110), 0, 0), vertices=4)
+box("sign_post", -3.93, -3.87, -4.35, -4.29, 0.0, 0.85, mat("oak", "#8A5A32"))   # low, so it never hides a head
+box("sign_board", -4.3, -3.5, -4.36, -4.32, 0.5, 1.0, SIGN)
+t = label("BUY THE DIP", 0.13, mat("sign_ink", "#D41E2A", rough=0.5), 0.004); t.location = (-3.9, -4.365, 0.82); t.rotation_euler = (math.pi / 2, 0, 0)
+bpy.ops.mesh.primitive_cone_add(radius1=0.09, radius2=0.0, depth=0.22, location=(-3.9, -4.2, 0.56), rotation=(-math.radians(110), 0, 0), vertices=4)
 obj_mat(bpy.context.active_object, mat("sign_ink", "#D41E2A", rough=0.5))   # an arrow at the water

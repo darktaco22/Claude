@@ -246,8 +246,8 @@ for (x, y, l) in ((-11, 3.5, (0.6, -0.3)), (-10.5, -6.5, (0.5, 0.4)), (11, 3.8, 
     palm(x, y, 6.2 + random.uniform(-0.6, 0.8), l)
 
 # loungers and umbrellas on the south deck, string lights over it, a DJ booth, coloured party spots
-for i, x in enumerate((-9.5, -8.3)):
-    box("lounger", x - 0.35, x + 0.35, -8.5, -6.6, 0.0, 0.35, mat("lounger", "#F7F7F2", rough=0.5), bevel=0.04)
+for i, x in enumerate((-8.0, -6.9)):   # inside the walkers' lap, off their path
+    box("lounger", x - 0.35, x + 0.35, -6.4, -4.5, 0.0, 0.35, mat("lounger", "#F7F7F2", rough=0.5), bevel=0.04)
 BULB = mat("bulb", "#FFD58A", emit=8.0)
 for row, y in enumerate((-3.5, -7.5)):
     for i in range(24):
@@ -256,8 +256,8 @@ for row, y in enumerate((-3.5, -7.5)):
     for x in (-10, 10):
         cyl("pole", (x, y, 1.6), 0.04, 3.2, DARK, v=8)
     light(f"string{row}", "AREA", (0, y, 2.8), 500, "#FFC27A", 6.0, rot=(0, 0, 0))
-box("dj_booth", 7.0, 8.2, -6.0, -3.6, 0.0, 1.05, mat("booth", "#111115", rough=0.3, metal=0.3), bevel=0.03)
-box("dj_led", 6.98, 7.0, -5.9, -3.7, 0.15, 0.95, mat("led", "#FF2BD6", emit=6.0))
+box("dj_booth", 6.85, 7.35, -6.0, -3.6, 0.0, 1.05, mat("booth", "#111115", rough=0.3, metal=0.3), bevel=0.03)
+box("dj_led", 6.83, 6.85, -5.9, -3.7, 0.15, 0.95, mat("led", "#FF2BD6", emit=6.0))
 for y in (-6.4, -3.2):
     box("speaker", 7.3, 8.1, y - 0.35, y + 0.35, 0.0, 1.6, mat("spk", "#18181C", rough=0.5), bevel=0.03)
     cyl("cone", (7.28, y, 1.05), 0.22, 0.04, mat("cone", "#333338", rough=0.3), rot=(0, math.pi / 2, 0))
@@ -443,7 +443,7 @@ def mocap(cid, x, y, rot, cname, start=0.0, travel=0.12, speed=1.0, z=0.0, model
     return c
 
 # the DJ, and the dance floor in front of the booth
-mocap("triplet", 7.6, -4.8, face(-1, 0), "111_05", start=3.0, travel=0.0)   # the DJ
+mocap("triplet", 7.8, -4.8, face(-1, 0), "111_05", start=3.0, travel=0.0)   # the DJ
 dancers = ["giga", "neet", "alon", "mitch", "mensa", "thisisfine", "baton", "goat", "brett", "slerf", "bome", "npcwojak"]   # BOME (a big book) off the camera line to the DJ
 spots = [(1.2, -4.0), (2.6, -4.4), (4.0, -3.9), (5.3, -4.6), (1.6, -5.6), (3.1, -6.0), (4.6, -5.5), (2.2, -7.1), (3.8, -7.3), (5.4, -6.8), (0.4, -6.4), (6.3, -5.7)]
 # new memes made from the game's own models
@@ -459,7 +459,7 @@ DANCE_CLIP = {"giga": ("60_01", 2.0), "neet": ("18_15", 1.0), "alon": ("93_08", 
 for i, (cid, (x, y)) in enumerate(zip(dancers, spots)):
     cl, st = DANCE_CLIP[cid]
     md, lk = LOOKS.get(cid, (None, None))
-    mocap(cid, x + random.uniform(-0.15, 0.15), y, face(7.6 - x, -4.8 - y) + random.uniform(-0.4, 0.4), cl, start=st, travel=0.1, model=md, look=lk)
+    mocap(cid, x + random.uniform(-0.15, 0.15), y, face(7.8 - x, -4.8 - y) + random.uniform(-0.4, 0.4), cl, start=st, travel=0.1, model=md, look=lk)
 
 MEM("dancers")
 # in the pool: treading water (sunk to the shoulders), one on the donut
@@ -537,7 +537,7 @@ for i, cid in enumerate(("chillguy", "jeanphil")):
 # chatters by the deck's west side
 # the conga line: round and round the pool, the game's own walk
 def loop_point(s):   # a rounded rectangle 1 m outside the coping, s in metres along it
-    W2, H2, R = PX + 1.0, PY + 1.0, 1.0
+    W2, H2, R = PX + 0.75, PY + 0.75, 1.0
     segs = [2 * (W2 - R), math.pi * R / 2, 2 * (H2 - R), math.pi * R / 2] * 2
     L = sum(segs); s %= L
     corners = [(W2 - R, -(H2 - R)), (W2 - R, H2 - R), (-(W2 - R), H2 - R), (-(W2 - R), -(H2 - R))]
@@ -559,7 +559,7 @@ for i, cid in enumerate(("useless", "wif", "bonk", "pnut")):
     c = load(cid, md, lk); guests[cid] = c; c.play("walk", 1, speed=1.15)
     if cid == "wif": beanie(c)
     for f in range(1, N + 1, 2):
-        p, (dx, dy) = loop_point(1.15 * f / FPS - i * 0.85 + 6.0)
+        p, (dx, dy) = loop_point(1.15 * f / FPS - i * 1.25 + 6.0)
         c.key(f, {"clip_driven": True, "loc": p, "rot": face(dx, dy)})
     for fc in c.ctrl.animation_data.action.fcurves:   # no flips where the angle wraps
         if fc.data_path == "rotation_euler" and fc.array_index == 2:
@@ -583,7 +583,7 @@ def couple(a, b, x, y, ang):
     place(ca, x - dx * gap, y - dy * gap, face(dx, dy)); place(cb, x + dx * gap, y + dy * gap, face(-dx, -dy))
     ca.bake(M.kiss, 1, N, step=2, partner_head=look_at(ca, cb))
     cb.bake(M.kiss, 1, N, step=2, partner_head=look_at(cb, ca), phase=0.5)
-couple("pepe", "pippin", 6.7, -3.0, math.pi / 2)     # at the pool's south-east corner
+couple("pepe", "pippin", 8.7, 2.3, math.pi / 2)     # under the north end of the pergola
 couple("troll", "michi", -7.6, 6.3, math.pi / 2)     # inside, by the west window
 
 
@@ -593,14 +593,14 @@ _bt = BILL.node_tree; _bb = _bt.nodes["Principled BSDF"]; _bi = _bt.nodes.new("S
 _bi.image = bpy.data.images.load(os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "bill.png"))
 _bt.links.new(_bi.outputs["Color"], _bb.inputs["Base Color"]); _bt.links.new(_bi.outputs["Color"], _bb.inputs["Emission Color"])
 _bb.inputs["Emission Strength"].default_value = 0.35; _bb.inputs["Roughness"].default_value = 0.6
-wh = load("whale"); guests["whale"] = wh; place(wh, 1.2, 4.75, face(0, -1), z=3.85)
+wh = load("whale"); guests["whale"] = wh; place(wh, 1.2, 5.05, face(0, -1), z=3.85)
 wh.bake(M.make_it_rain, 1, N, step=2)
 stack = attach(wh, box("cash_stack", -0.09, 0.09, -0.04, 0.04, -0.02, 0.06, BILL), offset=(0, 0.1, 0.02))
 # ...with a party girl on each side of him, flinging it too (both made from the game's Wojak)
 THROWERS = [1.2]
 for cid, x, hair, dress, bow, ph in (("wojakgirl", -0.2, "#F3D27A", "#FF4FA3", "#FF2B8A", 0.33), ("doomergirl", 2.6, "#141218", "#1B1B22", None, 0.66)):
     g = load(cid, "wojak", {"hue": 0.5, "sat": 0.9, "val": 1.05, "tint": "#FFE4D6"}); guests[cid] = g
-    place(g, x, 4.75, face((1.2 - x) * 0.25, -1), z=3.85)
+    place(g, x, 4.95, face((1.2 - x) * 0.25, -1), z=3.85)
     party_girl(g, hair, dress, bow)
     g.bake(M.make_it_rain, 1, N, step=2, phase=ph)
     attach(g, box("cash_stack", -0.09, 0.09, -0.04, 0.04, -0.02, 0.06, BILL), offset=(0, 0.1, 0.02))
@@ -634,23 +634,23 @@ F_FLIP = 384
 zsink = WZ - sw.shoulderL.z + 0.08
 for f in range(1, N + 1, 2):
     if f < F_FLIP:
-        pose = M.cheer(sw, f / FPS); p = Vector((-3.0, 4.65, 3.85)); rx = 0.0
+        pose = M.cheer(sw, f / FPS); p = Vector((-3.0, 4.95, 3.85)); rx = 0.0
     elif f < F_FLIP + 26:
         k = (f - F_FLIP) / 26
-        p = Vector((-3.0, 4.65 + (1.4 - 4.65) * k, 3.85 + 2.2 * math.sin(math.pi * k) * (1 - 0.4 * k) - (3.85 - zsink) * k ** 1.6))
+        p = Vector((-3.0 + 0.2 * k, 4.95 + (0.1 - 4.95) * k, 3.85 + 2.2 * math.sin(math.pi * k) * (1 - 0.4 * k) - (3.85 - zsink) * k ** 1.6))
         pose = M.tuck(sw, 0); rx = -math.tau * min(1.0, k * 1.05)
     else:
-        k = min(1.0, (f - F_FLIP - 26) / 12); p = Vector((-3.0, 1.4, zsink - 0.35 * math.sin(math.pi * k))); pose = M.swim(sw, f / FPS); rx = 0.0
+        k = min(1.0, (f - F_FLIP - 26) / 12); p = Vector((-2.8, 0.1, zsink - 0.35 * math.sin(math.pi * k))); pose = M.swim(sw, f / FPS); rx = 0.0
     pose["loc"] = p; pose["rot"] = face(0, -1); pose["rx"] = rx
     sw.key(f, pose)
 for i in range(30):
-    a = i / 30 * math.tau; s = sphere("drop", (-3.0, 1.4, WZ), random.uniform(0.04, 0.1), SPL, seg=8)
+    a = i / 30 * math.tau; s = sphere("drop", (-2.8, 0.1, WZ), random.uniform(0.04, 0.1), SPL, seg=8)
     v = Vector((math.cos(a) * random.uniform(0.8, 2.4), math.sin(a) * random.uniform(0.8, 2.4), random.uniform(3.5, 6.0)))
     fl = F_FLIP + 26
     s.scale = (0.01,) * 3; s.keyframe_insert("scale", frame=fl - 1); s.keyframe_insert("location", frame=fl - 1)
     s.scale = (1, 1, 1); s.keyframe_insert("scale", frame=fl)
     for j in range(1, 30, 3):
-        tt = j / FPS; s.location = (-3.0 + v.x * tt, 1.4 + v.y * tt, max(WZ, WZ + v.z * tt - 4.9 * tt * tt)); s.keyframe_insert("location", frame=fl + j)
+        tt = j / FPS; s.location = (-2.8 + v.x * tt, 0.1 + v.y * tt, max(WZ, WZ + v.z * tt - 4.9 * tt * tt)); s.keyframe_insert("location", frame=fl + j)
     s.scale = (0.01,) * 3; s.keyframe_insert("scale", frame=fl + 31)
 
 
@@ -704,8 +704,8 @@ if not CLEAN:
         snort_fx(lines, pts, 3.2, phase, cid)
         print(f"SNORT {cid}: H {H:.2f} lift {lift:.2f} bend {math.degrees(full):.0f} nose {d:.2f} at y {ly:.2f}")
         return c
-    # the coffee table in the living room (top about y 8.6-9.2), and LMAO in hysterics beside him
-    snort_station("farter", -5.43, 8.62, -1, 0.43, 0.0, 3)
+    # the coffee table in the living room (x -5.5..-4.9, y 8.3..9.5, top 0.41), and LMAO in hysterics beside him
+    snort_station("farter", -5.2, 8.3, -1, 0.41, 0.0, 3)
     mocap("lmao", -4.2, 8.5, face(-1, 0.4), "13_14", start=1.0, travel=0.0)
     # KET and CATE behind the kitchen island (the marble's back edge is y 10.05)
     snort_station("ket", 3.5, 10.05, 1, 1.06, 0.0, 4)
@@ -746,7 +746,7 @@ if not CLEAN:
         s.location = p1; s.scale = (r1,) * 3; s.keyframe_insert("location", frame=f0 + life); s.keyframe_insert("scale", frame=f0 + life - 6)
         s.scale = (0.001,) * 3; s.keyframe_insert("scale", frame=f0 + life + 4)
     P_SM = 5.0
-    for i, (cid, x, y, tx, ty) in enumerate((("walter", 9.0, -0.3, 9.8, -1.1), ("floki", 9.8, -1.1, 9.0, -0.3), ("toshi", 9.0, -1.8, 9.6, -0.9))):   # BATON has no hand bones
+    for i, (cid, x, y, tx, ty) in enumerate((("walter", 9.0, -0.3, 9.8, -1.1), ("floki", 9.8, -1.1, 9.0, -0.3), ("toshi", 8.85, -2.0, 9.6, -0.9))):   # BATON has no hand bones
         ph = i * 0.31; cough = (cid == "toshi")
         c = load(cid); guests[cid] = c; place(c, x, y, face(tx - x, ty - y)); set_mouth(c)
         c.bake(M.smoke_real, 1, N, step=2, period=P_SM, phase=ph, toward=to_local(c, (tx, ty, 1.5)), cough=cough)
@@ -822,7 +822,8 @@ if not CLEAN:
         bean_bag(c, "#5B2A86" if cid == "wojak" else "#1F7A5A")
         top = M.bong_rig(c, 0.32) + Vector((0, -0.03, 0.0))   # the mouthpiece at the lips, leaning in
         s_ = max(0.55, min(1.0, (top.z - 0.02) / 0.67))      # a shorter guest gets a shorter bong (it's the same bong, no one checks)
-        root = top - Vector((0, 0, 0.67 * s_)); bowl = root + Vector((-0.13, 0, 0.295)) * s_
+        TILT = math.radians(-19); Rt = Matrix.Rotation(TILT, 3, "X")   # tipped away: lips on the mouthpiece, the base out over the knees
+        root = top - Rt @ Vector((0, 0, 0.67 * s_)); bowl = root + (Rt @ Vector((-0.13, 0, 0.295))) * s_
         c.bake(M.bong_session, 1, N, step=2, period=P_B, phase=ph, bong_top=top, bowl=bowl)
         bpy.context.view_layer.update(); W = c.ctrl.matrix_world
         mouth_seat = (c.mouth if hasattr(c, "mouth") else c.headp) + Vector((0, 0.12, -c.leg * 0.45))
@@ -831,7 +832,7 @@ if not CLEAN:
             fr = lambda xx: f0 + int(xx * P_B * FPS)
             at_table(f0)
             for xx in (M.BONG_T["grab"][1], M.BONG_T["put"][0]):
-                bong.location = W @ root; bong.rotation_euler = (0, 0, rot); bong.scale = (s_,) * 3
+                bong.location = W @ root; bong.rotation_euler = (TILT, 0, rot); bong.scale = (s_,) * 3
                 for k in ("location", "rotation_euler", "scale"): bong.keyframe_insert(k, frame=fr(xx))
             at_table(fr(M.BONG_T["put"][1]))
             h0, h1 = fr(M.BONG_T["hit"][0]), fr(M.BONG_T["hit"][1]); c0, c1 = fr(M.BONG_T["clear"][0]), fr(M.BONG_T["clear"][1])
@@ -869,6 +870,22 @@ else:
     for i, cid in enumerate(("whale", "walter", "floki", "baton", "wojak", "apu")):
         guest(cid, 9.2 + (i % 2) * 0.8, 2.0 - i * 1.2, face(-1, -0.3), M.DANCES[i % 5], phase=random.random())
 
+# no guest stands or walks on litter: drop loose trash within reach of anyone's path
+def ctrl_track(c, step=10):
+    ad = c.ctrl.animation_data
+    if not (ad and ad.action): return [c.ctrl.location.copy()]
+    fx = {fc.array_index: fc for fc in ad.action.fcurves if fc.data_path == "location"}
+    return [Vector((fx[0].evaluate(f) if 0 in fx else c.ctrl.location.x, fx[1].evaluate(f) if 1 in fx else c.ctrl.location.y, 0)) for f in range(1, N + 1, step)]
+tracks = [p for c in guests.values() for p in ctrl_track(c)]
+gone = 0
+for o in list(bpy.data.objects):
+    base = o.name.split(".")[0]
+    if base not in ("cup", "can", "pizzabox", "pizza", "pep", "bottle_trash", "cup_trash") or o.constraints or o.parent: continue
+    p = o.matrix_world.translation
+    if p.z > 0.4: continue
+    if any((Vector((p.x, p.y, 0)) - q).length < 0.55 for q in tracks):
+        bpy.data.objects.remove(o); gone += 1
+print("litter cleared from paths:", gone)
 print("guests:", len(guests))
 MEM("guests")
 
@@ -879,7 +896,7 @@ tgt = bpy.data.objects.new("CamTarget", None); sc.collection.objects.link(tgt)
 tcn = cam.constraints.new("TRACK_TO"); tcn.target = tgt; tcn.track_axis = "TRACK_NEGATIVE_Z"; tcn.up_axis = "UP_Y"
 
 # DOGE by the pool's south-west corner, the doge words floating round him (they turn to face the camera)
-dg = mocap("doge", -5.7, -3.35, face(0.6, -1), "120_05", start=1.0, travel=0.05, model="bonk", look=LOOKS["doge"][1])
+dg = mocap("doge", -5.9, -4.35, face(0.6, -1), "120_05", start=1.0, travel=0.05, model="bonk", look=LOOKS["doge"][1])
 COMIC = bpy.data.fonts.load(os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "ComicNeue-Bold.ttf"))
 for k, (word, col, off) in enumerate((("wow", "#FF4FD8", (-0.9, 0, 2.3)), ("such party", "#3BE8FF", (0.8, 0, 2.0)),
                                        ("much rich", "#FFE23B", (-0.7, 0, 1.4)), ("very bass", "#7CFF4A", (0.9, 0, 1.1)))):
@@ -891,7 +908,7 @@ for k, (word, col, off) in enumerate((("wow", "#FF4FD8", (-0.9, 0, 2.3)), ("such
         o.location = base + Vector((0.08 * math.sin(f / 13 + k), 0, 0.08 * math.sin(f / 9 + k * 2))); o.keyframe_insert("location", frame=f)
     tc_ = o.constraints.new("TRACK_TO"); tc_.target = cam; tc_.track_axis = "TRACK_Z"; tc_.up_axis = "UP_Y"
 # PINK WOJAK at the pool edge, in despair, while everyone else parties
-pw = load("pinkwojak", "wojak", LOOKS["pinkwojak"][1]); guests["pinkwojak"] = pw; place(pw, -2.6, -3.25, face(0.2, -1))
+pw = load("pinkwojak", "wojak", LOOKS["pinkwojak"][1]); guests["pinkwojak"] = pw; place(pw, -3.0, -4.3, face(0.2, -1))
 pw.bake(M.despair, 1, N, step=2)
 # FWOG riding the pizza float, arms up
 fw = load("fwog", "pepe", LOOKS["fwog"][1]); guests["fwog"] = fw; place(fw, -3.6, 1.5, face(0.3, -1), z=WZ + 0.12)
