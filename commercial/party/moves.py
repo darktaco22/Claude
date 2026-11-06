@@ -131,7 +131,9 @@ class Char:
         """pose: dict with any of hand_L/hand_R/foot_L/foot_R/look (Vectors), hips (Vector offset), spine (forward bend rad),
         twist (rad), lean (sideways rad), and 'loc'/'rot' for the controller."""
         T, rig, pb = self.T, self.rig, self.rig.pose.bones
-        for n in ("hand_L", "hand_R", "foot_L", "foot_R", "look"):
+        for n in ("hand_L", "hand_R", "foot_L", "foot_R", "look", "knee_L", "knee_R"):
+            if n not in pose and n.startswith("knee") and "knees" in getattr(self, "_keyed", ()):   # back to the default when a move stops steering them
+                pose = {**pose, n: (self.footL + Vector((0.05, -0.6, self.leg * 0.6))) if n == "knee_L" else (self.footR + Vector((-0.05, -0.6, self.leg * 0.6)))}
             if n in pose:
                 v = self.safe(n[-1], pose[n]) if (n.startswith("hand") and not pose.get("nosafe")) else pose[n]
                 T[n].location = v; T[n].keyframe_insert("location", frame=f)
@@ -406,7 +408,9 @@ def bong_session(c, t, period=9.0, phase=0.0, bong_top=None, bowl=None):
     into the chair. bong_top/bowl: the mouthpiece and bowl in character space while it's in their hands."""
     x = ((t / period) + phase) % 1.0
     seat = Vector((0, 0.12, -c.leg * 0.45))
-    feet = {"foot_L": c.footL + Vector((0.03, -0.28, 0)), "foot_R": c.footR + Vector((-0.03, -0.28, 0))}
+    spread = max(0.14, 0.45 * c.leg)   # knees wide apart, the bong between them (with knees bending forward they met the tube)
+    feet = {"foot_L": c.footL + Vector((spread, -0.42, 0)), "foot_R": c.footR + Vector((-spread, -0.42, 0))}
+    feet.update(knee_L=feet["foot_L"] + Vector((0.3, -0.5, c.leg * 0.7)), knee_R=feet["foot_R"] + Vector((-0.3, -0.5, c.leg * 0.7)))
     lap_L = c.hip + seat + Vector((0.12, -0.25, 0.05)); lap_R = c.hip + seat + Vector((-0.12, -0.25, 0.05))
     lean, drift = stoned(c, t, phase, 1.3)
     neck = bong_top + Vector((0, 0.0, -0.3)); light = bowl + Vector((-0.05, -0.02, -0.06))
