@@ -325,3 +325,12 @@ def snort(c, t, table_z=0.45, reach=0.6, period=3.2, phase=0.0):
             "hand_R": nose + Vector((-0.04, -0.06, -0.03)),
             "hand_L": Vector((0.25, -reach * 0.8, table_z + 0.02)) if x < 0.6 else c.arm_at("L", 0.3, 0.2, -0.3),
             "look": head + Vector((0, -1.0, -0.6 if x < 0.55 else 0.6)), "nosafe": True}
+
+def despair(c, t, phase=0.0):
+    """Pink Wojak after selling the bottom: on his knees-ish, both hands clutching his head, rocking."""
+    rock = math.sin(TAU * (t / 1.6 + phase))
+    top = c.headp + Vector((0, 0.02, 0.12))
+    return {"foot_L": c.footL + Vector((0.04, 0.12, 0)), "foot_R": c.footR + Vector((-0.04, 0.12, 0)),
+            "hips": Vector((0, 0.12, -0.32 * c.leg)), "spine": 0.45 + 0.12 * rock, "lean": 0.06 * rock,
+            "hand_L": top + Vector((0.1, -0.02, 0.02)), "hand_R": top + Vector((-0.1, -0.02, 0.02)),
+            "look": c.headp + Vector((0, -2, -1.2)), "nosafe": True}

@@ -274,9 +274,27 @@ CUP = mat("cup", "#D8232A", rough=0.35); CIG = mat("cig", "#F5F2EA", rough=0.6);
 SMOKE = mat("smoke", "#E8E8EE", rough=1.0, alpha=0.28)
 NOTE = mat("note", "#7DBF6A", rough=0.6); POWDER = mat("powder", "#FFFFFF", rough=0.8, emit=0.3)
 
-def load(cid):
+def recolor(rig, hue=0.5, sat=1.0, val=1.0, tint=None):
+    """New memes from the game's own models: shift the hue, saturation and brightness of a character's textures."""
+    for o in rig.children:
+        if o.type != "MESH": continue
+        for sl in o.material_slots:
+            m = sl.material
+            if not m or not m.use_nodes: continue
+            nt = m.node_tree; b = next((n for n in nt.nodes if n.type == "BSDF_PRINCIPLED"), None)
+            if not b or not b.inputs["Base Color"].links: continue
+            src = b.inputs["Base Color"].links[0].from_socket
+            hs = nt.nodes.new("ShaderNodeHueSaturation"); hs.inputs["Hue"].default_value = hue
+            hs.inputs["Saturation"].default_value = sat; hs.inputs["Value"].default_value = val
+            nt.links.new(src, hs.inputs["Color"]); out = hs.outputs["Color"]
+            if tint:
+                mx = nt.nodes.new("ShaderNodeMixRGB"); mx.blend_type = "MULTIPLY"; mx.inputs[0].default_value = 1.0
+                mx.inputs[2].default_value = srgb(tint); nt.links.new(out, mx.inputs[1]); out = mx.outputs[0]
+            nt.links.new(out, b.inputs["Base Color"])
+
+def load(cid, model=None, look=None):
     before = set(bpy.data.objects)
-    bpy.ops.import_scene.gltf(filepath=os.path.join(MODELS, cid + ".glb"))
+    bpy.ops.import_scene.gltf(filepath=os.path.join(MODELS, (model or cid) + ".glb"))
     new = [o for o in bpy.data.objects if o not in before]
     rig = next(o for o in new if o.type == "ARMATURE")
     keep = [o for o in new if not (o.type == "MESH" and o.parent is None)]
@@ -285,6 +303,7 @@ def load(cid):
     for o in keep:
         if o.type == "MESH" and "--nosubd" not in argv:
             sd = o.modifiers.new("smooth", "SUBSURF"); sd.levels = 0; sd.render_levels = 1; sd.uv_smooth = "PRESERVE_BOUNDARIES"; sd.quality = 1; sd.use_limit_surface = False; sd.use_creases = False
+    if look: recolor(rig, **look)
     return M.Char(rig, cid)
 
 def face(dx, dy):   # the ctrl's z rotation so the character faces (dx, dy)
@@ -328,27 +347,47 @@ def guest(cid, x, y, rot, move, z=0.0, **kw):
 
 look_at = lambda c, other: to_local(c, Vector(other.ctrl.location) + Vector((0, 0, other.headp.z)))
 
+def beanie(c):
+    """dogwifhat's pink knitted beanie, riding the head bone."""
+    KNIT = mat("knit", "#FF5FA8", rough=0.95)
+    retex(KNIT, "#FF5FA8", "#E0408A", kind="noise", scale=120.0, rough=0.95, bump=0.6)
+    hb = c.rig.data.bones["mixamorig:Head"]; size = max(0.12, (c.headp.z - c.neck.z) * 2.2 + 0.1)
+    cap = sphere("beanie", (0, 0, 0), size * 0.62, KNIT, seg=24); cap.scale = (1.0, 0.8, 1.0)
+    attach(c, cap, bone="Head", offset=(0, size * 0.75, 0.0))
+    bpy.ops.mesh.primitive_torus_add(major_radius=size * 0.6, minor_radius=size * 0.1); band = obj_mat(bpy.context.active_object, KNIT)
+    band.data.shade_smooth(); attach(c, band, bone="Head", offset=(0, size * 0.52, 0.0), rot=(math.pi / 2, 0, 0))
+    attach(c, sphere("pompom", (0, 0, 0), size * 0.2, KNIT, seg=12), bone="Head", offset=(0, size * 1.32, 0.0))
+
 # motion capture (CMU, cgspeed's BVH) for the dancers, drinkers, smokers, the laugh and the drunk; retarget.py
 import retarget as RT
 CMU = os.path.abspath(A("--cmu"))
-USED = ["111_05", "60_01", "18_15", "93_08", "90_32", "120_21", "85_14", "90_30", "55_02", "79_33", "80_29", "13_09", "13_14", "91_09", "141_12", "120_05"]
+USED = ["113_04", "111_05", "60_01", "18_15", "93_08", "90_32", "120_21", "85_14", "90_30", "55_02", "79_33", "80_29", "13_09", "13_14", "91_09", "141_12", "120_05"]
 CLIPS = {c: RT.sample(os.path.join(CMU, "data", f"{int(c.split('_')[0]):03d}", c + ".bvh")) for c in USED}
 MEM("clips")
-def mocap(cid, x, y, rot, cname, start=0.0, travel=0.12, speed=1.0, z=0.0):
-    c = load(cid); place(c, x, y, rot, z); guests[cid] = c
+def mocap(cid, x, y, rot, cname, start=0.0, travel=0.12, speed=1.0, z=0.0, model=None, look=None):
+    c = load(cid, model, look); place(c, x, y, rot, z); guests[cid] = c
     if c.ik: RT.apply(c, CLIPS[cname], 1, N, start=start, travel=travel, speed=speed)
     else: c.play("win", 1)
     return c
 
 # the DJ, and the dance floor in front of the booth
 mocap("triplet", 7.6, -4.8, face(-1, 0), "111_05", start=3.0, travel=0.0)   # the DJ
-dancers = ["giga", "neet", "alon", "mitch", "mensa", "thisisfine", "toshi", "goat", "bome", "slerf"]
-spots = [(1.2, -4.0), (2.6, -4.4), (4.0, -3.9), (5.3, -4.6), (1.6, -5.6), (3.1, -6.0), (4.6, -5.5), (2.2, -7.1), (3.8, -7.3), (5.4, -6.8)]
-DANCE_CLIP = {"giga": ("60_01", 2.0), "neet": ("18_15", 1.0), "alon": ("93_08", 0.5), "mitch": ("90_32", 0.5), "thisisfine": ("120_21", 1.0),
-              "toshi": ("85_14", 3.0), "goat": ("90_30", 0.5), "slerf": ("55_02", 1.0), "mensa": ("141_12", 0.0), "bome": ("120_05", 0.0)}
+dancers = ["giga", "neet", "alon", "mitch", "mensa", "thisisfine", "toshi", "goat", "bome", "slerf", "brett", "npcwojak"]
+spots = [(1.2, -4.0), (2.6, -4.4), (4.0, -3.9), (5.3, -4.6), (1.6, -5.6), (3.1, -6.0), (4.6, -5.5), (2.2, -7.1), (3.8, -7.3), (5.4, -6.8), (0.4, -6.4), (6.3, -5.7)]
+# new memes made from the game's own models
+LOOKS = {"brett": ("pepe", {"hue": 0.78, "sat": 1.15, "val": 1.0}),                    # Brett: the blue frog
+         "npcwojak": ("wojak", {"hue": 0.5, "sat": 0.0, "val": 0.95, "tint": "#C9CCD2"}),  # NPC Wojak: grey, blank
+         "pinkwojak": ("wojak", {"hue": 0.5, "sat": 0.4, "val": 1.05, "tint": "#FF8FB0"}), # Pink Wojak: the panic seller
+         "doge": ("bonk", {"hue": 0.48, "sat": 0.55, "val": 1.2, "tint": "#F2D9A8"}),       # DOGE: the original Shiba
+         "wif": ("bonk", {"hue": 0.49, "sat": 0.65, "val": 1.1, "tint": "#E8C9A0"}),        # dogwifhat
+         "fwog": ("pepe", {"hue": 0.47, "sat": 0.8, "val": 1.25, "tint": "#D8FFC8"})}       # Fwog: a small pale frog
+DANCE_CLIP = {"giga": ("60_01", 2.0), "neet": ("18_15", 1.0), "alon": ("93_08", 0.5), "mitch": ("90_32", 0.5), "thisisfine": ("113_04", 1.0),
+              "toshi": ("85_14", 3.0), "goat": ("90_30", 0.5), "slerf": ("55_02", 1.0), "mensa": ("141_12", 0.0), "bome": ("120_05", 0.0),
+              "brett": ("141_12", 2.0), "npcwojak": ("120_21", 3.0)}
 for i, (cid, (x, y)) in enumerate(zip(dancers, spots)):
     cl, st = DANCE_CLIP[cid]
-    mocap(cid, x + random.uniform(-0.15, 0.15), y, face(7.6 - x, -4.8 - y) + random.uniform(-0.4, 0.4), cl, start=st, travel=0.1)
+    md, lk = LOOKS.get(cid, (None, None))
+    mocap(cid, x + random.uniform(-0.15, 0.15), y, face(7.6 - x, -4.8 - y) + random.uniform(-0.4, 0.4), cl, start=st, travel=0.1, model=md, look=lk)
 
 MEM("dancers")
 # in the pool: treading water (sunk to the shoulders), one on the donut
@@ -443,8 +482,10 @@ def loop_point(s):   # a rounded rectangle 1 m outside the coping, s in metres a
         s -= segs[2 * k + 1]
     return Vector((0, -H2, 0)), (1, 0)
 mocap("chillhouse", -5.5, -11.0, face(1, 0.2), "91_09", start=0.0, travel=0.6)   # staggering drunk on the lawn
-for i, cid in enumerate(("useless", "bonk", "pnut")):
-    c = load(cid); guests[cid] = c; c.play("walk", 1, speed=1.15)
+for i, cid in enumerate(("useless", "wif", "bonk", "pnut")):
+    md, lk = LOOKS.get(cid, (None, None))
+    c = load(cid, md, lk); guests[cid] = c; c.play("walk", 1, speed=1.15)
+    if cid == "wif": beanie(c)
     for f in range(1, N + 1, 2):
         p, (dx, dy) = loop_point(1.15 * f / FPS - i * 0.85 + 6.0)
         c.key(f, {"clip_driven": True, "loc": p, "rot": face(dx, dy)})
@@ -617,6 +658,37 @@ cam = bpy.data.objects.new("Cam", bpy.data.cameras.new("Cam")); sc.collection.ob
 cam.data.lens = 24; cam.data.clip_end = 300
 tgt = bpy.data.objects.new("CamTarget", None); sc.collection.objects.link(tgt)
 tcn = cam.constraints.new("TRACK_TO"); tcn.target = tgt; tcn.track_axis = "TRACK_NEGATIVE_Z"; tcn.up_axis = "UP_Y"
+
+# DOGE by the pool's south-west corner, the doge words floating round him (they turn to face the camera)
+dg = mocap("doge", -5.7, -3.35, face(0.6, -1), "120_05", start=1.0, travel=0.05, model="bonk", look=LOOKS["doge"][1])
+COMIC = bpy.data.fonts.load(os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "ComicNeue-Bold.ttf"))
+for k, (word, col, off) in enumerate((("wow", "#FF4FD8", (-0.9, 0, 2.3)), ("such party", "#3BE8FF", (0.8, 0, 2.0)),
+                                       ("much rich", "#FFE23B", (-0.7, 0, 1.4)), ("very bass", "#7CFF4A", (0.9, 0, 1.1)))):
+    cu = bpy.data.curves.new("doge_" + word, "FONT"); cu.body = word; cu.font = COMIC; cu.size = 0.28; cu.align_x = "CENTER"; cu.extrude = 0.01
+    o = bpy.data.objects.new("doge_" + word, cu); sc.collection.objects.link(o)
+    o.data.materials.append(mat("doge_" + col, col, emit=3.0))
+    base = Vector((-5.7, -3.35, 0)) + Vector(off)
+    for f in range(1, N + 1, 15):
+        o.location = base + Vector((0.08 * math.sin(f / 13 + k), 0, 0.08 * math.sin(f / 9 + k * 2))); o.keyframe_insert("location", frame=f)
+    tc_ = o.constraints.new("TRACK_TO"); tc_.target = cam; tc_.track_axis = "TRACK_Z"; tc_.up_axis = "UP_Y"
+# PINK WOJAK at the pool edge, in despair, while everyone else parties
+pw = load("pinkwojak", "wojak", LOOKS["pinkwojak"][1]); guests["pinkwojak"] = pw; place(pw, -2.6, -3.25, face(0.2, -1))
+pw.bake(M.despair, 1, N, step=2)
+# FWOG riding the pizza float, arms up
+fw = load("fwog", "pepe", LOOKS["fwog"][1]); guests["fwog"] = fw; place(fw, -3.6, 1.5, face(0.3, -1), z=WZ + 0.12)
+fw.ctrl.scale = (0.55, 0.55, 0.55)
+fw.bake(M.cheer, 1, N, step=2)
+for f in range(1, N + 1, 30):
+    fw.ctrl.location.z = WZ + 0.12 + 0.02 * math.sin(f / 13); fw.ctrl.keyframe_insert("location", frame=f)
+# laser eyes on the DJ (the Bitcoin meme)
+LASER = mat("laser", "#FF1A1A", emit=40.0)
+dj = guests["triplet"]
+for sx in (-1, 1):
+    beam = cyl("laser", (0, 0, 0), 0.012, 9.0, LASER, v=8)
+    attach(dj, beam, bone="Head", offset=(sx * 0.06, 0.12, 4.6))
+    for f in range(1, N + 1, 6):
+        beam.scale = (1 + 0.4 * random.random(), 1 + 0.4 * random.random(), 1); beam.keyframe_insert("scale", frame=f)
+
 path = [  # frame, camera, look-at: one sweep, slow where the jokes are
     (1, (-17, -21, 11), (0, 2, 1)),
     (110, (-10.5, -10.5, 4.2), (-2.5, 0, 0.4)),
