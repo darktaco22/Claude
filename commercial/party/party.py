@@ -513,14 +513,14 @@ cannonball("popcat", -1.6, 200)
 MEM("cannonball")
 # poolside drinkers, chatting, red cups in hand
 # walkers: a slow lap of the west and south deck with a drink in hand, on the game's own walk cycle
-def walk_loop(c, pts, speed, offset=0.0, clip_speed=None):
+def walk_loop(c, pts, speed, offset=0.0, clip_speed=None, f_from=1, play=True):
     """Walk a closed polyline at `speed` m/s, facing along it; the walk clip's rate matches the pace (no sliding)."""
     segs = [(Vector(pts[i]), Vector(pts[(i + 1) % len(pts)])) for i in range(len(pts))]
     L = sum((b - a).length for a, b in segs)
-    c.play("walk", 1, speed=clip_speed or speed / 1.1)
+    if play: c.play("walk", 1, speed=clip_speed or speed / 1.1)
     prev = None
-    for f in range(1, N + 1, 2):
-        d = (speed * f / FPS + offset) % L
+    for f in range(f_from, N + 1, 2):
+        d = (speed * (f - f_from + 1) / FPS + offset) % L
         for a, b in segs:
             sl = (b - a).length
             if d <= sl:
@@ -582,6 +582,9 @@ for i, cid in enumerate(("useless", "wif", "bonk", "pnut")):
 # the kitchen bar: drinks
 c = load("dope"); guests["dope"] = c   # DOPE wanders the living room
 walk_loop(c, [(-1.5, 6.4), (1.8, 6.4), (1.8, 7.6), (-1.5, 7.6)], 0.7, offset=2.0)
+# from frame 531 (the camera is looking west, away from him) he circles the dining table instead: his old loop was right
+# in the camera's path from the living room to the kitchen (his head filled the frame)
+walk_loop(c, [(0.4, 10.0), (0.4, 11.95), (-3.1, 11.95), (-3.1, 10.0)], 0.7, f_from=531, play=False)
 
 MEM("bar")
 # the two couples
