@@ -77,7 +77,7 @@ def setup_render():
     sc.render.resolution_x, sc.render.resolution_y = int(arg('--w', 720)), int(arg('--h', 1280))
     sc.render.fps = FPS; sc.frame_start = 1; sc.frame_end = NF
     sc.render.use_motion_blur = False
-    sc.view_settings.view_transform = 'AgX'; sc.view_settings.look = 'AgX - Medium High Contrast'; sc.view_settings.exposure = -0.3
+    sc.view_settings.view_transform = 'AgX'; sc.view_settings.look = 'AgX - Medium High Contrast'; sc.view_settings.exposure = -0.75
     sc.render.film_transparent = False
     sc.render.use_persistent_data = True
     sc.render.image_settings.file_format = 'PNG'; sc.render.image_settings.color_depth = '8'
@@ -102,6 +102,7 @@ def main():
         A[k] = rigctl.Actor(k, rig, body); A[k].parts = parts
     NEET = load_neet(SEAT['gary'])
     P = make_props(A)
+    find_lips(A['earl'])
     place_oxygen(P, SEAT['earl'], A)
     for k, a in A.items():
         hs, pk = {'pam': ('L', 'pam_mug'), 'linda': ('L', 'linda_mug'), 'earl': ('R', 'earl_cig'), 'chad': ('R', 'chad_can')}[k]
@@ -126,6 +127,8 @@ def main():
         global SEAT_HEADS, SEAT_P, SEAT_NEET
         SEAT_HEADS, SEAT_P, SEAT_NEET = HEADS, P, NEET
         seat_fix(A, S, SEAT)
+        global CIG_SEAT; CIG_SEAT = SEAT['earl']; cig_fix(A['earl'], P)
+        hand_fix(A, P, SEAT)                 # after the cigarette is seated, so it is lifted clear of his leg too
         for a in A.values(): a.K.d = {}
         state = {k: dict(yaw=0.0, pitch=0.0) for k in ORDER}
       for f in (range(1, NF + 1) if pas == 1 else [int(fr(10.0))]):
@@ -259,6 +262,7 @@ def make_props(A):
     CONST_MATS.append(P['earl_cig']['ember'])
     # Chad's cap, worn backwards, on his head bone
     cap = props.cap('chad_cap'); fit_to_head(A['chad'], cap, back=True); P['chad_cap'] = cap
+    glasses_off_skin(A['chad'], 'frankyaye_glasses_library_male'); glasses_off_skin(A['pam'], 'spamrakuen_tbm_glasses_frames_01')
     # Earl's oxygen: tank by his chair, cannula on his face
     P['oxy'] = props.oxygen('oxy')
     cannula(A['earl'], P)
@@ -266,16 +270,15 @@ def make_props(A):
 
 def place_oxygen(P, seat, A):
     M = Matrix.Translation((seat['x'], seat['y'], 0)) @ Matrix.Rotation(seat['face'], 4, 'Z')
-    P['oxy'].matrix_world = M @ Matrix.Translation((0.46, 0.12, 0)) @ Matrix.Rotation(0.4, 4, 'Z')
+    P['oxy'].matrix_world = M @ Matrix.Translation((0.34, 0.16, 0)) @ Matrix.Rotation(0.4, 4, 'Z')     # tight beside his chair
     bpy.context.view_layer.update()
     valve = P['oxy'].matrix_world @ Vector((0, 0.0, 0.7))
     P['valve'] = valve
-    line = props.tube_curve('cannula_line', [valve + Vector((0, 0, 0.0)), valve + Vector((0, 0, 0.25)), valve + Vector((-0.1, -0.1, 0.5)), valve + Vector((-0.3, -0.1, 0.8))], r=0.0024, m=P['cannula_mat'])
-    for bp in line.data.splines[0].bezier_points: bp.handle_left_type = bp.handle_right_type = 'AUTO'
+    line = props.tube_curve('cannula_line', [valve + Vector((0, 0, 0.0)), valve + Vector((0, 0, 0.25)), valve + Vector((-0.1, -0.1, 0.5)), valve + Vector((-0.2, -0.1, 0.7)), valve + Vector((-0.3, -0.1, 0.8))], r=0.0024, m=P['cannula_mat'])
+    for bp in line.data.splines[0].bezier_points: bp.handle_left_type = bp.handle_right_type = 'FREE'
     P['cannula_line'] = line
     # the chin point in head-bone space
-    a = A['earl']; hk = P['cannula_hook']; bpy.context.view_layer.update()
-    P['chin_local'] = a.rest['head'].inverted() @ (a.rig.matrix_world.inverted() @ hk.matrix_world.translation)
+    pass
     return P
 
 
@@ -287,10 +290,10 @@ def screen(k):
     d.rectangle((0, 0, w, 70), fill=(14, 16, 22)); d.text((24, 16), '9:41', font=fs, fill=(230, 230, 230))
     d.rounded_rectangle((20, 100, w - 20, 230), 26, fill=(32, 34, 42))
     d.rounded_rectangle((40, 122, 120, 202), 18, fill=(150, 60, 230)); d.text((150, 120), 'LAUNCHPAD', font=fs, fill=(170, 170, 180))
-    d.text((150, 156), '$SOBER just launched', font=fs, fill=(255, 255, 255))
+    d.text((150, 156), '$ROYALE just launched', font=fs, fill=(255, 255, 255))
     pts = [(30 + i * 24, 900 - (i ** 1.6) * 6 - random.Random(i).uniform(0, 30)) for i in range(21)]
     d.line(pts, fill=(43, 255, 106), width=8)
-    d.text((40, 300), '$SOBER', font=fb, fill=(200, 255, 90)); d.text((40, 360), '+2,413,907%' if k == 'pam' else '0.0001', font=fb, fill=(43, 255, 106))
+    d.text((40, 300), '$ROYALE', font=fb, fill=(200, 255, 90)); d.text((40, 360), '+2,413,907%' if k == 'pam' else '0.0001', font=fb, fill=(43, 255, 106))
     d.rounded_rectangle((40, 980, w - 40, 1070), 22, fill=(43, 200, 90)); d.text((w / 2 - 50, 1005), 'BUY', font=fb, fill=(0, 0, 0))
     p = f"{os.environ.get('DA_TEX', '/tmp')}/screen_{k}.png"; im.save(p); return p
 
@@ -355,14 +358,18 @@ def cannula(actor, P):
         ear = L['earL'] if sx > 0 else L['earR']
         pts.append([Vector((sx * 0.006, n.y + 0.012, n.z - 0.013)), Vector((sx * 0.03, n.y + 0.02, n.z - 0.02)),
                     Vector((sx * 0.065, n.y + 0.055, n.z - 0.03)), Vector((ear.x + sx * 0.004, ear.y - 0.012, ear.z + 0.035)),
-                    Vector((ear.x + sx * 0.002, ear.y + 0.025, ear.z + 0.0)), Vector((ear.x - sx * 0.01, ear.y + 0.02, ear.z - 0.06)),
-                    Vector((sx * 0.03, L['chin'].y + 0.06, L['chin'].z - 0.04)), Vector((0.0, L['chin'].y + 0.05, L['chin'].z - 0.06))])
-    loop = props.tube_curve('cannula_face', pts[0] + list(reversed(pts[1]))[:-1], r=0.0021, m=tube)
-    bone_parent(loop, actor, 'head')
+                    Vector((ear.x + sx * 0.002, ear.y + 0.025, ear.z + 0.0)), Vector((ear.x - sx * 0.008, ear.y + 0.012, ear.z - 0.05)),
+                    Vector((ear.x * 0.75, ear.y - 0.03, ear.z - 0.085)), Vector((sx * 0.035, L['chin'].y + 0.012, L['chin'].z + 0.006)),
+                    Vector((0.0, L['chin'].y - 0.012, L['chin'].z - 0.008))])
+    path = pts[0] + list(reversed(pts[1]))[1:]          # nostril L ... chin front ... nostril R
+    path = outside_skin(actor, path, gap=0.007, steps=3)
+    loop = props.tube_curve('cannula_face_curve', path, r=0.0021, m=tube)
+    skin_to_body(actor, loop, 'cannula_face', gap=0.0025)
     # a hook point under the chin follows the head; the line drops to the tank beside the chair
     hk = bpy.data.objects.new('cannula_hook', None); bpy.context.scene.collection.objects.link(hk)
-    hk.location = Vector((0.0, L['chin'].y + 0.05, L['chin'].z - 0.06)); bone_parent(hk, actor, 'head')
+    hk.location = Vector((0.0, L['chin'].y - 0.012, L['chin'].z - 0.008)); bone_parent(hk, actor, 'head')
     P['cannula_hook'] = hk; P['cannula_mat'] = tube
+    P['chin_local'] = actor.rest['head'].inverted() @ Vector((0.0, L['chin'].y - 0.022, L['chin'].z - 0.018))   # clear of the jaw when he talks
 
 
 # ================================================================== the actor solve
@@ -386,6 +393,7 @@ def curl_Q(actor, s, kind, Q):
 
 
 SEAT_FIX = {}
+HAND_FIX = {}
 NEET_FIX = (0.0, 0.0)
 SEAT_S = {}
 def seated_basics(a):
@@ -508,6 +516,7 @@ def solve_actor(a, k, t, f, seat, st, HEADS, P, K):
     for s in 'LR':
         hip = a.hip[s] + root_loc
         ank = Vector((hip.x + sx[s] * 0.05, -(a.thigh + 0.08), 0.085))
+        if (k, s) == ('linda', 'L'): ank += Vector((-0.17, 0.12, 0))     # her foot tucked in, clear of NEET's
         Fm = a.rest[f'foot.{s}'].copy()
         if k == 'chad' and not running:   # the jittery leg
             ank.z += max(0.0, math.sin(t * 34 + (0 if s == 'L' else 2.0))) * 0.03
@@ -522,23 +531,30 @@ def solve_actor(a, k, t, f, seat, st, HEADS, P, K):
     # ---------------- hands
     head = a.fk(Q, root_loc, 'head')
     mouth = head @ (a.rest['head'].inverted() @ a.mouth); nose = head @ (a.rest['head'].inverted() @ a.nose)
+    lip = head @ (a.rest['head'].inverted() @ getattr(a, 'lip', a.mouth))
     eyes = head @ (a.rest['head'].inverted() @ (a.rest['head'].translation + Vector((0, -0.085, 0.04))))
     fwd = head.to_3x3() @ (a.rest['head'].to_3x3().inverted() @ Vector((0, -1, 0)))
     up = head.to_3x3() @ (a.rest['head'].to_3x3().inverted() @ Vector((0, 0, 1)))
     hands = {}; shapes = {}; place = {}
     MOUTH[k] = mw @ mouth; MOUTH[k + '_fwd'] = mw.to_3x3() @ fwd
     def lap(s, holding=None):
-        hip = a.hip[s] + root_loc
+        hf = HAND_FIX.get((k, s), Vector()); hip = a.hip[s] + root_loc + Vector((sx[s] * hf.x, hf.y, hf.z))
         knee = hip + Vector((0, -a.thigh * 0.95, -0.06))
         if holding:
-            pos = hip.lerp(knee, 0.6) + Vector((-sx[s] * 0.035, -0.02, 0.17))
+            pos = hip.lerp(knee, 0.6) + Vector((sx[s] * 0.05, -0.02, 0.12))   # palm at the thigh's outer side, the cup over the thigh
             return a.frame(pos, (sx[s] * 0.25, -1, -0.35), (-sx[s], 0, 0.0))
-        pos = hip.lerp(knee, 0.62) + Vector((-sx[s] * 0.01, 0, 0.085))
-        return a.frame(pos, (-sx[s] * 0.15, -1, -0.15), (sx[s] * 0.2, 0, -1))
+        # rest on the thigh as far toward the knee as the arm comfortably reaches
+        sh = a.fk(Q, root_loc, f'upperarm01.{s}').translation; reach = (a.uarm + a.farm) * 0.95
+        for u in [0.62 - 0.04 * i for i in range(9)]:
+            pos = hip.lerp(knee, u) + Vector((-sx[s] * 0.01, 0, 0.085))
+            F = a.frame(pos, (-sx[s] * 0.15, -1, -0.15), (sx[s] * 0.2, 0, -1))
+            if (a.hand_matrix_for_palm(s, F).translation - sh).length <= reach: break
+        return F
     G = a.G
     def phone_frame(s):
-        tgt = eyes + fwd * 0.31 - up * 0.2
-        n = (eyes - tgt).normalized(); upp = (up - n * up.dot(n)).normalized()
+        flat = Vector((0, -1, 0)); zup = Vector((0, 0, 1))          # from the body, not the gaze: looking down doesn't pull it into the chest
+        tgt = eyes + flat * 0.37 - zup * 0.22
+        n = (eyes - tgt).normalized(); upp = (zup - n * zup.dot(n)).normalized()
         X = upp * a.idx_sign[s]; Y = n.cross(X)
         F = a.frame(Vector(), Y, n)
         F.translation = tgt - F.to_3x3() @ (G['phone'][1].translation + Vector((0, 0, 0)))
@@ -554,7 +570,7 @@ def solve_actor(a, k, t, f, seat, st, HEADS, P, K):
         M = q.to_matrix().to_4x4(); M.translation = p; return M
     # defaults
     for s in 'LR':
-        hands[s] = lap(s); shapes[s] = 'rest'
+        hands[s] = lap(s); shapes[s] = 'flat'
     # who holds what (in which hand)
     hold = {'pam': ('L', 'pam_mug'), 'linda': ('L', 'linda_mug'), 'earl': ('R', 'earl_cig'), 'chad': ('R', 'chad_can')}[k]
     phand = 'R' if k in ('pam', 'linda') else 'L'
@@ -570,7 +586,7 @@ def solve_actor(a, k, t, f, seat, st, HEADS, P, K):
         if sip > 0.001:
             zl = Mprop.to_3x3().col[2]
             if k == 'linda':
-                tilt = 0.12; st_ = P['linda_straw']
+                tilt = 0.42; st_ = P['linda_straw']          # leaned toward her face so the mug stays off her chest
                 tip_local = st_.location + st_.rotation_euler.to_matrix() @ Vector((0, 0, 0.26))
             else:
                 tilt = 0.85; H = P[pk]['H']
@@ -594,7 +610,8 @@ def solve_actor(a, k, t, f, seat, st, HEADS, P, K):
             return F @ G['cig'][2]
         def cig_at_lips(droop=0.35):
             z = (fwd * math.cos(droop) - up * math.sin(droop)).normalized(); y = up - z * up.dot(z); x = y.cross(z)
-            M = Matrix((x.normalized(), y.normalized(), z)).transposed().to_4x4(); M.translation = mouth + fwd * 0.004 - z * 0.004; return M
+            # the filter's end pressed 4 mm between his lips (the filter end is 11 mm behind the origin)
+            M = Matrix((x.normalized(), y.normalized(), z)).transposed().to_4x4(); M.translation = lip + z * 0.007; return M
         def palm_for_cig(M):
             return M @ G['cig'][2].inverted()
         drag = max(pulse(t, 13.0, 13.8, 0.3), pulse(t, 25.1, 26.0, 0.3))
@@ -605,8 +622,8 @@ def solve_actor(a, k, t, f, seat, st, HEADS, P, K):
         k2 = max(drag, place_in)
         hands['R'] = blend(F, Fl, k2, Vector((0.06, -0.12, 0)))
         place['earl_cig'] = Mlips if in_mouth else cig_in_palm(hands['R'])
-        if in_mouth:
-            shape['v_mm'] = max(shape['v_mm'], 0.35); shape['v_aa'] *= 0.5
+        if in_mouth or drag > 0.6:
+            shape['v_mm'] = max(shape['v_mm'], 0.45 if drag > 0.6 else 0.35); shape['v_aa'] *= 0.4    # lips closed round the filter
     # phones
     pphone = P[k + '_phone']
     if phone_up > 0.01 and not running:
@@ -619,21 +636,21 @@ def solve_actor(a, k, t, f, seat, st, HEADS, P, K):
     if k == 'chad':
         wipe = pulse(t, 29.62, 30.1, 0.12)
         if wipe > 0.01:
-            pos = nose - up * 0.025 + fwd * 0.04 + Vector((0.02, 0, 0)) * math.sin((t - 29.62) * 18)
+            pos = nose - up * 0.03 + fwd * 0.07 + Vector((0.02, 0, 0)) * math.sin((t - 29.62) * 18)
             Fw = a.frame(pos, (-0.3, 0, 1), (0, 0, -1) if False else (-fwd).normalized())
             hands['L'] = blend(hands['L'], Fw, wipe); shapes['L'] = 'fist'
     if k in ('pam', 'linda') and win(t, 15.75, 16.65):
+        # applause with the free hand: two slaps on her own thigh (the other hand holds the mug)
         c = max(pulse(t, 15.85, 16.08, 0.08), pulse(t, 16.25, 16.48, 0.08))
-        mugF = hands['L']; ax = mugF.to_3x3(); nL = ax.col[2]
-        back = mugF.translation - nL * 0.03 + ax.col[1] * 0.02
-        Fc = a.frame(back - nL * (0.012 + (1 - c) * 0.09), ax.col[1], nL)
-        hands['R'] = blend(hands['R'], Fc, ramp(t, 15.75, 15.85) * (1 - ramp(t, 16.55, 16.65))); shapes['R'] = 'flat'
+        up_ = ramp(t, 15.75, 15.85) * (1 - ramp(t, 16.55, 16.65))
+        base_ = hands['R'].copy(); base_.translation = base_.translation + Vector((0, 0, 0.09 * up_ * (1 - c)))
+        hands['R'] = base_; shapes['R'] = 'flat'
     if running:
         u = t - RUN[k]; swing = math.sin(u * 11.0) * clamp((u - 0.22) / 0.2)
         for s in 'LR':
             sh = a.shoulder[s] + root_loc
-            sg = swing if s == 'L' else -swing
-            pos = sh + Vector((sx[s] * 0.12, -0.18 - sg * 0.18, -0.38 + max(0, -sg) * 0.1 + max(0, sg) * 0.12))
+            sg = (swing if s == 'L' else -swing) * (0.4 if s == hold[0] else 1.0)
+            pos = sh + Vector((sx[s] * (0.2 if s == hold[0] else 0.12), -0.18 - sg * 0.18 - (0.12 if s == hold[0] else 0), -0.38 + max(0, -sg) * 0.1 + max(0, sg) * 0.12))
             Fr = a.frame(pos, (0, -0.6, 0.6), (-sx[s], 0, 0))
             keepS = shapes[s]
             hands[s] = blend(hands[s], Fr, sb, Vector()); shapes[s] = keepS
@@ -654,8 +671,11 @@ def solve_actor(a, k, t, f, seat, st, HEADS, P, K):
     for s in 'LR':
         set_fingers(a, s, shapes[s], Q)
     H = {('hand', s): mw @ a.hand_matrix_for_palm(s, hands[s]) for s in 'LR'}
+    tuck = {'L': 0.0, 'R': 0.0}
+    tuck[phand] = clamp(phone_up)
     for s in 'LR':
-        poles['hand', s] = mw @ (a.shoulder[s] + root_loc + Vector((sx[s] * 0.7, 0.45, -0.45)))
+        pv = Vector((sx[s] * 0.7, 0.45, -0.45)).lerp(Vector((sx[s] * 0.22, 0.35, -0.75)), tuck[s])
+        poles['hand', s] = mw @ (a.shoulder[s] + root_loc + pv)
     a.key_pose(f, mw, Q, root_loc, H, feet, poles, shape)
     # props follow the hands (re-derived from the posed hand, which the IK matches exactly)
     for pk2, M in place.items():
@@ -677,11 +697,19 @@ def solve_actor(a, k, t, f, seat, st, HEADS, P, K):
     if k == 'earl':
         cu = P['cannula_line'].data; chin = mw @ (head @ P['chin_local'])
         side = (mw.to_3x3() @ Vector((1, 0, 0))); v = P['valve']
-        mid = chin + side * 0.12 + Vector((0, 0, -0.25)) + (mw.to_3x3() @ Vector((0, -0.12, 0)))
+        # down in front of his chest, round the outside of his left knee, to the tank
+        R3 = mw.to_3x3(); seat_o = mw.translation
+        under = chin + R3 @ Vector((0.02, -0.15, -0.12))
+        knee_out = seat_o + R3 @ Vector((0.30, -0.30, 0.66))
         cut = running and t > RUN['earl'] + 0.15
-        pts = [v, v + Vector((0, 0, 0.22)), mid, chin] if not cut else [v, v + Vector((0, 0, 0.12)), v + Vector((0.05, -0.15, 0.0)), v + Vector((0.12, -0.3, -0.65))]
+        pts = [v, v + Vector((0, 0, 0.22)), knee_out, under, chin] if not cut else [v, v + Vector((0, 0, 0.12)), v + Vector((0.05, -0.15, 0.0)), v + Vector((0.1, -0.25, -0.3)), v + Vector((0.12, -0.3, -0.65))]
+        # handles keyed too (Catmull-Rom tangents): auto handles don't update during playback
         for j, p in enumerate(pts):
-            for i in range(3): K.add(cu, f'splines[0].bezier_points[{j}].co', i, f, p[i])
+            tan = (pts[min(j + 1, len(pts) - 1)] - pts[max(j - 1, 0)]) * (0.5 if 0 < j < len(pts) - 1 else 1.0)
+            for i in range(3):
+                K.add(cu, f'splines[0].bezier_points[{j}].co', i, f, p[i])
+                K.add(cu, f'splines[0].bezier_points[{j}].handle_left', i, f, (p - tan / 3)[i])
+                K.add(cu, f'splines[0].bezier_points[{j}].handle_right', i, f, (p + tan / 3)[i])
         em = bpy.data.materials[P['earl_cig']['ember']]
         glow = 3.0 + pulse(t, 25.3, 26.0, 0.2) * 10 + pulse(t, 13.2, 13.7, 0.15) * 10
         K.add(em.node_tree, em_path(em), 0, f, glow)
@@ -804,7 +832,7 @@ def lights(S, X, t, f, K):
         K.add(T_['light'].data, 'energy', 0, f, T_['base'] * kk)
         K.add(T_['mat'].node_tree, em_path(T_['mat']), 0, f, T_['ebase'] * kk)
         if T_['mat'].name not in CONST_MATS: CONST_MATS.append(T_['mat'].name)
-    K.add(S['fill'].data, 'energy', 0, f, 45 * min(ping, 1.0 if off(2) else 0.0) + (4 if not off(2) else 0))
+    K.add(S['fill'].data, 'energy', 0, f, 18 * min(ping, 1.0 if off(2) else 0.0) + (4 if not off(2) else 0))
     # outside: the neon stutters
     on = not ((t % 1.3) < 0.08 or win(t, 1.9, 2.0))
     K.add(X['neon_light'].data, 'energy', 0, f, (160 if on else 15) + (900 if win(t, 0.6, 0.75) else 0))
@@ -815,14 +843,16 @@ def lights(S, X, t, f, K):
 def chairs(S, t, f, K):
     for i, (k, C) in enumerate(zip(ORDER, S['chairs'])):
         piv = C['pivot']; ch = C['chair']
-        u = clamp((t - RUN[k] - 0.18) / 0.35) if k in RUN else 0.0
-        ang = (1 if i % 2 else -1) * ease(u) * 1.45
-        # tip over its side edge: rotate about the edge on the floor
-        edge = Vector((-0.27 * room.CHAIR_S if ang > 0 else 0.27 * room.CHAIR_S, 0, 0))
-        M = Matrix.Translation(edge) @ Matrix.Rotation(ang, 4, 'Y') @ Matrix.Translation(-edge)
+        if 'base' not in ch: ch['base'] = tuple(ch.location)
+        base = Vector(ch['base'])
+        u = clamp((t - RUN[k] - 0.42) / 0.35) if k in RUN else 0.0        # once they're up and away
+        sc_ = ch.scale.y
+        # knocked backwards: tip over the back edge on the floor
+        edge = Vector((0, 0.25 * sc_, 0))
+        M = Matrix.Translation(base + edge) @ Matrix.Rotation(-1.35 * ease(u), 4, 'X') @ Matrix.Translation(-edge)
         loc = M.translation; e = M.to_euler()
-        for j in range(3): K.add(ch, 'location', j, f, loc[j] + (0, 0, math.sin(math.pi * u) * 0.04)[j])
-        K.add(ch, 'rotation_euler', 1, f, e.y)
+        for j in range(3): K.add(ch, 'location', j, f, loc[j] + (0, 0, math.sin(math.pi * u) * 0.03)[j])
+        K.add(ch, 'rotation_euler', 0, f, e.x)
 
 
 def door(S, t, f, K):
@@ -1052,6 +1082,213 @@ def stool_fit(N, C, seat):
     st.scale = (1.15, 1.15, s); st.location = (cx, cy, 0)
     C['fitted'] = True
     print('SEAT NEET stool top cm', round(top * 100, 1), 'gap over his clips cm', round((max(lows) - min(lows)) * 100, 1), 'centre', round(cx, 3), round(cy, 3))
+
+
+
+def unmasked_body(actor, on=True):
+    """Switch the clothing masks off (True) or back on (False) for contact measurements."""
+    for m in actor.body.modifiers:
+        if m.type == 'MASK' and m.name != 'Hide helpers':
+            m.show_viewport = not on
+
+
+def outside_skin(actor, path, gap=0.0045, steps=4):
+    """Densify a polyline and push every point to just outside the (unmasked) skin."""
+    from mathutils.bvhtree import BVHTree
+    unmasked_body(actor, True); bpy.context.view_layer.update()
+    V, F = _world_mesh(actor.body, bpy.context.evaluated_depsgraph_get()); unmasked_body(actor, False)
+    tree = BVHTree.FromPolygons(V, F)
+    dense = []
+    for p0, p1 in zip(path, path[1:]):
+        for i in range(steps): dense.append(p0.lerp(p1, i / steps))
+    dense.append(path[-1])
+    def push(pts):
+        res = []
+        for p in pts:
+            loc, nrm, i, dist = tree.find_nearest(p, 0.08)
+            if loc is not None and ((p - loc).dot(nrm) < 0 or dist < gap):
+                p = loc + nrm * gap
+            res.append(p)
+        return res
+    def smooth(pts, n):
+        for _ in range(n):
+            pts = [pts[0]] + [pts[i] * 0.5 + (pts[i - 1] + pts[i + 1]) * 0.25 for i in range(1, len(pts) - 1)] + [pts[-1]]
+        return pts
+    out = push(dense)
+    for _ in range(4):                       # smooth the path, then keep it off the skin, and repeat
+        out = push(smooth(out, 3))
+    return smooth(out, 3)                    # a final pass with no snapping: no ripples
+
+
+def arm_regions(actor):
+    o = actor.body; names = {g.index: g.name for g in o.vertex_groups}; bones = set(actor.rest)
+    ARM = ('wrist', 'finger', 'metacarpal')       # the hand itself; arm-to-side contact is natural
+    reg = []
+    for v in o.data.vertices:
+        gs = [(names[g.group], g.weight) for g in v.groups if names.get(g.group) in bones]
+        b = max(gs, key=lambda x: x[1])[0] if gs else ''
+        side = b[-1] if b.endswith(('.L', '.R')) else 'M'
+        reg.append(('arm' + side) if b.startswith(ARM) else ('limb' if b.startswith(('upperarm', 'lowerarm', 'shoulder', 'clavicle')) else 'core'))
+    return reg
+
+
+def arm_contacts(actor, reg, held, dg):
+    """Per side: arm/hand vertices behind the core body surface (> 2 mm), and held-prop vertices inside the body."""
+    from mathutils.bvhtree import BVHTree
+    V, F = _world_mesh(actor.body, dg); out = {}
+    full = BVHTree.FromPolygons(V, [f for f in F if all(reg[i] == 'core' for i in f)])   # thighs, belly, chest: not the gripping hand
+    for s in 'LR':
+        other = 'armR' if s == 'L' else 'armL'
+        core = BVHTree.FromPolygons(V, [f for f in F if all(reg[i] in ('core', other) for i in f)])
+        n = 0
+        for i, p in enumerate(V):
+            if reg[i] != 'arm' + s: continue
+            loc, nrm, _, dist = core.find_nearest(p, 0.03)
+            if loc is not None and (p - loc).dot(nrm) < -0.002: n += 1
+        ob = held.get(s)
+        if ob is not None and not ob.hide_render:
+            for c in [ob] + list(ob.children_recursive):
+                if c.type != 'MESH': continue
+                for p in _world_mesh(c, dg)[0]:
+                    loc, nrm, _, dist = full.find_nearest(p, 0.03)
+                    if loc is not None and (p - loc).dot(nrm) < -0.002: n += 1
+        out[s] = n
+    return out
+
+
+def hand_fix(A, P, SEAT):
+    """Smallest lift/outward/forward shift of each resting or holding hand that clears the body."""
+    sc = bpy.context.scene; f = int(fr(10.0))
+    regs = {k: arm_regions(a) for k, a in A.items()}
+    held = {'pam': {'L': P['pam_mug']}, 'linda': {'L': P['linda_mug']}, 'earl': {'R': P['earl_cig']}, 'chad': {'R': P['chad_can']}}
+    # lowest first: the first clear height is the hand resting on the thigh, not floating above it
+    cands = [Vector((dx * 0.015, 0.0, dz * 0.005)) for dz in range(-6, 31) for dx in range(3)]
+    todo = {(k, s) for k in A for s in 'LR'}
+    for a in A.values(): unmasked_body(a, True)
+    for c in cands:
+        if not todo: break
+        for key in todo: HAND_FIX[key] = c
+        for k in {k for k, _ in todo}:
+            Kp = rigctl.Keys()
+            solve_actor(A[k], k, T(f), f, SEAT[k], dict(yaw=0.0, pitch=0.0), SEAT_HEADS, SEAT_P, Kp); A[k].K.flush(); Kp.flush()
+        sc.frame_set(f + 1); sc.frame_set(f); bpy.context.view_layer.update(); dg = bpy.context.evaluated_depsgraph_get()
+        res = {k: arm_contacts(A[k], regs[k], held[k], dg) for k in {k for k, _ in todo}}
+        for key in list(todo):
+            if res[key[0]][key[1]] == 0:
+                HAND_FIX[key] = c + Vector((0, 0, 0.015 if key[0] == 'chad' else 0.01))     # a little air for breathing and Chad's bouncing leg
+                todo.discard(key); print('HAND', key, 'clear with offset (out, fwd, up) cm', tuple(round(x * 100, 1) for x in c))
+    for key in todo:
+        print('HAND', key, 'NOT CLEAR'); HAND_FIX[key] = cands[-1]
+    for a in A.values(): unmasked_body(a, False)
+
+
+
+def skin_to_body(actor, curve_obj, name, gap=0.0025):
+    """Turn a wire into a mesh that is pushed just outside the skin and skinned with the weights of the
+    skin under it, so it moves with the face and neck instead of cutting through them."""
+    from mathutils.bvhtree import BVHTree
+    from mathutils.kdtree import KDTree
+    dg = bpy.context.evaluated_depsgraph_get()
+    me = bpy.data.meshes.new_from_object(curve_obj.evaluated_get(dg))
+    me.transform(curve_obj.matrix_world)
+    mats = list(curve_obj.data.materials)
+    bpy.data.objects.remove(curve_obj)
+    unmasked_body(actor, True); bpy.context.view_layer.update()
+    b = actor.body; ev = b.evaluated_get(bpy.context.evaluated_depsgraph_get()); bm = ev.to_mesh()
+    V = [b.matrix_world @ v.co for v in bm.vertices]; F = [tuple(p.vertices) for p in bm.polygons]; ev.to_mesh_clear()
+    unmasked_body(actor, False)
+    tree = BVHTree.FromPolygons(V, F); kd = KDTree(len(V))
+    for i, p in enumerate(V): kd.insert(p, i)
+    kd.balance()
+    o = bpy.data.objects.new(name, me); bpy.context.scene.collection.objects.link(o)
+    for m in mats: me.materials.append(m)
+    gnames = {g.index: g.name for g in b.vertex_groups}; bones = set(actor.rest)
+    groups = {}
+    # weights blended from the 10 nearest skin vertices (inverse distance), so neighbouring tube
+    # vertices bend together instead of stepping between bones
+    for v in me.vertices:
+        acc = {}
+        near = kd.find_n(v.co, 40); tot = 0.0
+        for co, idx, dd in near:
+            w0 = math.exp(-(dd / 0.025) ** 2); tot += w0          # soft gaussian falloff: weights change continuously
+            for g in b.data.vertices[idx].groups:
+                gn = gnames[g.group]
+                if gn in bones: acc[gn] = acc.get(gn, 0.0) + g.weight * w0
+        s_ = sum(acc.values()) or 1.0
+        for gn, w in acc.items():
+            if w / s_ > 0.002:
+                if gn not in groups: groups[gn] = o.vertex_groups.new(name=gn)
+                groups[gn].add([v.index], w / s_, 'REPLACE')
+    o.parent = actor.rig
+    mod = o.modifiers.new('Armature', 'ARMATURE'); mod.object = actor.rig
+    for p in me.polygons: p.use_smooth = True
+    return o
+
+
+def glasses_off_skin(actor, part_name, gap=0.002):
+    """Push any glasses vertex that sits inside or on the skin back out (rest pose)."""
+    from mathutils.bvhtree import BVHTree
+    g = actor.parts.get(part_name)
+    if g is None: return
+    unmasked_body(actor, True); bpy.context.view_layer.update()
+    V, F = _world_mesh(actor.body, bpy.context.evaluated_depsgraph_get()); unmasked_body(actor, False)
+    tree = BVHTree.FromPolygons(V, F); inv = g.matrix_world.inverted(); n = 0
+    for v in g.data.vertices:
+        p = g.matrix_world @ v.co
+        loc, nrm, fi, dist = tree.find_nearest(p, 0.05)
+        if loc is not None and ((p - loc).dot(nrm) < 0 or dist < gap):
+            v.co = inv @ (loc + nrm * gap); n += 1
+    print('GLASSES', actor.name, 'vertices moved off the skin', n)
+
+
+
+def find_lips(actor):
+    """The front surface of the lips (rest, armature space), by a ray from in front of the face."""
+    from mathutils.bvhtree import BVHTree
+    unmasked_body(actor, True); bpy.context.view_layer.update()
+    V, F = _world_mesh(actor.body, bpy.context.evaluated_depsgraph_get()); unmasked_body(actor, False)
+    tree = BVHTree.FromPolygons(V, F); m = actor.mouth
+    hit = tree.ray_cast(Vector((0.0, m.y - 0.2, m.z)), Vector((0, 1, 0)), 0.4)
+    if hit[0] is not None:
+        actor.lip = hit[0].copy(); print('LIPS', actor.name, 'surface', tuple(round(c, 3) for c in hit[0]), 'mouth pt', tuple(round(c, 3) for c in m))
+
+
+
+def cig_fix(a, P):
+    """Close Earl's index and middle fingers to a real pinch and seat the cigarette in it, all measured
+    on the evaluated (Blender-skinned) hand."""
+    sc = bpy.context.scene; f = int(fr(10.0)); cig = P['earl_cig']
+    def measure():
+        Kp = rigctl.Keys(); solve_actor(a, 'earl', T(f), f, CIG_SEAT, dict(yaw=0.0, pitch=0.0), SEAT_HEADS, SEAT_P, Kp); a.K.flush(); Kp.flush()
+        unmasked_body(a, True); hh = a.body.modifiers.get('Hide helpers'); hh.show_viewport = False
+        sc.frame_set(f + 1); sc.frame_set(f); bpy.context.view_layer.update(); dg = bpy.context.evaluated_depsgraph_get()
+        b = a.body; ev = b.evaluated_get(dg); me = ev.to_mesh(); V = [b.matrix_world @ v.co for v in me.vertices]; ev.to_mesh_clear()
+        unmasked_body(a, False); hh.show_viewport = True
+        names = {g.index: g.name for g in b.vertex_groups}
+        def dom(v):
+            gs = [(names[g.group], g.weight) for g in v.groups if names[g.group] in a.rest]
+            return max(gs, key=lambda x: x[1])[0] if gs else ''
+        if not hasattr(cig_fix, 'doms'): cig_fix.doms = [dom(v) for v in b.data.vertices]
+        P2 = [V[i] for i, n in enumerate(cig_fix.doms) if n in ('finger2-2.R',)]
+        P3 = [V[i] for i, n in enumerate(cig_fix.doms) if n in ('finger3-2.R',)]
+        return sum(P2, Vector()) / len(P2), sum(P3, Vector()) / len(P3)
+    c, sp0, M = a.G['cig']
+    best = None
+    for s in [x * 0.03 for x in range(-12, 13)]:
+        a.G['cig'] = (c, {'finger2': s, 'finger3': -s * 0.6}, M)
+        c2, c3 = measure(); dd = (c2 - c3).length
+        if best is None or abs(dd - 0.021) < abs(best[1] - 0.021): best = (s, dd)
+    a.G['cig'] = (c, {'finger2': best[0], 'finger3': -best[0] * 0.6}, M)
+    c2, c3 = measure(); gap = (c2 + c3) / 2
+    # move the cigarette (in its palm frame) so the pinch is 16 mm past the filter's middle
+    W = cig.matrix_world.copy(); ax = W.to_3x3().col[2].normalized()
+    want = gap - ax * 0.016
+    from mathutils.geometry import intersect_point_line
+    palm_rot = W.to_3x3() @ M.to_3x3().inverted()
+    M2 = M.copy(); M2.translation = M.translation + palm_rot.inverted() @ (want - W.translation)
+    a.G['cig'] = (c, a.G['cig'][1], M2)
+    print('CIG fingers', round(best[1] * 1000, 1), 'mm apart (spread', round(best[0], 2), '); cigarette moved', round((want - W.translation).length * 1000, 1), 'mm')
+
 
 if __name__ == '__main__':
     main()

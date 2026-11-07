@@ -126,7 +126,10 @@ def plain_tee(obj):
 
 
 def shades(obj):
-    """Make the library glasses read as dark sunglasses: black frame, tinted glossy lenses."""
+    """Make the library glasses read as dark sunglasses: black frame, tinted glossy lenses.
+    The temples are widened a little so they rest on the ears instead of entering the head."""
+    for v in obj.data.vertices:
+        if abs(v.co.x) > 0.04: v.co.x *= 1.0 + 0.12 * min(1.0, (abs(v.co.x) - 0.04) / 0.03)
     m = obj.active_material; nt = m.node_tree
     bsdf = next(n for n in nt.nodes if n.type == 'BSDF_PRINCIPLED')
     for l in list(bsdf.inputs['Base Color'].links): nt.links.remove(l)
@@ -164,15 +167,23 @@ def mask_under(target, covers, reach=0.05, inside=0.025):
     def covered(t, p, n):
         if t.ray_cast(p - n * 0.003, n, reach)[0] is not None: return True
         return t.ray_cast(p + n * 0.003, -n, inside)[0] is not None
+    # forearms and wrists need a wide margin (sleeves ride up when arms bend); elsewhere a narrow one
+    wide = set()
+    if target.name.endswith('.body'):
+        gn = {g.index: g.name for g in target.vertex_groups}
+        for v in target.data.vertices:
+            gs = [(gn[g.group], g.weight) for g in v.groups if gn[g.group].startswith(('lowerarm', 'wrist', 'upperarm', 'finger', 'metacarpal', 'spine', 'neck', 'clavicle', 'pelvis', 'upperleg', 'lowerleg', 'foot', 'head', 'breast', 'root'))]
+            if gs and max(gs, key=lambda x: x[1])[0].startswith(('lowerarm', 'wrist')): wide.add(v.index)
     hide = []
     for i, (p, n) in enumerate(zip(P, N)):
         if allowed is not None and i not in allowed:
             continue
+        margin = 0.03 if i in wide else 0.012
         for t in trees:
             if not covered(t, p, n):
                 continue
             a = n.cross(Vector((0, 0, 1)) if abs(n.z) < 0.9 else Vector((1, 0, 0))).normalized(); b = n.cross(a)
-            if all(covered(t, p + d * 0.012, n) for d in (a, -a, b, -b)):
+            if all(covered(t, p + d * margin, n) for d in (a, -a, b, -b)):
                 hide.append(i); break
     g = target.vertex_groups.new(name='under_clothes'); g.add(hide, 1.0, 'REPLACE')
     mod = target.modifiers.new('under_clothes', 'MASK'); mod.vertex_group = 'under_clothes'; mod.invert_vertex_group = True

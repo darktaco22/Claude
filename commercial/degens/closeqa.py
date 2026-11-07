@@ -15,6 +15,56 @@ def shoot(name, t, rig, bone, dist, yaw, up=0.1, lens=50, off=Vector()):
     sc.render.filepath = f'{out}/qa_{name}.png'; bpy.ops.render.render(write_still=True)
 import os
 which = os.environ.get('CQ', 'all')
+if which == 'cighand':
+    shoot('h_front', 10, 'earl', 'wrist.R', 0.35, 0.0, 0.15, 45, Vector((0.05, -0.06, 0)))
+    shoot('h_side', 10, 'earl', 'wrist.R', 0.35, -1.4, 0.15, 45, Vector((0.05, -0.06, 0)))
+    shoot('h_top', 10, 'earl', 'wrist.R', 0.15, -0.6, 0.35, 45, Vector((0.05, -0.06, 0)))
+    raise SystemExit
+if which == 'cloth':
+    shoot('pam_chest', 14, 'pam', 'spine02', 0.7, 0.1, 0.05, 40)
+    shoot('linda_chest', 20.4, 'linda', 'spine02', 0.7, -0.2, 0.05, 40)
+    shoot('earl_cuff', 10, 'earl', 'wrist.R', 0.4, -1.2, 0.1, 45)
+    shoot('pam_cuff', 14, 'pam', 'wrist.L', 0.4, 1.2, 0.1, 45)
+    raise SystemExit
+if which == 'lips':
+    shoot('drag_front', 25.6, 'earl', 'head', 0.42, -0.25, -0.1, 55, Vector((0, -0.08, -0.05)))
+    shoot('drag_side', 25.6, 'earl', 'head', 0.42, -1.3, -0.1, 55, Vector((0, -0.08, -0.05)))
+    shoot('mouth_front', 24.0, 'earl', 'head', 0.42, -0.2, -0.1, 55, Vector((0, -0.08, -0.05)))
+    shoot('mouth_side', 24.0, 'earl', 'head', 0.42, -1.3, -0.1, 55, Vector((0, -0.08, -0.05)))
+    raise SystemExit
+if which == 'cig':
+    shoot('drag_side', 25.6, 'earl', 'head', 0.4, -1.2, -0.08, 55)
+    shoot('drag_front', 25.6, 'earl', 'head', 0.45, -0.3, -0.08, 55)
+    shoot('mouth_side', 24.0, 'earl', 'head', 0.4, -1.2, -0.08, 55)
+    shoot('rest_cig', 10, 'earl', 'wrist.R', 0.45, -0.5, 0.2, 50)
+    shoot('earl_body', 20, 'earl', 'spine02', 1.4, 0.3, 0.1, 35)
+    raise SystemExit
+if which == 'ears':
+    shoot('earl_earR', 10, 'earl', 'head', 0.4, -1.5, 0.0, 50)
+    shoot('earl_earL', 10, 'earl', 'head', 0.4, 1.5, 0.0, 50)
+    shoot('earl_chin', 24, 'earl', 'head', 0.45, 0.2, -0.15, 50)
+    raise SystemExit
+if which == 'iss':
+    shoot('earl_ear_back', 10, 'earl', 'head', 0.45, 2.4, 0.0, 50)
+    shoot('earl_line', 20, 'earl', 'spine02', 1.0, -0.6, 0.1, 40)
+    shoot('linda_phone', 36, 'linda', 'wrist.R', 0.6, 0.6, 0.15, 40)
+    shoot('linda_neet_feet', 10, 'linda', 'foot.L', 0.9, 0.5, 0.35, 35)
+    shoot('clap', 16.3, 'pam', 'wrist.L', 0.5, 0.5, 0.15, 45)
+    raise SystemExit
+if which == 'hands2':
+    shoot('chad_L', 10, 'chad', 'wrist.L', 0.6, 1.4, 0.05, 35)
+    shoot('chad_R', 10, 'chad', 'wrist.R', 0.6, -1.4, 0.05, 35)
+    shoot('pam_L', 10, 'pam', 'wrist.L', 0.6, 1.4, 0.05, 35)
+    shoot('linda_L', 10, 'linda', 'wrist.L', 0.6, 1.4, 0.05, 35)
+    shoot('chad_front', 10, 'chad', 'root', 1.4, 0.2, 0.3, 35, Vector((0, 0, -0.1)))
+    raise SystemExit
+if which == 'hands':
+    shoot('chad_L', 10, 'chad', 'wrist.L', 0.5, 1.2, 0.25, 40)
+    shoot('chad_R', 10, 'chad', 'wrist.R', 0.5, -1.2, 0.25, 40)
+    shoot('pam_L', 10, 'pam', 'wrist.L', 0.5, 1.2, 0.25, 40)
+    shoot('earl_face', 24, 'earl', 'head', 0.7, 0.5, 0.0, 45)
+    shoot('earl_face2', 24, 'earl', 'head', 0.7, -0.6, -0.1, 45)
+    raise SystemExit
 if which == 'set2':
     shoot('neet_side', 5, 'neet_rig', 'mixamorig:Hips', 2.2, 1.3, 0.1, 30)
     shoot('neet_front', 20, 'neet_rig', 'mixamorig:Hips', 2.4, 0.2, 0.4, 30)

@@ -91,7 +91,7 @@ def printed(name, img, rough=0.75):
     return m
 
 
-SEAT_ANGLES = [-50, -25, 0, 25, 50]
+SEAT_ANGLES = [-56, -28, 0, 28, 56]
 CHAIR_S = 0.92            # a slightly smaller school chair: seat at 46 cm
 SEAT_H = 0.5 * CHAIR_S
 def seats():
@@ -104,8 +104,8 @@ def seats():
 
 def basement():
     S = {}
-    wall = pbr('cinderblock', 'concrete_block_wall', scale=0.55, tint=(0.50, 0.58, 0.44), rough_add=0.05, coords='UV', paint=True, normal_str=0.8)
-    lowwall = pbr('cinderblock_low', 'concrete_block_wall', scale=0.55, tint=(0.30, 0.40, 0.30), coords='UV', paint=True, normal_str=0.8)
+    wall = pbr('cinderblock', 'concrete_block_wall', scale=0.55, tint=(0.40, 0.47, 0.34), rough_add=0.05, coords='UV', paint=True, normal_str=0.8)
+    lowwall = pbr('cinderblock_low', 'concrete_block_wall', scale=0.55, tint=(0.22, 0.29, 0.21), coords='UV', paint=True, normal_str=0.8)
     floor = pbr('linoleum', 'old_linoleum_flooring_01', scale=0.6, rough_mul=0.7, rough_add=0.05, checker=(1 / 0.6 * 2, (0.78, 0.76, 0.64), (0.36, 0.38, 0.30)), normal_str=0.4)
     ceil = pbr('ceiling', 'ceiling_interior', scale=0.5, tint=(0.75, 0.75, 0.7))
     plane('floor', (8.4, 10.2), (0, -2.0, 0), (0, 0, 0), floor, 0.5)
@@ -113,7 +113,8 @@ def basement():
     # walls: painted block, darker band below a chair rail
     for name, size, loc, rot in (('wall_back', (8.4, 3.6), (0, 2.9, 1.8), (math.pi / 2, 0, math.pi)),
                                  ('wall_left', (10.2, 3.6), (-4.2, -2.0, 1.8), (math.pi / 2, 0, -math.pi / 2)),
-                                 ('wall_right', (10.2, 3.6), (4.2, -2.0, 1.8), (math.pi / 2, 0, math.pi / 2)),
+                                 ('wall_right_front', (5.4, 3.6), (4.2, -4.4, 1.8), (math.pi / 2, 0, math.pi / 2)),
+                                 ('wall_right_back', (3.6, 3.6), (4.2, 1.1, 1.8), (math.pi / 2, 0, math.pi / 2)),
                                  ('wall_front', (8.4, 3.6), (0, -7.1, 1.8), (math.pi / 2, 0, 0))):
         o = plane(name, size, loc, rot, wall, 0.5)
         lo = plane(name + '_low', (size[0], 1.0), (loc[0], loc[1], 0.5), rot, lowwall, 0.5)
@@ -123,7 +124,16 @@ def basement():
         rl = bpy.context.active_object; rl.name = name + '_rail'
         rl.scale = (size[0] if abs(n.y) > 0.5 else 0.03, size[0] if abs(n.x) > 0.5 else 0.03, 0.06)
         rl.data.materials.append(props.mat('rail', (0.36, 0.25, 0.16), rough=0.45, coat=0.3))
-    # baseboard
+    # over the doorway (the wall has a real opening for the exit door)
+    plane('wall_right_lintel', (1.0, 1.5), (4.2, -1.2, 2.85), (math.pi / 2, 0, math.pi / 2), wall, 0.5)
+    # a dim corridor beyond the door
+    hall = props.mat('hall', (0.22, 0.24, 0.2), rough=0.8)
+    for nm_, sz, lc, rt in (('hall_floor', (2.2, 1.6), (5.3, -1.2, 0.0), (0, 0, 0)), ('hall_ceil', (2.2, 1.6), (5.3, -1.2, 2.4), (math.pi, 0, 0)),
+                            ('hall_side1', (2.2, 2.4), (5.3, -0.4, 1.2), (math.pi / 2, 0, math.pi)), ('hall_side2', (2.2, 2.4), (5.3, -2.0, 1.2), (math.pi / 2, 0, 0)),
+                            ('hall_end', (1.6, 2.4), (6.4, -1.2, 1.2), (math.pi / 2, 0, math.pi / 2))):
+        plane(nm_, sz, lc, rt, hall)
+    hl = bpy.data.lights.new('hall_light', 'POINT'); hl.energy = 12; hl.color = (1.0, 0.85, 0.6); hl.shadow_soft_size = 0.2
+    hlo = bpy.data.objects.new('hall_light', hl); C().objects.link(hlo); hlo.location = (5.6, -1.2, 2.2)
     # fluorescent fixtures: Poly Haven's mounted panel + a real area light under each
     S['tubes'] = []
     for i, (x, y) in enumerate(((-1.4, 0.6), (1.4, 0.6), (0.0, -1.6))):
@@ -178,8 +188,9 @@ def basement():
     bv = dr.modifiers.new('bv', 'BEVEL'); bv.width = 0.008; bv.segments = 2
     bpy.ops.mesh.primitive_cube_add(size=1, location=(-0.06, -0.85, 1.0)); bar = bpy.context.active_object; bar.scale = (0.04, 0.12, 0.03)
     bar.data.materials.append(props.mat('steel', (0.75, 0.75, 0.75), rough=0.2, metal=1.0)); bar.parent = hinge
-    bpy.ops.mesh.primitive_cube_add(size=1, location=(4.19, -1.2, 1.1)); fr = bpy.context.active_object; fr.scale = (0.03, 1.12, 2.25)
-    fr.data.materials.append(props.mat('doorframe', (0.18, 0.16, 0.14), rough=0.5))
+    fm = props.mat('doorframe', (0.18, 0.16, 0.14), rough=0.5)
+    for lc, sc_ in (((4.19, -0.66, 1.08), (0.08, 0.06, 2.16)), ((4.19, -1.74, 1.08), (0.08, 0.06, 2.16)), ((4.19, -1.2, 2.13), (0.08, 1.14, 0.06))):
+        bpy.ops.mesh.primitive_cube_add(size=1, location=lc); fr = bpy.context.active_object; fr.scale = sc_; fr.data.materials.append(fm)
     # dark opening behind the door
     S['door'] = hinge
     def exit_sign(im, d, w, h):

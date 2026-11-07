@@ -168,7 +168,7 @@ def phone(name, screen_img):
 
 def cigarette(name, ph):
     """Poly Haven's cigarette (filter + paper), with a burnt tip: ash cone, glowing ember ring.
-    Origin: middle of the filter. Lit end along +Z."""
+    Origin: middle of the filter (tan end). Lit, ashy paper end along +Z."""
     root, ms = assets.load('cigarette_pack')
     cig = [m for m in ms if m.name.endswith('_cigarette')][0]
     bpy.context.view_layer.update(); sc0 = cig.matrix_world.to_scale()
@@ -177,12 +177,29 @@ def cigarette(name, ph):
     for m in ms: bpy.data.objects.remove(m)
     keep.name = name; keep.parent = None
     keep.data.transform(Matrix.Diagonal((*sc0, 1))); keep.matrix_world = Matrix()
-    bb = [Vector(c) for c in keep.bound_box]; z0 = min(v.z for v in bb); z1 = max(v.z for v in bb)
+    me0 = keep.data
+    # which end is the filter? sample the cigarette's own texture near each end: the filter is tan
+    img = next((n.image for m in me0.materials for n in m.node_tree.nodes if n.type == 'TEX_IMAGE' and n.image), None)
+    zs = [v.co.z for v in me0.vertices]; za, zb = min(zs), max(zs)
+    def end_colour(near_low):
+        if img is None: return 0.0
+        w, h = img.size; px = img.pixels[:]; uv = me0.uv_layers.active.data; acc = []; 
+        for poly in me0.polygons:
+            for li in poly.loop_indices:
+                z = me0.vertices[me0.loops[li].vertex_index].co.z
+                if (z - za < 0.006) if near_low else (zb - z < 0.006):
+                    u, v = uv[li].uv; x = min(w - 1, int((u % 1) * w)); y = min(h - 1, int((v % 1) * h)); k = (y * w + x) * 4
+                    acc.append(px[k] - px[k + 2])          # red minus blue: high for tan/orange
+        return sum(acc) / max(1, len(acc))
+    low_tan, high_tan = end_colour(True), end_colour(False)
+    if high_tan > low_tan:
+        me0.transform(Matrix.Rotation(math.pi, 4, 'X'))          # put the filter at the low end
+    print('CIGARETTE filter tint low/high end', round(low_tan, 3), round(high_tan, 3), '-> flipped' if high_tan > low_tan else '')
+    bb = [v.co for v in me0.vertices]; z0 = min(v.z for v in bb); z1 = max(v.z for v in bb)
     cx = (min(v.x for v in bb) + max(v.x for v in bb)) / 2; cy = (min(v.y for v in bb) + max(v.y for v in bb)) / 2
-    L = z1 - z0
-    keep.data.transform(Matrix.Translation((-cx, -cy, -z0 - 0.011)))    # filter middle at the origin, centred
+    L = z1 - z0; r = (max(v.x for v in bb) - min(v.x for v in bb)) / 2
+    me0.transform(Matrix.Translation((-cx, -cy, -z0 - 0.011)))    # filter middle at the origin, centred
     zt = L - 0.011
-    r = (max(v.x for v in bb) - min(v.x for v in bb)) / 2
     ember = mat(name + '_ember', (0.05, 0.01, 0.0), rough=0.9, emit=(1.0, 0.25, 0.02), estr=6.0)
     ash = mat(name + '_ash', (0.32, 0.31, 0.3), rough=0.95)
     burn = mat(name + '_burnt', (0.08, 0.05, 0.03), rough=0.9)
