@@ -2,9 +2,9 @@
 # Pull the rendered sections from the worker branches, unpack them into frames, then build both videos.
 set -e
 . $(dirname $0)/env.sh; cd /home/user/Claude
-for n in 1b 1c 2 2b 2c 3 4 5; do git fetch -q origin claude/degens-part-$n; done
+for n in 1b 1c 2 2b 2c 2d 3 4 5; do git fetch -q origin claude/degens-part-$n; done
 mkdir -p $W/parts && rm -f $W/parts/*
-for n in 1b 1c 2 2b 2c 3 4 5; do
+for n in 1b 1c 2 2b 2c 2d 3 4 5; do
   for f in $(git ls-tree -r --name-only origin/claude/degens-part-$n commercial/renders/ | sort); do
     git show origin/claude/degens-part-$n:$f > $W/parts/$(basename $f)
   done
