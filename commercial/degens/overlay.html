@@ -39,7 +39,7 @@ window.renderAt = t => {
   if (!L) sub.innerHTML = '';
   else { const w = L.text.split(' '), n = Math.max(1, Math.ceil(clamp((t - L.t) / (VO[L.id].dur * 0.9)) * w.length)); sub.innerHTML = w.map((x, i) => `<span class="w${i < n ? ' on' : ''}">${x}</span>`).join(' '); }
   const nk = win(t, 34.5, 36.9) ? out3((t - 34.5) / 0.3) : 0; $('note').style.opacity = nk; $('note').style.transform = `translateY(${(1 - nk) * -30}px)`;
-  $('wallet').style.opacity = win(t, 42.45, 44.5) ? clamp(Math.min((t - 42.45) / 0.15, (44.5 - t) / 0.15)) : 0;
+  $('wallet').style.opacity = 0;      // the PnL is now shown on Pam's phone, over her shoulder
   $('black').style.opacity = t > 48.0 ? 1 : 0;
   $('extcap').style.opacity = t < 3.15 ? clamp(Math.min((t - 0.3) / 0.3, (3.15 - t) / 0.2)) : 0;
 };

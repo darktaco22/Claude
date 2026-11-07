@@ -160,6 +160,7 @@ def main():
 
 CONST_MATS = []
 MOUTH = {}
+PHONE = {}
 def em_path(m, node='Principled BSDF', sock='Emission Strength'):
     n = m.node_tree.nodes[node]; i = list(n.inputs).index(n.inputs[sock])
     return f'nodes["{node}"].inputs[{i}].default_value'
@@ -295,7 +296,29 @@ def screen(k):
     d.line(pts, fill=(43, 255, 106), width=8)
     d.text((40, 300), '$ROYALE', font=fb, fill=(200, 255, 90)); d.text((40, 360), '+2,413,907%' if k == 'pam' else '0.0001', font=fb, fill=(43, 255, 106))
     d.rounded_rectangle((40, 980, w - 40, 1070), 22, fill=(43, 200, 90)); d.text((w / 2 - 50, 1005), 'BUY', font=fb, fill=(0, 0, 0))
+    if k == 'pam': im = wallet_screen(w, h)
     p = f"{os.environ.get('DA_TEX', '/tmp')}/screen_{k}.png"; im.save(p); return p
+
+
+def wallet_screen(w, h):
+    """Pam's phone: her dev wallet, deep in profit on $ROYALE."""
+    from PIL import Image, ImageDraw, ImageFont
+    im = Image.new('RGB', (w, h), (7, 9, 12)); d = ImageDraw.Draw(im)
+    f = lambda s, b=True: ImageFont.truetype(props.FONT_B if b else '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', s)
+    def ctext(y, s, font, fill):
+        tw = d.textlength(s, font=font); d.text(((w - tw) / 2, y), s, font=font, fill=fill)
+    d.text((24, 16), '3:07', font=f(26), fill=(230, 230, 230))
+    ctext(150, 'D E V   W A L L E T', f(22, False), (125, 135, 148))
+    ctext(195, '$ROYALE', f(52), (200, 255, 90))
+    ctext(290, '+$2,413,907', f(70), (43, 255, 106))
+    ctext(385, 'since launch · 11 min ago', f(24, False), (154, 163, 181))
+    pts = [(40, 760), (90, 756), (140, 744), (190, 724), (230, 690), (270, 694), (310, 650), (350, 634), (390, 600), (430, 590), (470, 556), (505, 540)]
+    d.line(pts, fill=(43, 255, 106), width=9, joint='curve')
+    for x, y in pts[-1:]: d.ellipse((x - 9, y - 9, x + 9, y + 9), fill=(43, 255, 106))
+    d.rounded_rectangle((150, 850, w - 150, 920), 18, fill=(26, 31, 39)); ctext(864, 'Holders: 5', f(30), (255, 255, 255))
+    d.rounded_rectangle((40, 980, w / 2 - 15, 1070), 22, fill=(43, 200, 90)); d.rounded_rectangle((w / 2 + 15, 980, w - 40, 1070), 22, fill=(220, 50, 60))
+    d.text((90, 1003), 'BUY', font=f(40), fill=(0, 0, 0)); d.text((w / 2 + 55, 1003), 'SELL', font=f(40), fill=(255, 255, 255))
+    return im
 
 
 def body_points(actor):
@@ -690,6 +713,7 @@ def solve_actor(a, k, t, f, seat, st, HEADS, P, K):
                 if pk2 == 'earl_cig': M = cig_in_palm(hands['R'])
                 else: M = cyl_grip(s, hands[s], P[pk2]['R'])
         W = mw @ M
+        if pk2 == 'pam_phone': PHONE['pam'] = W @ Vector((0, 0, 0.0082)); PHONE['pam_up'] = W.to_3x3() @ Vector((0, 1, 0))
         loc, q = W.translation, W.to_quaternion()
         ob.rotation_mode = 'QUATERNION'
         for i in range(3): K.add(ob, 'location', i, f, loc[i])
@@ -714,7 +738,7 @@ def solve_actor(a, k, t, f, seat, st, HEADS, P, K):
         glow = 3.0 + pulse(t, 25.3, 26.0, 0.2) * 10 + pulse(t, 13.2, 13.7, 0.15) * 10
         K.add(em.node_tree, em_path(em), 0, f, glow)
     sm = bpy.data.materials[pphone['screen_mat']]
-    K.add(sm.node_tree, em_path(sm), 0, f, 3.0 if (lit and place[k + '_phone'] is not None) else 0.0)
+    K.add(sm.node_tree, em_path(sm), 0, f, (2.2 if (k == 'pam' and 42.4 <= t < 44.6) else 3.0) if (lit and place[k + '_phone'] is not None) else 0.0)
     gl = bpy.data.objects[pphone['glow']]
     K.add(gl.data, 'energy', 0, f, (1.2 if k != 'pam' else 0.9) if (lit and place[k + '_phone'] is not None) else 0.0)
 
@@ -811,7 +835,12 @@ def camera(cam, t, f, HEADS, SEAT, K):
     elif t < 39.4: r = single('pam', 0.05, 1.8, 30)
     elif t < 41.6: r = shot(b3([0.6, 1.5, 4.8]), b3([1.4, 0.9, 0.2]), 42, 4.5, 5.6)
     elif t < 42.4: r = shot(b3([0, 1.4, 3.8]), b3([0, 1.0, -1.7]), 34, 3.9, 4.0)
-    elif t < 44.6: r = single('pam', 0.0, 1.9, 30)
+    elif t < 44.6:
+        # over her shoulder, looking down at the profit on her phone
+        s = SEAT['pam']; h = HEADS['pam'](t); R3 = Matrix.Rotation(s['face'], 3, 'Z')
+        scr = PHONE.get('pam', h + R3 @ Vector((0, -0.37, -0.22)))
+        pos = h + R3 @ Vector((-0.24, 0.16, 0.24))          # above and behind her right shoulder
+        r = shot(pos, scr, 36, (scr - pos).length, 4.0)
     else:
         k = ramp(t, 44.6, 48); r = single('pam', 0.0, 1.9 - k * 0.6, 30 - k * 2)
     pos, q, fov, focus, fstop = r

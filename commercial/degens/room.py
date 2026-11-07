@@ -279,19 +279,20 @@ def exterior(ox=60.0):
     return S
 
 
-def rain(ox=60.0, n=2200):
+def rain(ox=60.0, n=7000):
     """Rain streaks: one mesh of thin quads, moved per frame by a geometry-nodes offset on scene time."""
     bm = bmesh.new(); rr = random.Random(11)
     for i in range(n):
-        x = ox + rr.uniform(-3.0, 3.5); y = rr.uniform(-3.4, 0.9); z = rr.uniform(0, 6.0); L = rr.uniform(0.18, 0.32)
-        a = bm.verts.new((x, y, z)); b = bm.verts.new((x + 0.004, y, z)); c = bm.verts.new((x + 0.004 - 0.03, y, z + L)); d = bm.verts.new((x - 0.03, y, z + L))
+        x = ox + rr.uniform(-4.5, 5.5); y = rr.uniform(-4.4, 0.9); z = rr.uniform(0, 6.0); L = rr.uniform(0.18, 0.32)   # the whole alley, not just by the sign
+        wd = 0.005 + max(0.0, -2.0 - y) * 0.002          # thicker nearer the camera so they read
+        a = bm.verts.new((x, y, z)); b = bm.verts.new((x + wd, y, z)); c = bm.verts.new((x + wd - 0.03, y, z + L)); d = bm.verts.new((x - 0.03, y, z + L))
         bm.faces.new((a, b, c, d))
     me = bpy.data.meshes.new('rain'); bm.to_mesh(me); bm.free()
     o = bpy.data.objects.new('rain', me); C().objects.link(o)
     m = bpy.data.materials.new('rain'); m.use_nodes = True; nt = m.node_tree; b = nt.nodes['Principled BSDF']
     b.inputs['Base Color'].default_value = (0.75, 0.82, 0.95, 1); b.inputs['Roughness'].default_value = 0.05
-    b.inputs['Transmission Weight'].default_value = 0.6; b.inputs['Alpha'].default_value = 0.12
-    b.inputs['Emission Color'].default_value = (0.6, 0.7, 0.9, 1); b.inputs['Emission Strength'].default_value = 0.08
+    b.inputs['Transmission Weight'].default_value = 0.6; b.inputs['Alpha'].default_value = 0.3
+    b.inputs['Emission Color'].default_value = (0.6, 0.7, 0.9, 1); b.inputs['Emission Strength'].default_value = 0.6
     me.materials.append(m)
     # geometry nodes: z = ((z0 - t*9) mod 6)
     gn = o.modifiers.new('fall', 'NODES'); ng = bpy.data.node_groups.new('rainfall', 'GeometryNodeTree'); gn.node_group = ng
