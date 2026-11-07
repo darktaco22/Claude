@@ -670,7 +670,10 @@ def snort_fx(lines, line_pts, period, phase, name):
     """Each snort: the next line on the table shrinks away as the nose slides along it, and a small white puff comes up."""
     PUFF = soft("powder_puff", "#FFFFFF", alpha=0.8, emit=0.5)
     k = 0; t = ((0.22 - phase) % 1.0) * period
-    for ln in lines:
+    for ln, p in zip(lines, line_pts):   # pivot each line on its nose end, so it shrinks into the nose (not across the room)
+        piv = Vector((p[0], p[1], ln.data.vertices[0].co.z))
+        for v in ln.data.vertices: v.co -= piv
+        ln.location = piv
         ln.scale = (1, 1, 1); ln.keyframe_insert("scale", frame=1)
     while t * FPS < N:
         i = k % len(lines); ln = lines[i]; p = line_pts[i]
@@ -949,15 +952,23 @@ fw.ctrl.scale = (0.55, 0.55, 0.55)
 fw.bake(M.cheer, 1, N, step=2)
 for f in range(1, N + 1, 30):
     fw.ctrl.location.z = WZ + 0.12 + 0.02 * math.sin(f / 13); fw.ctrl.keyframe_insert("location", frame=f)
-# laser eyes on the DJ (the Bitcoin meme)
-LASER = mat("laser", "#FF1A1A", emit=25.0)
-dj = guests["triplet"]
-for sx in (-1, 1):
-    beam = cyl("laser", (0, 0, 0), 0.007, 2.2, LASER, v=8)
-    if not attach(dj, beam, bone="Head", offset=(sx * 0.06, 0.12, 1.2)):
-        print("LASER: no head bone on", [b.name for b in dj.rig.data.bones][:6]); break
-    for f in range(1, N + 1, 6):
-        beam.scale = (1 + 0.4 * random.random(), 1 + 0.4 * random.random(), 1); beam.keyframe_insert("scale", frame=f)
+# laser eyes on the DJ (the Bitcoin meme): glowing red eyes, beams straight out of them, a red glow on his face
+LASER = mat("laser", "#FF1A1A", emit=60.0)
+dj = guests["triplet"]; hg = bone_geom(dj, "Head")
+if hg:
+    C_, h_ = hg
+    for sx in (-1, 1):
+        eye = C_ + Vector((sx * 0.32 * h_.x, 0.18 * h_.y, 0.95 * h_.z))      # bone space: x side, y up, z forward
+        attach(dj, sphere("laser_eye", (0, 0, 0), max(0.02, 0.12 * h_.x), LASER, seg=16), bone="Head", offset=tuple(eye))
+        beam = cyl("laser", (0, 0, 0), 0.016, 3.5, LASER, v=12)
+        attach(dj, beam, bone="Head", offset=tuple(eye + Vector((0, 0, 1.75))))
+        for f in range(1, N + 1, 4):   # a slight flicker
+            beam.scale = (random.uniform(0.85, 1.2),) * 2 + (1,); beam.keyframe_insert("scale", frame=f)
+    glow = light("laser_glow", "POINT", (0, 0, 0), 25, "#FF2020", 0.05)
+    attach(dj, glow, bone="Head", offset=tuple(C_ + Vector((0, 0.18 * h_.y, 1.4 * h_.z))))
+    print("LASER eyes at head half-size", tuple(round(v, 3) for v in h_))
+else:
+    print("LASER: no head mesh on the DJ")
 
 path = [  # frame, camera, look-at: one sweep, slow where the jokes are
     (1, (-17, -21, 11), (0, 2, 1)),
@@ -966,7 +977,9 @@ path = [  # frame, camera, look-at: one sweep, slow where the jokes are
     (235, (-2.0, -6.2, 1.5), (1.5, -0.6, 0.4)),     # a little further back from Pink Wojak and his sign
     (300, (1.0, -11.4, 2.6), (4.0, -5.2, 1.0)),       # the dance floor and the DJ
     (345, (3.6, -10.4, 2.0), (5.0, -4.8, 1.2)),
-    (380, (1.0, -1.0, 3.0), (1.0, 5.0, 4.4)),         # up level with the balcony: the Whale and his girls making it rain, the backflip
+    (380, (0.6, -1.2, 3.0), (-0.6, 5.0, 4.3)),        # up level with the balcony: the Whale and his girls, SWORDCAT on the rail
+    (398, (0.2, -1.6, 2.6), (-2.2, 2.8, 2.6)),        # follow the backflip down...
+    (414, (-0.3, -2.2, 1.8), (-2.8, 0.3, 0.2)),       # ...into the splash
     (430, (-0.6, -1.2, 1.5), (-1.8, 3.8, 2.6)),
     (480, (-0.6, 3.4, 1.7), (-4.4, 8.6, 0.8)),        # through the doors: the table, LMAO, the window kiss
     (540, (-2.0, 6.4, 1.6), (-5.2, 8.8, 0.7)),
