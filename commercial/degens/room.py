@@ -118,7 +118,8 @@ def basement():
                                  ('wall_front', (8.4, 3.6), (0, -7.1, 1.8), (math.pi / 2, 0, 0))):
         o = plane(name, size, loc, rot, wall, 0.5)
         lo = plane(name + '_low', (size[0], 1.0), (loc[0], loc[1], 0.5), rot, lowwall, 0.5)
-        n = (o.matrix_world.to_3x3() @ Vector((0, 0, 1))).normalized()
+        from mathutils import Euler
+        n = (Euler(rot).to_matrix() @ Vector((0, 0, 1))).normalized()     # from the rotation itself (matrix_world isn't updated yet)
         if n.dot(Vector((0, -2.0, 1.8)) - Vector(loc)) < 0: n = -n           # always toward the room, never behind the wall
         lo.location += n * 0.008
         # chair rail

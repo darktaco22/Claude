@@ -76,7 +76,7 @@ def setup_render():
     sc.cycles.caustics_reflective = False; sc.cycles.caustics_refractive = False; sc.cycles.blur_glossy = 1.0
     sc.render.resolution_x, sc.render.resolution_y = int(arg('--w', 720)), int(arg('--h', 1280))
     sc.render.fps = FPS; sc.frame_start = 1; sc.frame_end = NF
-    sc.render.use_motion_blur = False
+    sc.render.use_motion_blur = True; sc.render.motion_blur_shutter = 0.5; sc.cycles.motion_blur_position = 'CENTER'
     sc.view_settings.view_transform = 'AgX'; sc.view_settings.look = 'AgX - Medium High Contrast'; sc.view_settings.exposure = -0.75
     sc.render.film_transparent = False
     sc.render.use_persistent_data = True
@@ -146,7 +146,13 @@ def main():
         if o.type == 'LIGHT': o.visible_camera = False; o.visible_glossy = o.data.type != 'AREA' or o.name.startswith('tube')
     Kx.flush()
     # constant interpolation where cuts and switches must be instant
-    for ob in [cam, cam.data] + [x for x in bpy.data.lights] + [bpy.data.materials[m] for m in CONST_MATS if m in bpy.data.materials]:
+    # the camera glides within a shot and cuts cleanly between shots
+    cut_frames = {int(math.ceil(c * FPS)) + 1 for c in CUTS}
+    for idb in (cam, cam.data):
+        for fc in idb.animation_data.action.fcurves:
+            for kp in fc.keyframe_points:
+                kp.interpolation = 'CONSTANT' if int(round(kp.co.x)) + 1 in cut_frames else 'LINEAR'
+    for ob in [x for x in bpy.data.lights] + [bpy.data.materials[m] for m in CONST_MATS if m in bpy.data.materials]:
         idb = ob.node_tree if isinstance(ob, bpy.types.Material) else ob
         ad = idb.animation_data
         if ad and ad.action:
@@ -159,6 +165,7 @@ def main():
     print('SAVED', arg('--out'))
 
 CONST_MATS = []
+CUTS = [3.2, 7.2, 9.25, 10.9, 13.5, 15.3, 16.8, 19.9, 20.75, 22.8, 25.0, 26.4, 29.1, 29.7, 34.3, 36.7, 39.4, 41.6, 42.4, 44.6]
 MOUTH = {}
 PHONE = {}
 def em_path(m, node='Principled BSDF', sock='Emission Strength'):
