@@ -909,6 +909,15 @@ for o in list(bpy.data.objects):
     if any((Vector((p.x, p.y, 0)) - q).length < 0.6 for q in tracks):
         bpy.data.objects.remove(o); gone += 1
 print("litter cleared from paths:", gone)
+# a pizza whose box was cleared would hover a box-height above the floor: set it (and its pepperoni) down
+def _ctr(o): pts = [o.matrix_world @ Vector(q) for q in o.bound_box]; return sum(pts, Vector()) / 8
+_boxes = [_ctr(o) for o in bpy.data.objects if o.name.split(".")[0] == "pizzabox"]
+for o in list(bpy.data.objects):
+    if o.name.split(".")[0] == "pizza":
+        c_ = _ctr(o)
+        if min(((b - c_).length for b in _boxes), default=9) > 0.3:
+            for q in [o] + [p for p in bpy.data.objects if p.name.split(".")[0] == "pep" and (_ctr(p) - c_).length < 0.25]:
+                q.location.z -= 0.05
 print("guests:", len(guests))
 MEM("guests")
 
