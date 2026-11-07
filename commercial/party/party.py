@@ -967,6 +967,7 @@ path = [  # frame, camera, look-at: one sweep, slow where the jokes are
     (650, (1.9, 4.3, 2.0), (8.6, 0.0, 1.1)),          # ...and out through them (not through a pane)
     (670, (6.2, 4.4, 2.0), (9.4, -0.6, 1.1)),         # out east, under the pergola
     (700, (6.4, 0.8, 1.6), (9.8, -1.8, 1.0)),         # the smokers
+    (718, (6.7, -1.3, 3.0), (10.6, -3.4, 0.7)),       # up and over the smokers' heads, outside the pergola (it skimmed TOSHI, a post and a speaker)
     (735, (8.0, -3.4, 2.0), (10.6, -3.4, 0.7)),       # the bong session, side on, from over the DJ's speaker
     (772, (8.3, -3.35, 1.9), (10.6, -3.4, 0.7)),      # ...and stay with it, creeping in
     (792, (7.4, -2.3, 3.9), (3.0, -7.0, 0.8)),        # then up over the LED wall
