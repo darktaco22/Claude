@@ -611,13 +611,13 @@ def solve_actor(a, k, t, f, seat, st, HEADS, P, K):
         def cig_at_lips(droop=0.35):
             z = (fwd * math.cos(droop) - up * math.sin(droop)).normalized(); y = up - z * up.dot(z); x = y.cross(z)
             # the filter's end pressed 4 mm between his lips (the filter end is 11 mm behind the origin)
-            M = Matrix((x.normalized(), y.normalized(), z)).transposed().to_4x4(); M.translation = lip + z * 0.007; return M
+            M = Matrix((x.normalized(), y.normalized(), z)).transposed().to_4x4(); M.translation = lip + z * 0.005; return M
         def palm_for_cig(M):
             return M @ G['cig'][2].inverted()
         drag = max(pulse(t, 13.0, 13.8, 0.3), pulse(t, 25.1, 26.0, 0.3))
         place_in = pulse(t, 22.15, 22.8, 0.25)            # puts it in his mouth (off camera)
         in_mouth = win(t, 22.5, 25.4)
-        Mlips = cig_at_lips(0.35 if in_mouth else 0.15)
+        Mlips = cig_at_lips(0.62 if in_mouth else 0.15)       # hanging from his lips it droops under its own weight
         Fl = palm_for_cig(Mlips)
         k2 = max(drag, place_in)
         hands['R'] = blend(F, Fl, k2, Vector((0.06, -0.12, 0)))
@@ -1243,14 +1243,27 @@ def glasses_off_skin(actor, part_name, gap=0.002):
 
 
 def find_lips(actor):
-    """The front surface of the lips (rest, armature space), by a ray from in front of the face."""
+    """The gap between the lips (rest, armature space). A column of rays from in front of the face
+    traces the profile; the upper and lower lips bulge forward and the seam is the deepest point
+    between them."""
     from mathutils.bvhtree import BVHTree
     unmasked_body(actor, True); bpy.context.view_layer.update()
     V, F = _world_mesh(actor.body, bpy.context.evaluated_depsgraph_get()); unmasked_body(actor, False)
     tree = BVHTree.FromPolygons(V, F); m = actor.mouth
-    hit = tree.ray_cast(Vector((0.0, m.y - 0.2, m.z)), Vector((0, 1, 0)), 0.4)
-    if hit[0] is not None:
-        actor.lip = hit[0].copy(); print('LIPS', actor.name, 'surface', tuple(round(c, 3) for c in hit[0]), 'mouth pt', tuple(round(c, 3) for c in m))
+    prof = []
+    for i in range(-25, 21):                      # lips only: below the nose, above the chin
+        z = m.z + i * 0.001
+        h = tree.ray_cast(Vector((0.0, m.y - 0.2, z)), Vector((0, 1, 0)), 0.4)
+        if h[0] is not None: prof.append((z, h[0].y))
+    # the two most forward bulges (lips), then the deepest point between them (the seam)
+    lo = min(prof, key=lambda p: p[1])
+    others = [p for p in prof if abs(p[0] - lo[0]) > 0.006]
+    lo2 = min(others, key=lambda p: p[1])
+    za, zb = sorted((lo[0], lo2[0]))
+    between = [p for p in prof if za < p[0] < zb]
+    seam = max(between, key=lambda p: p[1]) if between else ((za + zb) / 2, (lo[1] + lo2[1]) / 2)
+    actor.lip = Vector((0.0, seam[1], seam[0]))
+    print('LIPS', actor.name, 'lip bulges z', round(za, 3), round(zb, 3), 'seam', tuple(round(c, 3) for c in actor.lip), 'old mouth pt', tuple(round(c, 3) for c in m))
 
 
 
