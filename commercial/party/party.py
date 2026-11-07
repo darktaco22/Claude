@@ -717,7 +717,7 @@ if not CLEAN:
         print(f"SNORT {cid}: H {H:.2f} lift {lift:.2f} bend {math.degrees(full):.0f} nose {d:.2f} at y {ly:.2f}")
         return c
     # the coffee table in the living room (x -5.5..-4.9, y 8.3..9.5, top 0.41), and LMAO in hysterics beside him
-    snort_station("farter", -5.2, 8.3, -1, 0.41, 0.0, 3)
+    snort_station("farter", -5.2, 8.44, -1, 0.41, 0.0, 3)   # lines well onto the top (at the very edge they looked like they floated)
     mocap("lmao", -4.2, 8.5, face(-1, 0.4), "13_14", start=1.0, travel=0.0)
     # KET and CATE behind the kitchen island (the marble's back edge is y 10.05)
     snort_station("ket", 3.5, 10.05, 1, 1.06, 0.0, 4)
