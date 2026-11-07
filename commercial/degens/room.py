@@ -105,7 +105,7 @@ def seats():
 def basement():
     S = {}
     wall = pbr('cinderblock', 'concrete_block_wall', scale=0.55, tint=(0.40, 0.47, 0.34), rough_add=0.05, coords='UV', paint=True, normal_str=0.8)
-    lowwall = pbr('cinderblock_low', 'concrete_block_wall', scale=0.55, tint=(0.22, 0.29, 0.21), coords='UV', paint=True, normal_str=0.8)
+    lowwall = pbr('cinderblock_low', 'concrete_block_wall', scale=0.55, tint=(0.30, 0.37, 0.28), coords='UV', paint=True, normal_str=0.8)
     floor = pbr('linoleum', 'old_linoleum_flooring_01', scale=0.6, rough_mul=0.7, rough_add=0.05, checker=(1 / 0.6 * 2, (0.78, 0.76, 0.64), (0.36, 0.38, 0.30)), normal_str=0.4)
     ceil = pbr('ceiling', 'ceiling_interior', scale=0.5, tint=(0.75, 0.75, 0.7))
     plane('floor', (8.4, 10.2), (0, -2.0, 0), (0, 0, 0), floor, 0.5)
@@ -118,7 +118,9 @@ def basement():
                                  ('wall_front', (8.4, 3.6), (0, -7.1, 1.8), (math.pi / 2, 0, 0))):
         o = plane(name, size, loc, rot, wall, 0.5)
         lo = plane(name + '_low', (size[0], 1.0), (loc[0], loc[1], 0.5), rot, lowwall, 0.5)
-        n = o.matrix_world.to_3x3() @ Vector((0, 0, 1)); lo.location += n * 0.004
+        n = (o.matrix_world.to_3x3() @ Vector((0, 0, 1))).normalized()
+        if n.dot(Vector((0, -2.0, 1.8)) - Vector(loc)) < 0: n = -n           # always toward the room, never behind the wall
+        lo.location += n * 0.008
         # chair rail
         bpy.ops.mesh.primitive_cube_add(size=1, location=Vector((loc[0], loc[1], 1.0)) + n * 0.015)
         rl = bpy.context.active_object; rl.name = name + '_rail'
