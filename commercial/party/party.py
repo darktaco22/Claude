@@ -957,16 +957,21 @@ LASER = mat("laser", "#FF1A1A", emit=60.0)
 dj = guests["triplet"]; hg = bone_geom(dj, "Head")
 if hg:
     C_, h_ = hg
+    # the face's direction in head-bone space, from the rest pose (the rig faces -Y at rest); bone axes differ per rig
+    Mb = dj.rig.data.bones["mixamorig:Head"].matrix_local.to_3x3().inverted()
+    fw = (Mb @ Vector((0, -1, 0))).normalized(); up = Vector((0, 1, 0)); sd = up.cross(fw).normalized(); fw = sd.cross(up).normalized()
+    ext = lambda v: abs(v.x) * h_.x + abs(v.y) * h_.y + abs(v.z) * h_.z     # the head's half-size along a direction
+    rot = fw.to_track_quat("Z", "Y").to_euler()
     for sx in (-1, 1):
-        eye = C_ + Vector((sx * 0.32 * h_.x, 0.18 * h_.y, 0.95 * h_.z))      # bone space: x side, y up, z forward
-        attach(dj, sphere("laser_eye", (0, 0, 0), max(0.02, 0.12 * h_.x), LASER, seg=16), bone="Head", offset=tuple(eye))
+        eye = C_ + fw * (0.95 * ext(fw)) + sd * (sx * 0.32 * ext(sd)) + up * (0.18 * h_.y)
+        attach(dj, sphere("laser_eye", (0, 0, 0), max(0.02, 0.12 * ext(sd)), LASER, seg=16), bone="Head", offset=tuple(eye))
         beam = cyl("laser", (0, 0, 0), 0.016, 3.5, LASER, v=12)
-        attach(dj, beam, bone="Head", offset=tuple(eye + Vector((0, 0, 1.75))))
+        attach(dj, beam, bone="Head", offset=tuple(eye + fw * 1.75), rot=tuple(rot))
         for f in range(1, N + 1, 4):   # a slight flicker
             beam.scale = (random.uniform(0.85, 1.2),) * 2 + (1,); beam.keyframe_insert("scale", frame=f)
     glow = light("laser_glow", "POINT", (0, 0, 0), 25, "#FF2020", 0.05)
-    attach(dj, glow, bone="Head", offset=tuple(C_ + Vector((0, 0.18 * h_.y, 1.4 * h_.z))))
-    print("LASER eyes at head half-size", tuple(round(v, 3) for v in h_))
+    attach(dj, glow, bone="Head", offset=tuple(C_ + fw * (1.4 * ext(fw))))
+    print("LASER eyes, face dir in bone space", tuple(round(v, 2) for v in fw))
 else:
     print("LASER: no head mesh on the DJ")
 
@@ -975,8 +980,8 @@ path = [  # frame, camera, look-at: one sweep, slow where the jokes are
     (110, (-10.5, -10.5, 4.2), (-2.5, 0, 0.4)),
     (170, (-6.4, -5.8, 1.6), (-0.8, -0.4, 0.3)),      # low over the pool: floats, junk, the cannonball
     (235, (-2.0, -6.2, 1.5), (1.5, -0.6, 0.4)),     # a little further back from Pink Wojak and his sign
-    (300, (1.0, -11.4, 2.6), (4.0, -5.2, 1.0)),       # the dance floor and the DJ
-    (345, (3.6, -10.4, 2.0), (5.0, -4.8, 1.2)),
+    (300, (1.0, -11.4, 2.6), (5.2, -5.0, 1.2)),   # the DJ and his laser eyes in shot       # the dance floor and the DJ
+    (345, (3.6, -10.4, 2.0), (6.4, -4.8, 1.4)),   # the DJ and his laser eyes in shot
     (380, (0.6, -1.2, 3.0), (-0.6, 5.0, 4.3)),        # up level with the balcony: the Whale and his girls, SWORDCAT on the rail
     (398, (0.2, -1.6, 2.6), (-2.2, 2.8, 2.6)),        # follow the backflip down...
     (414, (-0.3, -2.2, 1.8), (-2.8, 0.3, 0.2)),       # ...into the splash
