@@ -73,14 +73,18 @@ What the new party contains (30 s, 900 frames at 30 fps):
   - What it still reports is intended contact: Fwog on his float, the kisses, the DJ's hands on the decks, the snort face on the table.
 - QA camera (`qa.py`) swings round to find a clear view.
 
-## Left to do
+## Status: delivered
 
-1. Review checkpoint 11 (the opening and closing aerials with the tree fix, and close-ups of all 47 guests).
-2. **Final render** from `party.blend`: 900 frames, 1280x720, 12 samples, about 9–10 h, resumable. Check frames at 25/50/75%.
-3. `mix.py`, then `assemble.sh`, then the loudness check (-14 LUFS, TP ≤ -1.5).
-4. Commit `commercial/output/meme-royale-house-party.mp4` with a contact sheet, and send it.
+`commercial/output/meme-royale-house-party.mp4` is the final 30 s render: 900 frames at 1280x720, Cycles with 12 samples, -14.2 LUFS, true peak -2.8 dB.
+`meme-royale-house-party-contact.jpg` has a frame every 1–2 s. The final pass added:
+- the rocket launch at the end
+- IK pole-angle fixes (knees and elbows)
+- bean bags that slope to the front
+- DOPE and BOME moved out of the camera's path
+- a camera rise over the smokers
+- Farter's lines on the tabletop, and orphaned pizzas set down
 
-Checkpoint pipeline used in the session: build plus stills, then focused QA (smokers and bong at chosen cycle frames), then `scan.py` on the saved blend, then the full QA.
+Check tools, each run on a saved blend: `scan.py` (intersections and blocked featured guests), `coverage.py` (every guest and gag in frame), `knees.py` (backwards knees and tucked-in elbows).
 
 ## Key decisions
 
