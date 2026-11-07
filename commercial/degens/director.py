@@ -853,7 +853,7 @@ def camera(cam, t, f, HEADS, SEAT, K):
 
 
 def lights(S, X, t, f, K):
-    flick = 0.25 if ((t * 13) % 7 < 0.6 or (22 < t < 22.3)) else 1.0
+    flick = tube_flicker(t)
     ping = 0.12 if 34.42 < t < 39.4 else 1.0
     off = lambda i: 0.0 if t > (44.7, 45.1, 45.5)[i] else 1.0
     ks = [flick * ping * off(0), ping * off(1), ping * off(2)]
@@ -1331,6 +1331,18 @@ def cig_fix(a, P):
     a.G['cig'] = (c, a.G['cig'][1], M2)
     print('CIG fingers', round(best[1] * 1000, 1), 'mm apart (spread', round(best[0], 2), '); cigarette moved', round((want - W.translation).length * 1000, 1), 'mm')
 
+
+
+
+# A failing fluorescent tube: now and then a short, uneven stutter (not a metronome, which reads as a
+# rendering glitch). Each burst is a fixed pattern of brightness per frame.
+FLICKER_BURSTS = [5.6, 12.4, 17.9, 22.0, 27.8, 31.3, 37.6, 43.9]
+FLICKER_PATTERN = [0.55, 1.0, 0.3, 0.85, 1.0, 0.4, 0.25, 0.7, 1.0, 1.0, 0.5, 1.0]
+def tube_flicker(t):
+    for b in FLICKER_BURSTS:
+        i = int(round((t - b) * FPS))
+        if 0 <= i < len(FLICKER_PATTERN): return FLICKER_PATTERN[i]
+    return 1.0
 
 if __name__ == '__main__':
     main()
