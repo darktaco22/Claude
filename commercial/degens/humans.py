@@ -51,7 +51,7 @@ def build(key, subdiv=1):
     for n, (hue, sat, val, mult) in c['tint'].items():
         tint(parts[n], hue, sat, val, mult)
     for o in parts.values():
-        o.cycles.use_motion_blur = True; o.cycles.use_deform_motion = True   # moving arms and legs blur like a real camera
+        o.cycles.use_motion_blur = True; o.cycles.use_deform_motion = False   # object/camera blur only (faster); bodies stay crisp
     if key == 'earl':
         flannel(parts['male_casualsuit03'])
     if key == 'chad':
