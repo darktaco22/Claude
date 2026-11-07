@@ -643,23 +643,24 @@ for i in range(NB):
 
 # SWORDCAT: off the balcony, a backflip, into the pool
 sw = load("swordcat"); guests["swordcat"] = sw
-F_FLIP = 384
+F_FLIP = 380
+AIR = 44   # frames in the air (was 26: the dive was over in under a second)
 zsink = WZ - sw.shoulderL.z + 0.08
 for f in range(1, N + 1, 2):
     if f < F_FLIP:
         pose = M.cheer(sw, f / FPS); p = Vector((-3.0, 4.95, 3.85)); rx = 0.0
-    elif f < F_FLIP + 26:
-        k = (f - F_FLIP) / 26
+    elif f < F_FLIP + AIR:
+        k = (f - F_FLIP) / AIR
         p = Vector((-3.0 + 0.2 * k, 4.95 + (0.1 - 4.95) * k, 3.85 + 2.2 * math.sin(math.pi * k) * (1 - 0.4 * k) - (3.85 - zsink) * k ** 1.6))
         pose = M.tuck(sw, 0); rx = -math.tau * min(1.0, k * 1.05)
     else:
-        k = min(1.0, (f - F_FLIP - 26) / 12); p = Vector((-2.8, 0.1, zsink - 0.35 * math.sin(math.pi * k))); pose = M.swim(sw, f / FPS); rx = 0.0
+        k = min(1.0, (f - F_FLIP - AIR) / 12); p = Vector((-2.8, 0.1, zsink - 0.35 * math.sin(math.pi * k))); pose = M.swim(sw, f / FPS); rx = 0.0
     pose["loc"] = p; pose["rot"] = face(0, -1); pose["rx"] = rx
     sw.key(f, pose)
 for i in range(30):
     a = i / 30 * math.tau; s = sphere("drop", (-2.8, 0.1, WZ), random.uniform(0.04, 0.1), SPL, seg=8)
     v = Vector((math.cos(a) * random.uniform(0.8, 2.4), math.sin(a) * random.uniform(0.8, 2.4), random.uniform(3.5, 6.0)))
-    fl = F_FLIP + 26
+    fl = F_FLIP + AIR
     s.scale = (0.01,) * 3; s.keyframe_insert("scale", frame=fl - 1); s.keyframe_insert("location", frame=fl - 1)
     s.scale = (1, 1, 1); s.keyframe_insert("scale", frame=fl)
     for j in range(1, 30, 3):
@@ -982,11 +983,13 @@ path = [  # frame, camera, look-at: one sweep, slow where the jokes are
     (170, (-6.4, -5.8, 1.6), (-0.8, -0.4, 0.3)),      # low over the pool: floats, junk, the cannonball
     (235, (-2.0, -6.2, 1.5), (1.5, -0.6, 0.4)),     # a little further back from Pink Wojak and his sign
     (300, (1.0, -11.4, 2.6), (5.2, -5.0, 1.2)),   # the DJ and his laser eyes in shot       # the dance floor and the DJ
-    (345, (3.6, -10.4, 2.0), (6.4, -4.8, 1.4)),   # the DJ and his laser eyes in shot
-    (380, (0.6, -1.2, 3.0), (-0.6, 5.0, 4.3)),        # up level with the balcony: the Whale and his girls, SWORDCAT on the rail
-    (398, (0.2, -1.6, 2.6), (-2.2, 2.8, 2.6)),        # follow the backflip down...
-    (414, (-0.3, -2.2, 1.8), (-2.8, 0.3, 0.2)),       # ...into the splash
-    (430, (-0.6, -1.2, 1.5), (-1.8, 3.8, 2.6)),
+    (338, (3.6, -10.4, 2.0), (6.4, -4.8, 1.4)),   # the DJ and his laser eyes in shot
+    (364, (0.6, -1.2, 3.0), (-0.6, 5.0, 4.3)),        # up level with the balcony: the Whale and his girls, SWORDCAT on the rail
+    (380, (0.4, -1.4, 3.1), (-1.6, 4.6, 4.4)),        # ...held on him as he winds up and leaps
+    (398, (0.2, -1.7, 2.9), (-2.4, 3.4, 3.6)),        # follow the backflip, high in the air...
+    (414, (-0.1, -2.1, 2.2), (-2.6, 1.4, 1.2)),       # ...down...
+    (428, (-0.4, -2.3, 1.8), (-2.8, 0.3, 0.2)),       # ...into the splash, and the spray coming down
+    (446, (-0.6, -1.2, 1.5), (-1.8, 3.8, 2.6)),
     (480, (-0.6, 3.4, 1.7), (-4.4, 8.6, 0.8)),        # through the doors: the table, LMAO, the window kiss
     (540, (-2.0, 6.4, 1.6), (-5.2, 8.8, 0.7)),
     (580, (2.7, 7.0, 1.8), (4.2, 10.2, 1.0)),         # the kitchen island: KET and CATE at their lines...

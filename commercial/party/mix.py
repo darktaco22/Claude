@@ -11,7 +11,7 @@ events = [  # (file, frame, gain dB): crowd and effects only, no voices
     (A + "amb_beach.mp3", 0, -22), (A + "crowd_cheer.mp3", 8, -14),
     ("splash.wav", 222, -2), (A + "crowd_ooh.mp3", 226, -10), (A + "crowd_laugh.mp3", 250, -14),
     (A + "coins.mp3", 360, -9), (A + "coin_jingle_1.mp3", 395, -10),
-    ("splash.wav", 410, -1), (A + "crowd_cheer.mp3", 412, -8), (A + "coins.mp3", 445, -11),
+    ("splash.wav", 424, -1), (A + "crowd_cheer.mp3", 426, -8), (A + "coins.mp3", 445, -11),
     (A + "fart_cast.mp3", 500, -4), (A + "fart_cloud.mp3", 508, -8), (A + "laugh_blast.mp3", 530, -8),
     (A + "crowd_laugh.mp3", 610, -12), (A + "crowd_ooh.mp3", 700, -11), (A + "laugh_blast.mp3", 760, -12),
     (A + "crowd_cheer.mp3", 860, -8),
