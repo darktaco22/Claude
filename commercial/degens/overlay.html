@@ -1,0 +1,48 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face{font-family:Lilita;src:url(./lilita.woff2)}
+html,body{margin:0;background:transparent;overflow:hidden;width:540px;height:960px}
+#sub{position:absolute;left:20px;right:20px;bottom:13%;text-align:center;font:30px Lilita,sans-serif;color:#fff;line-height:1.15;-webkit-text-stroke:6px #000;paint-order:stroke fill;text-shadow:0 3px 0 #000}
+#extcap{position:absolute;left:0;right:0;top:11%;text-align:center;font:36px Lilita,sans-serif;color:#fff;-webkit-text-stroke:6px #000;paint-order:stroke fill;opacity:0;line-height:1.1}
+#sub .w{opacity:0} #sub .w.on{opacity:1}
+#note{position:absolute;left:16px;right:16px;top:7%;opacity:0;transform:translateY(-30px);background:rgba(28,28,32,.88);border-radius:22px;padding:12px 14px;display:flex;gap:12px;align-items:center;box-shadow:0 10px 30px rgba(0,0,0,.6);font-family:-apple-system,"Segoe UI",Roboto,"Noto Sans",sans-serif;color:#fff}
+#note i{font-style:normal;width:44px;height:44px;border-radius:11px;background:linear-gradient(135deg,#7a2fe0,#ff2fb0);display:flex;align-items:center;justify-content:center;font-size:24px}
+#note b{display:block;font-size:13px;color:#aaa;font-weight:600} #note span{display:block;font-size:18px;font-weight:700}
+#wallet{position:absolute;inset:0;opacity:0;background:#07090c;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:-apple-system,Roboto,"Noto Sans",sans-serif;color:#fff}
+#wallet .h{font-size:15px;letter-spacing:4px;color:#7d8794;margin-bottom:8px} #wallet .t{font-size:30px;font-weight:800;color:#c8ff5a}
+#wallet .v{font:64px Lilita,sans-serif;color:#2bff6a;margin:10px 0 4px} #wallet .s{font-size:16px;color:#9aa3b5}
+#wallet svg{margin-top:24px} #wallet .hold{margin-top:22px;font-size:20px;font-weight:700;color:#fff;background:#1a1f27;padding:10px 18px;border-radius:12px}
+#black{position:absolute;inset:0;background:#000;opacity:0}
+</style></head><body>
+<div id="sub"></div>
+<div id="extcap">he left the basement<br>for this.</div>
+<div id="note"><i>🚀</i><div><b>LAUNCHPAD · now</b><span>$ROYALE just launched. 0.0001 → ???</span></div></div>
+<div id="wallet"><div class="h">DEV WALLET</div><div class="t">$ROYALE</div><div class="v">+$2,413,907</div><div class="s">since launch · 11 min ago</div>
+  <svg width="380" height="150"><polyline fill="none" stroke="#2bff6a" stroke-width="6" stroke-linejoin="round" points="0,140 40,138 80,132 120,120 150,96 180,98 210,70 240,60 270,40 300,34 340,14 380,6"/></svg>
+  <div class="hold">Holders: 5</div></div>
+<div id="black"></div>
+<script>
+const $ = id => document.getElementById(id), clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v)), win = (t, a, b) => t >= a && t < b, out3 = t => 1 - Math.pow(1 - clamp(t), 3);
+(async () => {
+const VO = await (await fetch('./vo.json')).json(); const LINES = [];
+const say = (id, who, t, text) => LINES.push({id, who, t, end: t + VO[id].dur, text});
+say('p_welcome','pam',3.5,'Welcome back, everyone. Who would like to share?'); say('neet_leaving','neet_ext',1.75,'Leaving the basement!');
+say('n_hi','gary',7.9,"Hi. I'm NEET."); say('all2_p','pam',9.3,'Hi, NEET.');
+say('n_four','gary',11.0,"It's been... four minutes... since my last trade."); say('p_record2','pam',13.6,"That's a new record, NEET.");
+say('l_casino','linda',16.9,'I told my husband I lost our savings at the casino.'); say('l_less','linda',20.75,"Because that's less embarrassing.");
+say('e_kidney','earl',22.95,'I sold a kidney to buy the dip.'); say('e_other','earl',26.45,"I'm thinking about selling the other one.");
+say('neet_letsgo','gary',28.85,"Let's go!"); say('c_stop','chad',30.05,"I'm not addicted. I can stop anytime."); say('c_after','chad',32.85,'After this one.');
+say('p_break','pam',36.9,"Let's... take a five minute break."); say('p_next','pam',46.0,'Same time next week.');
+window.renderAt = t => {
+  const L = LINES.find(L => L.text && t >= L.t - 0.05 && t < L.end + 0.5), sub = $('sub');
+  if (!L) sub.innerHTML = '';
+  else { const w = L.text.split(' '), n = Math.max(1, Math.ceil(clamp((t - L.t) / (VO[L.id].dur * 0.9)) * w.length)); sub.innerHTML = w.map((x, i) => `<span class="w${i < n ? ' on' : ''}">${x}</span>`).join(' '); }
+  const nk = win(t, 34.5, 36.9) ? out3((t - 34.5) / 0.3) : 0; $('note').style.opacity = nk; $('note').style.transform = `translateY(${(1 - nk) * -30}px)`;
+  $('wallet').style.opacity = 0;      // the PnL is now shown on Pam's phone, over her shoulder
+  $('black').style.opacity = t > 48.0 ? 1 : 0;
+  $('extcap').style.opacity = t < 3.15 ? clamp(Math.min((t - 0.3) / 0.3, (3.15 - t) / 0.2)) : 0;
+};
+await document.fonts.ready; window.ready = true;
+})();
+</script></body></html>

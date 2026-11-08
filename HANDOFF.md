@@ -1,148 +1,176 @@
-# HANDOFF: MEME ROYALE videos
+# HANDOFF: Degens Anonymous, realistic remake
 
-Branch: `claude/blender-meme-royale-commercial-y76uf9` (repo `darktaco22/Claude`). Everything below lives in `commercial/`.
+Branch: `claude/blender-meme-royale-commercial-y76uf9` (repo `darktaco22/Claude`). Code lives in `commercial/degens/`.
+The earlier house-party project's handoff moved to `commercial/party/HANDOFF.md`.
 
 ## Goal
 
-Videos for the game at https://memeroyale.imaginestudio.fun. Characters, models, card art, logo, font and sounds are the
-game's own files, taken from the live site.
+Remake the 48.4 s vertical (1080×1920) skit **"Degens Anonymous"** as realistic 3D with sound, keeping the original
+timing, dialogue, shots and gags exactly. A 3 AM church-basement support group for crypto degens. The person asked for:
 
-**Current focus: the house party.** All the characters throw a wild party at a mansion with a pool, in one panoramic camera
-sweep. The person's notes ask for: drinking, cannonballs, couples kissing, smoking, a bong, lines being snorted (bending
-right down, a puff of powder), dancing with real dance moves, people walking around, The Whale making it rain, more
-crypto-meme characters, club music with heavy bass, no generated voices, rich textures and real trees (no low-poly blobs),
-a populated background, and repeated glitch checks. They asked for as much time as it takes to make it look high quality.
+- Realistic people (no famous characters), real props, nothing clipping, hands really holding things.
+- **NEET** (their game's character, `studio/models/neet.glb`) left exactly as he is. He's never modified, only placed.
+- A high-quality cigarette: tan filter between Earl's lips (seam found by a ray scan), drooping with gravity, ash and
+  ember on the white end, pinched in the index–middle finger gap when in his hand.
+- Dark, gloomy lighting. The launched coin is **$ROYALE**. Voices say **"NEET"**, never "Gary".
+- Kokoro voices (they liked them). A straw slurp for Linda's sips. As smooth as possible: motion blur, a gliding
+  camera, plus a 60 fps version made with RIFE.
+- An over-the-shoulder shot of the PnL on Pam's phone instead of a full-screen pop-up.
+- Repeated glitch hunts. They explicitly want visual anomalies found and fixed.
 
-## Done (all in `commercial/output/`)
+## Concept and shot list (t in seconds; frame = t·30 + 1)
 
-| File | What |
-|---|---|
-| `meme-royale-seeker-blender.mp4` | 16:9, 29 s. Solana dApp Store / Seeker commercial: real engine footage, PEPE on a phone in space (Blender), cut in Blender's sequencer. |
-| `meme-royale-seeker-raea.mp4` | 9:16, 20 s, the same message, made with raea. |
-| `meme-royale-runway.mp4` | 2:54. All 39 characters walk a runway one by one, pose, exit; backdrops cross-fade (raea). |
-| `meme-royale-house-party.mp4` | The **previous** 24 s party render. The person rejected it (glitches, voices, low poly, empty background). Kept for reference only. |
-| `raea-showcase.mp4` | A raea demo. |
+| t | Shot | What happens |
+|---|---|---|
+| 0–3.2 | Rainy alley, push-in | NEET walks to the door under the "Degens ANONYMOUS / MEETS NIGHTLY · 3 AM" neon. Caption "he left the basement for this." Line "Leaving the basement!" |
+| 3.2–7.2 | Wide, dolly in | The circle of chairs. Pam: "Welcome back, everyone. Who would like to share?" |
+| 7.2–9.25 | NEET single | NEET stands: "Hi. I'm NEET." |
+| 9.25–10.9 | Wide | Everyone: "Hi, NEET." |
+| 10.9–13.5 | NEET single | "It's been… four minutes… since my last trade." |
+| 13.5–15.3 | Pam single | "That's a new record, NEET." |
+| 15.3–16.8 | NEET single | NEET celebrates (win clip). Pam and Linda slap their thighs twice (applause, mugs in their other hands) |
+| 16.8–22.8 | Linda singles (close cut 19.9–20.75) | "I told my husband I lost our savings at the casino." Sips the wine bottle hidden in her WORLD'S BEST MOM mug through a straw (slurp). "Because that's less embarrassing." |
+| 22.8–29.1 | Earl singles (close cut 25.0–26.4) | Cigarette in his lips: "I sold a kidney to buy the dip." He drags (ember glows), exhales volumetric smoke: "I'm thinking about selling the other one." He wears a nasal cannula to an oxygen tank |
+| 29.1–29.7 | NEET single | "Let's go!" (fist pump) |
+| 29.7–34.3 | Chad single | Sniff and nose wipe. "I'm not addicted. I can stop anytime." Phone ding. "After this one." |
+| 34.3–36.7 | Wide | Every phone pings ($ROYALE launch alert), room lights drop, faces lit by phones, they look around |
+| 36.7–39.4 | Pam single | "Let's… take a five minute break." |
+| 39.4–41.6 | Wide toward the exit | Stampede: Chad, Earl, Linda and NEET run out the real doorway into the corridor. Chairs topple back. Door slams at 41.2 |
+| 41.6–42.4 | Empty-room shot | Pam alone among the toppled chairs |
+| 42.4–44.6 | Over Pam's right shoulder | Her phone: DEV WALLET $ROYALE +$2,413,907, chart, Holders: 5 (she's the dev). She sips her mug |
+| 44.6–48.4 | Pam push-in | Lights switch off one by one, her face lit by the phone: "Same time next week." Black at 48.0 |
 
-The party has been rebuilt since that render, and the new version **is not rendered yet**. Its source is in
-`commercial/party/`:
+## Done
 
-- `party.py`: the scene, guests, camera and render settings. It runs `dressing.py` and `environment.py` inside its own namespace.
-- `moves.py`: IK moves for poses mocap can't cover (kiss, snort, bong sit, swim, despair, cheer, tuck, make-it-rain), plus the `Char` controller (body-safe hand targets, clip playback through NLA).
-- `retarget.py`: CMU BVH mocap onto the game's Mixamo rigs, relative to each rig's rest pose. Used by dancers, DJ, smokers, chuggers, LMAO, the drunk.
-- `dressing.py`: architecture, the kitchen, and the mess (cups, cans, pizza boxes, confetti, balloons, shopping cart, cones, neon signs).
-- `environment.py`: the city-skyline HDRI, terrain, perimeter wall, Poly Haven trees and plants (instanced), and PBR textures on every surface.
-- `scan.py`: automatic glitch scan (intersections, blocked featured guests).
-- `coins.py`, `flamingo.py`: meme-coin decorations; the inflatable flamingo.
-- `qa.py`: glitch check. Hides every other guest and frames one character's real head at chosen frames.
-- `checkpoint.sh`: builds the scene and saves `party.blend`, renders scene stills, then runs the QA close-ups for all 45 guests.
-- `mix.py`: the soundtrack. Club track plus the game's crowd and effects sounds, no voices.
-- `assemble.sh`: frames plus mix into the final MP4, with the end logo card and the music credit.
-- `setup_assets.sh`: re-downloads everything that lives outside the repo.
-- `assets/`: `bill.png` (MEME BUCKS banknote), `ComicNeue-Bold.ttf` (OFL, for the doge words).
+- **Scene:** `director.py` builds everything and keys every frame (about 1.5 min per build, deterministic):
+  - Cast: Pam, Linda, Earl and Chad are original MakeHuman people (MPFB 2, CC0) on the full MakeHuman rig, with
+    jaw, eyelid and viseme lip-sync.
+  - NEET is the game model with his own clips via NLA.
+  - Props: Poly Haven CC0 props, plus modelled mugs, can, phones, oxygen tank and cannula.
+  - Sets: basement with a real exit doorway and corridor, and the rainy alley.
+- **Clipping work:**
+  - Seat fitting (two-way contact tests, per-person chair scale).
+  - NEET on a low stool fitted to his own sit pose, so he isn't moved or changed.
+  - Exact skinned-hand grip solving (`grips.py`). Fingers stop 1–3 mm from the prop surface.
+  - The cigarette's finger gap is measured on the evaluated hand.
+  - Hand-on-thigh clearance search.
+  - The cannula is skinned to the skin with smoothed weights.
+  - Clothing masks.
+  - Sweeps: `qa_all.py`, `propcheck.py`. Remaining known minor contacts: Chad's glasses temples behind his ears
+    and a 1 cm brush when Chad and Earl stand at 39.8. "Linda into NEET" in the sweep is a false positive (NEET's
+    open mesh).
+- **Glitches fixed:**
+  - Black wedges were the wall's lower band z-fighting with the wall (wrong normal; it now sits 8 mm in front, and
+    the rail is full length).
+  - The 1-frame "metronome" tube flicker became eight irregular bursts (`FLICKER_BURSTS`).
+  - A wall was missing its doorway; it now has one.
+  - Rain fills the alley.
+- **Sound:**
+  - `audio/mix_kokoro.m4a` is the final mix: Kokoro voices fitted to the original line timing, every line says
+    NEET, "Let's go!" is audible, plus the slurp.
+  - Rebuild it with `voices.py` → `mixvo.py` (`audio/cues.json`, `audio/vo_kokoro/`, `audio/sfx/`).
+- **Frames:**
+  - Rendered with the final scene for frames **1–363 and 726–1452**. Parts came from worker sessions on branches
+    `claude/degens-part-1b, -1c, -3, -4, -5` (each holds `commercial/renders/part_A_B.mp4`, x264 yuv444 crf 9,
+    720×1280).
+  - The previous complete video (before motion blur and the latest fixes) is `commercial/output/degens-anonymous-realistic.mp4`.
 
-What the new party contains (30 s, 900 frames at 30 fps):
+## Left to do
 
-- **Characters:** 45 guests. These are the 39 game characters plus six new memes recolored from the game's own models: DOGE (with floating "wow / such party / much rich" words), dogwifhat (pink knit beanie, in the conga), Brett (blue PEPE), NPC Wojak (grey, does the robot), Pink Wojak (despair at the pool edge) and Fwog (tiny frog on the pizza float). The DJ has laser eyes.
-- **Motion:** mocap dances for the dancers (salsa, Charleston, moonwalk, robot, breakdance, Russian dance, lambada, twist, chicken dance, Mickey dance). The drinkers chug and the smokers raise a cigarette on a hand-to-mouth clip. LMAO laughs, and Chill House does a drunk walk on the lawn. Chill Guy, Jean Phil and DOPE walk loops on the game's own walk clip, matched to pace.
-- **Gags:**
-  - POPCAT stands, runs, then cannonballs. Before this, it ran on the spot.
-  - SWORDCAT backflips off the balcony.
-  - The Whale throws 350 textured bills from the balcony.
-  - KET and CATE snort at the kitchen island and FARTER at the coffee table: they bend right down, a powder puff rises, and lines shrink.
-  - PEPE + PIPPIN and Trollface + MICHI kiss.
-  - The smokers stand under the pergola and the bong sits by the east lounge chairs. Both were restaged so the camera actually frames them.
-- **Set:** a villa with a kitchen (cabinets, fridge, hood, island), parquet, a stone wing, a pergola, a fire pit, a perimeter wall, city lights, and hills with neighbours' houses.
-- **Music:** Kevin MacLeod, "Cut and Run" (CC BY 4.0, credited on the end card). It was the bassiest of the candidates measured with librosa, cut to its strongest 30 s from a beat at 101.05 s.
-
-## Since the first handoff (checkpoints 3 to 11)
-
-- **Props on bones:** new Child Of constraints auto-set an inverse, which threw every cup, cigarette, note, the beanie and the laser eyes metres away. `attach()` clears it.
-- **Snort stations** (`snort_station`): the bend is solved per character, short ones stand on a beer crate, and the lines sit under the nose along the slide.
-- **Smoking and bong, for real** (`M.smoke_real`, `M.bong_session`, timings `SMOKE_T`/`BONG_T`):
-  - smokers: drag with a flaring ember, hold, blow it at the sky; TOSHI coughs every other drag
-  - bong: WOJAK and APU take turns on bean bags. The lighter and bowl glow, water bubbles, the chamber fills and clears, then a big cloud, a cough and a slump.
-  - The mouthpiece is placed where the mouth really is mid-hit (bake, measure, re-bake).
-  - BATON's model has no hand bones, so it dances instead.
-- **Balcony:** WOJAK GIRL and DOOMER GIRL (Wojak model plus hair, dress and bow sized by `bone_geom`) throw money beside the Whale. 480 bills.
-- **Meme-coin decor** (`coins.py`): ticker coins, coin floats and balloons, a PUMP IT chart behind the DJ, HODL / WEN LAMBO? / 1 $MEME = 1 $MEME neons, a TO THE MOON rocket, a BUY THE DIP sign.
-- **Floats:** the flamingo was rebuilt (`flamingo.py`: sculpted body, S-neck, beak, vinyl); smooth vinyl donut and ring.
-- **`scan.py` glitch scan:** guests inside props or each other, and featured guests hidden from the camera. Everything it found is fixed:
-  - DJ booth, coffee table, balcony glass, the pizza float landing, the speaker, loungers
-  - conga spacing and path, litter under feet, the drunk walking on the spot, the rocket in the fire pit
-  - trees the camera flew through
-  - What it still reports is intended contact: Fwog on his float, the kisses, the DJ's hands on the decks, the snort face on the table.
-- QA camera (`qa.py`) swings round to find a clear view.
-
-## Status: delivered
-
-`commercial/output/meme-royale-house-party.mp4` is the final 30 s render: 900 frames at 1280x720, Cycles with 12 samples, -14.2 LUFS, true peak -2.8 dB.
-`meme-royale-house-party-contact.jpg` has a frame every 1–2 s. The final pass added:
-- the rocket launch at the end
-- IK pole-angle fixes (knees and elbows)
-- bean bags that slope to the front
-- DOPE and BOME moved out of the camera's path
-- a camera rise over the smokers
-- Farter's lines on the tabletop, and orphaned pizzas set down
-
-Check tools, each run on a saved blend: `scan.py` (intersections and blocked featured guests), `coverage.py` (every guest and gag in frame), `knees.py` (backwards knees and tucked-in elbows).
+1. **Render frames 364–725.** This session was rendering them locally (see "How to render"). The six worker sessions
+   for this range (`degens-part-2, -2b … -2f`) stopped when the account hit its weekly usage limit, and none of
+   their output was pushed.
+2. **Unpack the part videos into frames** (if this machine is fresh): `merge_parts.sh`, or `ffmpeg -i part_A_B.mp4 -start_number A f_%04d.png`.
+   Check every frame count.
+3. **30 fps:**
+   ```
+   assemble.sh $W/frames $W/ovl audio/mix_kokoro.m4a ../output/degens-anonymous-realistic.mp4
+   ```
+   Make the overlays first with `node overlays.js $W/ovl` (30 fps). Run the glitch scan
+   `python3 spikes.py $W/frames` (in the scratch workspace; it's a 15-line script that flags 1-frame jumps).
+   Look at what it flags; periodic hits every 16 frames used to be the old flicker.
+4. **60 fps:**
+   1. `node overlays.js $W/ovl60 60`
+   2. `python3 interp60.py $W/frames $W/f60 <rife dir>` (RIFE `rife-ncnn-vulkan-20221029-ubuntu`, model `rife-v4.6`,
+      from GitHub nihui/rife-ncnn-vulkan; needs `apt-get install mesa-vulkan-drivers`; the person allowed running
+      it). The script holds frames at cuts.
+   3. `assemble60.sh $W/f60 $W/ovl60 audio/mix_kokoro.m4a ../output/degens-anonymous-realistic-60fps.mp4`
+5. Send both MP4s to the person, commit them, and spot-check frames (cigarette, PnL shot, stampede, ending).
 
 ## Key decisions
 
-- **Real people:** characters that look like real, identifiable people (GIGA, NEET, Jean Phil, MENSA, MITCH, Alon) are never shown using drugs or kissing. They dance, walk and drink only. The person accepted this. Drug and kiss gags go to fictional cartoon characters.
-- **Renderer:** Cycles, not EEVEE. EEVEE runs on software GL here and was about 4× slower. The CPU has 4 cores, there's no GPU, and RAM is 15 GB.
-- **Subdivision:** characters get render-level-1 subdivision with `use_limit_surface=False` and `quality=1`. The default OpenSubdiv limit surface blew memory past 11 GB, and the kernel killed the process.
-- **Mocap:** CMU BVH from the `una-dinosauria/cmu-mocap` GitHub mirror (cgspeed's conversion, free for any use), sparse-checked-out per clip. Rigs that aren't Mixamo-standard (BOME, DOPE, MENSA, MOO DENG, POPCAT) play the game's own clips instead.
-- **Sources:**
-  - Allowed, all CC0: Poly Haven (HDRIs, models, textures). Poly Haven needs a non-default User-Agent, so use `party-scene-builder/1.0`.
-  - Blocked: Poly Pizza, Kenney and Quaternius's itch.io downloads. That's why the new memes are recolors of game models.
-- **Voices:** removed. Don't reintroduce generated voices; the person didn't like the Chatterbox lines.
-- **Credit:** the music credit is required (CC BY): "Music: Cut and Run by Kevin MacLeod (incompetech.com), CC BY 4.0". It's drawn on the end card by `assemble.sh`.
+- **Cast and content:** original MakeHuman people only (never real or famous people). NEET is untouched. If he
+  clips, move his seat or stool, never him.
+- **Rendering:** Cycles on CPU (4 cores, no GPU) at 720×1280 with 8 samples and OIDN (albedo and normal), then
+  upscaled to 1080×1920 with lanczos plus unsharp. Motion blur is on (shutter 0.5) for the camera and objects; body
+  deformation blur is off (a speed choice the person picked). The camera keys are linear within shots and constant
+  at cuts (`CUTS` in `director.py`).
+- **Overlays:** subtitles, the launch alert and the caption are HTML (`overlay.html`) rendered as transparent PNGs
+  and laid over the frames. The wallet pop-up is disabled; the PnL lives on Pam's phone screen instead.
+- **Containers:** cloud containers here get recycled after about 15 minutes idle, which kills detached renders.
+  `render_list.py` writes `<list>.done` so restarts skip finished frames. Check every 15 minutes and restart.
+- **Worker sessions:** these used a lot of the account's weekly usage. Prefer rendering in one session unless the
+  person asks for parallel.
+- **Assets:**
+  - Poly Haven needs the User-Agent `scene-builder/1.0`.
+  - Some Poly Haven `.blend` files are newer than 4.2 and fall back to glTF automatically.
+  - MakeHuman packs come from files.makehumancommunity.org.
 
-## How to rebuild and render (fresh container)
+## File paths
+
+- Code: `commercial/degens/`
+  - Scene: `director.py`
+  - People: `humans.py`
+  - Pose and IK: `rigctl.py`
+  - Grips: `grips.py`
+  - Props: `props.py`
+  - Sets: `room.py`
+  - Asset loader: `assets.py`
+- QA:
+  - `qa.py`: stills
+  - `closeqa.py`: close-ups (env `CQ=…`)
+  - `qa_all.py`: clipping sweep
+  - `propcheck.py`
+  - `clipcheck.py`
+- Render:
+  - `render_list.py`: resumable list renderer
+  - `render_part.sh` + `setup_remote.sh`: fresh-machine setup and range render
+  - `merge_parts.sh`
+- Video:
+  - `assemble.sh` / `assemble60.sh`
+  - `interp60.py`
+  - `overlays.js` + `overlay.html` (+ `lilita.woff2`, `vo.json`)
+- Sound: `voices.py` (Kokoro via `kokoro-onnx`, model files from GitHub thewh1teagle/kokoro-onnx release
+  `model-files-v1.0`), `mixvo.py`, `slurp.py`, `audio/`
+- Studio inputs: `studio/vo.json` (line timing and lip-sync envelopes), `studio/models/neet.glb`
+- Scratch workspace (not in git): `W` in `env.sh` holds `frames/`, `ovl/`, `da8.blend` (the final scene) and `ph/`
+  (Poly Haven).
+
+## How to render (fresh machine)
 
 ```bash
-# Blender 4.2 LTS (headless; needs: apt-get install -y libegl1 libgl1 libxi6 libxxf86vm1 libxfixes3 libxrender1 libxkbcommon0 libsm6)
-mkdir -p /opt/blender && cd /opt/blender && curl -sSO https://download.blender.org/release/Blender4.2/blender-4.2.3-linux-x64.tar.xz && tar xf blender-4.2.3-linux-x64.tar.xz
-export BLENDER=/opt/blender/blender-4.2.3-linux-x64/blender
-pip install librosa                      # only for re-picking music beats
-
-W=/tmp/party-work                        # any scratch dir with ~5 GB free
-cd /home/user/Claude/commercial/party
-./setup_assets.sh $W                     # game models + cards + logo, Poly Haven, CMU clips, music, game sounds
-
-# 1. checkpoint (build + save $W/party.blend + stills + per-guest QA close-ups)
-./checkpoint.sh $W $W/ck 180,230,300,345,395,520,600,700,760,800
-
-# 2. final frames (resumable; run detached so a lost shell doesn't stop it)
-mkdir -p $W/frames
-setsid nohup $BLENDER -b --factory-startup -P party.py -- --models $W/models --ph $W/ph --cmu $W/cmu \
-  --w 1280 --h 720 --samples 12 --render $W/frames > $W/render.log 2>&1 < /dev/null &
-#   (or render the saved file: $BLENDER -b $W/party.blend -o $W/frames/f_ -a)
-
-# 3. sound, assembly, check
-cd $W && cp /home/user/Claude/commercial/party/mix.py . && python3 mix.py     # -> $W/party_mix.wav (30 s)
-/home/user/Claude/commercial/party/assemble.sh $W/frames $W/party_mix.wav \
-  /home/user/Claude/commercial/assets/logo.png /home/user/Claude/commercial/assets/lilita.ttf \
-  /home/user/Claude/commercial/output/meme-royale-house-party.mp4
-ffmpeg -i /home/user/Claude/commercial/output/meme-royale-house-party.mp4 -af loudnorm=print_format=summary -f null -
+cd commercial/degens
+export W=$HOME/da_work
+./setup_remote.sh                               # Blender 4.2, MPFB + CC0 MakeHuman packs, Poly Haven assets (about 5–20 min)
+export DA_STUDIO=$PWD/studio; . ./env.sh; export W DA_STUDIO PH=$W/ph DA_TEX=$W/tex
+$BL -b -P director.py -- --out $W/scene.blend   # build the scene (about 1.5 min)
+seq 364 725 | tr '\n' ' ' > $W/mid.txt
+setsid nohup $BL -b $W/scene.blend -P render_list.py -- $W/mid.txt > $W/render.log 2>&1 < /dev/null &
+# resumable: rerun the same line after a container recycle; progress: wc -w $W/mid.txt.done
+# or one range in one go: ./render_part.sh 364 725 $HOME/part.mp4
 ```
 
-Useful flags on `party.py`: `--stills F1,F2 DIR`, `--save FILE`, `--samples N`, `--w/--h`, `--frames N` (default 900),
-`--sky 0.55`, `--sky_rot 200`, `--nosubd`, `--clean` (drops the substance gags).
+Then follow "Left to do" steps 2–5. Builds are deterministic, so frames from different machines match.
 
-In this session's container the work dir was `/tmp/claude-0/-home-user-Claude/413acb09-d245-518f-9732-6f706f9d32b5/scratchpad`.
-Its folders map to the layout above:
+## Worker status and cleanup (2026-11-08)
 
-- models, cards and `logo.png` are in `runway/media/`, so pass `--models runway/media/models`
-- the Poly Haven assets are in `party/ph`
-- the CMU clips are in `cmu`
-- the music, the game sounds and `mix.py`'s working copy are in `party/`
-
-Those all need `setup_assets.sh` again after a container rebuild.
-
-## Other tools used earlier (for the commercials, not needed for the party)
-
-raea, installed from https://raea.io/install with `RAEA_VERSION=0.1.0-canary.2` because the GitHub API is rate-limited. It
-needs `apt-get install mesa-vulkan-drivers` and `WGPU_BACKEND=vulkan VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.json`. The
-engine-capture harness for the commercials is in `commercial/engine/capture/`, using Playwright with a virtual clock on the live game.
-See `commercial/README.md`.
+- Archived (their parts are unpacked): 1b, 1c, 3, 4, 5.
+- Running, each with a 15-minute self-check: part 2 (364–420), 2d (421–480), 2b (481–540), 2e (541–600),
+  2c (601–663), 2f (664–725). Each pushes `commercial/renders/part_A_B.mp4` to `claude/degens-part-2*`.
+  The local render goes 725 downward as backup.
+- **Cleanup the user asked for, after the final 30 and 60 fps videos are sent and committed:**
+  1. Delete every `claude/degens-part-*` branch.
+  2. Delete the leftover render-check scheduled tasks.
+  3. Tell parts 2 and 2b–2f to stop rendering, delete `$HOME/da_work/frames`, `$HOME/part*.mp4` and the logs,
+     delete their pending checks, and **stay idle (not archived), ready for a new task**.
+  4. Delete the local `$W/frames`, `$W/f60` and `$W/parts`.
