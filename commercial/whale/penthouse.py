@@ -96,15 +96,16 @@ def drapes(m):
     return out
 
 
-def rain_outside(n=3500):
+def rain_outside(n=2200):
     """Rain falling past the window outside (same geometry-nodes fall as the Degens alley)."""
     import room
     x0, x1, z0, z1 = WIN
     o = room.rain(ox=0.0, n=n)
+    b = o.data.materials[0].node_tree.nodes['Principled BSDF']; b.inputs['Emission Strength'].default_value = 0.12; b.inputs['Alpha'].default_value = 0.14
     # remap the streaks into a slab just outside the window
     rr = random.Random(5); me = o.data
     for f in range(0, len(me.vertices), 4):
-        cx = rr.uniform(x0 - 1.0, x1 + 1.0); cy = rr.uniform(WALL_Y + 0.4, WALL_Y + 6.0)
+        cx = rr.uniform(x0 - 1.0, x1 + 1.0); cy = rr.uniform(WALL_Y + 1.3, WALL_Y + 7.0)
         bx = me.vertices[f].co.x; by = me.vertices[f].co.y
         for k in range(4):
             v = me.vertices[f + k]; v.co.x = cx + (v.co.x - bx); v.co.y = cy

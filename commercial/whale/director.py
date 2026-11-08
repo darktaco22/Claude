@@ -33,7 +33,7 @@ FLATLINE = 40.35; PING = 43.6; REVIVE = 56.0
 CUTS = [3.6, 9.05, 11.95, 14.75, 16.55, 19.95, 21.1, 23.95, 25.8, 28.85, 30.15, 33.35, 37.35, 39.45, 40.3, 42.5, 44.1, 45.65, 47.25, 52.35, 55.9]
 # where everyone stands (x, y) and what they face
 SPOT = {'lawyer': (-0.55, -1.75), 'wife': (0.98, 0.42), 'son': (1.25, -1.0), 'priest': (-1.02, -0.35)}
-WHALE_SCHED = [(0, 'idle', 0, 1, 3), (9.2, 'lose', 0.35, 1.15, 1), (13.6, 'idle', 0.5, 1, 3), (21.2, 'emote', 0.35, 1, 1),
+WHALE_SCHED = [(0, 'idle', 0, 1, 3), (13.6, 'idle', 0.5, 1, 3), (21.2, 'emote', 0.35, 1, 1),
                (24.0, 'idle', 0.5, 1, 1), (27.3, 'win', 0.3, 1.1, 1), (30.6, 'idle', 0.6, 1, 2), (35.5, 'emote', 0.3, 1.1, 1),
                (38.0, 'idle', 0.5, 1, 1), (39.55, 'attack1', 0.15, 1.0, 1), (FLATLINE, 'hit', 0.06, 1.0, 1), (40.9, 'die', 0.2, 0.9, 1, 48),
                (REVIVE, 'idle', 0.3, 1.0, 2)]
@@ -58,8 +58,8 @@ def speaker(t):
 def setup_render():
     sc = bpy.context.scene; sc.render.fps = FPS; sc.frame_start = 1; sc.frame_end = NF
     sc.render.engine = 'CYCLES'; sc.cycles.device = 'CPU'; sc.cycles.samples = 8; sc.cycles.use_denoising = True
-    sc.cycles.denoising_input_passes = 'RGB_ALBEDO_NORMAL'; sc.cycles.max_bounces = 3; sc.cycles.diffuse_bounces = 2
-    sc.cycles.glossy_bounces = 2; sc.cycles.transparent_max_bounces = 8; sc.cycles.transmission_bounces = 4; sc.cycles.volume_bounces = 0
+    sc.cycles.denoising_input_passes = 'RGB_ALBEDO_NORMAL'; sc.cycles.max_bounces = 6; sc.cycles.diffuse_bounces = 2
+    sc.cycles.glossy_bounces = 2; sc.cycles.transparent_max_bounces = 8; sc.cycles.transmission_bounces = 6; sc.cycles.volume_bounces = 0
     sc.render.resolution_x = 720; sc.render.resolution_y = 1280; sc.render.resolution_percentage = 100
     sc.render.use_motion_blur = True; sc.render.motion_blur_shutter = 0.5
     sc.view_settings.view_transform = 'AgX'; sc.view_settings.look = 'AgX - Medium High Contrast'; sc.view_settings.exposure = -0.2
@@ -114,7 +114,7 @@ def standing_mw(k, t):
     if k == 'lawyer': tgt = Vector((0.1, 0.4, 1.2))
     d = tgt - Vector((x, y, 0)); face = math.atan2(d.x, -d.y)
     if k == 'wife' and t > 52.0:             # she turns in to the bed for the cigar
-        x, y = lerp(x, 0.82, ease(ramp(t, 52.3, 52.9))), lerp(y, 0.5, ease(ramp(t, 52.3, 52.9)))
+        x, y = lerp(x, 0.94, ease(ramp(t, 52.3, 52.9))), lerp(y, 0.47, ease(ramp(t, 52.3, 52.9)))
     return Matrix.Translation((x, y, 0)) @ Matrix.Rotation(face, 4, 'Z'), face
 
 
@@ -125,7 +125,7 @@ def grip_setup(A, P):
     c, sp, M, cl = grips.cigarette(a, 'R', r=P['cigar']['R'] * 0.9); a.G['cig'] = (c, sp, M)
     a = A['son']; c, M, w = grips.cylinder(a, 'L', P['decanter']['R'], P['decanter']['z0'], P['decanter']['z1']); a.G['decanter'] = (c, M)
     c, sp, M, cl = grips.cigarette(a, 'R', r=P['vape']['R'] * 0.95); a.G['vape'] = (c, sp, M)
-    a = A['priest']; c, M, w = grips.phone(a, 'L', W=P['flask']['W'], L=P['flask']['L'], D=P['flask']['D'], yoff=0.04); a.G['flask'] = (c, M)
+    a = A['priest']; c, M, w = grips.phone(a, 'L', W=P['flask']['W'], L=P['flask']['L'], D=P['flask']['D'], yoff=0.055); a.G['flask'] = (c, M)
     for k, a in A.items():
         c, M, w = grips.phone(a, PHONE_HAND[k]); a.G['phone'] = (c, M)
 
@@ -166,6 +166,7 @@ def solve_actor(a, k, t, f, st, P, K):
     root_loc = Vector((sway, 0, -0.004 + math.sin(t * 2.0 + off) * 0.003))
     Q = {}
     lean = math.radians({'lawyer': 2, 'wife': -2, 'son': -4, 'priest': 6}[k]) + math.sin(t * 2.0 + off) * 0.01
+    if k == 'wife': lean += 0.32 * pulse(t, 52.4, 53.4, 0.45)        # she bends over the bed to take the cigar
     # ---- gaze
     spk = speaker(t); tgt = None
     if spk == 'whale' or (spk is None and t < 52): tgt = Vector((0.0, 0.58, 1.32))
@@ -221,11 +222,17 @@ def solve_actor(a, k, t, f, st, P, K):
         sh = a.shoulder[s] + root_loc
         return a.frame(sh + Vector((sx[s] * out, -fwd_, h)), (-sx[s] * 0.2, -1, 0.05), (-sx[s], 0, 0.15))
     for s in 'LR': hands[s] = hang(s); shapes[s] = 'rest'
-    def to_lips(M_tip_local, z_axis_tilt, F_hold, prop_local):
-        """Hand frame that puts a prop point (in prop space) at the lips, prop axis tilted up toward the face."""
+    def to_lips(M_tip_local, z_axis_tilt, F_hold, prop_local, axis='z'):
+        """Hand frame that puts a prop point (in prop space) at the lips, the prop's long axis (bottom -> mouth end)
+        tilted up toward the face."""
         z_m = (up * math.cos(z_axis_tilt) - fwd * math.sin(z_axis_tilt)).normalized()
-        xx = (F_hold @ prop_local).to_3x3().col[0]; xx = (xx - z_m * xx.dot(z_m)).normalized(); yy = z_m.cross(xx)
-        Rm = Matrix((xx, yy, z_m)).transposed(); Mm = Rm.to_4x4(); Mm.translation = mouth + fwd * 0.004 - Rm @ M_tip_local
+        if axis == 'z':
+            xx = (F_hold @ prop_local).to_3x3().col[0]; xx = (xx - z_m * xx.dot(z_m)).normalized(); yy = z_m.cross(xx)
+            Rm = Matrix((xx, yy, z_m)).transposed()
+        else:      # long axis is the prop's +Y (the flask)
+            xx = (F_hold @ prop_local).to_3x3().col[0]; xx = (xx - z_m * xx.dot(z_m)).normalized(); zz = xx.cross(z_m)
+            Rm = Matrix((xx, z_m, zz)).transposed()
+        Mm = Rm.to_4x4(); Mm.translation = mouth + fwd * 0.004 - Rm @ M_tip_local
         return Mm @ prop_local.inverted(), Mm
     G = a.G
     # ---- who holds what
@@ -284,7 +291,7 @@ def solve_actor(a, k, t, f, st, P, K):
         Fv = waist('R', 0.18, -0.42, 0.08); hands['R'] = Fv; shapes['R'] = 'vape'
         hit = pulse(t, 20.4, 21.2, 0.25)          # a pull while his mother talks (seen over her shoulder)
         if hit > 0.001:
-            Fl, _ = to_lips(Vector((0, 0, P['vape']['tip'])), 0.25, Fv, G['vape'][2]); hands['R'] = blend(Fv, Fl, hit)
+            Fl, _ = to_lips(Vector((0, 0, P['vape']['tip'])), 1.3, Fv, G['vape'][2]); hands['R'] = blend(Fv, Fl, hit)
         place['vape'] = hands['R'] @ G['vape'][2] if t < PING else None
         if t >= PING: shapes['R'] = 'rest'
     if k == 'priest':
@@ -292,8 +299,8 @@ def solve_actor(a, k, t, f, st, P, K):
         Mf = F @ G['flask'][1]
         nip = pulse(t, 30.15, 30.95, 0.25)
         if nip > 0.001:
-            Fl, _ = to_lips(Vector((0, P['flask']['L'] * 0.55, 0)), 0.0, F, G['flask'][1] @ Matrix.Rotation(-math.pi / 2, 4, 'X'))
-            hands['L'] = blend(F, Fl, nip); Mf = hands['L'] @ G['flask'][1]
+            Fl, _ = to_lips(Vector((0, P['flask']['L'] * 0.5 + 0.016, 0)), 1.25, F, G['flask'][1], axis='y')
+            hands['L'] = blend(F, Fl, nip, Vector((0, -0.2, 0))); Mf = hands['L'] @ G['flask'][1]
         place['flask'] = Mf
         hands['R'] = a.frame(a.shoulder['R'] + root_loc + Vector((0.02, -0.22, -0.32)), (0.4, -0.7, 0.3), (0.6, 0, 0.6)); shapes['R'] = 'rest'
     # ---- phones (all at the ping)
@@ -531,7 +538,7 @@ def main():
     CIG_LOCAL = cigar_local(WR)
     # the duvet, from his body over the whole clip schedule (never cuts into him)
     pts = whale.body_points(WM, range(1, NF + 1, 4))
-    penthouse.duvet(pts, top_z=whale.HIP.z + 0.17)
+    penthouse.duvet(pts, top_z=whale.HIP.z + 0.17, clearance=0.05)
     # the Whale's phone, on the duvet by his right fin
     place_whale_phone(WR, P)
     # collar and veil on their bones
@@ -595,9 +602,16 @@ def place_whale_phone(WR, P):
 def dress(A, P):
     """Collar tab at the priest's throat; pillbox and veil on the widow's head (both on head/neck bones)."""
     a = A['priest']; c = P['collar']
-    neck = a.rest['neck02']; front = neck.translation + Vector((0, -0.065, 0.02))
-    c.location = front; c.rotation_euler = (math.radians(-12), 0, 0)
-    bone_parent(c, a, 'neck02')
+    # the tab sits on the front of his collar: find the shirt's front surface at the neck (ray from in front, at rest)
+    from mathutils.bvhtree import BVHTree
+    body = a.body; me = body.data; Mw = body.matrix_world          # his throat (the shirt is open at the front)
+    tr = BVHTree.FromPolygons([Mw @ v.co for v in me.vertices], [tuple(p.vertices) for p in me.polygons])
+    z = a.rest['neck01'].translation.z - 0.01
+    loc, nrm, idx, d = tr.ray_cast(Vector((0, -0.5, z)), Vector((0, 1, 0)))
+    front = loc if loc is not None else a.rest['neck01'].translation + Vector((0, -0.07, 0))
+    c.location = front + Vector((0, -0.008, 0)); c.rotation_euler = (math.radians(-14), 0, 0)
+    print('COLLAR', loc is not None, tuple(round(x, 3) for x in front))
+    bone_parent(c, a, 'neck01')
     a = A['wife']; v = P['veil']
     # sit the pillbox on the crown of her hair, a little forward and to her right, tilted (measured at rest)
     hair = a.parts[humans.CAST['wife']['hair']]; M = hair.matrix_world

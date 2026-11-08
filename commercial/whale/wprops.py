@@ -48,12 +48,12 @@ def martini(name):
 
 def decanter(name):
     """A square-shouldered crystal decanter of scotch, stopper out, held by the neck."""
-    prof = [(0.0, -0.21), (0.062, -0.21), (0.068, -0.2), (0.07, -0.08), (0.06, -0.045), (0.02, -0.02), (0.016, 0.0),
-            (0.016, 0.035), (0.021, 0.04), (0.021, 0.046), (0.013, 0.046), (0.013, -0.02), (0.06, -0.06), (0.06, -0.2), (0.0, -0.2)]
+    prof = [(0.0, -0.25), (0.062, -0.25), (0.068, -0.24), (0.07, -0.12), (0.06, -0.085), (0.022, -0.05), (0.016, -0.035),
+            (0.016, 0.07), (0.021, 0.075), (0.021, 0.081), (0.013, 0.081), (0.013, -0.04), (0.06, -0.1), (0.06, -0.24), (0.0, -0.24)]
     d = lathe(name, prof, segs=8); d.data.materials.append(glass_mat(name + '_glass'))      # 8 sides: cut crystal
-    liq = lathe(name + '_scotch', [(0.0, -0.198), (0.058, -0.198), (0.058, -0.105), (0.0, -0.105)], segs=8)
+    liq = lathe(name + '_scotch', [(0.0, -0.238), (0.058, -0.238), (0.058, -0.145), (0.0, -0.145)], segs=8)
     liq.data.materials.append(liquid_mat(name + '_scotchm', (0.62, 0.28, 0.05))); liq.parent = d
-    d['R'] = 0.017; d['z0'] = -0.01; d['z1'] = 0.03; d['lip'] = 0.046
+    d['R'] = 0.017; d['z0'] = 0.005; d['z1'] = 0.055; d['lip'] = 0.081
     return d
 
 
@@ -174,7 +174,7 @@ def veil(name):
     for j in range(nv):
         for i in range(nu): bm.faces.new((V[j][i], V[j][i + 1], V[j + 1][i + 1], V[j + 1][i]))
     me = bpy.data.meshes.new(name + '_net'); bm.to_mesh(me); bm.free()
-    net = obj(name + '_net', me, m); net.parent = hat
+    net = obj(name + '_net', me, m); net.parent = hat; net.hide_render = True    # the hat alone reads better
     uv = me.uv_layers.new()
     for poly in me.polygons:
         for li in poly.loop_indices:
