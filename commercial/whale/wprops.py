@@ -187,7 +187,12 @@ def screen_img(path, kind):
     """Phone screens: the Whale's exchange app (SELL ALL), and everyone else's dump alert."""
     W, Hh = 540, 1140; im = Image.new('RGB', (W, Hh), (8, 10, 14)); d = ImageDraw.Draw(im)
     fb = lambda s: ImageFont.truetype(FONT, s); fr = lambda s: ImageFont.truetype(FONT_R, s)
-    if kind == 'sell':
+    if kind == 'sold':
+        d.text((40, 70), '$WHALE', font=fb(56), fill=(240, 240, 240))
+        d.ellipse([170, 300, 370, 500], outline=(40, 220, 120), width=12); d.line([(215, 400), (255, 445), (330, 350)], fill=(40, 220, 120), width=14)
+        d.text((270, 580), 'SOLD', font=fb(84), fill=(255, 255, 255), anchor='mm'); d.text((270, 670), '81% of supply', font=fr(34), fill=(170, 180, 195), anchor='mm')
+        d.text((270, 730), '+$38,420,113', font=fb(52), fill=(40, 220, 120), anchor='mm')
+    elif kind == 'sell':
         d.text((40, 70), '$WHALE', font=fb(56), fill=(240, 240, 240)); d.text((40, 140), 'Your position: 81% of supply', font=fr(26), fill=(150, 160, 175))
         pts = []; rr = random.Random(4); y = 640.0
         for i in range(60):

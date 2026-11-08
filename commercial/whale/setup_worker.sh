@@ -4,8 +4,14 @@
 # Run it as a tracked background task (see CLAUDE.md), never detached.
 set -e
 HERE=$(cd $(dirname $0) && pwd)
-export W=${W:-$HOME/wh_work}; mkdir -p $W/tex $W/ph
-W=$W bash $HERE/../degens/setup_remote.sh
+export W=${W:-$HOME/wh_work}; mkdir -p $W/tex
+# reuse an earlier Degens setup's Poly Haven downloads; never its scene or frames (this job has its own folder)
+[ -d $HOME/da_work/ph ] && [ ! -e $W/ph ] && ln -s $HOME/da_work/ph $W/ph; mkdir -p $W/ph
+if [ -x /opt/blender/blender-4.2.3-linux-x64/blender ] && [ -d ~/.config/blender/4.2/extensions/.user/user_default/mpfb/data/skins ]; then
+  echo "Blender and MPFB already set up"
+else
+  W=$W bash $HERE/../degens/setup_remote.sh
+fi
 cd $W
 python3 $HERE/../degens/phget.py GothicBed_01 ClassicNightstand_01 ArmChair_01 ornate_mirror_01 fancy_picture_frame_01 potted_plant_01 GothicCabinet_01 \
   herringbone_parquet:tex dark_paneled_wood:tex quatrefoil_jacquard_fabric:tex velour_velvet:tex

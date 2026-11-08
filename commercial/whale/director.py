@@ -80,6 +80,12 @@ def make_props(A, R):
     for k in ['lawyer', 'wife', 'son', 'priest']:
         P[k + '_phone'] = props.phone(k + '_phone', wprops.screen_img(f'{tex}/scr_{k}.png', 'alert'))
     P['whale_phone'] = props.phone('whale_phone', wprops.screen_img(f'{tex}/scr_whale.png', 'sell'))
+    # the sell goes through: the screen swaps to SOLD on the tap (a keyed mix between the two images)
+    sm = bpy.data.materials[P['whale_phone']['screen_mat']]; nt = sm.node_tree
+    t1 = next(n for n in nt.nodes if n.type == 'TEX_IMAGE'); t2 = nt.nodes.new('ShaderNodeTexImage'); t2.image = bpy.data.images.load(wprops.screen_img(f'{tex}/scr_whale_sold.png', 'sold'))
+    mx = nt.nodes.new('ShaderNodeMix'); mx.name = 'sold'; mx.data_type = 'RGBA'; mx.inputs['Factor'].default_value = 0.0
+    nt.links.new(t1.outputs[0], mx.inputs[6]); nt.links.new(t2.outputs[0], mx.inputs[7])
+    nt.links.new(mx.outputs[2], nt.nodes['Principled BSDF'].inputs['Emission Color'])
     for k in ['lawyer', 'wife', 'son', 'priest', 'whale']: CONST.append(P[k + '_phone']['screen_mat'])
     # nightstand dressing: a tumbler of scotch, an ashtray, a candle pair
     ns = Vector((-1.12, 0.92, 0.70))
@@ -378,6 +384,7 @@ def whale_frame(WR, WM, P, t, f, K):
     lit = 37.35 <= t < FLATLINE + 1.2
     K.add(sm.node_tree, em_path(sm), 0, f, 2.6 if lit else 0.0)
     gl = bpy.data.objects[P['whale_phone']['glow']]; K.add(gl.data, 'energy', 0, f, 1.4 if lit else 0.0)
+    K.add(sm.node_tree, 'nodes["sold"].inputs[0].default_value', 0, f, 1.0 if t >= 40.0 else 0.0)
 
 
 CIG_LOCAL = Matrix()
@@ -596,7 +603,7 @@ def place_whale_phone(WR, P):
     sc = bpy.context.scene; bpy.context.view_layer.update(); dg = bpy.context.evaluated_depsgraph_get()
     hit, loc, nrm, *_ = sc.ray_cast(dg, Vector((-0.42, -0.25, 2.5)), Vector((0, 0, -1)))
     if hit:
-        ph.location = loc + nrm * 0.0045; ph.rotation_quaternion = nrm.to_track_quat('Z', 'Y') @ Quaternion((0, 0, 1), math.radians(-15))
+        ph.location = loc + nrm * 0.0045; ph.rotation_quaternion = nrm.to_track_quat('Z', 'Y') @ Quaternion((0, 0, 1), math.radians(-15 + 90))
 
 
 def dress(A, P):
