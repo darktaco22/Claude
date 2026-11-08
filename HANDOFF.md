@@ -161,3 +161,16 @@ setsid nohup $BL -b $W/scene.blend -P render_list.py -- $W/mid.txt > $W/render.l
 ```
 
 Then follow "Left to do" steps 2–5. Builds are deterministic, so frames from different machines match.
+
+## Worker status and cleanup (2026-11-08)
+
+- Archived (their parts are unpacked): 1b, 1c, 3, 4, 5.
+- Running, each with a 15-minute self-check: part 2 (364–420), 2d (421–480), 2b (481–540), 2e (541–600),
+  2c (601–663), 2f (664–725). Each pushes `commercial/renders/part_A_B.mp4` to `claude/degens-part-2*`.
+  The local render goes 725 downward as backup.
+- **Cleanup the user asked for, after the final 30 and 60 fps videos are sent and committed:**
+  1. Delete every `claude/degens-part-*` branch.
+  2. Delete the leftover render-check scheduled tasks.
+  3. Tell parts 2 and 2b–2f to stop rendering, delete `$HOME/da_work/frames`, `$HOME/part*.mp4` and the logs,
+     delete their pending checks, and **stay idle (not archived), ready for a new task**.
+  4. Delete the local `$W/frames`, `$W/f60` and `$W/parts`.
