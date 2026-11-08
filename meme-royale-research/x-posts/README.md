@@ -1,4 +1,6 @@
-# @MemeRoyaleGames: all 14 posts reviewed (Nov 2–5, 2026)
+# @MemeRoyaleGames: all 18 posts reviewed (Nov 2–8, 2026)
+
+Updated Nov 8: four new posts (Nov 6–8) added below the table; `posts.json` has fresh stats for every post.
 
 Raw data for each post (text, stats, media links) is in `posts.json`. Each video has a frame sheet `<post id>_0.jpg` with timestamps. `tips.png` holds the Pro Tips cards at full size.
 Audio was transcribed with Whisper. The videos have no narration: just music, sound effects and the characters' short catchphrases ("I'm just a chill guy", "Problem?", "Bonjour", "Paper hands", "Up all the way").
@@ -19,6 +21,20 @@ Audio was transcribed with Whisper. The videos have no narration: just music, so
 | Nov 5 | 2118288538902933621 | image | 645 / 24 / 8 | **"Heading to the Solana dApp Store"**; "65+ Solana meme characters"; aimed at Solana Seeker phone users. |
 | Nov 5 | 2118401017993658774 | video 29s | 282 / 20 / 7 | Teaser: "Real-time meme card battles / GOD CANDLE! / 74 meme cards / 17 arenas" → Pepe holding a phone → "Coming to the Solana dApp Store, playable on Seeker, the full game on mobile". |
 | Nov 5 | 2118478795032367193 | video 174s | 236 / 9 / 1 | Character showcase: each 3D model walks across the screen with its rarity and name (USELESS → NEET). |
+
+## New posts, Nov 6–8 (stats as of Nov 8, 23:45 UTC)
+
+| Date | Post | Media | Views / Likes / Replies | What it is |
+|---|---|---|---|---|
+| Nov 6 | 2118700448504799537 | video 43s, 9:16 | 264 / 13 / 6 | "He's just a @chillguycto". **Our Chill Guy short** (`../chill-guy-video`): 3:47 AM, portfolio −94%, liquidation notifications, THE BOYS group chat (Wojak, NEET, Jean Phil), Chill Guy plays Meme Royale through PANIC SELL and a DEV RUG PULL, "5 minutes later −93.8%", "Oh, did something happen?", card end screen (cost 3: can't be stunned, can't be knocked back, never panic sells). |
+| Nov 6 | 2118808016267165809 | video 45s, 9:16 | 148 / 12 / 2 | "@FartCoinOfSOL The farter attacks again 💨🤮". **Our Fartcoin mockumentary** (`../farter-video`): elevator gag, interview ("It's a utility token." "Gas." "That's how you know it's working." "Proof of stink"), strategy: gas the Whale, deny everything; card end screen. Lowest-viewed post on the account. |
+| Nov 7 | 2119017153248768436 | video 16s, 9:16 | 325 / 17 / 6 | "50,000 trophy road!" Fly-through of arenas with the trophy count climbing 300 → 1,000 → 1,800 → 2,980 → 5,000 → 11,000 → 25,950 → "50,000 CAN YOU?", then logo, phone mock-up, character line-up, "PLAY FREE IN YOUR BROWSER". Trophy Road raised from 47,850 (V2 trailer) to 50,000. |
+| Nov 8 | 2119452600110334030 | video 48.4s, 9:16 | 341 / 14 / 4 | "A quick reminder you aren't alone. @neet_sol". **Our Degens Anonymous skit** (`../../commercial/degens`), the realistic 3D render, posted the day it was finished. Tags NEET's coin community. |
+
+Notes on the new batch:
+- Three of the four posts are the skits made in this repo; the team posts them with a one-line caption plus a tag of the coin's community account (@chillguycto, @FartCoinOfSOL, @neet_sol).
+- Views stay small (148–341 within ~1–2 days). The V2 trailer is still the top post (2,791 views, 76 likes); the $1K revenue post is second (1,875).
+- Updated stats on the earlier posts: Solana dApp Store post grew to 978 views, the character showcase to 859.
 
 ## Gameplay lessons from the official "Pro Tips" video
 Pushes have three roles: **Tank = "the Bagholder"** (Whale, Chillhouse, Giga), **Healer = "the Bailout"** (Pippin, Cupsey, Apu), **Damage = "the Degens"** (LMAO!, Pepe, Alon).
