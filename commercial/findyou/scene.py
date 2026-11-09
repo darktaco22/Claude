@@ -168,6 +168,7 @@ def stakeout():
     h = box('hedge', (3.4, 0.7, 0.95), (ox, 2.5, 0.475), hedge, 0.2)
     d = h.modifiers.new('d', 'DISPLACE'); tx = bpy.data.textures.new('leafy', 'CLOUDS'); tx.noise_scale = 0.08; d.texture = tx; d.strength = 0.12
     sub = h.modifiers.new('s', 'SUBSURF'); sub.levels = 3; h.modifiers.move(2, 0)
+    r_ = area('neet_back', (0.6, 0.7, 1.0), 120, (ox + 0.3, 3.4, 2.2), (0, 0, 0), 1.2); aim(r_, (ox + 0.25, 1.95, 1.0))
     area('moon_s', (0.4, 0.5, 0.85), 80, (ox - 3, -2, 5), (math.radians(40), 0, math.radians(-30)), 3.0)
     S['lightning_s'] = area('lightning_s', (0.75, 0.82, 1.0), 0, (ox + 2, -1, 8), (math.radians(20), 0, 0), 6.0)
     # rain: thin streaks, looped downward
@@ -295,7 +296,7 @@ def main():
         t = T(f); kind = shot(t)[1]
         # ---------------- NEET: where he is in each part
         if t < 22.3: loc, rz = sit_loc, 0.0
-        elif t < 27.0: loc, rz = Vector((-1.25, 0.85, 0)), math.radians(-90)       # standing at the board, facing it
+        elif t < 27.0: loc, rz = Vector((-1.2, 1.55, 0)), math.radians(-90)        # standing at the board, facing it
         else: loc, rz = Vector((60.25, 1.95, -0.52)), math.pi                      # crouched behind the hedge, peeking at the home
         for i in range(3): K.add(N['root'], 'location', i, f, loc[i])
         K.add(N['root'], 'rotation_euler', 2, f, rz)
@@ -320,7 +321,7 @@ def main():
             Q[f'orbicularis04.{s}'] = a.local_q(f'orbicularis04.{s}', rigctl.qrot((1, 0, 0), -0.2 * blink + 0.12 * smile))
         Q['jaw'] = a.local_q('jaw', rigctl.qrot((1, 0, 0), tv * 0.1))
         ph_ = math.sin(t * 12.0) * 0.5 + 0.5
-        shape = {'v_aa': tv * 0.25, 'v_ow': tv * 0.22 * ph_, 'v_ee': smile * 0.3 + tv * 0.15 * (1 - ph_), 'v_mm': 0.15 * smile * (tv < 0.05), 'v_ff': 0.0}
+        shape = {'v_aa': tv * 0.25, 'v_ow': tv * 0.22 * ph_, 'v_ee': smile * 0.15 + tv * 0.12 * (1 - ph_), 'v_mm': 0.35 * (tv < 0.05), 'v_ff': 0.0}
         feet, poles = {}, {}
         for s in 'LR':
             hip = a.hip[s] + root_loc; ank = Vector((hip.x + sx[s] * 0.06, -(a.thigh + 0.04), 0.085))
@@ -359,15 +360,15 @@ def main():
         c0 = shot(t)[0]; u = t - c0; nheadZ = sit_loc.z + 1.15
         nh = NH.copy()                       # NEET's face (seated)
         if kind == 'monitor':   mon_c = B['MON'] + B['MONF'] * 0.02; loc = mon_c + B['MONF'] * (0.75 - 0.2 * ease(u / 3)) + Vector((0.12, 0, 0.12)); look = mon_c; lens = 45
-        elif kind == 'neet_face': loc = nh + Vector((0.25, -0.75, -0.02)); look = nh; lens = 55
-        elif kind == 'mono_wide': loc = Vector((0.0, -1.6, 1.35)) + Vector((0, 0.35, -0.05)) * ease(u / 5); look = nh + Vector((0, 0, -0.12)); lens = 35
-        elif kind == 'mono_med':  loc = nh + Vector((0.0, -1.05, 0.02)) + Vector((0, 0.15, 0)) * ease(u / 4); look = nh + Vector((0, 0, -0.05)); lens = 45
-        elif kind == 'mono_close': loc = nh + Vector((0.0, -0.62, 0.03)) + Vector((0, 0.08, 0)) * ease(u / 3.7); look = nh; lens = 55
-        elif kind == 'mono_xcu':  loc = nh + Vector((0.0, -0.40, 0.06)) + Vector((0, 0.06, 0)) * ease(u / 5); look = nh + Vector((0, 0, 0.05)); lens = 70
+        elif kind == 'neet_face': loc = nh + Vector((0.4, -1.35, -0.02)); look = nh; lens = 50
+        elif kind == 'mono_wide': loc = nh + Vector((0.0, -2.7, 0.05)) + Vector((0, 0.45, -0.03)) * ease(u / 5); look = nh + Vector((0, 0, -0.3)); lens = 35
+        elif kind == 'mono_med':  loc = nh + Vector((0.0, -1.8, 0.02)) + Vector((0, 0.2, 0)) * ease(u / 4); look = nh + Vector((0, 0, -0.12)); lens = 45
+        elif kind == 'mono_close': loc = nh + Vector((0.0, -1.15, 0.03)) + Vector((0, 0.12, 0)) * ease(u / 3.7); look = nh; lens = 50
+        elif kind == 'mono_xcu':  loc = nh + Vector((0.0, -0.85, 0.06)) + Vector((0, 0.1, 0)) * ease(u / 5); look = nh + Vector((0, 0, 0.06)); lens = 60
         elif kind == 'board_pan': loc = Vector((-0.55, 1.25 - 0.55 * ease(u / 1.6), 1.5)); look = Vector((-1.97, 0.95 - 0.1 * ease(u / 1.6), 1.45)); lens = 32
         elif kind == 'neet_monitor': loc = Vector((0.9, 1.9, 1.8)); look = Vector((-1.4, 0.9, 1.35)); lens = 26
         elif kind == 'board_string': loc = Vector((-1.15, 0.55, 1.4)) + Vector((0, 0.15, 0.03)) * ease(u / 1.6); look = Vector((-1.95, 1.3, 1.35)); lens = 38
-        elif kind == 'stakeout':  loc = Vector((60.75, 0.75, 1.15)) + Vector((0, 0.2, 0)) * ease(u / 3); look = Vector((60.4, 5.0, 1.2)); lens = 30
+        elif kind == 'stakeout':  loc = Vector((60.8, 0.6, 1.0)) + Vector((0, 0.2, 0)) * ease(u / 3); look = Vector((60.35, 5.0, 1.25)); lens = 30
         elif kind == 'lounge_wide': loc = Vector((-59.6, -1.9, 1.3)) + Vector((-0.1, 0.45, -0.05)) * ease(u / 1.6); look = geyes + Vector((0, 0, -0.25)); lens = 35
         elif kind in ('gran_close', 'insert'): loc = geyes + Vector((0.05, -0.75, 0.02)) - Vector((0, 0.06, 0)) * ease(u / 1.4); look = geyes; lens = 50
         else: loc = geyes + Vector((-0.12, -0.6, 0.0)); look = geyes; lens = 55
