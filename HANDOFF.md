@@ -125,3 +125,27 @@ raea, installed from https://raea.io/install with `RAEA_VERSION=0.1.0-canary.2` 
 needs `apt-get install mesa-vulkan-drivers` and `WGPU_BACKEND=vulkan VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.json`. The
 engine-capture harness for the commercials is in `commercial/engine/capture/`, using Playwright with a virtual clock on the live game.
 See `commercial/README.md`.
+
+## 7 CENTS (Meme Royale commercial) — render in progress (2026-11-09 15:23 UTC)
+
+Code: `commercial/kid/` (director.py, kitchen.py, cast.py, screens.py [real shop screenshot shop_real.png from a throwaway
+free account], audio.py, overlay.html/overlays.js, setup_worker.sh, render_part.sh, assemble.sh, kqa.py, vo/).
+Scene: 924 frames (30.8 s), built to scratchpad/kd/k1.blend; mix scratchpad/kd/mix.m4a; overlays scratchpad/kd/ovl.
+Rule: every long job runs as a tracked background task (CLAUDE.md); workers push commercial/renders/kpart_A_B.mp4.
+
+| Machine | Frames | Pushes to |
+|---|---|---|
+| this session | 1-132 (scratchpad/kd/local.txt, tracked) | — |
+| part 2  session_011y2L9gpQAxugSUWVRRHu2U | 133-264 | claude/degens-part-2 |
+| part 2b session_011y2L9iQnevydUzK69bSkEC | 265-396 | claude/degens-part-2b |
+| part 2c session_011y2L9hi1yPvG77Fmtky1C2 | 397-528 | claude/degens-part-2c |
+| part 2d session_011y2L9hwrQnn4cYRc1wmzHW | 529-660 | claude/degens-part-2d |
+| part 2e session_011y2L9eqzr9vpBoRgeJVmGr | 661-792 | claude/degens-part-2e |
+| part 2f session_011y2L9drzqzTRCjM3pB3d7y | 793-924 | claude/degens-part-2f |
+
+Finish: unpack each part with `scratchpad/kd/unpack.sh BRANCH kpart_A_B.mp4 A` (fills scratchpad/kd/frames); if a worker
+stalls, render its frames locally from k1.blend (tracked). Then
+`commercial/kid/assemble.sh scratchpad/kd/frames scratchpad/kd/ovl scratchpad/kd/mix.m4a commercial/output/meme-royale-7-cents.mp4`,
+glitch scan `python3 scratchpad/spikes.py scratchpad/kd/frames`, send the MP4 to the user, commit and push.
+The user wants a message only when the video is done. A fallback check is scheduled for 16:39 UTC.
+Lesson from CASH 4 GOLD: volumetric smoke made frames ~20x slower; avoid long smoke in shot or spread those frames.
