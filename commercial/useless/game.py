@@ -88,3 +88,38 @@ def place(path, loc, rz=0.0, s=1.0, name=None):
         if o.parent is None: o.parent = root
     root.location = loc; root.rotation_euler = (0, 0, rz); root.scale = (s, s, s)
     return root, new
+
+
+def layer(u, nf, pose_fn, arms_fn=None, fps=FPS):
+    """Custom animation on top of the game's clips (the clips stay as they are, untouched underneath):
+    pose_fn(t) -> {bone: (x, y, z) degrees}: rotations COMBINED with the clip's pose (bend, lean, tremble).
+    arms_fn(t) -> 0..1: how much the arms open wide (their rest pose), REPLACING the clip's arms."""
+    import math
+    from mathutils import Euler
+    ad = u.rig.animation_data
+    bones = sorted({b for f in range(1, nf + 1) for b in pose_fn((f - 1) / fps)})
+    a = bpy.data.actions.new(f'cust_{u.name}')
+    for b in bones:
+        pts = [[] for _ in range(4)]
+        for f in range(1, nf + 1):
+            d = pose_fn((f - 1) / fps).get(b, (0, 0, 0))
+            q = Euler([math.radians(x) for x in d]).to_quaternion()
+            for i in range(4): pts[i] += [f, q[i]]
+        for i in range(4):
+            fc = a.fcurves.new(f'pose.bones["mixamorig:{b}"].rotation_quaternion', index=i, action_group=b)
+            fc.keyframe_points.add(nf); fc.keyframe_points.foreach_set('co', pts[i])
+            for kp in fc.keyframe_points: kp.interpolation = 'LINEAR'
+    if bones:
+        tr = ad.nla_tracks.new(); st = tr.strips.new('cust', 1, a)
+        st.blend_type = 'COMBINE'; st.extrapolation = 'HOLD'; st.use_auto_blend = False
+    if arms_fn:
+        b = bpy.data.actions.new(f'arms_{u.name}')
+        brace = Euler((math.radians(28), 0, 0)).to_quaternion()        # arms out wide and angled down: shielding
+        for bn in ('LeftShoulder', 'RightShoulder', 'LeftArm', 'RightArm', 'LeftForeArm', 'RightForeArm'):
+            for i, v in enumerate(brace if bn.endswith('Arm') and 'Fore' not in bn else (1, 0, 0, 0)):
+                fc = b.fcurves.new(f'pose.bones["mixamorig:{bn}"].rotation_quaternion', index=i, action_group=bn)
+                fc.keyframe_points.add(2); fc.keyframe_points.foreach_set('co', [1, v, nf, v])
+        tr = ad.nla_tracks.new(); st = tr.strips.new('arms', 1, b)
+        st.blend_type = 'REPLACE'; st.extrapolation = 'HOLD'; st.use_auto_blend = False; st.use_animated_influence = True
+        for f in range(1, nf + 1):
+            st.influence = arms_fn((f - 1) / fps); st.keyframe_insert('influence', frame=f)

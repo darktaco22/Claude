@@ -21,7 +21,7 @@ def T(f): return (f - 1) / FPS
 def V(*a): return Vector(a)
 
 # ------------------------------------------------------------------ the edit (seconds)
-CUTS = [3.0, 4.0, 5.0, 6.0, 7.0, 7.66, 8.33, 9.0, 11.0, 13.0, 14.6, 16.4, 18.0, 19.4, 21.0, 21.8, 26.0, 28.0, 32.0]
+CUTS = [3.0, 4.0, 5.0, 6.0, 7.0, 7.66, 8.33, 9.0, 11.0, 13.0, 14.6, 16.4, 18.0, 19.4, 21.0, 21.8, 22.75, 23.95, 24.85, 26.0, 27.2, 28.0, 32.0]
 PICKS = [('giga', 3.0), ('whale', 5.0), ('bonk', 7.0), ('cate', 7.66), ('walter', 8.33)]
 NIGHT = 9.0              # the gate light goes cold: nobody is coming back for them
 ARENA = (11.0, 14.6)     # the final match, part 1 (14.6-16.4 is the hand: arena out of focus behind the UI)
@@ -42,7 +42,17 @@ GOAT_PATH = [(11.6, V(-5.0, 4.5)), (14.6, V(-4.6, -1.6)), (18.0, V(-3.6, -4.4))]
 COINS_A = [V(-2.25, -7.95), V(-2.95, -6.75), V(-3.4, -7.25), V(-2.45, -6.95)]
 SIB_FLY = [None, V(-5.0, -6.2), V(-4.9, -8.6), V(-0.9, -6.3)]
 HERO_KNOCK = V(-1.95, -9.1)
+HIT2 = HERO_KNOCK + V(-0.2, -0.15); HIT3 = HERO_KNOCK + V(0.15, -0.35)
 GOAT_STOP = V(-2.85, -7.1)
+
+
+FALL0, FALL1 = 27.0, 27.85      # after the horn: it sways, and falls back into the snow
+
+
+def fall_rx(t):
+    k = ramp(t, FALL0, FALL1); a = -90.0 * k * k                       # gravity: slow, then all at once
+    if t > FALL1: a = -90.0 + 5.0 * math.sin((t - FALL1) * 18) * math.exp(-(t - FALL1) * 7)   # a small bounce
+    return math.radians(a)
 
 
 def heading(d): return math.atan2(d.x, -d.y)       # facing(h) = (sin h, -cos h): heading 0 faces -Y
@@ -57,11 +67,28 @@ def setup_render(res):
     sc.render.resolution_x = res * 9 // 16 if res != 1080 else 1080; sc.render.resolution_y = res * 16 // 9 if res != 1080 else 1920
     if res != 1080: sc.render.resolution_x, sc.render.resolution_y = res, res * 16 // 9
     sc.render.resolution_percentage = 100
-    sc.render.use_motion_blur = True; sc.render.motion_blur_shutter = 0.5
+    sc.render.use_motion_blur = True; sc.render.motion_blur_shutter = 0.5; sc.render.motion_blur_position = 'START'   # no smear across cuts
     sc.view_settings.view_transform = 'AgX'; sc.view_settings.look = 'AgX - Medium High Contrast'; sc.view_settings.exposure = 0.0
     sc.render.image_settings.file_format = 'PNG'; sc.render.image_settings.color_depth = '8'
+    finish(sc)
     w = bpy.data.worlds.new('sky'); sc.world = w; w.use_nodes = True
-    w.node_tree.nodes['Background'].inputs[0].default_value = (0.03, 0.06, 0.14, 1); w.node_tree.nodes['Background'].inputs[1].default_value = 1.0
+    w.node_tree.nodes['Background'].inputs[0].default_value = (0.0033, 0.074, 0.216, 1); w.node_tree.nodes['Background'].inputs[1].default_value = 1.0
+
+
+def finish(sc):
+    """Compositor: soft bloom on the highlights, a hint of lens dispersion, a gentle vignette."""
+    sc.use_nodes = True; nt = sc.node_tree; nt.nodes.clear()
+    rl = nt.nodes.new('CompositorNodeRLayers'); out = nt.nodes.new('CompositorNodeComposite')
+    gl = nt.nodes.new('CompositorNodeGlare'); gl.glare_type = 'FOG_GLOW'; gl.quality = 'HIGH'; gl.threshold = 0.85; gl.size = 8; gl.mix = -0.82
+    ld = nt.nodes.new('CompositorNodeLensdist'); ld.inputs[1].default_value = 0.0; ld.inputs[2].default_value = 0.012
+    em = nt.nodes.new('CompositorNodeEllipseMask'); em.width = 1.05; em.height = 0.92
+    bl = nt.nodes.new('CompositorNodeBlur'); bl.use_relative = True; bl.factor_x = 0.35; bl.factor_y = 0.35; bl.filter_type = 'GAUSS'
+    mr = nt.nodes.new('CompositorNodeMapRange'); mr.inputs['To Min'].default_value = 0.68; mr.inputs['To Max'].default_value = 1.0
+    mx = nt.nodes.new('CompositorNodeMixRGB'); mx.blend_type = 'MULTIPLY'; mx.inputs[0].default_value = 1.0
+    L = nt.links.new
+    L(rl.outputs['Image'], gl.inputs['Image']); L(gl.outputs['Image'], ld.inputs['Image'])
+    L(em.outputs['Mask'], bl.inputs['Image']); L(bl.outputs['Image'], mr.inputs['Value'])
+    L(ld.outputs['Image'], mx.inputs[1]); L(mr.outputs['Value'], mx.inputs[2]); L(mx.outputs['Image'], out.inputs['Image'])
 
 
 # ------------------------------------------------------------------ cast
@@ -76,9 +103,9 @@ def cast():
     return C
 
 
-def key_ctrl(K, u, f, loc, h, z=0.0):
+def key_ctrl(K, u, f, loc, h, z=0.0, rx=0.0):
     K.add(u.ctrl, 'location', 0, f, loc.x); K.add(u.ctrl, 'location', 1, f, loc.y); K.add(u.ctrl, 'location', 2, f, z)
-    K.add(u.ctrl, 'rotation_euler', 2, f, h)
+    K.add(u.ctrl, 'rotation_euler', 2, f, h); K.add(u.ctrl, 'rotation_euler', 0, f, rx)
 
 
 def path_at(path, t):
@@ -152,10 +179,10 @@ def act(C, K):
                    (IMPACT + 0.75, 'ready', 0.8, 1, 0.2),
                    (STAND, 'run', 1.2, 4, 0.1), (22.3, 'attack1', 1.0, 1, 0.05), (22.75, 'hit', 0.8, 1, 0.03),
                    (23.35, 'ready', 0.9, 1, 0.2), (23.95, 'run', 1.2, 3, 0.1), (24.35, 'attack2', 1.0, 1, 0.05),
-                   (24.85, 'hit', 0.7, 1, 0.03), (25.45, 'ready', 0.6, 1, 0.3), (HORN + 0.9, 'die', 0.75, 1, 0.3)]
+                   (24.85, 'hit', 0.7, 1, 0.03), (25.45, 'ready', 0.8, 1, 0.3), (25.75, 'idle', 0.6, 3, 0.35)]
         else:
             sch = [(0, 'ready', 1.0, 1), (DEPLOY + 0.35 + d, 'ready', 1.0, 1, 0.05), (IMPACT - 0.02 + d * 0.3, 'hit', 0.9, 1, 0.03),
-                   (IMPACT + 0.45 + d, 'die', 1.6, 1, 0.08)]
+                   (IMPACT + 0.45 + d, 'die', 2.4, 1, 0.08)]
         u.play(sch)
         for f in range(1, NF + 1):
             t = T(f); base = COINS_A[i]; z = 0.0
@@ -183,9 +210,35 @@ def act(C, K):
                 if t >= 23.95: p = hit2.lerp(front, ease(ramp(t, 23.95, 24.35))); z = 0
                 hit3 = HERO_KNOCK + V(0.15, -0.35)
                 if t >= 24.85: k = ease(ramp(t, 24.85, 25.2)); p = front.lerp(hit3, k); z = 0.5 * math.sin(math.pi * k)
-            key_ctrl(K, u, f, p, h, z)
+                rx = fall_rx(t); z += 0.06 * ramp(t, FALL0, FALL1)
+            else: rx = 0.0
+            key_ctrl(K, u, f, p, h, z, rx)
             K.add(u.mesh, 'hide_render', 0, f, hidden)
-    POS['hero'] = lambda t: C['a_coin0'].ctrl
+    # --- custom animation over the clips (the game has no clip for these moments)
+    def trem(t, a): return a * (math.sin(t * 57.0) + 0.6 * math.sin(t * 83.0 + 1.0))
+    def hero_pose(t):
+        bend = 0.0; lean = 0.0; tr = 0.0
+        bend += 35 * (1 - ease(ramp(t, IMPACT + 0.45, IMPACT + 1.25))) * (t >= IMPACT + 0.4)       # struggling up
+        bend += 20 * ease(ramp(t, 21.0, 21.3)) * (1 - ease(ramp(t, 21.55, 21.8)))                   # bowed over its brothers
+        tr += 2.0 * (21.0 <= t < 21.8)
+        bend += 30 * (1 - ease(ramp(t, 23.2, 23.95))) * (23.1 <= t < 23.95); tr += 3.0 * (23.1 <= t < 23.95)
+        if t >= 25.2:                                                                               # up again; then the brace
+            bend += 34 * (1 - ease(ramp(t, 25.3, 25.9))) + 8 * ease(ramp(t, 25.6, 25.9)); tr += 2.5 * (t < FALL0)
+            lean += 6 * math.sin(math.pi * 2 * ramp(t, FALL0 - 0.55, FALL0)) * (FALL0 - 0.55 <= t < FALL0)   # it sways
+            bend *= 1 - ease(ramp(t, FALL0, FALL0 + 0.3))
+        sp = (bend / 3 + trem(t, tr), trem(t + 0.3, tr) * 0.5, lean / 3)
+        return {'Spine': sp, 'Spine1': sp, 'Spine2': sp, 'Head': (trem(t + 0.7, tr) * 0.6, 0, 0)}
+    def hero_arms(t):
+        return ease(ramp(t, 25.55, 25.85)) * (1 - 0.35 * ease(ramp(t, FALL0, FALL1)))
+    game.layer(C['a_coin0'], NF, hero_pose, hero_arms)
+    for i in range(4):
+        d = 0.08 * i
+        def tun_pose(t, d=d):
+            look = -24 * ease(ramp(t, CHOSEN + 0.25 + d, CHOSEN + 0.6 + d)) * (1 - ease(ramp(t, CHOSEN + 0.95 + d, CHOSEN + 1.1 + d)))
+            slump = 10 * ease(ramp(t, NIGHT + 1.2, NIGHT + 2.2)) * (1 - ease(ramp(t, CHOSEN + 0.2, CHOSEN + 0.45)))
+            sp = ((look + slump) / 3, 0, 0)
+            return {'Spine': sp, 'Spine1': sp, 'Spine2': sp, 'Head': (look * 0.3, 0, 0)}
+        game.layer(C[f't_coin{i}'], NF, tun_pose)
 
 
 POS = {}
@@ -209,6 +262,8 @@ def camera(cam, C, f, K, cache):
         pos = Vector(pos); tgt = Vector(tgt); return pos, (tgt - pos).to_track_quat('-Z', 'Y'), fov, focus or (tgt - pos).length, fstop
     hand = Vector((math.sin(t * 1.1) * 0.012 + math.sin(t * 2.7) * 0.006, math.sin(t * 0.8) * 0.01, math.sin(t * 1.6 + 1) * 0.008))
     hero_t = cache['t_coin0'][f]; hero_a = cache['a_coin0'][f]; goat = cache['goat'][f]
+    dg = (GOAT_STOP - HIT3).to_3d().normalized()
+    def rot(v, a): return V(v.x * math.cos(a) - v.y * math.sin(a), v.x * math.sin(a) + v.y * math.cos(a), 0)
     if t < 3.0:                       # behind the line-up: silhouettes against the gate; slow push in
         k = ease(ramp(t, 0, 3.0)); r = shot(V(TX - 0.2, -9.6 + 1.6 * k, 0.55 + 0.1 * k), V(TX + 0.4, 3.0, 1.3), 34, 4.0, focus=7.5)
     elif t < 4.0:                     # GIGA is chosen: over the coins' heads, the light on him
@@ -224,28 +279,45 @@ def camera(cam, C, f, K, cache):
         r = shot(c, hero_t + V(0, 0, 0.05), [34, 30, 26][z], 2.0)
     elif t < ARENA[0]:                # alone: a wide, high view down the empty tunnel, the gate gone cold
         k = ease(ramp(t, NIGHT, ARENA[0])); r = shot(V(TX - 0.9, 8.2 - 0.6 * k, 3.1), V(TX + 0.7, -2.6, 0.3), 46 - 6 * k, 5.6)
-    elif t < 13.0:                    # the final match: a high wide over our side, snow falling, the stars going down
-        k = ease(ramp(t, 11.0, 13.0)); r = shot(V(-0.5 + 0.3 * k, -11.6 + 0.8 * k, 2.4 - 0.5 * k), V(-0.8, -3.8, 0.6), 50, 8.0)
+    elif t < 13.0:                    # the final match, from the snow itself: GIGA falls close by, The Whale beyond
+        k = ease(ramp(t, 11.0, 13.0)); c = V(2.25 - 0.5 * k, -7.3 + 0.2 * k, 0.26); gg = cache['a_giga'][f]
+        r = shot(c, V(-1.0, -2.6, 0.95), 40, 2.8, focus=(c - gg).length)
     elif t < 14.6:                    # THE GOAT comes off the bridge: low, looking up at him
-        r = shot(V(-3.0, -8.8, 0.35), goat + V(0, 0, 0.6), 30, 2.8)
+        c = V(-5.7, -4.6, 0.22); r = shot(c, goat + V(0, 0, 0.75), 32, 2.8)
     elif t < CHOSEN:                  # the hand (UI): the arena out of focus behind it
         r = shot(V(-0.5, -16.5, 3.0), V(-2.5, -4.0, 1.0), 40, 0.6, focus=1.0)
     elif t < DEPLOY:                  # back in the dark tunnel: the light finds the coins
-        k = ease(ramp(t, CHOSEN, DEPLOY)); c = V(TX - 1.55, -1.7 + 0.3 * k, 0.5); r = shot(c, hero_t + V(0, 0, 0.1), 32 - 4 * k, 2.0)
+        k = ease(ramp(t, CHOSEN, DEPLOY)); c = V(TX - 0.9, -0.7 - 0.1 * k, 0.28); r = shot(c, hero_t + V(0, 0, 0.12), 34 - 4 * k, 2.0)
     elif t < CHARGE:                  # deploy: the coins drop in front of our king; THE GOAT stops, sees them
         r = shot(V(-0.9, -11.2, 0.55), V(-3.1, -5.6, 1.1), 40, 4.0, focus=(V(-0.9, -11.2, 0.55) - COINS_A[0].to_3d()).length)
     elif t < 21.0:                    # the charge: from the side, low
         r = shot(V(0.9, -6.3, 0.6), V(-2.9, -7.2, 0.8), 42, 4.0)
     elif t < STAND:                   # the hero, alone now, looks at its brothers
-        r = shot(hero_a + V(-1.6, -1.5, 0.1), hero_a + V(0, 0, 0.05), 34, 2.0)
-    elif t < HORN:                    # the stand: low behind the hero toward THE GOAT, slowly pushing in
-        k = ease(ramp(t, STAND, HORN)); c = V(-0.7, -10.6 + 0.6 * k, 0.45 + 0.05 * k)
-        r = shot(c, lerp(V(-2.6, -7.6, 1.0), goat + V(0, 0, 0.5), 0.5), 36 - 6 * k, 2.8, focus=(c - hero_a).length)
-    elif t < VICTORY[0]:              # the horn; it falls. Close and low, the snow settling
-        k = ease(ramp(t, HORN, VICTORY[0])); c = hero_a + V(0.9 - 0.3 * k, 2.0 - 0.5 * k, 0.4 - 0.15 * k)
-        r = shot(c, hero_a + V(0, 0, -0.05 + 0.1 * (1 - k)), 34 - 4 * k, 2.0)
-    elif t < MORNING:                 # victory screen, then the deck (UI): the empty arena out of focus behind it
-        r = shot(V(-1.0, -12.5, 1.2), V(-2.2, -8.5, 0.4), 36, 0.8, focus=0.8)
+        sb = SIB_FLY[3].to_3d(); away = (sb - HERO_KNOCK.to_3d()).normalized(); pp = V(-away.y, away.x, 0); c = sb + away * 0.8 + pp * 0.75 + V(0, 0, 0.5)
+        r = shot(c, hero_a + V(0, 0, 0.0), 30, 2.4, focus=(c - hero_a).length)
+    elif t < 22.75:                   # the stand: low behind the hero as it runs at THE GOAT
+        k = ease(ramp(t, STAND, 22.75)); c = V(-1.35, -10.4 + 0.5 * k, 0.32)
+        r = shot(c, lerp(V(-2.6, -7.6, 0.8), goat + V(0, 0, 0.4), 0.5), 34, 2.8, focus=(c - hero_a).length)
+    elif t < 23.95:                   # knocked down: ground-level profile, the hero getting up, THE GOAT towering out of focus
+        c = HIT2.to_3d() + rot(dg, 0.9) * 1.9 + V(0, 0, 0.22)
+        r = shot(c, hero_a, 38, 2.0, focus=(c - hero_a).length)
+    elif t < 24.85:                   # worm's eye: from the snow behind the hero, up at THE GOAT as it strikes again
+        side = V(-dg.y, dg.x, 0); c = hero_a + side * 0.7 - dg * 0.6; c.z = 0.12; r = shot(c, goat + V(0, 0, 0.45), 46, 4.0, focus=(c - goat).length)
+    elif t < HORN:                    # arms spread in front of our king: from the goat's side, low, the tower behind it
+        c = HIT3.to_3d() + rot(dg, 0.75) * 2.3 + V(0, 0, 0.3); k = ease(ramp(t, 24.85, HORN))
+        c = c.lerp(HIT3.to_3d() + rot(dg, 0.75) * 1.9 + V(0, 0, 0.32), k)
+        r = shot(c, HIT3.to_3d() + V(0, 0, 0.4), 40, 2.4)
+    elif t < 27.2:                    # the horn. Its face, trembling, slowly closer
+        k = ease(ramp(t, HORN, 27.2)); c = HIT3.to_3d() + rot(dg, 0.45) * (1.6 - 0.35 * k) + V(0, 0, 0.42)
+        r = shot(c, HIT3.to_3d() + V(0, 0, 0.45), 30, 2.0)
+    elif t < VICTORY[0]:              # it falls back into the snow: from the side, at ground level
+        side = V(-dg.y, dg.x, 0); c = HIT3.to_3d() - dg * 0.3 + side * 2.6 + V(0, 0, 0.28)
+        r = shot(c, HIT3.to_3d() - dg * 0.35 + V(0, 0, 0.3), 36, 2.8)
+    elif t < MORNING:                 # straight down on it lying in the snow, arms out, rising away (victory + deck UI over it)
+        k = ease(ramp(t, VICTORY[0], MORNING)); ctr = HIT3.to_3d() - dg * 0.42 + V(0, 0, 0.05)
+        c = ctr + V(0.0, 0.0, 1.7 + 1.6 * k); up = -dg; zx = V(0, 0, 1); xx = up.cross(zx).normalized()
+        from mathutils import Matrix
+        q = Matrix((xx, up, zx)).transposed().to_quaternion(); r = (c, q, 40, (c - ctr).length, 1.6)
     else:                             # the next morning: from the gate side, warm; the light finds them first
         k = ease(ramp(t, MORNING, END)); c = V(TX - 1.35, 9.3 - 0.3 * k, 0.62); r = shot(c, V(TX + 0.5, 7.15, 0.5), 40 - 4 * k, 2.8)
     pos, q, fov, focus, fstop = r; pos = pos + hand
@@ -290,17 +362,17 @@ def lights(S, Ar, C, K, cache):
         # the light that chooses
         target, on = None, 0.0
         for k, tp in PICKS:
-            if tp <= t < tp + 1.6: target = cache['t_' + k][F(tp)]; on = ease(ramp(t, tp, tp + 0.2)) * (1 - ease(ramp(t, tp + 1.2, tp + 1.6)))
-        if CHOSEN + 0.2 <= t < CHOSEN + 1.6:
+            if tp <= t < min(tp + 1.6, NIGHT): target = cache['t_' + k][F(tp)]; on = ease(ramp(t, tp, tp + 0.2)) * (1 - ease(ramp(t, tp + 1.2, tp + 1.6)))
+        if CHOSEN + 0.2 <= t < CHOSEN + 1.6:  # (brighter: this is the moment)
             target = cache['t_coin0'][F(CHOSEN)] + V(0.25, 0.25, 0); on = ease(ramp(t, CHOSEN + 0.2, CHOSEN + 0.5))
         if t >= MORNING + 0.6:
             target = V(TX + 0.55, 7.2, 0); on = ease(ramp(t, MORNING + 0.6, MORNING + 0.9))
         if target is None: target = V(TX, -20, 0)
         tl = V(target.x, target.y, TH - 0.05)
         for i in range(3): K.add(S['choose'], 'location', i, f, tl[i])
-        K.add(S['choose'].data, 'energy', 0, f, 900 * on)
+        K.add(S['choose'].data, 'energy', 0, f, (3500 if CHOSEN <= t < DEPLOY else 900) * on)
         for i in range(2): K.add(S['beam'], 'location', i, f, tl[i])
-        K.add(S['beam_mat'].node_tree, 'nodes["strength"].inputs[1].default_value', 0, f, (0.2 if t >= CHOSEN else 0.5) * on)
+        K.add(S['beam_mat'].node_tree, 'nodes["strength"].inputs[1].default_value', 0, f, (0.35 if CHOSEN <= t < DEPLOY else 0.2 if t >= MORNING else 0.5) * on)
         # arena: cold moonlight; a warm spot on the hero after the horn
         K.add(L['moon'].data, 'energy', 0, f, 2.2); K.add(L['arena_fill'].data, 'energy', 0, f, 1600)
         hw = ease(ramp(t, HORN + 0.6, HORN + 2.0)) * (t < MORNING)
@@ -339,7 +411,7 @@ def main():
             for fc in ad.action.fcurves:
                 for kp in fc.keyframe_points: kp.interpolation = 'CONSTANT'
     sc = bpy.context.scene
-    cache = {k: {} for k in ('t_coin0', 'a_coin0', 'goat', 't_giga', 't_whale', 't_bonk', 't_cate', 't_walter')}
+    cache = {k: {} for k in ('t_coin0', 'a_coin0', 'goat', 't_giga', 't_whale', 't_bonk', 't_cate', 't_walter', 'a_giga')}
     for f in range(1, NF + 1):
         sc.frame_set(f)
         for k in cache: cache[k][f] = C[k].ctrl.matrix_world.translation.copy() + V(0, 0, C[k].height * 0.45)
