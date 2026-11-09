@@ -31,19 +31,6 @@ def out_at(seg, src):   # the output frame showing source frame src in segment s
         if n == seg and f >= src: return i
     return best
 
-# ---------------------------------------------------------------------- captions (output frame ranges)
-def rng(a, b): return (a, b)
-CAPS = [("c_wait", rng(0, first["start"]))]
-s = first["start"]
-CAPS += [("c_plan", rng(s + 12, out_at("start", 190))),
-         ("c_fork", rng(out_at("start", 190), first["grow"] + 20)),
-         ("c_mult", rng(first["grow"] + 45, out_at("grow", 700))),
-         ("c_hot", rng(out_at("grow", 730), out_at("grow", 930))),
-         ("c_1000", rng(out_at("grow", 950), first["finale"] + 10)),
-         ("c_works", rng(out_at("finale", 1240), first["end"] + 10)),
-         ("c_day2", rng(first["end"] + 12, N))]
-OVL = {n: Image.open(os.path.join(OV, n + ".png")).convert("RGBA") for n, _ in CAPS + [("title", 0)]}
-
 # ---------------------------------------------------------------------- the counter (measured in test runs of the same script)
 KEYS = [(-9, 0), (2.2, 0), (2.4, 15), (3.6, 30), (6, 75), (12, 120), (18, 220), (22, 385), (26, 530), (30, 710), (32, 856),
         (35, 975), (37, 1050), (39, 1110), (40.5, 1146), (99, 1146)]
@@ -52,6 +39,23 @@ def count_at(src):
     for (t0, c0), (t1, c1) in zip(KEYS, KEYS[1:]):
         if t0 <= t < t1: return int(c0 + (c1 - c0) * (t - t0) / (t1 - t0))
     return 0
+# ---------------------------------------------------------------------- captions (output frame ranges)
+def at_count(c):   # the first output frame where the counter reaches c (captions agree with the counter)
+    for i, (n, d, f) in enumerate(tl):
+        if n != "hook" and count_at(f) >= c: return i
+    return N
+def rng(a, b): return (a, b)
+CAPS = [("c_wait", rng(0, first["start"]))]
+s = first["start"]
+CAPS += [("c_plan", rng(s + 12, out_at("start", 190))),
+         ("c_fork", rng(out_at("start", 190), first["grow"] + 20)),
+         ("c_mult", rng(first["grow"] + 45, at_count(560))),
+         ("c_hot", rng(at_count(600), at_count(960))),
+         ("c_1000", rng(at_count(1000), first["finale"] + 20)),
+         ("c_works", rng(out_at("finale", 1240), first["end"] + 10)),
+         ("c_day2", rng(first["end"] + 12, N))]
+OVL = {n: Image.open(os.path.join(OV, n + ".png")).convert("RGBA") for n, _ in CAPS + [("title", 0)]}
+
 fnt = ImageFont.truetype(FONT, 64)
 def counter(img, n):
     if n <= 0: return
