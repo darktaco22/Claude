@@ -58,7 +58,7 @@ for L in TL['lines']: cues.append((f"{vo}/{L['id']}.wav", L['t'], 1.0 if L['who'
 taps = [0.25, 1.05, 1.65, 2.15, 2.55, 2.9, 3.18, 3.44, 3.68, 3.9]
 for tt in taps:
     cues += [(G('tap'), 2.4 + tt, 0.35, ''), (G('chaching'), 2.4 + tt + 0.32, 0.3, '')]
-cues += [(X('room'), 0.0, 0.05, f'atrim=0:{MO},lowpass=f=600,'), (G('birds'), 0.0, 0.18, ''), (G('candle'), 25.0, 0.35, ''),
+cues += [(X('room'), 0.0, 0.05, f'atrim=0:{MO},lowpass=f=600,'), (G('candle'), 25.0, 0.35, ''),
          (G('sting'), EC, 0.6, ''), (G('clank'), 23.7, 0.12, '')]
 ins, flt = [], []
 for i, (p, t0, vol, extra) in enumerate(cues):
