@@ -228,7 +228,7 @@ def load_neet():
     s = 1.7 / h; root.scale = (s, s, s)
     return dict(root=root, rig=rig, mesh=mesh, acts=acts)
 
-NEET_SCHED = [(0.0, 'sitangry', 1.0), (2.9, 'sit', 1.0), (17.35, 'sitangry', 0.9), (20.1, 'sit', 1.0), (22.3, 'idle', 1.0)]
+NEET_SCHED = [(0.0, 'sitangry', 1.0), (2.9, 'sit', 1.0), (22.3, 'idle', 1.0)]   # (no angry clip under 'I will find you': it turns his head away from the lens)
 def neet_nla(N):
     ad = N['rig'].animation_data
     for i, (t0, clip, speed) in enumerate(NEET_SCHED):
