@@ -164,7 +164,7 @@ def frame(f):
     base.convert('RGB').save(os.path.join(OUT, f'c_{f:04d}.png'))
 
 ONLY = [int(x) for x in os.environ.get('ONLY', '').split(',') if x]
-for f in (ONLY or range(1, END + 1)):
+for f in ([] if os.environ.get('MIXONLY') else (ONLY or range(1, END + 1))):
     frame(f)
 print('OVERLAY-DONE')
 if ONLY: sys.exit(0)
