@@ -63,21 +63,21 @@ def heartbeat_times():
 G = lambda n: f'{gen}/{n}.wav'; X = lambda n: f'{sfx}/{n}.wav'
 cues = []      # (path, t, volume, filters)
 for L in TL['lines']: cues.append((f"{vo}/{L['id']}.wav", L['t'], 1.0, 'highpass=f=80,aecho=0.8:0.25:28:0.10,'))
-for b in heartbeat_times(): cues.append((G('beep'), b + 0.2, 0.10 if b < 37 else 0.16, ''))
-cues += [(G('flat'), FLAT, 0.17, 'atrim=0:3.6,afade=t=out:st=2.6:d=1.0,'), (G('buzz'), 37.35, 0.5, ''), (G('tap'), 39.95, 0.8, ''),
+for b in heartbeat_times(): cues.append((G('beep'), b + 0.2, 0.025 if b < 37.6 else 0.06, ''))
+cues += [(G('flat'), FLAT, 0.07, 'atrim=0:3.6,afade=t=out:st=2.6:d=1.0,'), (G('buzz'), 37.35, 0.5, ''), (G('tap'), 39.95, 0.8, ''),
          (G('creak'), FLAT, 0.35, ''), (G('creak'), REVIVE, 0.35, ''), (G('glug'), 29.15, 0.55, ''), (G('vape'), 20.45, 0.35, ''),
          (G('exhale'), 21.1, 0.25, ''), (X('sip'), 10.6, 0.5, ''), (X('sip'), 30.4, 0.45, ''),
          (X('drag'), 53.95, 0.7, ''), (G('exhale'), 54.85, 0.4, '')]
 for i, k in enumerate(['wife', 'son', 'priest', 'lawyer']): cues.append((X('ding'), PING + i * 0.07, 0.75, ''))
 # thunder with the flashes; rain on the glass throughout (looped), louder in the window shot
-for t0, v in [(0.7, 0.9), (FLAT + 0.05, 1.0), (REVIVE + 0.05, 0.6)]: cues.append((X('thunder'), t0 + 0.25, v * 0.5, ''))
+for t0, v in [(0.7, 0.9), (FLAT + 0.05, 1.0), (REVIVE + 0.05, 0.6)]: cues.append((X('thunder'), t0 + 0.25, v * (0.5 if t0 < 3 else 0.25), 'lowpass=f=1800,' if t0 > 3 else ''))
 ins, flt = [], []
 for i, (p, t0, vol, extra) in enumerate(cues):
     ins += ['-i', p]; ms = int(t0 * 1000)
     flt.append(f'[{i}:a]aresample={SR},aformat=channel_layouts=mono,{extra}volume={vol},adelay={ms}|{ms}[c{i}]')
 n = len(cues)
 ins += ['-stream_loop', '-1', '-i', X('rain')]
-flt.append(f'[{n}:a]aresample={SR},aformat=channel_layouts=mono,atrim=0:{END},volume=0.22,lowpass=f=5000[rain]')
+flt.append(f"[{n}:a]aresample={SR},aformat=channel_layouts=mono,atrim=0:{END},lowpass=f=2500,volume='if(lt(t,3.3),0.22,if(lt(t,3.9),0.22-(t-3.3)/0.6*0.19,0.03))':eval=frame[rain]")
 mix = ''.join(f'[c{i}]' for i in range(n)) + '[rain]'
 flt.append(f'{mix}amix=inputs={n + 1}:normalize=0:dropout_transition=0,loudnorm=I=-15:TP=-1.5:LRA=11,apad,atrim=0:{END},afade=t=out:st={END - 0.6}:d=0.6[a]')
 subprocess.run(['ffmpeg', '-v', 'error', '-y', *ins, '-filter_complex', ';'.join(flt), '-map', '[a]', '-ac', '2', '-ar', str(SR), '-c:a', 'aac', '-b:a', '192k', out], check=True)
