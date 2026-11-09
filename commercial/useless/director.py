@@ -256,11 +256,11 @@ def puffs(K):
     for p in me.polygons: p.use_smooth = True
     me.materials.append(sets.flat('puff', (0.93, 0.96, 1.0), 0.6)); bpy.data.objects.remove(src)
     rng = random.Random(9); sc = bpy.context.scene
-    def burst(t0, p, n, power, r):
+    def burst(t0, p, n, power, r, ring=0.0):
         for _ in range(n):
             o = bpy.data.objects.new('puff', me); sc.collection.objects.link(o); o.visible_shadow = False
             a = rng.uniform(0, 6.283); vr = rng.uniform(0.25, 1.0) * power; vz = rng.uniform(0.7, 2.3) * power
-            life = rng.uniform(0.4, 0.9); rr = r * rng.uniform(0.3, 1.3); f0 = F(t0); off = rng.uniform(0, 0.12)
+            life = rng.uniform(0.4, 0.9); rr = r * rng.uniform(0.3, 1.3); f0 = F(t0); off = ring + rng.uniform(0, 0.12)
             for i in range(3): K.add(o, 'scale', i, f0 - 1, 0.0)
             for j in range(int(life * FPS) + 1):
                 tt = j / FPS; s = rr * (1 - tt / life) ** 0.6
@@ -271,7 +271,7 @@ def puffs(K):
     ctr = sum(COINS_A, V(0, 0)) / 4; burst(IMPACT, ctr, 60, 1.5, 0.045)
     for i in (1, 2, 3): burst(IMPACT + 0.55, SIB_FLY[i], 18, 0.8, 0.034)
     for tt, p in ((IMPACT + 0.4, HERO_KNOCK), (23.1, HIT2), (25.2, HIT3)): burst(tt, p, 18, 0.75, 0.032)
-    dg = (GOAT_STOP - HIT3).normalized(); burst(FALL1, HIT3 - dg * 0.42, 44, 0.6, 0.03)
+    dg = (GOAT_STOP - HIT3).normalized(); burst(FALL1, HIT3 - dg * 0.42, 44, 0.6, 0.02, ring=0.36)      # thrown out from under its rim, not through its face
     t = CHARGE + 0.1
     while t < IMPACT: burst(t, GOAT_PATH[-1][1].lerp(GOAT_STOP, ease(ramp(t, CHARGE, IMPACT + 0.1))), 7, 0.55, 0.03); t += 0.12
     front = GOAT_STOP + V(0.25, -0.95)
