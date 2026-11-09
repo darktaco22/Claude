@@ -19,6 +19,10 @@ def seg(f0, f1, cop0, t0, plays, hand, nxt, queue):
         # the played slot is empty for a few frames, then the new card slides in (as in the game)
         if f in P: F[f]['gone'] = s
         elif f - 1 in P or f - 2 in P or f - 3 in P: F[f]['gone'] = [P[k] for k in (f - 1, f - 2, f - 3) if k in P][0]
+if 'hud' in MK:
+    for k, (f0, f1) in (('noob', (1, MK['noob'][1])), ('pro', (MK['pro'][0], 720))):
+        Hd = MK['hud'][k]; seg(f0, f1, Hd['cop'], 104.0, [tuple(p) for p in Hd['plays']], Hd['hand'], Hd['next'], ['fud', 'troll'])
+    json.dump({'opp': {'name': 'coin_spammer', 'clout': 1790}, 'frames': F}, open(sys.argv[2], 'w')); print('HUD frames', len(F)); sys.exit(0)
 seg(1, MK['noob'][1], 5.3, 104.0, [(MK['drop_lmao'] - 6, 0)], ['lmao', 'chillguy', 'troll', 'ket'], 'useless', ['fud'])
 seg(MK['pro'][0], 720, 7.6, 104.0, [(MK['drop_idol'] - 6, 0), (MK['drop_useless'] - 6, 1)],
     ['lasereyes', 'useless', 'chillguy', 'troll'], 'ket', ['fud', 'lmao'])

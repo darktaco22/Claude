@@ -104,8 +104,8 @@ def pill(d, xy, s, color):
     text(d, (x + w / 2, y + 30), s, 40, (255, 255, 255), 4)
 
 LOGO = Image.open(os.path.join(A, 'logo.png')).convert('RGBA')
-NOOB_CAP = ['The Whale only hits BUILDINGS.', 'Troops in its way? It walks past.']
-PRO_CAP = ['Drop LASER EYES in the middle.', 'It pulls The Whale into BOTH towers.']
+NOOB_CAP = MK.get('caps_noob') or ['The Whale only hits BUILDINGS.', 'Troops in its way? It walks past.']
+PRO_CAP = MK.get('caps_pro') or ['Drop LASER EYES in the middle.', 'It pulls The Whale into BOTH towers.']
 
 def frame(f):
     if f <= LAST3D:
@@ -129,7 +129,7 @@ def frame(f):
             paste_scaled(ov, scaled_text_img('NOOB', 130, (255, 80, 80)), W / 2, 420, k * a)
             paste_scaled(ov, scaled_text_img('vs', 80, (255, 255, 255)), W / 2, 520, pop(f, t0 + 10, 8) * a)
             paste_scaled(ov, scaled_text_img('PRO', 130, (90, 230, 110)), W / 2, 620, pop(f, t0 + 16, 10) * a)
-            paste_scaled(ov, scaled_text_img('in MEME ROYALE', 44, (255, 214, 80), 5), W / 2, 700, pop(f, t0 + 24, 8) * a)
+            paste_scaled(ov, scaled_text_img(MK.get('title2', 'in MEME ROYALE'), 44, (255, 214, 80), 5), W / 2, 700, pop(f, t0 + 24, 8) * a)
     def segment(lab, color, f0, f1, mark_at, mark_img, caps):
         if not (f0 <= f <= f1): return
         pill(d, (W / 2 - (font(40).getbbox(lab)[2] + 40) / 2, 74), lab, color)
@@ -171,6 +171,7 @@ if ONLY: sys.exit(0)
 
 # ---------------------------------------------------------------- sound
 AU = os.path.join(HERE, 'audio'); cues = []
+PRESET = MK.get('cues')
 def cue(name, f, vol=1.0): cues.append((name, f, vol))
 cue('ui_swoosh', 4); cue('emote_pop', 8); cue('emote_pop', 14); cue('emote_pop', 20)
 for e in O['events']:
@@ -183,6 +184,7 @@ cue('card_deny', MK['x_at'], 1.0); cue('ui_swoosh', MK['noob'][1] - 8, 1.0)
 for f in range(MK['drop_idol'] + 10, MK['whale_die'], 18): cue('atk_lasereyes', f, 0.35)
 for f in range(MK['drop_useless'] + 24, MK['whale_die'], 13): cue('atk_useless', f, 0.3)
 cue('die_whale', MK['whale_die'], 1.0); cue('w_fanfare', MK['check_at'], 0.9); cue('victory', LAST3D + 2, 0.8)
+if PRESET: cues = [tuple(c) for c in PRESET if os.path.exists(os.path.join(AU, c[0] + '.mp3'))]
 inputs = ['-i', os.path.join(AU, 'mus_battle.mp3')]; flt = [f'[0:a]atrim=0:{END / FPS},volume=0.35,afade=t=out:st={END / FPS - 1.2}:d=1.2[m]']
 for i, (n, f, v) in enumerate(cues):
     inputs += ['-i', os.path.join(AU, n + '.mp3')]; ms = int((f - 1) / FPS * 1000)
