@@ -360,15 +360,15 @@ def main():
         c0 = shot(t)[0]; u = t - c0; nheadZ = sit_loc.z + 1.15
         nh = NH.copy()                       # NEET's face (seated)
         if kind == 'monitor':   mon_c = B['MON'] + B['MONF'] * 0.02; loc = mon_c + B['MONF'] * (0.75 - 0.2 * ease(u / 3)) + Vector((0.12, 0, 0.12)); look = mon_c; lens = 45
-        elif kind == 'neet_face': loc = nh + Vector((0.4, -1.35, -0.02)); look = nh; lens = 50
+        elif kind == 'neet_face': loc = nh + Vector((0.5, -2.0, -0.02)); look = nh; lens = 50
         elif kind == 'mono_wide': loc = nh + Vector((0.0, -2.7, 0.05)) + Vector((0, 0.45, -0.03)) * ease(u / 5); look = nh + Vector((0, 0, -0.3)); lens = 35
         elif kind == 'mono_med':  loc = nh + Vector((0.0, -1.8, 0.02)) + Vector((0, 0.2, 0)) * ease(u / 4); look = nh + Vector((0, 0, -0.12)); lens = 45
-        elif kind == 'mono_close': loc = nh + Vector((0.0, -1.15, 0.03)) + Vector((0, 0.12, 0)) * ease(u / 3.7); look = nh; lens = 50
-        elif kind == 'mono_xcu':  loc = nh + Vector((0.0, -0.85, 0.06)) + Vector((0, 0.1, 0)) * ease(u / 5); look = nh + Vector((0, 0, 0.06)); lens = 60
+        elif kind == 'mono_close': loc = nh + Vector((0.0, -1.55, 0.03)) + Vector((0, 0.15, 0)) * ease(u / 3.7); look = nh; lens = 50
+        elif kind == 'mono_xcu':  loc = nh + Vector((0.0, -1.25, 0.06)) + Vector((0, 0.12, 0)) * ease(u / 5); look = nh + Vector((0, 0, 0.08)); lens = 60
         elif kind == 'board_pan': loc = Vector((-0.55, 1.25 - 0.55 * ease(u / 1.6), 1.5)); look = Vector((-1.97, 0.95 - 0.1 * ease(u / 1.6), 1.45)); lens = 32
         elif kind == 'neet_monitor': loc = Vector((0.9, 1.9, 1.8)); look = Vector((-1.4, 0.9, 1.35)); lens = 26
         elif kind == 'board_string': loc = Vector((-1.15, 0.55, 1.4)) + Vector((0, 0.15, 0.03)) * ease(u / 1.6); look = Vector((-1.95, 1.3, 1.35)); lens = 38
-        elif kind == 'stakeout':  loc = Vector((60.8, 0.6, 1.0)) + Vector((0, 0.2, 0)) * ease(u / 3); look = Vector((60.35, 5.0, 1.25)); lens = 30
+        elif kind == 'stakeout':  loc = Vector((60.55, 0.7, 1.05)) + Vector((0, 0.2, 0)) * ease(u / 3); look = Vector((60.25, 5.0, 1.15)); lens = 30
         elif kind == 'lounge_wide': loc = Vector((-59.6, -1.9, 1.3)) + Vector((-0.1, 0.45, -0.05)) * ease(u / 1.6); look = geyes + Vector((0, 0, -0.25)); lens = 35
         elif kind in ('gran_close', 'insert'): loc = geyes + Vector((0.05, -0.75, 0.02)) - Vector((0, 0.06, 0)) * ease(u / 1.4); look = geyes; lens = 50
         else: loc = geyes + Vector((-0.12, -0.6, 0.0)); look = geyes; lens = 55
