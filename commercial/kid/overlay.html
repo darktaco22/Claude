@@ -1,0 +1,49 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face{font-family:Lilita;src:url(./lilita.woff2)}
+html,body{margin:0;background:transparent;overflow:hidden;width:540px;height:960px}
+#sub{position:absolute;left:20px;right:20px;bottom:13%;text-align:center;font:30px Lilita,sans-serif;color:#fff;line-height:1.15;-webkit-text-stroke:6px #000;paint-order:stroke fill;text-shadow:0 3px 0 #000}
+#extcap{position:absolute;left:0;right:0;top:11%;text-align:center;font:36px Lilita,sans-serif;color:#fff;-webkit-text-stroke:6px #000;paint-order:stroke fill;opacity:0;line-height:1.1}
+#sub .w{opacity:0} #sub .w.on{opacity:1}
+#note{position:absolute;left:16px;right:16px;top:7%;opacity:0;transform:translateY(-30px);background:rgba(28,28,32,.88);border-radius:22px;padding:12px 14px;display:flex;gap:12px;align-items:center;box-shadow:0 10px 30px rgba(0,0,0,.6);font-family:-apple-system,"Segoe UI",Roboto,"Noto Sans",sans-serif;color:#fff}
+#note i{font-style:normal;width:44px;height:44px;border-radius:11px;background:linear-gradient(135deg,#7a2fe0,#ff2fb0);display:flex;align-items:center;justify-content:center;font-size:24px}
+#note b{display:block;font-size:13px;color:#aaa;font-weight:600} #note span{display:block;font-size:18px;font-weight:700}
+#unused{position:absolute;inset:0;opacity:0;background:#07090c;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:-apple-system,Roboto,"Noto Sans",sans-serif;color:#fff}
+#wallet .h{font-size:15px;letter-spacing:4px;color:#7d8794;margin-bottom:8px} #wallet .t{font-size:30px;font-weight:800;color:#c8ff5a}
+#wallet .v{font:64px Lilita,sans-serif;color:#2bff6a;margin:10px 0 4px} #wallet .s{font-size:16px;color:#9aa3b5}
+#wallet svg{margin-top:24px} #wallet .hold{margin-top:22px;font-size:20px;font-weight:700;color:#fff;background:#1a1f27;padding:10px 18px;border-radius:12px}
+#card{position:absolute;inset:0;opacity:0;background:#0b0716;overflow:hidden}
+#art{position:absolute;inset:0;background:url(./bg_title_wide.jpg) center/cover;filter:brightness(.55) saturate(1.1);transform:scale(1.08)}
+#logo{position:absolute;left:50%;top:22%;width:400px;transform:translate(-50%,-50%) scale(1)}
+#tag{position:absolute;left:0;right:0;top:44%;text-align:center;font:44px Lilita,sans-serif;color:#fff;-webkit-text-stroke:7px #000;paint-order:stroke fill;line-height:1.08}
+#cta{position:absolute;left:50%;top:66%;transform:translateX(-50%);background:#ffcf2e;color:#1a1030;font:34px Lilita,sans-serif;padding:10px 28px;border-radius:18px;box-shadow:0 6px 0 #9c6b00}
+#url{position:absolute;left:0;right:0;top:76%;text-align:center;font:26px Lilita,sans-serif;color:#fff;-webkit-text-stroke:5px #000;paint-order:stroke fill}
+#extcap2{position:absolute;left:0;right:0;top:11%;text-align:center;font:44px Lilita,sans-serif;color:#fff;-webkit-text-stroke:6px #000;paint-order:stroke fill;opacity:0}
+#black{position:absolute;inset:0;background:#000;opacity:0}
+</style></head><body>
+<div id="sub"></div>
+<div id="extcap">11:47 PM</div><div id="extcap2">7:15 AM</div>
+<div id="card"><div id="art"></div><img id="logo" src="./logo.png"><div id="tag">FREE TO PLAY.<br>HIDE YOUR WALLET.</div>
+<div id="cta">PLAY NOW</div><div id="url">memeroyale.imaginestudio.fun</div></div>
+<div id="black"></div>
+<script>
+const $ = id => document.getElementById(id), clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v)), win = (t, a, b) => t >= a && t < b, out3 = t => 1 - Math.pow(1 - clamp(t), 3);
+(async () => {
+const TL = await (await fetch('./timeline.json')).json(); const LINES = TL.lines; const VO = {}; LINES.forEach(L => VO[L.id] = {dur: L.end - L.t});
+window.renderAt = t => {
+  const L = t < TL.endcard ? LINES.find(L => L.text && t >= L.t - 0.05 && t < L.end + 0.5) : null, sub = $('sub');
+  if (!L) sub.innerHTML = '';
+  else { const w = L.text.split(' '), n = Math.max(1, Math.ceil(clamp((t - L.t) / (VO[L.id].dur * 0.9)) * w.length)); sub.innerHTML = w.map((x, i) => `<span class="w${i < n ? ' on' : ''}">${x}</span>`).join(' '); }
+  $('black').style.opacity = 0;
+  $('extcap').style.opacity = t < 2.3 ? clamp(Math.min((t - 0.3) / 0.3, (2.3 - t) / 0.2)) : 0;
+  $('extcap2').style.opacity = (t > TL.morning && t < TL.morning + 1.9) ? clamp(Math.min((t - TL.morning - 0.15) / 0.25, (TL.morning + 1.9 - t) / 0.2)) : 0;
+  const c = t >= TL.endcard ? 1 : 0, u = clamp((t - TL.endcard) / 0.45); $('card').style.opacity = c;
+  $('logo').style.transform = `translate(-50%,-50%) scale(${0.6 + 0.4 * out3(u) + 0.03 * Math.sin(t * 3)})`;
+  $('art').style.transform = `scale(${1.08 + (t - TL.endcard) * 0.02})`;
+  $('tag').style.opacity = clamp((t - TL.endcard - 0.35) / 0.25); $('cta').style.opacity = clamp((t - TL.endcard - 0.9) / 0.25);
+  $('url').style.opacity = clamp((t - TL.endcard - 1.1) / 0.25);
+};
+await document.fonts.ready; window.ready = true;
+})();
+</script></body></html>

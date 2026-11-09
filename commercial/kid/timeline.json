@@ -1,0 +1,78 @@
+{
+ "lines": [
+  {
+   "id": "k_one",
+   "who": "kid",
+   "t": 6.95,
+   "end": 8.038,
+   "text": "Just... one more."
+  },
+  {
+   "id": "d_wallet",
+   "who": "dad",
+   "t": 10.6,
+   "end": 16.27,
+   "text": "Honey? Why does the wallet say 'Meme Royale, forty-nine ninety-nine'... three hundred and twelve times?"
+  },
+  {
+   "id": "m_college",
+   "who": "mom",
+   "t": 16.6,
+   "end": 18.019000000000002,
+   "text": "...That was the college fund."
+  },
+  {
+   "id": "k_whale",
+   "who": "kid",
+   "t": 18.4,
+   "end": 19.808,
+   "text": "Relax. I'm a whale now."
+  },
+  {
+   "id": "d_seven",
+   "who": "dad",
+   "t": 20.15,
+   "end": 21.363999999999997,
+   "text": "We have seven cents."
+  },
+  {
+   "id": "k_pocket",
+   "who": "kid",
+   "t": 21.75,
+   "end": 23.48,
+   "text": "So... almost a Pocket of Gems."
+  },
+  {
+   "id": "r_morning",
+   "who": "repo",
+   "t": 23.85,
+   "end": 24.546000000000003,
+   "text": "Morning."
+  },
+  {
+   "id": "k_letsgo",
+   "who": "kid",
+   "t": 25.3,
+   "end": 26.094,
+   "text": "Let's go."
+  }
+ ],
+ "cuts": [
+  2.4,
+  6.6,
+  8.4,
+  10.4,
+  13.6,
+  15.0,
+  16.45,
+  18.25,
+  19.95,
+  21.6,
+  23.6,
+  24.95,
+  26.8
+ ],
+ "end": 30.8,
+ "endcard": 26.8,
+ "morning": 8.4
+}
