@@ -398,13 +398,13 @@ def lights(S, Ar, C, K, cache):
         gold, cold = Vector((1.0, 0.84, 0.6)), Vector((0.45, 0.6, 1.0))
         col = gold.lerp(cold, night)
         for i in range(3): K.add(S['gate_sun'].data, 'color', i, f, col[i])
-        K.add(S['gate_sun'].data, 'energy', 0, f, lerp(900, 230, night) * (0.3 if t >= MORNING else 1.0))
+        K.add(S['gate_sun'].data, 'energy', 0, f, lerp(900, 330, night) * (0.3 if t >= MORNING else 1.0))
         for i in range(3): K.add(S['blaze_mat'].node_tree, 'nodes["Principled BSDF"].inputs["Emission Color"].default_value', i, f, col[i])
         K.add(S['blaze_mat'].node_tree, 'nodes["Principled BSDF"].inputs["Emission Strength"].default_value', 0, f, lerp(6.0, 1.2, night) * (0.35 if t >= MORNING else 1.0))
         for j, ln in enumerate(S['lanterns']):
             fl = 0.82 + 0.18 * math.sin(t * 9.1 + j * 1.7) * math.sin(t * 5.3 + j)
             K.add(ln.data, 'energy', 0, f, 40 * fl * lerp(1.0, 0.5, night))
-        K.add(L['tunnel_fill'].data, 'energy', 0, f, lerp(18, 6, night))
+        K.add(L['tunnel_fill'].data, 'energy', 0, f, lerp(18, 11, night))
         # the light that chooses
         target, on = None, 0.0
         for k, tp in PICKS:
@@ -415,12 +415,14 @@ def lights(S, Ar, C, K, cache):
             target = V(TX + 0.55, 7.2, 0); on = ease(ramp(t, MORNING + 0.6, MORNING + 0.9))
         if target is None: target = V(TX, -20, 0)
         tl = V(target.x, target.y, TH - 0.05)
-        for i in range(3): K.add(S['choose'], 'location', i, f, tl[i])
+        sl = tl + V(-1.3, 1.5, 0) if CHOSEN <= t < DEPLOY else tl          # the chosen light leans in from the gate side: it lights their faces
+        se = (V(target.x, target.y, 0.3) - sl).to_track_quat('-Z', 'Y').to_euler()
+        for i in range(3): K.add(S['choose'], 'location', i, f, sl[i]); K.add(S['choose'], 'rotation_euler', i, f, se[i])
         K.add(S['choose'].data, 'energy', 0, f, (3500 if CHOSEN <= t < DEPLOY else 900) * on)
         for i in range(2): K.add(S['beam'], 'location', i, f, tl[i])
         K.add(S['beam_mat'].node_tree, 'nodes["strength"].inputs[1].default_value', 0, f, (0.16 if CHOSEN <= t < DEPLOY else 0.2 if t >= MORNING else 0.5) * on)
         # arena: cold moonlight; a warm spot on the hero after the horn
-        K.add(L['moon'].data, 'energy', 0, f, 2.9); K.add(L['arena_fill'].data, 'energy', 0, f, 1150)
+        K.add(L['moon'].data, 'energy', 0, f, 2.5); K.add(L['arena_fill'].data, 'energy', 0, f, 1150)
         K.add(sc_nt, 'nodes["mistk"].outputs[0].default_value', 0, f, 0.24 if in_arena else 0.0)
         for i in range(len(Ar['ruins'])):
             fl = 0.7 + 0.3 * math.sin(t * 11.3 + i * 2.1) * math.sin(t * 6.7 + i) + 0.12 * math.sin(t * 23.0 + i)
@@ -429,10 +431,10 @@ def lights(S, Ar, C, K, cache):
         cp, ct = cache['cam'][f]; dv = Vector((ct.x - cp.x, ct.y - cp.y, 0))
         dv = dv.normalized() if dv.length > 0.1 else Vector((0, 1, 0)); sd = Vector((-dv.y, dv.x, 0))
         rp = ct + dv * 3.2 + sd * 1.3; rp.z = ct.z + 2.6
-        if in_arena: rcol = Vector((0.55, 0.95, 1.0)); ren = 2600.0
+        if in_arena: rcol = Vector((0.55, 0.95, 1.0)); ren = 500.0 if VICTORY[0] <= t < MORNING else 1700.0
         else:
             rp.x = clamp(rp.x, TX - 1.9, TX + 1.9); rp.y = clamp(rp.y, -10.5, GATE_Y - 0.8); rp.z = min(rp.z, TH - 0.3)
-            rcol = Vector((1.0, 0.62, 0.32)).lerp(Vector((0.5, 0.66, 1.0)), night); ren = lerp(420.0, 260.0, night)
+            rcol = Vector((1.0, 0.62, 0.32)).lerp(Vector((0.5, 0.66, 1.0)), night); ren = lerp(420.0, 750.0, night)
         rq = (Vector((ct.x, ct.y, ct.z)) - rp).to_track_quat('-Z', 'Y')
         for i in range(3): K.add(L['rim'], 'location', i, f, rp[i]); K.add(L['rim'].data, 'color', i, f, rcol[i])
         for i in range(4): K.add(L['rim'], 'rotation_quaternion', i, f, rq[i])
@@ -440,7 +442,7 @@ def lights(S, Ar, C, K, cache):
         hw = ease(ramp(t, HORN + 0.6, HORN + 2.0)) * (t < MORNING)
         hp = cache['a_coin0'][f]
         for i, v in enumerate((hp.x + 0.4, hp.y - 1.0, 6.0)): K.add(L['hero_warm'], 'location', i, f, v)
-        K.add(L['hero_warm'].data, 'energy', 0, f, 1400 * hw)
+        K.add(L['hero_warm'].data, 'energy', 0, f, 900 * hw)
     q = (V(0, 0, 0) - V(0, 0, 1)).to_track_quat('-Z', 'Y')
     L['hero_warm'].rotation_euler = Euler((0.17, 0, 0))
     for o in L.values(): o.visible_camera = False; o.visible_glossy = False

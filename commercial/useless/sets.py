@@ -114,7 +114,7 @@ def tunnel():
     if os.environ.get('NU_HAZE', '1') == '1':
         hz = bpy.data.materials.new('t_haze'); hz.use_nodes = True; nt = hz.node_tree; nt.nodes.clear()
         o_ = nt.nodes.new('ShaderNodeOutputMaterial'); pv = nt.nodes.new('ShaderNodeVolumePrincipled'); pv.name = 'vol'
-        pv.inputs['Color'].default_value = (1, 0.95, 0.88, 1); pv.inputs['Density'].default_value = 0.022; pv.inputs['Anisotropy'].default_value = 0.45
+        pv.inputs['Color'].default_value = (1, 0.95, 0.88, 1); pv.inputs['Density'].default_value = 0.016; pv.inputs['Anisotropy'].default_value = 0.45
         nt.links.new(pv.outputs[0], o_.inputs['Volume'])
         box('t_haze', (TX - TW / 2 + 0.02, y0 + 0.02, 0.02), (TX + TW / 2 - 0.02, GATE_Y + 3.9, TH - 0.02), hz)
         hb = bpy.context.active_object; hb.visible_shadow = False; T['haze_mat'] = hz
