@@ -4,15 +4,16 @@ decal (dark inside, upper teeth, tongue, lip rim) conformed to his face at the l
 import bpy, math
 from mathutils import Vector
 
-LIPS = Vector((0.0, -0.197, 1.402))     # rest pose, model space: the painted lip line (measured off the mesh profile)
-W_, H_ = 0.048, 0.027                   # the mouth fully open
+LIPS = Vector((0.0, -0.197, 1.402))     # rest pose, world space of the fresh import: the painted lip line (measured off the mesh profile)
+W_, H_ = 0.056, 0.030                   # the mouth fully open
 
 def add_mouth(rig, me, tex):
     rig.data.pose_position = 'REST'; bpy.context.view_layer.update()
     bpy.ops.mesh.primitive_grid_add(x_subdivisions=18, y_subdivisions=10, size=1)
     mo = bpy.context.object; mo.name = 'neet_mouth'
     # build it in world space in front of the lips, facing -Y, then conform it to the face (rest pose) and bake that
-    Mw = me.matrix_world.copy()          # the model may already be placed and scaled in the scene: work in its frame
+    # LIPS are world coordinates of the freshly imported model; in a scene the model sits under a placed, scaled root
+    Mw = rig.parent.matrix_world.copy() if rig.parent else __import__('mathutils').Matrix()
     for v in mo.data.vertices:
         x, y = v.co.x, v.co.y
         v.co = Mw @ Vector((LIPS.x + x * W_, LIPS.y - 0.04, LIPS.z + y * H_))
