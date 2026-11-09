@@ -9,6 +9,7 @@ from mathutils import Vector, Matrix
 HERE = os.path.dirname(os.path.abspath(__file__)); DG = os.path.join(HERE, '..', 'degens'); sys.path.insert(0, DG)
 os.environ.setdefault('DA_STUDIO', os.path.join(DG, 'studio'))
 import humans, rigctl, assets, props, room, grips
+from neet_mouth import add_mouth
 import director as D
 
 ARGS = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
@@ -262,7 +263,8 @@ def seat_neet(N):
 
 # ================================================================== Grandma
 def grandma_actor():
-    humans.CAST['grandma'] = dict(humans.CAST['pam']); humans.CAST['grandma']['hair'] = 'toigo_curled_under_bob'; humans.CAST['grandma']['tint'] = {
+    humans.CAST['grandma'] = dict(humans.CAST['pam']); humans.CAST['grandma']['hair'] = 'toigo_curled_under_bob'
+    humans.CAST['grandma']['phen'] = dict(gender=0.0, age=1.0, muscle=0.22, weight=0.5, height=0.3, proportions=0.45, cupsize=0.4, firmness=0.1, race=dict(caucasian=0.95, asian=0.03, african=0.02)); humans.CAST['grandma']['tint'] = {
         'toigo_fisherman_sweater': (0.92, 0.9, 1.15, (0.82, 0.55, 0.62)), 'toigo_curled_under_bob': (0.0, 0.08, 2.3, (0.95, 0.94, 0.93))}     # dusty-rose cardigan, white hair
     rig, body, parts = humans.build('grandma')
     a = rigctl.Actor('grandma', rig, body); a.parts = parts
@@ -273,6 +275,7 @@ def main():
     bpy.ops.wm.read_factory_settings(use_empty=True); setup_render()
     B = basement(); S = stakeout(); L = lounge()
     N = load_neet(); neet_nla(N); sit_loc = seat_neet(N)
+    N['mouth'] = add_mouth(N['rig'], N['mesh'], os.path.join(TEX, 'mouth.png'))
     a = grandma_actor()
     ph = props.phone('gran_phone', os.path.join(os.environ['FY_GRAN'], 'g_0001.png'))
     sm = bpy.data.materials[ph['screen_mat']]; ti = [n for n in sm.node_tree.nodes if n.type == 'TEX_IMAGE'][0]
@@ -299,6 +302,8 @@ def main():
         elif t < 27.0: loc, rz = Vector((-1.2, 1.55, 0)), math.radians(-90)        # standing at the board, facing it
         else: loc, rz = Vector((60.25, 1.95, -0.52)), math.pi                      # crouched behind the hedge, peeking at the home
         for i in range(3): K.add(N['root'], 'location', i, f, loc[i])
+        tvn = talk('neet', t); mo_open = min(1.0, tvn * 1.15) * (0.75 + 0.25 * math.sin(t * 17.0) ** 2) if tvn > 0.04 else 0.0
+        K.add(N['mouth'].data.shape_keys, 'key_blocks["open"].value', 0, f, mo_open)
         K.add(N['root'], 'rotation_euler', 2, f, rz)
         # ---------------- lightning
         flash = sum(max(0.0, 1 - abs(t - th - d) / 0.05) * w for th in THUNDER for d, w in ((0.0, 1.0), (0.18, 0.6), (0.3, 0.8)))
@@ -309,13 +314,13 @@ def main():
         yawT, pitchT, smile = 0.0, 0.55, 0.12
         if win(t, 30.7, 32.6) or t >= 36.1: pitchT = 0.0; smile = 0.55
         st['yaw'] = lerp(st['yaw'], yawT, 0.2); st['pitch'] = lerp(st['pitch'], pitchT, 0.2)
-        Q = {}; lean = math.radians(-4) + math.sin(t * 1.6) * 0.008; root_loc = root0
+        Q = {}; lean = math.radians(9) + math.sin(t * 1.6) * 0.008; root_loc = root0     # stooped over her phone
         for bn, wgt in (('spine05', .15), ('spine04', .2), ('spine03', .25), ('spine02', .2), ('spine01', .2)):
             Q[bn] = a.local_q(bn, rigctl.qrot((1, 0, 0), lean * wgt))
         tv = talk('grandma', t)
         for bn, wgt in (('neck01', .3), ('neck02', .3), ('neck03', .2), ('head', .2)):
-            Q[bn] = a.local_q(bn, rigctl.qrot((0, 0, 1), st['yaw'] * wgt) @ rigctl.qrot((1, 0, 0), (st['pitch'] - lean * 0.9 + math.sin(t * 8) * 0.02 * (tv > 0.1)) * wgt))
-        blink = 1.0 if (t % 3.9) < 0.12 else 0.0
+            Q[bn] = a.local_q(bn, rigctl.qrot((0, 0, 1), (st['yaw'] + 0.006 * math.sin(t * 41)) * wgt) @ rigctl.qrot((1, 0, 0), (st['pitch'] - lean * 0.6 + math.sin(t * 8) * 0.02 * (tv > 0.1) + 0.004 * math.sin(t * 37)) * wgt))
+        blink = 1.0 if (t % 3.9) < 0.2 else 0.0          # slow blinks
         for s in 'LR':
             Q[f'orbicularis03.{s}'] = a.local_q(f'orbicularis03.{s}', rigctl.qrot((1, 0, 0), 0.5 * blink + 0.12 * smile))
             Q[f'orbicularis04.{s}'] = a.local_q(f'orbicularis04.{s}', rigctl.qrot((1, 0, 0), -0.2 * blink + 0.12 * smile))

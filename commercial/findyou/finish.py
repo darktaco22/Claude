@@ -26,6 +26,24 @@ def wrap(d, text, f, maxw):
     return lines + [cur]
 G = sorted(glob.glob(os.path.join(CG, 'f_*.png')))
 LOGO = Image.open(os.path.join(A, 'logo.png')).convert('RGBA')
+# ---- the look: a cold thriller grade for the hunt, a warm one for Sunny Acres; lightning; vignette; film grain
+_yy, _xx = np.mgrid[0:H, 0:W]; VIG = 1 - 0.38 * (((_xx - W / 2) / (W * 0.62)) ** 2 + ((_yy - H / 2) / (H * 0.6)) ** 2)
+VIG = np.clip(VIG, 0.45, 1.0)[..., None].astype(np.float32)
+def grade(a, t, f):
+    insert = 991 <= f <= 1080; end = f > N3D
+    if end or insert: return a
+    if t < 30.0:      # teal shadows, a little crushed
+        lum = a.mean(axis=2, keepdims=True)
+        a = a * np.array([0.92, 1.0, 1.06], np.float32) + (0.04 * (1 - lum)) * np.array([-0.4, 0.3, 0.6], np.float32)
+        a = np.clip((a - 0.02) * 1.06, 0, 1)
+        flash = sum(max(0.0, 1 - abs(t - th - d) / 0.06) * w for th in THUNDER for d, w in ((0.0, 1.0), (0.18, 0.55), (0.3, 0.75)))
+        if flash > 0: a = a + flash * 0.22 * np.array([0.85, 0.9, 1.0], np.float32)
+    else:             # warm afternoon
+        a = a * np.array([1.05, 1.0, 0.92], np.float32)
+    a = a * VIG
+    g = np.random.default_rng(f).normal(0, 0.018, (H, W, 1)).astype(np.float32)
+    return a + g
+
 def frame(f):
     t = (f - 1) / FPS
     if 991 <= f <= 1080:      # Grandma's phone, full screen: the real game, her RUG PULL on NEET's push
@@ -60,7 +78,8 @@ def frame(f):
             if u > t_: d.text((W / 2, 640 + j * 80 + (30 if j == 2 else 0)), tx, font=font(sz), fill=col, stroke_width=5, stroke_fill=(10, 6, 20), anchor='mm')
         if u > 1.8:
             d.rounded_rectangle((50, 1010, W - 50, 1090), 36, fill=(255, 214, 80)); d.text((W / 2, 1050), 'PLAY FREE · memeroyale.imaginestudio.fun', font=font(27), fill=(20, 10, 48), anchor='mm')
-    base.convert('RGB').save(os.path.join(OUT, f'c_{f:04d}.png'))
+    out = grade(np.asarray(base.convert('RGB')).astype(np.float32) / 255.0, t, f)
+    Image.fromarray((np.clip(out, 0, 1) * 255).astype(np.uint8)).save(os.path.join(OUT, f'c_{f:04d}.png'))
 
 if not os.environ.get('MIXONLY'):
     for f in range(1, END + 1): frame(f)
@@ -104,7 +123,8 @@ sf.write(os.path.join(OUT, 'score.wav'), np.stack([score, score], 1).astype(np.f
 cues = [(f'vo/{i}.wav', t0, 1.0) for i, t0 in LINES]
 cues += [('spell_rug.mp3', 0.15, 0.6), ('hq_destroy.mp3', 1.2, 0.6), ('defeat.mp3', 1.6, 0.7), ('crowd_laugh.mp3', 2.0, 0.55),
          ('deploy_spell.mp3', 33.2, 0.8), ('spell_rug.mp3', 33.45, 1.0), ('die_useless.mp3', 33.5, 0.6), ('die_useless.mp3', 33.55, 0.6),
-         ('ui_tap.mp3', 32.75, 0.7), ('card_reveal.mp3', N3D / FPS + 0.05, 0.8)]
+         ('ui_tap.mp3', 32.75, 0.7),
+        *[('ui_tap.mp3', t0 + 0.06 * k, 0.25) for t0, n_ in ((22.4, 5), (24.0, 5), (25.4, 5), (27.0, 16)) for k in range(n_)], ('card_reveal.mp3', N3D / FPS + 0.05, 0.8)]
 ins = ['-i', os.path.join(OUT, 'score.wav'), '-i', os.path.join(AU, 'mus_battle_cemetery.mp3'), '-i', os.path.join(AU, 'mus_menu.mp3')]
 flt = [f'[0:a]volume=1.0[s]',
        f'[1:a]atrim=0:8,volume=0.5,afade=t=in:d=0.3,afade=t=out:st=7.2:d=0.6,adelay=22400|22400[m1]',
