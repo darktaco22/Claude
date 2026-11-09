@@ -1,0 +1,107 @@
+{
+ "lines": [
+  {
+   "id": "g_ring",
+   "who": "groom",
+   "t": 2.8,
+   "end": 5.215,
+   "text": "How much for the ring? The wedding's in twenty minutes."
+  },
+  {
+   "id": "b_forty",
+   "who": "broker",
+   "t": 5.5,
+   "end": 6.709,
+   "text": "Forty bucks."
+  },
+  {
+   "id": "g_perfect",
+   "who": "groom",
+   "t": 6.95,
+   "end": 8.591000000000001,
+   "text": "Perfect. That's a full position."
+  },
+  {
+   "id": "m_harold",
+   "who": "grandma",
+   "t": 8.9,
+   "end": 11.384,
+   "text": "This is Harold. He'd want me to buy the dip."
+  },
+  {
+   "id": "b_ashes",
+   "who": "broker",
+   "t": 12.25,
+   "end": 14.286999999999999,
+   "text": "Ashes are thirty a pound."
+  },
+  {
+   "id": "m_big",
+   "who": "grandma",
+   "t": 14.55,
+   "end": 15.896,
+   "text": "He was a big man."
+  },
+  {
+   "id": "b_useless",
+   "who": "broker",
+   "t": 17.0,
+   "end": 19.07,
+   "text": "He's not gold. He's useless."
+  },
+  {
+   "id": "b_line",
+   "who": "broker",
+   "t": 19.4,
+   "end": 22.29,
+   "text": "That one's been in line since the last bull run."
+  },
+  {
+   "id": "b_free",
+   "who": "broker",
+   "t": 22.6,
+   "end": 25.362000000000002,
+   "text": "You want to lose everything? Lose it here. It's free."
+  },
+  {
+   "id": "g_rugged",
+   "who": "groom",
+   "t": 27.15,
+   "end": 29.375999999999998,
+   "text": "I just rugged a guy... and I still have my ring!"
+  },
+  {
+   "id": "m_look",
+   "who": "grandma",
+   "t": 29.65,
+   "end": 30.781,
+   "text": "Harold, look!"
+  },
+  {
+   "id": "s_wen",
+   "who": "slerf",
+   "t": 32.45,
+   "end": 33.951,
+   "text": "...wen launch?"
+  }
+ ],
+ "cuts": [
+  2.6,
+  5.35,
+  6.8,
+  8.7,
+  11.45,
+  14.4,
+  16.0,
+  19.2,
+  22.45,
+  25.45,
+  26.95,
+  29.5,
+  30.95,
+  32.3,
+  34.1
+ ],
+ "end": 38.2,
+ "endcard": 34.1
+}
