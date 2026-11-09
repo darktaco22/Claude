@@ -227,6 +227,17 @@ def load_neet():
     bpy.context.view_layer.update()
     bb = [mesh.matrix_world @ Vector(c) for c in mesh.bound_box]; h = max(v.z for v in bb) - min(v.z for v in bb)
     s = 1.7 / h; root.scale = (s, s, s)
+    # the game model is low-poly with split vertices: weld it, shade it smooth and subdivide it at render time
+    import bmesh
+    bm = bmesh.new(); bm.from_mesh(mesh.data); bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0002); bm.to_mesh(mesh.data); bm.free()
+    for p in mesh.data.polygons: p.use_smooth = True
+    sd = mesh.modifiers.new('subd', 'SUBSURF'); sd.levels = 1; sd.render_levels = 2; sd.quality = 3; sd.uv_smooth = 'PRESERVE_BOUNDARIES'
+    # its ORM map's metallic channel has stray specks on the skin (they mirror the room as pale shards): no metal
+    for m in mesh.data.materials:
+        bs = m.node_tree.nodes.get('Principled BSDF')
+        if bs:
+            for l in list(bs.inputs['Metallic'].links): m.node_tree.links.remove(l)
+            bs.inputs['Metallic'].default_value = 0.0
     return dict(root=root, rig=rig, mesh=mesh, acts=acts)
 
 NEET_SCHED = [(0.0, 'sitangry', 1.0), (2.9, 'sit', 1.0), (22.3, 'idle', 1.0)]   # (no angry clip under 'I will find you': it turns his head away from the lens)
@@ -276,6 +287,7 @@ def main():
     B = basement(); S = stakeout(); L = lounge()
     N = load_neet(); neet_nla(N); sit_loc = seat_neet(N)
     N['mouth'] = add_mouth(N['rig'], N['mesh'], os.path.join(TEX, 'mouth.png'))
+    sw = N['mouth'].modifiers.new('stick', 'SHRINKWRAP'); sw.target = N['mesh']; sw.wrap_method = 'NEAREST_SURFACEPOINT'; sw.offset = 0.0016   # stays on the subdivided face
     a = grandma_actor()
     ph = props.phone('gran_phone', os.path.join(os.environ['FY_GRAN'], 'g_0001.png'))
     sm = bpy.data.materials[ph['screen_mat']]; ti = [n for n in sm.node_tree.nodes if n.type == 'TEX_IMAGE'][0]
