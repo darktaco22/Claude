@@ -12,16 +12,18 @@ def add_mouth(rig, me, tex):
     bpy.ops.mesh.primitive_grid_add(x_subdivisions=18, y_subdivisions=10, size=1)
     mo = bpy.context.object; mo.name = 'neet_mouth'
     # build it in world space in front of the lips, facing -Y, then conform it to the face (rest pose) and bake that
+    Mw = me.matrix_world.copy()          # the model may already be placed and scaled in the scene: work in its frame
     for v in mo.data.vertices:
         x, y = v.co.x, v.co.y
-        v.co = Vector((LIPS.x + x * W_, LIPS.y - 0.04, LIPS.z + y * H_))
+        v.co = Mw @ Vector((LIPS.x + x * W_, LIPS.y - 0.04, LIPS.z + y * H_))
     sw = mo.modifiers.new('sw', 'SHRINKWRAP'); sw.target = me; sw.wrap_method = 'PROJECT'
     sw.use_project_y = True; sw.use_negative_direction = True; sw.use_positive_direction = True; sw.offset = 0.0018
     bpy.context.view_layer.objects.active = mo; bpy.ops.object.modifier_apply(modifier='sw')
     full = [v.co.copy() for v in mo.data.vertices]
     # closed: squashed onto the lip line (a thin dark seam)
+    Mi = Mw.inverted()
     for v in mo.data.vertices:
-        v.co = Vector((v.co.x, v.co.y, LIPS.z + (v.co.z - LIPS.z) * 0.06))
+        lc = Mi @ v.co; lc.z = LIPS.z + (lc.z - LIPS.z) * 0.06; v.co = Mw @ lc
     mo.shape_key_add(name='Basis'); k = mo.shape_key_add(name='open')
     for i, p in enumerate(full): k.data[i].co = p
     # into the mesh's own space, skinned to the Head bone like the face around it
