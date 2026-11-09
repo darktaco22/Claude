@@ -89,6 +89,20 @@ def basement():
     # the high window behind him: rain, and the lightning
     room.plane('b_window', (1.0, 0.36), (0.5, 2.19, 2.25), (math.pi / 2, 0, math.pi), props.mat('bwin', (0.05, 0.07, 0.1), 0.1, emit=(0.25, 0.32, 0.45), estr=0.4))
     S['lightning'] = area('lightning', (0.75, 0.82, 1.0), 0, (0.5, 2.6, 2.3), (math.radians(-100), 0, 0), 1.0)
+    wf = props.mat('winframe', (0.03, 0.03, 0.035), 0.5)                # a real window: frame, mullions, wet sill
+    for (sx_, sz_, x_, z_) in [(1.08, 0.05, 0.5, 2.455), (1.08, 0.05, 0.5, 2.045), (0.05, 0.46, -0.015, 2.25), (0.05, 0.46, 1.015, 2.25),
+                               (0.03, 0.42, 0.5, 2.25), (0.03, 0.42, 0.17, 2.25), (0.03, 0.42, 0.83, 2.25)]:
+        box('winf', (sx_, 0.05, sz_), (x_, 2.17, z_), wf)
+    # the gamer den: posters of his favourite cards, an RGB strip and its magenta glow behind him
+    pm = props.mat('posterframe', (0.02, 0.02, 0.025), 0.4)
+    for i, (fn, x_, z_, r_) in enumerate([('godcandle.webp', -0.7, 1.72, 2), ('whale.webp', 0.78, 1.66, -3)]):
+        m, _ = imgmat(f'poster{i}', os.path.join(CARDS, fn), 0.15, 0.55)
+        box(f'posterf{i}', (0.5, 0.012, 0.62), (x_, 2.19, z_), pm, rot=(0, math.radians(r_), 0))
+        room.plane(f'poster{i}', (0.46, 0.575), (x_, 2.181, z_), (math.pi / 2, math.radians(r_), 0), m)
+    led = props.mat('led', (0.9, 0.1, 0.9), 0.3, emit=(1.0, 0.08, 0.85), estr=9.0)
+    box('led_back', (4.2, 0.02, 0.02), (0.15, 2.185, 1.05), led); box('led_desk', (0.02, 1.3, 0.015), (-0.52, 0.9, 0.72), led)
+    S['ledglow'] = area('ledglow', (1.0, 0.15, 0.8), 30, (0.15, 1.85, 1.0), (math.radians(80), 0, 0), 1.8)   # washes the wall, not him
+    mrim = area('neet_rim_m', (1.0, 0.2, 0.75), 18, (-0.9, 1.9, 1.7), (0, 0, 0), 0.6); aim(mrim, (0, 0.95, 1.3))
     # the gaming chair NEET sits on (seat at room.SEAT_H), and the desk with the monitor in front of him (the camera side)
     chair = props.mat('chair', (0.02, 0.02, 0.025), 0.45); red = props.mat('chairred', (0.5, 0.02, 0.03), 0.5)
     box('seat', (0.55, 0.52, 0.1), (0, 0.95, room.SEAT_H - 0.05), chair, 0.03)
@@ -385,7 +399,7 @@ def main():
         elif kind == 'board_pan': loc = Vector((-0.55, 1.25 - 0.55 * ease(u / 1.6), 1.5)); look = Vector((-1.97, 0.95 - 0.1 * ease(u / 1.6), 1.45)); lens = 32
         elif kind == 'neet_monitor': loc = Vector((0.9, 1.9, 1.8)); look = Vector((-1.4, 0.9, 1.35)); lens = 26
         elif kind == 'board_string': loc = Vector((-1.15, 0.55, 1.4)) + Vector((0, 0.15, 0.03)) * ease(u / 1.6); look = Vector((-1.95, 1.3, 1.35)); lens = 38
-        elif kind == 'stakeout':  loc = Vector((60.55, 0.7, 1.05)) + Vector((0, 0.2, 0)) * ease(u / 3); look = Vector((60.25, 5.0, 1.15)); lens = 30
+        elif kind == 'stakeout':  loc = Vector((60.5, 0.45, 1.1)) + Vector((0, 0.2, 0)) * ease(u / 3); look = Vector((60.5, 5.0, 1.2)); lens = 21   # the whole sign in frame
         elif kind == 'lounge_wide': loc = Vector((-59.6, -1.9, 1.3)) + Vector((-0.1, 0.45, -0.05)) * ease(u / 1.6); look = geyes + Vector((0, 0, -0.25)); lens = 35
         elif kind in ('gran_close', 'insert'): loc = geyes + Vector((0.05, -0.75, 0.02)) - Vector((0, 0.06, 0)) * ease(u / 1.4); look = geyes; lens = 50
         else: loc = geyes + Vector((-0.12, -0.6, 0.0)); look = geyes; lens = 55
