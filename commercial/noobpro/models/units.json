@@ -1,0 +1,3025 @@
+{
+ "useless": {
+  "height": 1.681,
+  "tris": 5000,
+  "kb": 552,
+  "clips": {
+   "idle": {
+    "dur": 6.0,
+    "hit": null,
+    "src": "idle [0.00-6.00]",
+    "loop": true
+   },
+   "ready": {
+    "dur": 2.2,
+    "hit": null,
+    "src": "box_idle",
+    "loop": true
+   },
+   "walk": {
+    "dur": 1.033,
+    "hit": null,
+    "src": "walk",
+    "loop": true
+   },
+   "run": {
+    "dur": 0.633,
+    "hit": null,
+    "src": "run",
+    "loop": true
+   },
+   "attack1": {
+    "dur": 0.733,
+    "hit": 0.3,
+    "src": "box_jab [0.00-0.75]",
+    "loop": false
+   },
+   "attack2": {
+    "dur": 0.867,
+    "hit": 0.333,
+    "src": "box_cross [0.05-0.95]",
+    "loop": false
+   },
+   "attack3": {
+    "dur": 0.933,
+    "hit": 0.433,
+    "src": "box_hook [0.00-0.95]",
+    "loop": false
+   },
+   "hit": {
+    "dur": 0.733,
+    "hit": null,
+    "src": "box_hitbody [0.00-0.75]",
+    "loop": false
+   },
+   "die": {
+    "dur": 2.6,
+    "hit": null,
+    "src": "box_kd [0.00-2.60]",
+    "loop": false
+   },
+   "win": {
+    "dur": 4.5,
+    "hit": null,
+    "src": "victory",
+    "loop": true
+   },
+   "lose": {
+    "dur": 6.733,
+    "hit": null,
+    "src": "defeat",
+    "loop": true
+   },
+   "emote": {
+    "dur": 3.0,
+    "hit": null,
+    "src": "silly [0.40-3.40]",
+    "loop": false
+   }
+  }
+ },
+ "chillguy": {
+  "height": 1.693,
+  "tris": 8800,
+  "kb": 650,
+  "clips": {
+   "idle": {
+    "dur": 6.0,
+    "hit": null,
+    "src": "idle [0.00-6.00]",
+    "loop": true
+   },
+   "ready": {
+    "dur": 2.2,
+    "hit": null,
+    "src": "box_idle",
+    "loop": true
+   },
+   "walk": {
+    "dur": 1.033,
+    "hit": null,
+    "src": "walk",
+    "loop": true
+   },
+   "run": {
+    "dur": 0.633,
+    "hit": null,
+    "src": "run",
+    "loop": true
+   },
+   "attack1": {
+    "dur": 0.733,
+    "hit": 0.3,
+    "src": "box_jab [0.00-0.75]",
+    "loop": false
+   },
+   "attack2": {
+    "dur": 0.867,
+    "hit": 0.333,
+    "src": "box_cross [0.05-0.95]",
+    "loop": false
+   },
+   "attack3": {
+    "dur": 0.933,
+    "hit": 0.4,
+    "src": "box_hook [0.00-0.95]",
+    "loop": false
+   },
+   "hit": {
+    "dur": 0.733,
+    "hit": null,
+    "src": "box_hitbody [0.00-0.75]",
+    "loop": false
+   },
+   "die": {
+    "dur": 2.6,
+    "hit": null,
+    "src": "box_kd [0.00-2.60]",
+    "loop": false
+   },
+   "win": {
+    "dur": 4.5,
+    "hit": null,
+    "src": "victory",
+    "loop": true
+   },
+   "lose": {
+    "dur": 6.733,
+    "hit": null,
+    "src": "defeat",
+    "loop": true
+   },
+   "emote": {
+    "dur": 2.0,
+    "hit": null,
+    "src": "shrug",
+    "loop": false
+   }
+  }
+ },
+ "jeanphil": {
+  "height": 1.685,
+  "tris": 8799,
+  "kb": 700,
+  "clips": {
+   "idle": {
+    "dur": 6.0,
+    "hit": null,
+    "src": "idle [0.00-6.00]",
+    "loop": true
+   },
+   "ready": {
+    "dur": 2.2,
+    "hit": null,
+    "src": "box_idle",
+    "loop": true
+   },
+   "walk": {
+    "dur": 1.033,
+    "hit": null,
+    "src": "walk",
+    "loop": true
+   },
+   "run": {
+    "dur": 0.633,
+    "hit": null,
+    "src": "run",
+    "loop": true
+   },
+   "attack1": {
+    "dur": 1.6,
+    "hit": 0.567,
+    "src": "box_throw",
+    "loop": false
+   },
+   "attack2": {
+    "dur": 0.733,
+    "hit": 0.3,
+    "src": "box_jab [0.00-0.75]",
+    "loop": false
+   },
+   "hit": {
+    "dur": 0.733,
+    "hit": null,
+    "src": "box_hitbody [0.00-0.75]",
+    "loop": false
+   },
+   "die": {
+    "dur": 2.6,
+    "hit": null,
+    "src": "box_kd [0.00-2.60]",
+    "loop": false
+   },
+   "win": {
+    "dur": 4.5,
+    "hit": null,
+    "src": "victory",
+    "loop": true
+   },
+   "lose": {
+    "dur": 6.733,
+    "hit": null,
+    "src": "defeat",
+    "loop": true
+   },
+   "emote": {
+    "dur": 2.733,
+    "hit": null,
+    "src": "bow",
+    "loop": false
+   }
+  }
+ },
+ "lmao": {
+  "height": 1.684,
+  "tris": 8799,
+  "kb": 535,
+  "clips": {
+   "idle": {
+    "dur": 6.0,
+    "hit": null,
+    "src": "idle [0.00-6.00]",
+    "loop": true
+   },
+   "ready": {
+    "dur": 2.2,
+    "hit": null,
+    "src": "box_idle",
+    "loop": true
+   },
+   "walk": {
+    "dur": 1.033,
+    "hit": null,
+    "src": "walk",
+    "loop": true
+   },
+   "run": {
+    "dur": 0.633,
+    "hit": null,
+    "src": "run",
+    "loop": true
+   },
+   "attack1": {
+    "dur": 1.4,
+    "hit": 0.55,
+    "src": "laugh [1.00-2.40]",
+    "loop": false
+   },
+   "attack2": {
+    "dur": 1.167,
+    "hit": 0.667,
+    "src": "box_bash [0.35-1.50]",
+    "loop": false
+   },
+   "hit": {
+    "dur": 0.733,
+    "hit": null,
+    "src": "box_hitbody [0.00-0.75]",
+    "loop": false
+   },
+   "die": {
+    "dur": 2.6,
+    "hit": null,
+    "src": "box_kd [0.00-2.60]",
+    "loop": false
+   },
+   "win": {
+    "dur": 4.5,
+    "hit": null,
+    "src": "victory",
+    "loop": true
+   },
+   "lose": {
+    "dur": 6.733,
+    "hit": null,
+    "src": "defeat",
+    "loop": true
+   },
+   "emote": {
+    "dur": 4.0,
+    "hit": null,
+    "src": "laugh [0.00-4.00]",
+    "loop": false
+   }
+  }
+ },
+ "chillhouse": {
+  "height": 1.712,
+  "tris": 11799,
+  "kb": 923,
+  "clips": {
+   "idle": {
+    "dur": 6.0,
+    "hit": null,
+    "src": "idle [0.00-6.00]",
+    "loop": true
+   },
+   "ready": {
+    "dur": 2.2,
+    "hit": null,
+    "src": "box_idle (cupsey retargeted)",
+    "loop": true
+   },
+   "walk": {
+    "dur": 1.033,
+    "hit": null,
+    "src": "walk",
+    "loop": true
+   },
+   "run": {
+    "dur": 0.633,
+    "hit": null,
+    "src": "run",
+    "loop": true
+   },
+   "attack1": {
+    "dur": 0.733,
+    "hit": 0.3,
+    "src": "box_jab (cupsey retargeted) [0.00-0.75]",
+    "loop": false
+   },
+   "attack2": {
+    "dur": 0.867,
+    "hit": 0.333,
+    "src": "box_cross (cupsey retargeted) [0.05-0.95]",
+    "loop": false
+   },
+   "attack3": {
+    "dur": 0.933,
+    "hit": 0.433,
+    "src": "box_hook (cupsey retargeted) [0.00-0.95]",
+    "loop": false
+   },
+   "hit": {
+    "dur": 0.733,
+    "hit": null,
+    "src": "box_hitbody (cupsey retargeted) [0.00-0.75]",
+    "loop": false
+   },
+   "die": {
+    "dur": 2.6,
+    "hit": null,
+    "src": "box_kd (cupsey retargeted) [0.00-2.60]",
+    "loop": false
+   },
+   "win": {
+    "dur": 4.5,
+    "hit": null,
+    "src": "victory",
+    "loop": true
+   },
+   "lose": {
+    "dur": 6.733,
+    "hit": null,
+    "src": "defeat",
+    "loop": true
+   },
+   "emote": {
+    "dur": 2.0,
+    "hit": null,
+    "src": "shrug",
+    "loop": false
+   }
+  }
+ },
+ "mensa": {
+  "height": 1.68,
+  "tris": 11800,
+  "kb": 728,
+  "clips": {
+   "idle": {
+    "dur": 6.0,
+    "hit": null,
+    "src": "idle [0.00-6.00]",
+    "loop": true
+   },
+   "ready": {
+    "dur": 2.2,
+    "hit": null,
+    "src": "box_idle",
+    "loop": true
+   },
+   "walk": {
+    "dur": 1.033,
+    "hit": null,
+    "src": "walk",
+    "loop": true
+   },
+   "run": {
+    "dur": 0.633,
+    "hit": null,
+    "src": "run",
+    "loop": true
+   },
+   "attack1": {
+    "dur": 0.733,
+    "hit": 0.333,
+    "src": "box_jab [0.00-0.75]",
+    "loop": false
+   },
+   "attack2": {
+    "dur": 0.867,
+    "hit": 0.333,
+    "src": "box_cross [0.05-0.95]",
+    "loop": false
+   },
+   "hit": {
+    "dur": 0.733,
+    "hit": null,
+    "src": "box_hitbody [0.00-0.75]",
+    "loop": false
+   },
+   "die": {
+    "dur": 2.6,
+    "hit": null,
+    "src": "box_kd [0.00-2.60]",
+    "loop": false
+   },
+   "win": {
+    "dur": 4.5,
+    "hit": null,
+    "src": "victory",
+    "loop": true
+   },
+   "lose": {
+    "dur": 6.733,
+    "hit": null,
+    "src": "defeat",
+    "loop": true
+   },
+   "emote": {
+    "dur": 4.233,
+    "hit": null,
+    "src": "think",
+    "loop": false
+   }
+  }
+ },
+ "troll": {
+  "height": 1.685,
+  "tris": 8799,
+  "kb": 720,
+  "clips": {
+   "idle": {
+    "dur": 6.0,
+    "hit": null,
+    "src": "idle [0.00-6.00]",
+    "loop": true
+   },
+   "ready": {
+    "dur": 2.2,
+    "hit": null,
+    "src": "box_idle",
+    "loop": true
+   },
+   "walk": {
+    "dur": 1.033,
+    "hit": null,
+    "src": "walk",
+    "loop": true
+   },
+   "run": {
+    "dur": 0.633,
+    "hit": null,
+    "src": "run",
+    "loop": true
+   },
+   "attack1": {
+    "dur": 0.733,
+    "hit": 0.3,
+    "src": "box_jab [0.00-0.75]",
+    "loop": false
+   },
+   "attack2": {
+    "dur": 0.867,
+    "hit": 0.333,
+    "src": "box_cross [0.05-0.95]",
+    "loop": false
+   },
+   "attack3": {
+    "dur": 0.933,
+    "hit": 0.4,
+    "src": "box_hook [0.00-0.95]",
+    "loop": false
+   },
+   "hit": {
+    "dur": 0.733,
+    "hit": null,
+    "src": "box_hitbody [0.00-0.75]",
+    "loop": false
+   },
+   "die": {
+    "dur": 2.6,
+    "hit": null,
+    "src": "box_kd [0.00-2.60]",
+    "loop": false
+   },
+   "win": {
+    "dur": 4.5,
+    "hit": null,
+    "src": "victory",
+    "loop": true
+   },
+   "lose": {
+    "dur": 6.733,
+    "hit": null,
+    "src": "defeat",
+    "loop": true
+   },
+   "emote": {
+    "dur": 1.633,
+    "hit": null,
+    "src": "box_taunt",
+    "loop": false
+   }
+  }
+ },
+ "ket": {
+  "height": 1.689,
+  "tris": 8799,
+  "kb": 710,
+  "clips": {
+   "idle": {
+    "dur": 6.0,
+    "hit": null,
+    "src": "idle [0.00-6.00]",
+    "loop": true
+   },
+   "ready": {
+    "dur": 2.2,
+    "hit": null,
+    "src": "box_idle",
+    "loop": true
+   },
+   "walk": {
+    "dur": 1.033,
+    "hit": null,
+    "src": "walk",
+    "loop": true
+   },
+   "run": {
+    "dur": 0.633,
+    "hit": null,
+    "src": "run",
+    "loop": true
+   },
+   "attack1": {
+    "dur": 0.733,
+    "hit": 0.3,
+    "src": "box_jab [0.00-0.75]",
+    "loop": false
+   },
+   "attack2": {
+    "dur": 0.867,
+    "hit": 0.333,
+    "src": "box_cross [0.05-0.95]",
+    "loop": false
+   },
+   "attack3": {
+    "dur": 0.933,
+    "hit": 0.433,
+    "src": "box_hook [0.00-0.95]",
+    "loop": false
+   },
+   "hit": {
+    "dur": 0.733,
+    "hit": null,
+    "src": "box_hitbody [0.00-0.75]",
+    "loop": false
+   },
+   "die": {
+    "dur": 2.6,
+    "hit": null,
+    "src": "box_kd [0.00-2.60]",
+    "loop": false
+   },
+   "win": {
+    "dur": 4.5,
+    "hit": null,
+    "src": "victory",
+    "loop": true
+   },
+   "lose": {
+    "dur": 6.733,
+    "hit": null,
+    "src": "defeat",
+    "loop": true
+   },
+   "emote": {
+    "dur": 4.0,
+    "hit": null,
+    "src": "yawn [0.00-4.00]",
+    "loop": false
+   }
+  }
+ },
+ "zcat": {
+  "height": 1.691,
+  "tris": 8799,
+  "kb": 761,
+  "clips": {
+   "idle": {
+    "dur": 6.0,
+    "hit": null,
+    "src": "idle [0.00-6.00]",
+    "loop": true
+   },
+   "ready": {
+    "dur": 2.2,
+    "hit": null,
+    "src": "box_idle (cupsey retargeted)",
+    "loop": true
+   },
+   "walk": {
+    "dur": 1.033,
+    "hit": null,
+    "src": "walk",
+    "loop": true
+   },
+   "run": {
+    "dur": 0.633,
+    "hit": null,
+    "src": "run",
+    "loop": true
+   },
+   "attack1": {
+    "dur": 0.733,
+    "hit": 0.333,
+    "src": "box_jab (cupsey retargeted) [0.00-0.75]",
+    "loop": false
+   },
+   "attack2": {
+    "dur": 0.867,
+    "hit": 0.333,
+    "src": "box_cross (cupsey retargeted) [0.05-0.95]",
+    "loop": false
+   },
+   "attack3": {
+    "dur": 0.933,
+    "hit": 0.433,
+    "src": "box_hook (cupsey retargeted) [0.00-0.95]",
+    "loop": false
+   },
+   "hit": {
+    "dur": 0.733,
+    "hit": null,
+    "src": "box_hitbody (cupsey retargeted) [0.00-0.75]",
+    "loop": false
+   },
+   "die": {
+    "dur": 2.6,
+    "hit": null,
+    "src": "box_kd (cupsey retargeted) [0.00-2.60]",
+    "loop": false
+   },
+   "win": {
+    "dur": 4.5,
+    "hit": null,
+    "src": "victory",
+    "loop": true
+   },
+   "lose": {
+    "dur": 6.733,
+    "hit": null,
+    "src": "defeat",
+    "loop": true
+   },
+   "emote": {
+    "dur": 3.0,
+    "hit": null,
+    "src": "excited [0.00-3.00]",
+    "loop": false
+   }
+  }
+ },
+ "cupsey": {
+  "height": 1.669,
+  "tris": 8800,
+  "kb": 578,
+  "clips": {
+   "idle": {
+    "dur": 6.0,
+    "hit": null,
+    "src": "idle [0.00-6.00]",
+    "loop": true
+   },
+   "ready": {
+    "dur": 2.2,
+    "hit": null,
+    "src": "box_idle",
+    "loop": true
+   },
+   "walk": {
+    "dur": 1.033,
+    "hit": null,
+    "src": "walk",
+    "loop": true
+   },
+   "run": {
+    "dur": 0.633,
+    "hit": null,
+    "src": "run",
+    "loop": true
+   },
+   "attack1": {
+    "dur": 1.6,
+    "hit": 1.3,
+    "src": "pointfwd [0.00-1.60]",
+    "loop": false
+   },
+   "attack2": {
+    "dur": 0.733,
+    "hit": 0.3,
+    "src": "box_jab [0.00-0.75]",
+    "loop": false
+   },
+   "hit": {
+    "dur": 0.733,
+    "hit": null,
+    "src": "box_hitbody [0.00-0.75]",
+    "loop": false
+   },
+   "die": {
+    "dur": 2.6,
+    "hit": null,
+    "src": "box_kd [0.00-2.60]",
+    "loop": false
+   },
+   "win": {
+    "dur": 4.5,
+    "hit": null,
+    "src": "victory",
+    "loop": true
+   },
+   "lose": {
+    "dur": 6.733,
+    "hit": null,
+    "src": "defeat",
+    "loop": true
+   },
+   "emote": {
+    "dur": 1.167,
+    "hit": null,
+    "src": "clap",
+    "loop": false
+   }
+  }
+ },
+ "cate": {
+  "height": 1.691,
+  "tris": 8800,
+  "kb": 795,
+  "clips": {
+   "idle": {
+    "dur": 6.0,
+    "hit": null,
+    "src": "idle [0.00-6.00]",
+    "loop": true
+   },
+   "ready": {
+    "dur": 2.2,
+    "hit": null,
+    "src": "box_idle (ket retargeted)",
+    "loop": true
+   },
+   "walk": {
+    "dur": 1.033,
+    "hit": null,
+    "src": "walk",
+    "loop": true
+   },
+   "run": {
+    "dur": 0.633,
+    "hit": null,
+    "src": "run",
+    "loop": true
+   },
+   "attack1": {
+    "dur": 0.733,
+    "hit": 0.3,
+    "src": "box_jab (ket retargeted) [0.00-0.75]",
+    "loop": false
+   },
+   "attack2": {
+    "dur": 0.867,
+    "hit": 0.333,
+    "src": "box_cross (ket retargeted) [0.05-0.95]",
+    "loop": false
+   },
+   "attack3": {
+    "dur": 0.933,
+    "hit": 0.4,
+    "src": "box_hook (ket retargeted) [0.00-0.95]",
+    "loop": false
+   },
+   "hit": {
+    "dur": 0.733,
+    "hit": null,
+    "src": "box_hitbody (ket retargeted) [0.00-0.75]",
+    "loop": false
+   },
+   "die": {
+    "dur": 2.6,
+    "hit": null,
+    "src": "box_kd (ket retargeted) [0.00-2.60]",
+    "loop": false
+   },
+   "win": {
+    "dur": 4.5,
+    "hit": null,
+    "src": "victory",
+    "loop": true
+   },
+   "lose": {
+    "dur": 6.733,
+    "hit": null,
+    "src": "defeat",
+    "loop": true
+   },
+   "emote": {
+    "dur": 3.0,
+    "hit": null,
+    "src": "dance [0.00-3.00]",
+    "loop": false
+   }
+  }
+ },
+ "triplet": {
+  "height": 1.68,
+  "tris": 6499,
+  "kb": 576,
+  "clips": {
+   "idle": {
+    "dur": 6.0,
+    "hit": null,
+    "src": "idle [0.00-6.00]",
+    "loop": true
+   },
+   "ready": {
+    "dur": 2.2,
+    "hit": null,
+    "src": "box_idle (chillguy retargeted)",
+    "loop": true
+   },
+   "walk": {
+    "dur": 1.033,
+    "hit": null,
+    "src": "walk",
+    "loop": true
+   },
+   "run": {
+    "dur": 0.633,
+    "hit": null,
+    "src": "run",
+    "loop": true
+   },
+   "attack1": {
+    "dur": 0.733,
+    "hit": 0.3,
+    "src": "box_jab (chillguy retargeted) [0.00-0.75]",
+    "loop": false
+   },
+   "attack2": {
+    "dur": 0.867,
+    "hit": 0.333,
+    "src": "box_cross (chillguy retargeted) [0.05-0.95]",
+    "loop": false
+   },
+   "attack3": {
+    "dur": 0.933,
+    "hit": 0.4,
+    "src": "box_hook (chillguy retargeted) [0.00-0.95]",
+    "loop": false
+   },
+   "hit": {
+    "dur": 0.733,
+    "hit": null,
+    "src": "box_hitbody (chillguy retargeted) [0.00-0.75]",
+    "loop": false
+   },
+   "die": {
+    "dur": 2.6,
+    "hit": null,
+    "src": "box_kd (chillguy retargeted) [0.00-2.60]",
+    "loop": false
+   },
+   "win": {
+    "dur": 4.5,
+    "hit": null,
+    "src": "victory",
+    "loop": true
+   },
+   "lose": {
+    "dur": 6.733,
+    "hit": null,
+    "src": "defeat",
+    "loop": true
+   },
+   "emote": {
+    "dur": 3.867,
+    "hit": null,
+    "src": "flex",
+    "loop": false
+   }
+  }
+ },
+ "baton": {
+  "height": 1.685,
+  "tris": 8799,
+  "kb": 686,
+  "clips": {
+   "idle": {
+    "dur": 6.0,
+    "hit": null,
+    "src": "idle [0.00-6.00]",
+    "loop": true
+   },
+   "ready": {
+    "dur": 2.2,
+    "hit": null,
+    "src": "box_idle",
+    "loop": true
+   },
+   "walk": {
+    "dur": 1.033,
+    "hit": null,
+    "src": "walk",
+    "loop": true
+   },
+   "run": {
+    "dur": 0.633,
+    "hit": null,
+    "src": "run",
+    "loop": true
+   },
+   "attack1": {
+    "dur": 0.733,
+    "hit": 0.3,
+    "src": "box_jab [0.00-0.75]",
+    "loop": false
+   },
+   "attack2": {
+    "dur": 0.867,
+    "hit": 0.333,
+    "src": "box_cross [0.05-0.95]",
+    "loop": false
+   },
+   "attack3": {
+    "dur": 0.933,
+    "hit": 0.433,
+    "src": "box_hook [0.00-0.95]",
+    "loop": false
+   },
+   "hit": {
+    "dur": 0.733,
+    "hit": null,
+    "src": "box_hitbody [0.00-0.75]",
+    "loop": false
+   },
+   "die": {
+    "dur": 2.6,
+    "hit": null,
+    "src": "box_kd [0.00-2.60]",
+    "loop": false
+   },
+   "win": {
+    "dur": 4.5,
+    "hit": null,
+    "src": "victory",
+    "loop": true
+   },
+   "lose": {
+    "dur": 6.733,
+    "hit": null,
+    "src": "defeat",
+    "loop": true
+   },
+   "emote": {
+    "dur": 1.167,
+    "hit": null,
+    "src": "fistpump [0.98-2.12]",
+    "loop": false
+   }
+  }
+ },
+ "mitch": {
+  "height": 1.682,
+  "tris": 8800,
+  "kb": 753,
+  "clips": {
+   "idle": {
+    "dur": 6.0,
+    "hit": null,
+    "src": "idle [0.00-6.00]",
+    "loop": true
+   },
+   "ready": {
+    "dur": 2.2,
+    "hit": null,
+    "src": "box_idle",
+    "loop": true
+   },
+   "walk": {
+    "dur": 1.033,
+    "hit": null,
+    "src": "walk",
+    "loop": true
+   },
+   "run": {
+    "dur": 0.633,
+    "hit": null,
+    "src": "run",
+    "loop": true
+   },
+   "attack1": {
+    "dur": 0.733,
+    "hit": 0.333,
+    "src": "box_jab [0.00-0.75]",
+    "loop": false
+   },
+   "attack2": {
+    "dur": 0.867,
+    "hit": 0.333,
+    "src": "box_cross [0.05-0.95]",
+    "loop": false
+   },
+   "attack3": {
+    "dur": 0.933,
+    "hit": 0.333,
+    "src": "box_upper [0.05-1.00]",
+    "loop": false
+   },
+   "hit": {
+    "dur": 0.733,
+    "hit": null,
+    "src": "box_hitbody [0.00-0.75]",
+    "loop": false
+   },
+   "die": {
+    "dur": 2.6,
+    "hit": null,
+    "src": "box_kd [0.00-2.60]",
+    "loop": false
+   },
+   "win": {
+    "dur": 4.5,
+    "hit": null,
+    "src": "victory",
+    "loop": true
+   },
+   "lose": {
+    "dur": 6.733,
+    "hit": null,
+    "src": "defeat",
+    "loop": true
+   },
+   "emote": {
+    "dur": 1.633,
+    "hit": null,
+    "src": "flex",
+    "loop": false
+   }
+  }
+ },
+ "alon": {
+  "height": 1.691,
+  "tris": 8800,
+  "kb": 684,
+  "clips": {
+   "idle": {
+    "dur": 6.0,
+    "hit": null,
+    "src": "idle [0.00-6.00]",
+    "loop": true
+   },
+   "ready": {
+    "dur": 2.2,
+    "hit": null,
+    "src": "box_idle",
+    "loop": true
+   },
+   "walk": {
+    "dur": 1.033,
+    "hit": null,
+    "src": "walk",
+    "loop": true
+   },
+   "run": {
+    "dur": 0.633,
+    "hit": null,
+    "src": "run",
+    "loop": true
+   },
+   "attack1": {
+    "dur": 1.6,
+    "hit": 1.333,
+    "src": "pointfwd [0.00-1.60]",
+    "loop": false
+   },
+   "attack2": {
+    "dur": 0.733,
+    "hit": 0.3,
+    "src": "box_jab [0.00-0.75]",
+    "loop": false
+   },
+   "hit": {
+    "dur": 0.733,
+    "hit": null,
+    "src": "box_hitbody [0.00-0.75]",
+    "loop": false
+   },
+   "die": {
+    "dur": 2.6,
+    "hit": null,
+    "src": "box_kd [0.00-2.60]",
+    "loop": false
+   },
+   "win": {
+    "dur": 4.5,
+    "hit": null,
+    "src": "victory",
+    "loop": true
+   },
+   "lose": {
+    "dur": 6.733,
+    "hit": null,
+    "src": "defeat",
+    "loop": true
+   },
+   "emote": {
+    "dur": 2.833,
+    "hit": null,
+    "src": "salute",
+    "loop": false
+   }
+  }
+ },
+ "whale": {
+  "height": 1.675,
+  "tris": 11799,
+  "kb": 661,
+  "clips": {
+   "idle": {
+    "dur": 6.0,
+    "hit": null,
+    "src": "idle [0.00-6.00]",
+    "loop": true
+   },
+   "ready": {
+    "dur": 2.2,
+    "hit": null,
+    "src": "box_idle",
+    "loop": true
+   },
+   "walk": {
+    "dur": 1.033,
+    "hit": null,
+    "src": "walk",
+    "loop": true
+   },
+   "run": {
+    "dur": 0.633,
+    "hit": null,
+    "src": "run",
+    "loop": true
+   },
+   "attack1": {
+    "dur": 1.167,
+    "hit": 0.733,
+    "src": "box_bash [0.35-1.50]",
+    "loop": false
+   },
+   "attack2": {
+    "dur": 0.933,
+    "hit": 0.433,
+    "src": "box_hook [0.00-0.95]",
+    "loop": false
+   },
+   "hit": {
+    "dur": 0.733,
+    "hit": null,
+    "src": "box_hitbody [0.00-0.75]",
+    "loop": false
+   },
+   "die": {
+    "dur": 2.6,
+    "hit": null,
+    "src": "box_kd [0.00-2.60]",
+    "loop": false
+   },
+   "win": {
+    "dur": 4.5,
+    "hit": null,
+    "src": "victory",
+    "loop": true
+   },
+   "lose": {
+    "dur": 6.733,
+    "hit": null,
+    "src": "defeat",
+    "loop": true
+   },
+   "emote": {
+    "dur": 3.5,
+    "hit": null,
+    "src": "counting [0.00-3.50]",
+    "loop": false
+   }
+  }
+ },
+ "pepe": {
+  "height": 1.69,
+  "tris": 8799,
+  "kb": 620,
+  "clips": {
+   "idle": {
+    "dur": 6.0,
+    "hit": null,
+    "src": "idle [0.00-6.00]",
+    "loop": true
+   },
+   "ready": {
+    "dur": 1.867,
+    "hit": null,
+    "src": "castidle",
+    "loop": true
+   },
+   "walk": {
+    "dur": 1.033,
+    "hit": null,
+    "src": "walk",
+    "loop": true
+   },
+   "run": {
+    "dur": 0.7,
+    "hit": null,
+    "src": "run",
+    "loop": true
+   },
+   "hit": {
+    "dur": 0.433,
+    "hit": null,
+    "src": "hit",
+    "loop": false
+   },
+   "die": {
+    "dur": 2.6,
+    "hit": null,
+    "src": "die",
+    "loop": false
+   },
+   "win": {
+    "dur": 8.533,
+    "hit": null,
+    "src": "victory",
+    "loop": true
+   },
+   "lose": {
+    "dur": 6.733,
+    "hit": null,
+    "src": "defeat",
+    "loop": true
+   },
+   "emote": {
+    "dur": 3.5,
+    "hit": null,
+    "src": "laugh [0.50-4.00]",
+    "loop": false
+   },
+   "attack1": {
+    "dur": 1.033,
+    "hit": 0.55,
+    "src": "magic1h [0.25-1.30]",
+    "loop": false
+   },
+   "attack2": {
+    "dur": 1.1,
+    "hit": 0.6,
+    "src": "magic2h [0.50-1.60]",
+    "loop": false
+   },
+   "attack3": {
+    "dur": 1.2,
+    "hit": 0.57,
+    "src": "spellcast [0.30-1.50]",
+    "loop": false
+   }
+  }
+ },
+ "bonk": {
+  "height": 1.689,
+  "tris": 8800,
+  "kb": 527,
+  "clips": {
+   "idle": {
+    "dur": 6.0,
+    "hit": null,
+    "src": "idle [0.00-6.00]",
+    "loop": true
+   },
+   "ready": {
+    "dur": 1.5,
+    "hit": null,
+    "src": "batidle",
+    "loop": true
+   },
+   "walk": {
+    "dur": 1.033,
+    "hit": null,
+    "src": "walk",
+    "loop": true
+   },
+   "run": {
+    "dur": 0.7,
+    "hit": null,
+    "src": "run",
+    "loop": true
+   },
+   "hit": {
+    "dur": 0.433,
+    "hit": null,
+    "src": "hit",
+    "loop": false
+   },
+   "die": {
+    "dur": 2.6,
+    "hit": null,
+    "src": "die",
+    "loop": false
+   },
+   "win": {
+    "dur": 8.533,
+    "hit": null,
+    "src": "victory",
+    "loop": true
+   },
+   "lose": {
+    "dur": 6.733,
+    "hit": null,
+    "src": "defeat",
+    "loop": true
+   },
+   "emote": {
+    "dur": 1.633,
+    "hit": null,
+    "src": "taunt",
+    "loop": false
+   },
+   "attack1": {
+    "dur": 1.1,
+    "hit": 0.63,
+    "src": "single [0.50-1.60]",
+    "loop": false
+   },
+   "attack2": {
+    "dur": 1.3,
+    "hit": 0.67,
+    "src": "homerun [0.80-2.10]",
+    "loop": false
+   },
+   "attack3": {
+    "dur": 1.1,
+    "hit": 0.53,
+    "src": "meleeh [0.40-1.50]",
+    "loop": false
+   }
+  }
+ },
+ "giga": {
+  "height": 1.683,
+  "tris": 11800,
+  "kb": 620,
+  "clips": {
+   "idle": {
+    "dur": 6.0,
+    "hit": null,
+    "src": "idle [0.00-6.00]",
+    "loop": true
+   },
+   "ready": {
+    "dur": 2.2,
+    "hit": null,
+    "src": "boxidle",
+    "loop": true
+   },
+   "walk": {
+    "dur": 1.033,
+    "hit": null,
+    "src": "walk",
+    "loop": true
+   },
+   "run": {
+    "dur": 0.7,
+    "hit": null,
+    "src": "run",
+    "loop": true
+   },
+   "hit": {
+    "dur": 0.433,
+    "hit": null,
+    "src": "hit",
+    "loop": false
+   },
+   "die": {
+    "dur": 2.6,
+    "hit": null,
+    "src": "die",
+    "loop": false
+   },
+   "win": {
+    "dur": 8.533,
+    "hit": null,
+    "src": "victory",
+    "loop": true
+   },
+   "lose": {
+    "dur": 6.733,
+    "hit": null,
+    "src": "defeat",
+    "loop": true
+   },
+   "emote": {
+    "dur": 2.7,
+    "hit": null,
+    "src": "flex [0.30-3.00]",
+    "loop": false
+   },
+   "attack1": {
+    "dur": 1.0,
+    "hit": 0.53,
+    "src": "hookp [0.40-1.40]",
+    "loop": false
+   },
+   "attack2": {
+    "dur": 1.0,
+    "hit": 0.52,
+    "src": "crossp [0.45-1.45]",
+    "loop": false
+   },
+   "attack3": {
+    "dur": 0.933,
+    "hit": 0.43,
+    "src": "upper [0.00-0.95]",
+    "loop": false
+   }
+  }
+ },
+ "swordcat": {
+  "height": 1.689,
+  "tris": 8800,
+  "kb": 712,
+  "clips": {
+   "idle": {
+    "dur": 6.0,
+    "hit": null,
+    "src": "idle [0.00-6.00]",
+    "loop": true
+   },
+   "ready": {
+    "dur": 2.0,
+    "hit": null,
+    "src": "gsidle",
+    "loop": true
+   },
+   "walk": {
+    "dur": 1.033,
+    "hit": null,
+    "src": "walk",
+    "loop": true
+   },
+   "run": {
+    "dur": 0.7,
+    "hit": null,
+    "src": "run",
+    "loop": true
+   },
+   "hit": {
+    "dur": 0.433,
+    "hit": null,
+    "src": "hit",
+    "loop": false
+   },
+   "die": {
+    "dur": 2.6,
+    "hit": null,
+    "src": "die",
+    "loop": false
+   },
+   "win": {
+    "dur": 8.533,
+    "hit": null,
+    "src": "victory",
+    "loop": true
+   },
+   "lose": {
+    "dur": 6.733,
+    "hit": null,
+    "src": "defeat",
+    "loop": true
+   },
+   "emote": {
+    "dur": 2.833,
+    "hit": null,
+    "src": "battlecry",
+    "loop": false
+   },
+   "attack1": {
+    "dur": 1.0,
+    "hit": 0.5,
+    "src": "sscross [0.30-1.30]",
+    "loop": false
+   },
+   "attack2": {
+    "dur": 1.0,
+    "hit": 0.43,
+    "src": "gsdown [0.10-1.10]",
+    "loop": false
+   },
+   "attack3": {
+    "dur": 1.4,
+    "hit": 0.63,
+    "src": "spin360 [0.40-1.80]",
+    "loop": false
+   }
+  }
+ },
+ "wojak": {
+  "height": 1.555,
+  "tris": 8800,
+  "kb": 522,
+  "clips": {
+   "idle": {
+    "dur": 2.8,
+    "hit": null,
+    "src": "sadidle",
+    "loop": true
+   },
+   "ready": {
+    "dur": 2.667,
+    "hit": null,
+    "src": "sadidle2",
+    "loop": true
+   },
+   "walk": {
+    "dur": 1.467,
+    "hit": null,
+    "src": "sadwalk",
+    "loop": true
+   },
+   "run": {
+    "dur": 0.733,
+    "hit": null,
+    "src": "sadrun",
+    "loop": true
+   },
+   "hit": {
+    "dur": 0.433,
+    "hit": null,
+    "src": "hit",
+    "loop": false
+   },
+   "die": {
+    "dur": 2.6,
+    "hit": null,
+    "src": "die",
+    "loop": false
+   },
+   "win": {
+    "dur": 8.533,
+    "hit": null,
+    "src": "victory",
+    "loop": true
+   },
+   "lose": {
+    "dur": 6.733,
+    "hit": null,
+    "src": "defeat",
+    "loop": true
+   },
+   "emote": {
+    "dur": 3.5,
+    "hit": null,
+    "src": "rejected [0.00-3.50]",
+    "loop": false
+   },
+   "attack1": {
+    "dur": 0.9,
+    "hit": 0.567,
+    "src": "jab [0.00-0.90]",
+    "loop": false
+   },
+   "attack2": {
+    "dur": 1.0,
+    "hit": 0.52,
+    "src": "crossp [0.45-1.45]",
+    "loop": false
+   }
+  }
+ },
+ "thisisfine": {
+  "height": 1.684,
+  "tris": 8800,
+  "kb": 527,
+  "clips": {
+   "idle": {
+    "dur": 6.0,
+    "hit": null,
+    "src": "idle [0.00-6.00]",
+    "loop": true
+   },
+   "ready": {
+    "dur": 6.0,
+    "hit": null,
+    "src": "idle [0.00-6.00]",
+    "loop": true
+   },
+   "walk": {
+    "dur": 1.033,
+    "hit": null,
+    "src": "walk",
+    "loop": true
+   },
+   "run": {
+    "dur": 0.7,
+    "hit": null,
+    "src": "run",
+    "loop": true
+   },
+   "hit": {
+    "dur": 0.433,
+    "hit": null,
+    "src": "hit",
+    "loop": false
+   },
+   "die": {
+    "dur": 2.6,
+    "hit": null,
+    "src": "die",
+    "loop": false
+   },
+   "win": {
+    "dur": 8.533,
+    "hit": null,
+    "src": "victory",
+    "loop": true
+   },
+   "lose": {
+    "dur": 6.733,
+    "hit": null,
+    "src": "defeat",
+    "loop": true
+   },
+   "emote": {
+    "dur": 2.0,
+    "hit": null,
+    "src": "shrug",
+    "loop": false
+   },
+   "attack1": {
+    "dur": 1.167,
+    "hit": 0.57,
+    "src": "stomp [0.15-1.30]",
+    "loop": false
+   },
+   "attack2": {
+    "dur": 0.9,
+    "hit": 0.567,
+    "src": "jab [0.00-0.90]",
+    "loop": false
+   }
+  }
+ },
+ "pnut": {
+  "height": 1.7,
+  "tris": 8799,
+  "kb": 694,
+  "clips": {
+   "idle": {
+    "dur": 2.0,
+    "hit": null,
+    "src": "fly_loop",
+    "loop": true
+   },
+   "ready": {
+    "dur": 2.0,
+    "hit": null,
+    "src": "fly_loop",
+    "loop": true
+   },
+   "walk": {
+    "dur": 2.0,
+    "hit": null,
+    "src": "fly_loop",
+    "loop": true
+   },
+   "run": {
+    "dur": 2.0,
+    "hit": null,
+    "src": "fly_loop",
+    "loop": true
+   },
+   "hit": {
+    "dur": 0.5,
+    "hit": null,
+    "src": "fly_hit",
+    "loop": false
+   },
+   "die": {
+    "dur": 1.6,
+    "hit": null,
+    "src": "fly_die",
+    "loop": false
+   },
+   "win": {
+    "dur": 2.0,
+    "hit": null,
+    "src": "fly_win",
+    "loop": true
+   },
+   "lose": {
+    "dur": 5.0,
+    "hit": null,
+    "src": "fly_lose",
+    "loop": true
+   },
+   "emote": {
+    "dur": 1.6,
+    "hit": null,
+    "src": "fly_emote",
+    "loop": false
+   },
+   "attack1": {
+    "dur": 1.0,
+    "hit": 0.55,
+    "src": "fly_atk1",
+    "loop": false
+   },
+   "attack2": {
+    "dur": 0.9,
+    "hit": 0.5,
+    "src": "fly_atk2",
+    "loop": false
+   }
+  }
+ },
+ "nyancat": {
+  "height": 1.7,
+  "tris": 8800,
+  "kb": 475,
+  "clips": {
+   "idle": {
+    "dur": 2.0,
+    "hit": null,
+    "src": "fly_loop",
+    "loop": true
+   },
+   "ready": {
+    "dur": 2.0,
+    "hit": null,
+    "src": "fly_loop",
+    "loop": true
+   },
+   "walk": {
+    "dur": 2.0,
+    "hit": null,
+    "src": "fly_loop",
+    "loop": true
+   },
+   "run": {
+    "dur": 2.0,
+    "hit": null,
+    "src": "fly_loop",
+    "loop": true
+   },
+   "hit": {
+    "dur": 0.5,
+    "hit": null,
+    "src": "fly_hit",
+    "loop": false
+   },
+   "die": {
+    "dur": 1.6,
+    "hit": null,
+    "src": "fly_die",
+    "loop": false
+   },
+   "win": {
+    "dur": 2.0,
+    "hit": null,
+    "src": "fly_win",
+    "loop": true
+   },
+   "lose": {
+    "dur": 5.0,
+    "hit": null,
+    "src": "fly_lose",
+    "loop": true
+   },
+   "emote": {
+    "dur": 1.6,
+    "hit": null,
+    "src": "fly_emote",
+    "loop": false
+   },
+   "attack1": {
+    "dur": 0.9,
+    "hit": 0.45,
+    "src": "fly_atk1",
+    "loop": false
+   },
+   "attack2": {
+    "dur": 0.8,
+    "hit": 0.4,
+    "src": "fly_atk2",
+    "loop": false
+   }
+  }
+ },
+ "dope": {
+  "height": 1.697,
+  "tris": 8800,
+  "kb": 422,
+  "clips": {
+   "idle": {
+    "dur": 6.0,
+    "hit": null,
+    "src": "idle",
+    "loop": true
+   },
+   "ready": {
+    "dur": 2.0,
+    "hit": null,
+    "src": "ready",
+    "loop": true
+   },
+   "walk": {
+    "dur": 1.0,
+    "hit": null,
+    "src": "walk",
+    "loop": true
+   },
+   "run": {
+    "dur": 0.5,
+    "hit": null,
+    "src": "run",
+    "loop": true
+   },
+   "hit": {
+    "dur": 0.5,
+    "hit": null,
+    "src": "hit",
+    "loop": false
+   },
+   "die": {
+    "dur": 1.8,
+    "hit": null,
+    "src": "die",
+    "loop": false
+   },
+   "win": {
+    "dur": 1.5,
+    "hit": null,
+    "src": "win",
+    "loop": true
+   },
+   "lose": {
+    "dur": 3.0,
+    "hit": null,
+    "src": "lose",
+    "loop": true
+   },
+   "emote": {
+    "dur": 2.4,
+    "hit": null,
+    "src": "emote",
+    "loop": false
+   },
+   "attack1": {
+    "dur": 0.533,
+    "hit": 0.3,
+    "src": "attack1",
+    "loop": false
+   },
+   "attack2": {
+    "dur": 0.5,
+    "hit": 0.27,
+    "src": "attack2",
+    "loop": false
+   },
+   "attack3": {
+    "dur": 0.7,
+    "hit": 0.2,
+    "src": "attack3",
+    "loop": false
+   }
+  }
+ },
+ "moodeng": {
+  "height": 1.696,
+  "tris": 11800,
+  "kb": 550,
+  "clips": {
+   "idle": {
+    "dur": 6.0,
+    "hit": null,
+    "src": "idle",
+    "loop": true
+   },
+   "ready": {
+    "dur": 2.0,
+    "hit": null,
+    "src": "ready",
+    "loop": true
+   },
+   "walk": {
+    "dur": 1.0,
+    "hit": null,
+    "src": "walk",
+    "loop": true
+   },
+   "run": {
+    "dur": 0.5,
+    "hit": null,
+    "src": "run",
+    "loop": true
+   },
+   "hit": {
+    "dur": 0.5,
+    "hit": null,
+    "src": "hit",
+    "loop": false
+   },
+   "die": {
+    "dur": 1.8,
+    "hit": null,
+    "src": "die",
+    "loop": false
+   },
+   "win": {
+    "dur": 1.5,
+    "hit": null,
+    "src": "win",
+    "loop": true
+   },
+   "lose": {
+    "dur": 3.0,
+    "hit": null,
+    "src": "lose",
+    "loop": true
+   },
+   "emote": {
+    "dur": 2.0,
+    "hit": null,
+    "src": "emote",
+    "loop": false
+   },
+   "attack1": {
+    "dur": 0.9,
+    "hit": 0.5,
+    "src": "attack1",
+    "loop": false
+   },
+   "attack2": {
+    "dur": 1.0,
+    "hit": 0.65,
+    "src": "attack2",
+    "loop": false
+   }
+  }
+ },
+ "popcat": {
+  "height": 1.705,
+  "tris": 8800,
+  "kb": 429,
+  "clips": {
+   "idle": {
+    "dur": 6.0,
+    "hit": null,
+    "src": "idle",
+    "loop": true
+   },
+   "ready": {
+    "dur": 2.0,
+    "hit": null,
+    "src": "ready",
+    "loop": true
+   },
+   "walk": {
+    "dur": 1.0,
+    "hit": null,
+    "src": "walk",
+    "loop": true
+   },
+   "run": {
+    "dur": 0.5,
+    "hit": null,
+    "src": "run",
+    "loop": true
+   },
+   "hit": {
+    "dur": 0.5,
+    "hit": null,
+    "src": "hit",
+    "loop": false
+   },
+   "die": {
+    "dur": 1.8,
+    "hit": null,
+    "src": "die",
+    "loop": false
+   },
+   "win": {
+    "dur": 1.5,
+    "hit": null,
+    "src": "win",
+    "loop": true
+   },
+   "lose": {
+    "dur": 3.0,
+    "hit": null,
+    "src": "lose",
+    "loop": true
+   },
+   "emote": {
+    "dur": 2.0,
+    "hit": null,
+    "src": "emote",
+    "loop": false
+   },
+   "attack1": {
+    "dur": 0.6,
+    "hit": 0.3,
+    "src": "attack1",
+    "loop": false
+   },
+   "attack2": {
+    "dur": 0.6,
+    "hit": 0.3,
+    "src": "attack2",
+    "loop": false
+   }
+  }
+ },
+ "floki": {
+  "height": 1.691,
+  "tris": 8799,
+  "kb": 709,
+  "clips": {
+   "idle": {
+    "dur": 6.0,
+    "hit": null,
+    "src": "idle [0.00-6.00]",
+    "loop": true
+   },
+   "ready": {
+    "dur": 1.5,
+    "hit": null,
+    "src": "batidle",
+    "loop": true
+   },
+   "walk": {
+    "dur": 1.033,
+    "hit": null,
+    "src": "walk",
+    "loop": true
+   },
+   "run": {
+    "dur": 0.7,
+    "hit": null,
+    "src": "run",
+    "loop": true
+   },
+   "hit": {
+    "dur": 0.433,
+    "hit": null,
+    "src": "hit",
+    "loop": false
+   },
+   "die": {
+    "dur": 2.6,
+    "hit": null,
+    "src": "die",
+    "loop": false
+   },
+   "win": {
+    "dur": 8.533,
+    "hit": null,
+    "src": "victory",
+    "loop": true
+   },
+   "lose": {
+    "dur": 6.733,
+    "hit": null,
+    "src": "defeat",
+    "loop": true
+   },
+   "emote": {
+    "dur": 2.833,
+    "hit": null,
+    "src": "battlecry",
+    "loop": false
+   },
+   "attack1": {
+    "dur": 1.0,
+    "hit": 0.43,
+    "src": "gsdown [0.10-1.10]",
+    "loop": false
+   },
+   "attack2": {
+    "dur": 1.1,
+    "hit": 0.63,
+    "src": "single [0.50-1.60]",
+    "loop": false
+   },
+   "attack3": {
+    "dur": 1.3,
+    "hit": 0.67,
+    "src": "homerun [0.80-2.10]",
+    "loop": false
+   }
+  }
+ },
+ "toshi": {
+  "height": 1.685,
+  "tris": 8800,
+  "kb": 680,
+  "clips": {
+   "idle": {
+    "dur": 6.0,
+    "hit": null,
+    "src": "idle [0.00-6.00]",
+    "loop": true
+   },
+   "ready": {
+    "dur": 2.2,
+    "hit": null,
+    "src": "boxidle",
+    "loop": true
+   },
+   "walk": {
+    "dur": 1.033,
+    "hit": null,
+    "src": "walk",
+    "loop": true
+   },
+   "run": {
+    "dur": 0.7,
+    "hit": null,
+    "src": "run",
+    "loop": true
+   },
+   "hit": {
+    "dur": 0.433,
+    "hit": null,
+    "src": "hit",
+    "loop": false
+   },
+   "die": {
+    "dur": 2.6,
+    "hit": null,
+    "src": "die",
+    "loop": false
+   },
+   "win": {
+    "dur": 8.533,
+    "hit": null,
+    "src": "victory",
+    "loop": true
+   },
+   "lose": {
+    "dur": 6.733,
+    "hit": null,
+    "src": "defeat",
+    "loop": true
+   },
+   "emote": {
+    "dur": 1.633,
+    "hit": null,
+    "src": "taunt",
+    "loop": false
+   },
+   "attack1": {
+    "dur": 1.0,
+    "hit": 0.5,
+    "src": "sscross [0.30-1.30]",
+    "loop": false
+   },
+   "attack2": {
+    "dur": 1.1,
+    "hit": 0.53,
+    "src": "meleeh [0.40-1.50]",
+    "loop": false
+   },
+   "attack3": {
+    "dur": 1.4,
+    "hit": 0.63,
+    "src": "spin360 [0.40-1.80]",
+    "loop": false
+   }
+  }
+ },
+ "slerf": {
+  "height": 1.702,
+  "tris": 11799,
+  "kb": 806,
+  "clips": {
+   "idle": {
+    "dur": 6.0,
+    "hit": null,
+    "src": "idle [0.00-6.00]",
+    "loop": true
+   },
+   "ready": {
+    "dur": 6.0,
+    "hit": null,
+    "src": "idle [0.00-6.00]",
+    "loop": true
+   },
+   "walk": {
+    "dur": 1.033,
+    "hit": null,
+    "src": "walk",
+    "loop": true
+   },
+   "run": {
+    "dur": 1.033,
+    "hit": null,
+    "src": "walk",
+    "loop": true
+   },
+   "hit": {
+    "dur": 0.433,
+    "hit": null,
+    "src": "hit",
+    "loop": false
+   },
+   "die": {
+    "dur": 2.6,
+    "hit": null,
+    "src": "die",
+    "loop": false
+   },
+   "win": {
+    "dur": 8.533,
+    "hit": null,
+    "src": "victory",
+    "loop": true
+   },
+   "lose": {
+    "dur": 6.733,
+    "hit": null,
+    "src": "defeat",
+    "loop": true
+   },
+   "emote": {
+    "dur": 4.0,
+    "hit": null,
+    "src": "yawn [0.50-4.50]",
+    "loop": false
+   },
+   "attack1": {
+    "dur": 1.167,
+    "hit": 0.57,
+    "src": "stomp [0.15-1.30]",
+    "loop": false
+   }
+  }
+ },
+ "michi": {
+  "height": 1.685,
+  "tris": 8800,
+  "kb": 643,
+  "clips": {
+   "idle": {
+    "dur": 6.0,
+    "hit": null,
+    "src": "idle [0.00-6.00]",
+    "loop": true
+   },
+   "ready": {
+    "dur": 1.867,
+    "hit": null,
+    "src": "castidle",
+    "loop": true
+   },
+   "walk": {
+    "dur": 1.033,
+    "hit": null,
+    "src": "walk",
+    "loop": true
+   },
+   "run": {
+    "dur": 0.7,
+    "hit": null,
+    "src": "run",
+    "loop": true
+   },
+   "hit": {
+    "dur": 0.433,
+    "hit": null,
+    "src": "hit",
+    "loop": false
+   },
+   "die": {
+    "dur": 2.6,
+    "hit": null,
+    "src": "die",
+    "loop": false
+   },
+   "win": {
+    "dur": 8.533,
+    "hit": null,
+    "src": "victory",
+    "loop": true
+   },
+   "lose": {
+    "dur": 6.733,
+    "hit": null,
+    "src": "defeat",
+    "loop": true
+   },
+   "emote": {
+    "dur": 3.5,
+    "hit": null,
+    "src": "laugh [0.50-4.00]",
+    "loop": false
+   },
+   "attack1": {
+    "dur": 1.3,
+    "hit": 0.67,
+    "src": "throw [0.20-1.50]",
+    "loop": false
+   },
+   "attack2": {
+    "dur": 1.4,
+    "hit": 0.7,
+    "src": "throwing [0.90-2.30]",
+    "loop": false
+   }
+  }
+ },
+ "pippin": {
+  "height": 1.666,
+  "tris": 8800,
+  "kb": 666,
+  "clips": {
+   "idle": {
+    "dur": 6.0,
+    "hit": null,
+    "src": "idle [0.00-6.00]",
+    "loop": true
+   },
+   "ready": {
+    "dur": 1.867,
+    "hit": null,
+    "src": "castidle",
+    "loop": true
+   },
+   "walk": {
+    "dur": 1.033,
+    "hit": null,
+    "src": "walk",
+    "loop": true
+   },
+   "run": {
+    "dur": 0.7,
+    "hit": null,
+    "src": "run",
+    "loop": true
+   },
+   "hit": {
+    "dur": 0.433,
+    "hit": null,
+    "src": "hit",
+    "loop": false
+   },
+   "die": {
+    "dur": 2.6,
+    "hit": null,
+    "src": "die",
+    "loop": false
+   },
+   "win": {
+    "dur": 8.533,
+    "hit": null,
+    "src": "victory",
+    "loop": true
+   },
+   "lose": {
+    "dur": 6.733,
+    "hit": null,
+    "src": "defeat",
+    "loop": true
+   },
+   "emote": {
+    "dur": 3.5,
+    "hit": null,
+    "src": "laugh [0.50-4.00]",
+    "loop": false
+   },
+   "attack1": {
+    "dur": 1.033,
+    "hit": 0.55,
+    "src": "magic1h [0.25-1.30]",
+    "loop": false
+   },
+   "attack2": {
+    "dur": 1.1,
+    "hit": 0.6,
+    "src": "magic2h [0.50-1.60]",
+    "loop": false
+   },
+   "attack3": {
+    "dur": 1.2,
+    "hit": 0.57,
+    "src": "spellcast [0.30-1.50]",
+    "loop": false
+   }
+  }
+ },
+ "pudgy": {
+  "height": 1.709,
+  "tris": 8800,
+  "kb": 640,
+  "clips": {
+   "idle": {
+    "dur": 6.0,
+    "hit": null,
+    "src": "idle [0.00-6.00]",
+    "loop": true
+   },
+   "ready": {
+    "dur": 2.2,
+    "hit": null,
+    "src": "boxidle",
+    "loop": true
+   },
+   "walk": {
+    "dur": 1.033,
+    "hit": null,
+    "src": "walk",
+    "loop": true
+   },
+   "run": {
+    "dur": 0.7,
+    "hit": null,
+    "src": "run",
+    "loop": true
+   },
+   "hit": {
+    "dur": 0.433,
+    "hit": null,
+    "src": "hit",
+    "loop": false
+   },
+   "die": {
+    "dur": 2.6,
+    "hit": null,
+    "src": "die",
+    "loop": false
+   },
+   "win": {
+    "dur": 8.533,
+    "hit": null,
+    "src": "victory",
+    "loop": true
+   },
+   "lose": {
+    "dur": 6.733,
+    "hit": null,
+    "src": "defeat",
+    "loop": true
+   },
+   "emote": {
+    "dur": 2.7,
+    "hit": null,
+    "src": "flex [0.30-3.00]",
+    "loop": false
+   },
+   "attack1": {
+    "dur": 0.9,
+    "hit": 0.567,
+    "src": "jab [0.00-0.90]",
+    "loop": false
+   },
+   "attack2": {
+    "dur": 1.0,
+    "hit": 0.52,
+    "src": "crossp [0.45-1.45]",
+    "loop": false
+   }
+  }
+ },
+ "bome": {
+  "height": 1.699,
+  "tris": 8799,
+  "kb": 542,
+  "clips": {
+   "idle": {
+    "dur": 2.0,
+    "hit": null,
+    "src": "fly_loop",
+    "loop": true
+   },
+   "ready": {
+    "dur": 2.0,
+    "hit": null,
+    "src": "fly_loop",
+    "loop": true
+   },
+   "walk": {
+    "dur": 2.0,
+    "hit": null,
+    "src": "fly_loop",
+    "loop": true
+   },
+   "run": {
+    "dur": 2.0,
+    "hit": null,
+    "src": "fly_loop",
+    "loop": true
+   },
+   "hit": {
+    "dur": 0.5,
+    "hit": null,
+    "src": "fly_hit",
+    "loop": false
+   },
+   "die": {
+    "dur": 1.6,
+    "hit": null,
+    "src": "fly_die",
+    "loop": false
+   },
+   "win": {
+    "dur": 2.0,
+    "hit": null,
+    "src": "fly_win",
+    "loop": true
+   },
+   "lose": {
+    "dur": 5.0,
+    "hit": null,
+    "src": "fly_lose",
+    "loop": true
+   },
+   "emote": {
+    "dur": 1.6,
+    "hit": null,
+    "src": "fly_emote",
+    "loop": false
+   },
+   "attack1": {
+    "dur": 0.8,
+    "hit": 0.45,
+    "src": "fly_atk1",
+    "loop": false
+   },
+   "attack2": {
+    "dur": 0.8,
+    "hit": 0.4,
+    "src": "fly_atk2",
+    "loop": false
+   }
+  }
+ },
+ "apu": {
+  "height": 1.671,
+  "tris": 8799,
+  "kb": 801,
+  "clips": {
+   "idle": {
+    "dur": 6.0,
+    "hit": null,
+    "src": "idle [0.00-6.00]",
+    "loop": true
+   },
+   "ready": {
+    "dur": 1.867,
+    "hit": null,
+    "src": "castidle",
+    "loop": true
+   },
+   "walk": {
+    "dur": 1.033,
+    "hit": null,
+    "src": "walk",
+    "loop": true
+   },
+   "run": {
+    "dur": 0.7,
+    "hit": null,
+    "src": "run",
+    "loop": true
+   },
+   "hit": {
+    "dur": 0.433,
+    "hit": null,
+    "src": "hit",
+    "loop": false
+   },
+   "die": {
+    "dur": 2.6,
+    "hit": null,
+    "src": "die",
+    "loop": false
+   },
+   "win": {
+    "dur": 8.533,
+    "hit": null,
+    "src": "victory",
+    "loop": true
+   },
+   "lose": {
+    "dur": 6.733,
+    "hit": null,
+    "src": "defeat",
+    "loop": true
+   },
+   "emote": {
+    "dur": 3.5,
+    "hit": null,
+    "src": "laugh [0.50-4.00]",
+    "loop": false
+   },
+   "attack1": {
+    "dur": 1.033,
+    "hit": 0.55,
+    "src": "magic1h [0.25-1.30]",
+    "loop": false
+   },
+   "attack2": {
+    "dur": 1.1,
+    "hit": 0.6,
+    "src": "magic2h [0.50-1.60]",
+    "loop": false
+   },
+   "attack3": {
+    "dur": 1.2,
+    "hit": 0.57,
+    "src": "spellcast [0.30-1.50]",
+    "loop": false
+   }
+  }
+ },
+ "walter": {
+  "height": 1.696,
+  "tris": 8800,
+  "kb": 661,
+  "clips": {
+   "idle": {
+    "dur": 6.0,
+    "hit": null,
+    "src": "idle [0.00-6.00]",
+    "loop": true
+   },
+   "ready": {
+    "dur": 2.2,
+    "hit": null,
+    "src": "boxidle",
+    "loop": true
+   },
+   "walk": {
+    "dur": 1.033,
+    "hit": null,
+    "src": "walk",
+    "loop": true
+   },
+   "run": {
+    "dur": 0.7,
+    "hit": null,
+    "src": "run",
+    "loop": true
+   },
+   "hit": {
+    "dur": 0.433,
+    "hit": null,
+    "src": "hit",
+    "loop": false
+   },
+   "die": {
+    "dur": 2.6,
+    "hit": null,
+    "src": "die",
+    "loop": false
+   },
+   "win": {
+    "dur": 8.533,
+    "hit": null,
+    "src": "victory",
+    "loop": true
+   },
+   "lose": {
+    "dur": 6.733,
+    "hit": null,
+    "src": "defeat",
+    "loop": true
+   },
+   "emote": {
+    "dur": 2.7,
+    "hit": null,
+    "src": "flex [0.30-3.00]",
+    "loop": false
+   },
+   "attack1": {
+    "dur": 1.0,
+    "hit": 0.53,
+    "src": "hookp [0.40-1.40]",
+    "loop": false
+   },
+   "attack2": {
+    "dur": 1.0,
+    "hit": 0.52,
+    "src": "crossp [0.45-1.45]",
+    "loop": false
+   },
+   "attack3": {
+    "dur": 0.933,
+    "hit": 0.43,
+    "src": "upper [0.00-0.95]",
+    "loop": false
+   }
+  }
+ },
+ "goat": {
+  "height": 1.697,
+  "tris": 11799,
+  "kb": 768,
+  "clips": {
+   "idle": {
+    "dur": 6.0,
+    "hit": null,
+    "src": "idle [0.00-6.00]",
+    "loop": true
+   },
+   "ready": {
+    "dur": 2.2,
+    "hit": null,
+    "src": "boxidle",
+    "loop": true
+   },
+   "walk": {
+    "dur": 1.033,
+    "hit": null,
+    "src": "walk",
+    "loop": true
+   },
+   "run": {
+    "dur": 0.7,
+    "hit": null,
+    "src": "run",
+    "loop": true
+   },
+   "hit": {
+    "dur": 0.433,
+    "hit": null,
+    "src": "hit",
+    "loop": false
+   },
+   "die": {
+    "dur": 2.6,
+    "hit": null,
+    "src": "die",
+    "loop": false
+   },
+   "win": {
+    "dur": 8.533,
+    "hit": null,
+    "src": "victory",
+    "loop": true
+   },
+   "lose": {
+    "dur": 6.733,
+    "hit": null,
+    "src": "defeat",
+    "loop": true
+   },
+   "emote": {
+    "dur": 3.2,
+    "hit": null,
+    "src": "mutroar [0.30-3.50]",
+    "loop": false
+   },
+   "attack1": {
+    "dur": 1.0,
+    "hit": 0.53,
+    "src": "hookp [0.40-1.40]",
+    "loop": false
+   },
+   "attack2": {
+    "dur": 1.0,
+    "hit": 0.52,
+    "src": "crossp [0.45-1.45]",
+    "loop": false
+   },
+   "attack3": {
+    "dur": 1.1,
+    "hit": 0.42,
+    "src": "headbutt [0.20-1.30]",
+    "loop": false
+   }
+  }
+ },
+ "farter": {
+  "height": 1.683,
+  "tris": 8800,
+  "kb": 650,
+  "clips": {
+   "idle": {
+    "dur": 6.0,
+    "hit": null,
+    "src": "idle [0.00-6.00]",
+    "loop": true
+   },
+   "ready": {
+    "dur": 1.867,
+    "hit": null,
+    "src": "castidle",
+    "loop": true
+   },
+   "walk": {
+    "dur": 1.033,
+    "hit": null,
+    "src": "walk",
+    "loop": true
+   },
+   "run": {
+    "dur": 0.7,
+    "hit": null,
+    "src": "run",
+    "loop": true
+   },
+   "hit": {
+    "dur": 0.433,
+    "hit": null,
+    "src": "hit",
+    "loop": false
+   },
+   "die": {
+    "dur": 2.6,
+    "hit": null,
+    "src": "die",
+    "loop": false
+   },
+   "win": {
+    "dur": 8.533,
+    "hit": null,
+    "src": "victory",
+    "loop": true
+   },
+   "lose": {
+    "dur": 6.733,
+    "hit": null,
+    "src": "defeat",
+    "loop": true
+   },
+   "emote": {
+    "dur": 3.5,
+    "hit": null,
+    "src": "laugh [0.50-4.00]",
+    "loop": false
+   },
+   "attack1": {
+    "dur": 1.033,
+    "hit": 0.55,
+    "src": "magic1h [0.25-1.30]",
+    "loop": false
+   },
+   "attack2": {
+    "dur": 1.1,
+    "hit": 0.6,
+    "src": "magic2h [0.50-1.60]",
+    "loop": false
+   }
+  }
+ },
+ "neet": {
+  "height": 1.693,
+  "tris": 11798,
+  "kb": 1252,
+  "clips": {
+   "idle": {
+    "dur": 6.0,
+    "hit": null,
+    "src": "idle [0.00-6.00]",
+    "loop": true
+   },
+   "ready": {
+    "dur": 2.2,
+    "hit": null,
+    "src": "box_idle",
+    "loop": true
+   },
+   "walk": {
+    "dur": 1.033,
+    "hit": null,
+    "src": "walk",
+    "loop": true
+   },
+   "run": {
+    "dur": 0.633,
+    "hit": null,
+    "src": "run",
+    "loop": true
+   },
+   "attack1": {
+    "dur": 0.733,
+    "hit": 0.3,
+    "src": "box_jab [0.00-0.75]",
+    "loop": false
+   },
+   "attack2": {
+    "dur": 0.933,
+    "hit": 0.4,
+    "src": "box_hook [0.00-0.95]",
+    "loop": false
+   },
+   "attack3": {
+    "dur": 1.167,
+    "hit": 0.7,
+    "src": "box_bash [0.35-1.50]",
+    "loop": false
+   },
+   "hit": {
+    "dur": 0.733,
+    "hit": null,
+    "src": "box_hitbody [0.00-0.75]",
+    "loop": false
+   },
+   "die": {
+    "dur": 2.6,
+    "hit": null,
+    "src": "box_kd [0.00-2.60]",
+    "loop": false
+   },
+   "win": {
+    "dur": 4.5,
+    "hit": null,
+    "src": "victory",
+    "loop": true
+   },
+   "lose": {
+    "dur": 6.733,
+    "hit": null,
+    "src": "defeat",
+    "loop": true
+   },
+   "emote": {
+    "dur": 3.767,
+    "hit": null,
+    "src": "fistpump",
+    "loop": false
+   },
+   "sit": {
+    "dur": 4.3,
+    "hit": null,
+    "src": "sit",
+    "loop": true
+   },
+   "sitcheer": {
+    "dur": 2.067,
+    "hit": null,
+    "src": "sitcheer",
+    "loop": false
+   },
+   "sitangry": {
+    "dur": 3.467,
+    "hit": null,
+    "src": "sitangry",
+    "loop": false
+   },
+   "sitlaugh": {
+    "dur": 4.0,
+    "hit": null,
+    "src": "sitlaugh [0.00-4.00]",
+    "loop": false
+   },
+   "sityell": {
+    "dur": 3.767,
+    "hit": null,
+    "src": "sityell",
+    "loop": false
+   },
+   "sitclap": {
+    "dur": 3.5,
+    "hit": null,
+    "src": "sitclap [0.00-3.50]",
+    "loop": false
+   },
+   "sitfistpump": {
+    "dur": 3.267,
+    "hit": null,
+    "src": "sitfistpump",
+    "loop": false
+   },
+   "defeat": {
+    "dur": 6.733,
+    "hit": null,
+    "src": "defeat",
+    "loop": false
+   }
+  },
+  "seat": 0.425,
+  "sitHeight": 1.389
+ }
+}
