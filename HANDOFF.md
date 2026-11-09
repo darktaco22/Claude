@@ -107,8 +107,10 @@ timing, dialogue, shots and gags exactly. A 3 AM church-basement support group f
   at cuts (`CUTS` in `director.py`).
 - **Overlays:** subtitles, the launch alert and the caption are HTML (`overlay.html`) rendered as transparent PNGs
   and laid over the frames. The wallet pop-up is disabled; the PnL lives on Pam's phone screen instead.
-- **Containers:** cloud containers here get recycled after about 15 minutes idle, which kills detached renders.
-  `render_list.py` writes `<list>.done` so restarts skip finished frames. Check every 15 minutes and restart.
+- **Containers (root cause found):** the session's VM shuts down about 10 minutes after a turn ends unless a
+  *tracked* background task is running, and that kills detached (`setsid nohup`) renders. Launch long jobs with Bash
+  `run_in_background` (timeout 7200000) and relaunch on exit 3 (`RENDER_BUDGET` chunks). Details in
+  `commercial/degens/RENDERING.md`.
 - **Worker sessions:** these used a lot of the account's weekly usage. Prefer rendering in one session unless the
   person asks for parallel.
 - **Assets:**
