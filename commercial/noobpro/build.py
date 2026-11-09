@@ -42,61 +42,11 @@ def srgb(h):
     h = h.lstrip('#'); c = [int(h[i:i + 2], 16) / 255 for i in (0, 2, 4)]
     return tuple(((v + 0.055) / 1.055) ** 2.4 if v > 0.04045 else v / 12.92 for v in c)
 
-def floor_mat():
-    m = bpy.data.materials.new('floor'); m.use_nodes = True; nt = m.node_tree; N = nt.nodes; L = nt.links
-    b = N['Principled BSDF']; b.inputs['Roughness'].default_value = 0.85
-    tc = N.new('ShaderNodeTexCoord'); mp = N.new('ShaderNodeMapping'); mp.inputs['Scale'].default_value = (1, 1, 1)
-    ck = N.new('ShaderNodeTexChecker'); ck.inputs['Scale'].default_value = 1.0
-    ck.inputs['Color1'].default_value = (*srgb('#b9ab93'), 1); ck.inputs['Color2'].default_value = (*srgb('#a59880'), 1)
-    nz = N.new('ShaderNodeTexNoise'); nz.inputs['Scale'].default_value = 0.6; nz.inputs['Detail'].default_value = 4
-    mix = N.new('ShaderNodeMix'); mix.data_type = 'RGBA'; mix.blend_type = 'MULTIPLY'; mix.inputs['Factor'].default_value = 0.25
-    L.new(tc.outputs['Object'], mp.inputs['Vector']); L.new(mp.outputs['Vector'], ck.inputs['Vector']); L.new(mp.outputs['Vector'], nz.inputs['Vector'])
-    L.new(ck.outputs['Color'], mix.inputs['A']); L.new(nz.outputs['Color'], mix.inputs['B'])
-    L.new(mix.outputs['Result'], b.inputs['Base Color'])
-    # grout lines on the tile edges
-    br = N.new('ShaderNodeTexBrick'); br.inputs['Scale'].default_value = 1.0; br.offset = 0.0; br.squash = 1.0
-    br.inputs['Mortar Size'].default_value = 0.03; br.inputs['Brick Width'].default_value = 1.0; br.inputs['Row Height'].default_value = 1.0
-    br.inputs['Mortar'].default_value = (*srgb('#6f6455'), 1)
-    L.new(mp.outputs['Vector'], br.inputs['Vector'])
-    mix2 = N.new('ShaderNodeMix'); mix2.data_type = 'RGBA'
-    L.new(br.outputs['Fac'], mix2.inputs['Factor']); L.new(mix.outputs['Result'], mix2.inputs['A']); mix2.inputs['B'].default_value = (*srgb('#6f6455'), 1)
-    L.new(mix2.outputs['Result'], b.inputs['Base Color'])
-    return m
-
-def river_mat():
-    m = bpy.data.materials.new('goo'); m.use_nodes = True; nt = m.node_tree; N = nt.nodes; L = nt.links
-    b = N['Principled BSDF']; b.inputs['Base Color'].default_value = (*srgb('#39ff4a'), 1); b.inputs['Roughness'].default_value = 0.15
-    nz = N.new('ShaderNodeTexNoise'); nz.inputs['Scale'].default_value = 1.4; nz.inputs['Detail'].default_value = 3
-    tc = N.new('ShaderNodeTexCoord'); L.new(tc.outputs['Object'], nz.inputs['Vector'])
-    ramp = N.new('ShaderNodeValToRGB'); ramp.color_ramp.elements[0].position = 0.45; ramp.color_ramp.elements[0].color = (*srgb('#0f8a2a'), 1)
-    ramp.color_ramp.elements[1].position = 0.7; ramp.color_ramp.elements[1].color = (*srgb('#7dff6a'), 1)
-    L.new(nz.outputs['Fac'], ramp.inputs['Fac']); L.new(ramp.outputs['Color'], b.inputs['Base Color'])
-    L.new(ramp.outputs['Color'], b.inputs['Emission Color']); b.inputs['Emission Strength'].default_value = 0.6
-    return m
-
-def box(name, loc, size, m, bevel=0.0):
+def box(name, loc, size, m, parent=None):
     bpy.ops.mesh.primitive_cube_add(size=1, location=loc); o = bpy.context.object; o.name = name; o.scale = size
     bpy.ops.object.transform_apply(scale=True); o.data.materials.append(m)
-    if bevel: md = o.modifiers.new('b', 'BEVEL'); md.width = bevel; md.segments = 2
+    if parent: o.parent = parent
     return o
-
-# ---------------------------------------------------------------- the arena
-MF = floor_mat(); MR = river_mat()
-ML = mat('lane', srgb('#d24b4b'), 0.8); MW = mat('wall', srgb('#4b3f36'), 0.9); MWT = mat('walltop', srgb('#d8b45a'), 0.4, metal=0.6)
-MBANK = mat('bank', srgb('#5a4a3a'), 0.9)
-for zz0, zz1 in ((0, 15.1), (16.9, 32)):
-    f = box('floor', P(9, (zz0 + zz1) / 2, -0.05), (18, zz1 - zz0, 0.1), MF)
-box('river', P(9, 16, -0.25), (18, 1.8, 0.1), MR)
-for zz in (15.05, 16.95): box('bank', P(9, zz, -0.15), (18, 0.12, 0.3), MBANK)
-# the lane carpets from each princess tower to its bridge (the reference's red line)
-for x in (3.5, 14.5):
-    for zz0, zz1 in ((6.5, 15.0), (17.0, 25.5)):
-        box('lane', P(x, (zz0 + zz1) / 2, 0.004), (0.55, zz1 - zz0, 0.01), ML)
-# the outer wall
-for x in (-0.6, 18.6): box('wall', P(x, 16, 0.5), (1.2, 33.2, 1.0), MW, 0.06); box('walltop', P(x, 16, 1.02), (1.25, 33.2, 0.06), MWT)
-for z in (-0.6, 32.6): box('wall', P(9, z, 0.5), (19.2, 1.2, 1.0), MW, 0.06)
-# outside the arena: a dark ground so the frame edges aren't empty
-box('ground', P(9, 16, -0.3), (60, 70, 0.1), mat('out', srgb('#2a2140'), 1.0))
 
 def import_glb(fn):
     before = set(bpy.data.objects); acts_before = set(bpy.data.actions)
@@ -107,25 +57,63 @@ def import_glb(fn):
         if o.parent is None: o.parent = root
     return root, new, acts
 
-TEAM = {0: srgb('#2f7bff'), 1: srgb('#ff3b3b')}
-def tower(x, z, team):
-    root, objs, _ = import_glb('tower_rig.glb'); root.location = P(x, z)
-    if team == 1: root.rotation_euler.z = math.pi
-    m = mat(f'team{team}', TEAM[team], 0.5)
-    for o in objs:
-        if o.type == 'MESH' and o.name.split('.')[0] in ('team_cloth', 'team_paint'):
-            o.data.materials.clear(); o.data.materials.append(m)
-    muz = [o for o in objs if o.name.startswith('muzzle')][0]
-    return root, muz
-TW = {}
-for (x, z, t, key) in ((3.5, 25.5, 0, 'myL'), (14.5, 25.5, 0, 'myR'), (3.5, 6.5, 1, 'enL'), (14.5, 6.5, 1, 'enR')):
-    TW[key] = tower(x, z, t)
-# the king towers: the rig tower scaled up
-for (z, t, key) in ((29.5, 0, 'myK'), (2.5, 1, 'enK')):
-    TW[key] = tower(9, z, t); TW[key][0].scale = (1.3, 1.3, 1.15)
-for x in (3.5, 14.5):
-    root, objs, _ = import_glb('bridge.glb'); root.location = P(x, 16, 0.0)
+# ---------------------------------------------------------------- the arena: the live game's own MOM'S BASEMENT, exported
+# from its three.js scene (court, canal, bridges, towers, fences, kit, props, backdrop) by export_arena.js
+_, ARENA, _ = import_glb('arena_basement.glb')
+UNITS = set(json.load(open(os.path.join(M, 'units.json'))))
+for o in list(ARENA):   # the towers' crew comes in without its skeleton: put back below, animated
+    if o.type == 'MESH' and any(m and m.name.split('.')[0] in UNITS for m in o.data.materials): bpy.data.objects.remove(o)
+ARENA = [o for o in bpy.data.objects if o.name in {x.name for x in bpy.data.objects}]
+# the canal: the game draws it with its own shader (glowing green energy-drink goo): rebuilt here as a node material
+def goo_mat():
+    m = bpy.data.materials.new('goo'); m.use_nodes = True; nt = m.node_tree; N = nt.nodes; L = nt.links
+    b = N['Principled BSDF']; b.inputs['Roughness'].default_value = 0.2
+    tc = N.new('ShaderNodeTexCoord'); vo = N.new('ShaderNodeTexVoronoi'); vo.feature = 'DISTANCE_TO_EDGE'; vo.inputs['Scale'].default_value = 1.6
+    L.new(tc.outputs['Object'], vo.inputs['Vector'])
+    ramp = N.new('ShaderNodeValToRGB'); E_ = ramp.color_ramp.elements
+    E_[0].position = 0.0; E_[0].color = (*srgb('#d8ff9a'), 1); E_[1].position = 0.09; E_[1].color = (*srgb('#1fd23c'), 1)
+    e = E_.new(0.35); e.color = (*srgb('#0a7a1c'), 1)
+    L.new(vo.outputs['Distance'], ramp.inputs['Fac']); L.new(ramp.outputs['Color'], b.inputs['Base Color'])
+    L.new(ramp.outputs['Color'], b.inputs['Emission Color']); b.inputs['Emission Strength'].default_value = 1.6
+    return m
+GOO = goo_mat()
+# the room around the court is the game's procedural "world" (src/render/world.js): coloured per vertex in its own shader.
+# Here: the same vertex colours through a plain material; the canal's flat sheet gets the goo
+def vcol_mat(layer):
+    m = bpy.data.materials.new('world_' + layer); m.use_nodes = True; N = m.node_tree.nodes
+    b = N['Principled BSDF']; b.inputs['Roughness'].default_value = 0.85
+    vc = N.new('ShaderNodeVertexColor'); vc.layer_name = layer; m.node_tree.links.new(vc.outputs['Color'], b.inputs['Base Color'])
+    return m
+VCM = {}
+for o in ARENA:
+    if o.type != 'MESH': continue
+    for i, m in enumerate(o.data.materials):
+        if not (m and m.name.startswith('SHADER_')): continue
+        d = o.dimensions; nv = len(o.data.vertices)
+        if nv <= 8 and max(d) > 15: o.data.materials[i] = GOO                 # the liquid sheet under the court
+        elif max(d) < 2.0: o.hide_render = True                               # sprite cards (sparkles, labels)
+        elif o.data.color_attributes:
+            L = o.data.color_attributes[0].name; o.data.materials[i] = VCM.setdefault(L, vcol_mat(L))
+        else: o.hide_render = True
+for o in ARENA:   # the game's glow strips and bulbs: brighter emission so Cycles reads them as lit
+    if o.type == 'MESH':
+        for m in o.data.materials:
+            if m and m.use_nodes and m.name.startswith('glow'):
+                bs = m.node_tree.nodes.get('Principled BSDF')
+                if bs: bs.inputs['Emission Strength'].default_value = max(4.0, bs.inputs['Emission Strength'].default_value)
 
+# the towers (in the export) for the hit shake: every object whose origin sits on a tower's footprint
+TPOS = {'myL': (3.5, 25.5), 'myR': (14.5, 25.5), 'myK': (9, 29.5), 'enL': (3.5, 6.5), 'enR': (14.5, 6.5), 'enK': (9, 2.5)}
+TW = {}
+for key, (x, z) in TPOS.items():
+    e = bpy.data.objects.new('tower_' + key, None); sc.collection.objects.link(e); e.location = P(x, z); TW[key] = e
+for o in ARENA:
+    if o.type == 'MESH' and o.parent and o.parent.name.startswith('arena_basement_root'):
+        t = o.matrix_world.translation; hit = None
+        for key, (x, z) in TPOS.items():
+            if abs(t.x - x) < 1.2 and abs(-t.y - z) < 1.2 and any(m and m.name.startswith(('tower_rig', 'battlestation')) for m in o.data.materials): hit = key
+        if hit:
+            mw = o.matrix_world.copy(); o.parent = TW[hit]; o.matrix_world = mw
 # ---------------------------------------------------------------- units
 def unit(fn, h):
     root, objs, acts = import_glb(fn)
@@ -199,7 +187,7 @@ def hold(u, x, z, hd, f0, f1):
         r.location = P(x, z); r.keyframe_insert('location', frame=ff); r.rotation_euler = (0, 0, hd); r.keyframe_insert('rotation_euler', frame=ff)
 
 # --- NOOB: the whale crosses, a LMAO! is dropped in its way, it walks past and smashes the tower
-W1 = unit('whale.glb', 3.4)
+W1 = unit('whale.glb', 4.37)
 drop(W1, 3.5, 10.5, 24); clip(W1, 'ready', 17, 61)
 path1, arr1 = walk_path([(3.5, 10.5), (3.5, 22.4)], 61, 2.1)
 key_path(W1, path1); clip(W1, 'walk', 61, arr1, 1.4)
@@ -208,7 +196,7 @@ f = arr1
 while f < 362:
     clip(W1, 'attack1', f, f + 34, 1.0); clip(W1, 'ready', f + 34, f + 42); HIT1.append(f + 21); f += 42
 show(W1['root'], 18, 362)
-LM = unit('lmao.glb', 2.0)
+LM = unit('lmao.glb', 2.77)
 lmx, lmz = 3.5, 19.6
 drop(LM, lmx, lmz, 112, face(0, -1)); clip(LM, 'ready', 105, 120)
 # LMAO! swings at the whale while it comes; the whale (buildings only) shoves it aside and keeps going
@@ -229,7 +217,7 @@ while f < 362:
 show(LM['root'], 106, 362)
 
 # --- PRO: the whale crosses again; LASER EYES in the middle pulls it, both towers and the laser shred it, USELESS finishes
-W2 = unit('whale.glb', 3.4)
+W2 = unit('whale.glb', 4.37)
 drop(W2, 3.5, 10.5, 372); clip(W2, 'ready', 365, 392)
 IDOL = (9.0, 21.6)
 p_a, f_a = walk_path([(3.5, 10.5), (3.5, 16.6)], 392, 2.1)
@@ -248,18 +236,21 @@ for ff, v in ((DIE + 62, 1.0), (DIE + 78, 0.0001)):
     r.scale = s0 * v; r.keyframe_insert('scale', frame=ff)
 
 # LASER EYES: our own build (the game draws it procedurally): a gold pedestal and a PEPE-green idol with laser eyes
-MG = mat('gold', srgb('#f2c14e'), 0.3, metal=0.9); MGR = mat('idol', srgb('#5fbf3a'), 0.5)
-MEYE = mat('eye', (1, 0.05, 0.02), 0.3, emit=(1, 0.05, 0.02), estr=25)
-idol = bpy.data.objects.new('lasereyes_root', None); sc.collection.objects.link(idol); idol.location = P(*IDOL); idol.scale = (1.45,) * 3
-def child(o): o.parent = idol; return o
-bpy.ops.mesh.primitive_cylinder_add(radius=0.85, depth=0.5, location=(0, 0, 0.25)); child(bpy.context.object).data.materials.append(MG)
-bpy.ops.mesh.primitive_cylinder_add(radius=0.6, depth=0.5, location=(0, 0, 0.75)); child(bpy.context.object).data.materials.append(MG)
-bpy.ops.mesh.primitive_uv_sphere_add(radius=0.62, location=(0, 0, 1.45)); hd = child(bpy.context.object); hd.scale = (1, 0.9, 0.85); hd.data.materials.append(MGR)
-bpy.ops.object.shade_smooth()
-for ex in (-0.24, 0.24):
-    bpy.ops.mesh.primitive_uv_sphere_add(radius=0.12, location=(ex, -0.52, 1.55)); child(bpy.context.object).data.materials.append(MEYE)
-eye_light = bpy.data.lights.new('eyeglow', 'POINT'); eye_light.energy = 60; eye_light.color = (1, 0.1, 0.05)
-el = bpy.data.objects.new('eyeglow', eye_light); sc.collection.objects.link(el); el.parent = idol; el.location = (0, -0.8, 1.6)
+MSTONE = mat('stone', srgb('#8d8879'), 0.95); MDARK = mat('stonedark', srgb('#5c584d'), 1.0)
+MGLOW = mat('teamglow', tuple(c * 0.5 for c in srgb('#7CFF6B')), 0.55, emit=srgb('#7CFF6B'), estr=1.8 * 3)
+MEYE = mat('eye', srgb('#400808'), 0.4, emit=srgb('#ff2a18'), estr=1.2 * 12)
+idol = bpy.data.objects.new('lasereyes_root', None); sc.collection.objects.link(idol); idol.location = P(*IDOL); idol.scale = (1.35,) * 3
+head = bpy.data.objects.new('lasereyes_head', None); sc.collection.objects.link(head); head.parent = idol; head.location = (0, 0, 1.1)
+def gbox(w, h, d, x, y, z, m, par):   # three's box(w, h, d, x, y, z) in the group's frame (y up, z toward the target)
+    return box('le', (x, -z, y), (w, d, h), m, par)
+gbox(1.35, 0.4, 1.35, 0, 0.2, 0, MDARK, idol); gbox(1, 0.7, 0.95, 0, 0.75, 0, MSTONE, idol); gbox(1.02, 0.08, 0.97, 0, 0.55, 0, MGLOW, idol)
+gbox(1, 0.78, 0.9, 0, 0.39, 0, MSTONE, head); gbox(0.24, 0.26, 0.74, 0, 0.88, -0.04, MDARK, head); gbox(1.1, 0.16, 0.22, 0, 0.6, 0.42, MDARK, head)
+gbox(0.18, 0.3, 0.16, 0, 0.26, 0.48, MDARK, head)
+for sx in (-1, 1):
+    bpy.ops.mesh.primitive_uv_sphere_add(radius=0.1, location=(sx * 0.22, -0.46, 0.42), segments=10, ring_count=8)
+    e = bpy.context.object; e.parent = head; e.data.materials.append(MEYE)
+eye_light = bpy.data.lights.new('eyeglow', 'POINT'); eye_light.energy = 40; eye_light.color = (1, 0.15, 0.08)
+el = bpy.data.objects.new('eyeglow', eye_light); sc.collection.objects.link(el); el.parent = head; el.location = (0, -0.8, 0.42)
 F_IDOL = 438
 for ff, y in ((F_IDOL - 6, 3.0), (F_IDOL, 0.0)):
     idol.location = P(*IDOL, y); idol.keyframe_insert('location', frame=ff)
@@ -274,7 +265,7 @@ for ff in range(F_IDOL, 721, 2):
 US = []
 F_US = arr2 + 6
 for i, (ox, oz) in enumerate([(-0.9, -0.9), (0.9, -0.9), (-1.0, 0.8), (0.95, 0.85)]):
-    u = unit('useless.glb', 1.45); wx, wz = stop.x, stop.y
+    u = unit('useless.glb', 1.79); wx, wz = stop.x, stop.y
     ux, uz = wx + ox * 1.6, wz + oz * 1.6
     drop(u, ux, uz, F_US + i * 2, face(wx - ux, wz - uz)) if i == 0 else None
     r = u['root']
@@ -292,11 +283,19 @@ for i, (ox, oz) in enumerate([(-0.9, -0.9), (0.9, -0.9), (-1.0, 0.8), (0.95, 0.8
     show(r, F_US - 8, 720); US.append(u)
 
 
+# ---------------------------------------------------------------- tower crew (the game seats them on every tower)
+for key in ('myL', 'myR', 'enL', 'enR'):
+    x, z = TPOS[key]; u = unit('chillguy.glb', 1.87); u['root'].location = P(x, z, 3.86)
+    u['root'].rotation_euler = (0, 0, math.pi if key.startswith('my') else 0.0); clip(u, 'idle', 1, LAST + 1)
+for key in ('myK', 'enK'):
+    x, z = TPOS[key]; u = unit('neet.glb', 2.2); u['root'].location = P(x, z + (0.55 if key == 'myK' else -0.55), 3.75)
+    u['root'].rotation_euler = (0, 0, math.pi if key == 'myK' else 0.0); clip(u, 'sit', 1, LAST + 1)
+
 # ---------------------------------------------------------------- tower cannons, laser, HP
 MBALL = mat('ball', srgb('#2b2b2b'), 0.4, metal=0.5)
 MFLASH = mat('flash', (1, 0.7, 0.2), 0.5, emit=(1, 0.55, 0.1), estr=30)
 def tower_pos(key):
-    root, muz = TW[key]; return Vector(root.location) + Vector((0, 0, 4.0))
+    return Vector(TW[key].location) + Vector((0, 0, 4.9))
 balls = []
 def shot(key, f0, target_path, speed=22.0):
     """a cannonball from tower `key` fired at frame f0 at whatever follows target_path; returns the impact frame"""
@@ -332,7 +331,7 @@ beam.scale = (0.0001,) * 3; beam.keyframe_insert('scale', frame=1)
 for f in range(F_IDOL + 4, DIE, 9):
     x, z, _ = wpos(path2, f)
     if dist((x, z), IDOL) > 6.0: continue
-    a = P(*IDOL, 2.25); b = P(x, z, 1.9); mid = (a + b) / 2; L = (b - a).length
+    a = P(*IDOL, 2.05); b = P(x, z, 2.4); mid = (a + b) / 2; L = (b - a).length
     beam.location = mid; beam.rotation_euler = (b - a).to_track_quat('Z', 'Y').to_euler()
     for ff, s in ((f - 1, 0.0001), (f, 1), (f + 4, 1), (f + 5, 0.0001)):
         beam.scale = (s, s, L if s > 0.01 else 0.0001); beam.keyframe_insert('scale', frame=ff)
@@ -367,29 +366,44 @@ for f in range(1, LAST + 1):
 
 # tower hits: a shake and a flash light on each whale slam
 for key, hits, path in (('myL', HIT1, path1),):
-    root = TW[key][0]; base = root.location.copy()
+    root = TW[key]; base = root.location.copy()
     for f in hits:
         for ff, dx in ((f - 1, 0), (f, 0.12), (f + 2, -0.1), (f + 4, 0.05), (f + 6, 0)):
             root.location = base + Vector((dx, 0, 0)); root.keyframe_insert('location', frame=ff)
 
 # ---------------------------------------------------------------- light, world, camera
-sun = bpy.data.lights.new('sun', 'SUN'); sun.energy = 4.2; sun.angle = math.radians(3); sun.color = (1, 0.96, 0.9)
-so = bpy.data.objects.new('sun', sun); sc.collection.objects.link(so); so.rotation_euler = (math.radians(38), math.radians(-18), math.radians(25))
-w = bpy.data.worlds.new('w'); sc.world = w; w.use_nodes = True
-w.node_tree.nodes['Background'].inputs['Color'].default_value = (*srgb('#8fb6ff'), 1); w.node_tree.nodes['Background'].inputs['Strength'].default_value = 0.9
+def sun_from(name, col, energy, frm):   # three DirectionalLight at position frm aiming at the origin
+    L = bpy.data.lights.new(name, 'SUN'); L.energy = energy; L.color = srgb(col); L.angle = math.radians(2)
+    o = bpy.data.objects.new(name, L); sc.collection.objects.link(o)
+    d = Vector((frm[0], -frm[2], frm[1])); o.rotation_euler = d.to_track_quat('Z', 'Y').to_euler(); return o
+sun_from('key', '#ffcf8a', 2.4 * 1.6, (-6, 24, 26)); sun_from('rim', '#7fa0ff', 0.6 * 1.6, (16, 14, -18))
+gl = bpy.data.lights.new('canal', 'POINT'); gl.energy = 900; gl.color = srgb('#5dff7a'); gl.shadow_soft_size = 2
+g_o = bpy.data.objects.new('canal', gl); sc.collection.objects.link(g_o); g_o.location = P(9, 16, 1.2)
+w = bpy.data.worlds.new('w'); sc.world = w; w.use_nodes = True; nt = w.node_tree
+# the hemisphere light: warm from above, dark brown from below; the camera sees the game's background colour
+bg = nt.nodes['Background']; geo = nt.nodes.new('ShaderNodeNewGeometry'); sep = nt.nodes.new('ShaderNodeSeparateXYZ')
+mix = nt.nodes.new('ShaderNodeMix'); mix.data_type = 'RGBA'; mix.inputs['A'].default_value = (*srgb('#2a1c14'), 1); mix.inputs['B'].default_value = (*srgb('#ffd9a8'), 1)
+mr = nt.nodes.new('ShaderNodeMapRange'); mr.inputs['From Min'].default_value = -1; mr.inputs['From Max'].default_value = 1
+nt.links.new(geo.outputs['Incoming'], sep.inputs['Vector']); nt.links.new(sep.outputs['Z'], mr.inputs['Value']); nt.links.new(mr.outputs['Result'], mix.inputs['Factor'])
+nt.links.new(mix.outputs['Result'], bg.inputs['Color']); bg.inputs['Strength'].default_value = 0.85
+lp = nt.nodes.new('ShaderNodeLightPath'); bg2 = nt.nodes.new('ShaderNodeBackground'); bg2.inputs['Color'].default_value = (*srgb('#1b1410'), 1)
+ms = nt.nodes.new('ShaderNodeMixShader'); out = nt.nodes['World Output']
+nt.links.new(lp.outputs['Is Camera Ray'], ms.inputs['Fac']); nt.links.new(bg.outputs['Background'], ms.inputs[1]); nt.links.new(bg2.outputs['Background'], ms.inputs[2])
+nt.links.new(ms.outputs['Shader'], out.inputs['Surface'])
 
-cd = bpy.data.cameras.new('cam'); cd.lens = 38; cd.sensor_fit = 'VERTICAL'; cd.sensor_height = 36
+# the game's battle camera: 36 degree vertical field of view, pitched 60 degrees, framing the court for a 9:16 phone
+cd = bpy.data.cameras.new('cam'); cd.sensor_fit = 'VERTICAL'; cd.sensor_height = 24; cd.lens = 12 / math.tan(math.radians(18))
+cd.clip_start = 0.5; cd.clip_end = 300
 cam = bpy.data.objects.new('cam', cd); sc.collection.objects.link(cam); sc.camera = cam
-TILT = math.radians(34)
-def cam_at(f, cx, cz, height):
-    # look at field point (cx, cz) from above, tilted towards the enemy so the units read as 3D
-    tgt = P(cx, cz); pos = tgt + Vector((0, -math.sin(TILT) * height, math.cos(TILT) * height))
-    cam.location = pos; cam.rotation_euler = (TILT, 0, 0)
+PITCH = math.radians(60)
+def cam_at(f, cx, cz, d):
+    tgt = P(cx, cz); pos = tgt + Vector((0, -math.cos(PITCH) * d, math.sin(PITCH) * d))
+    cam.location = pos; cam.rotation_euler = (math.radians(90) - PITCH, 0, 0)
     cam.keyframe_insert('location', frame=f); cam.keyframe_insert('rotation_euler', frame=f)
-# intro: wide over the whole half, settle on the left lane; pro: the same lane, a touch wider to see the middle
-for f, cx, cz, h in ((1, 9.0, 19.0, 34), (60, 5.0, 19.6, 21), (362, 5.0, 19.8, 20), (363, 6.0, 19.0, 26), (392, 5.8, 19.6, 22),
-                     (450, 6.6, 20.4, 22), (720, 6.8, 20.6, 20.5)):
-    cam_at(f, cx, cz, h)
+GAME = (9.0, 19.63, 67.37)   # the exact framing the live game uses at 720x1280
+for f, cx, cz, d in ((1, *GAME), (40, *GAME), (110, 6.2, 20.6, 46), (362, 6.0, 21.0, 43), (363, *GAME), (400, *GAME),
+                     (470, 7.4, 20.8, 47), (720, 7.6, 21.0, 44)):
+    cam_at(f, cx, cz, d)
 for fc in cam.animation_data.action.fcurves:
     for k in fc.keyframe_points:
         k.interpolation = 'BEZIER'
@@ -398,18 +412,30 @@ for fc in cam.animation_data.action.fcurves:
 # ---------------------------------------------------------------- overlay data (2D projections for the HP bars)
 from bpy_extras.object_utils import world_to_camera_view
 rows = {}
+def visH(h): return 2.15 * h ** 0.85
+# what the game's overlay (src/render/overlay.js) draws: tower plates, unit bars with level badges, deploy clocks
+TOWERS = [('myL', 3.5, 25.5, 0, 'rig'), ('myR', 14.5, 25.5, 0, 'rig'), ('myK', 9, 29.5, 0, 'hq'),
+          ('enL', 3.5, 6.5, 1, 'rig'), ('enR', 14.5, 6.5, 1, 'rig'), ('enK', 9, 2.5, 1, 'hq')]
+TDEF = {'rig': (2600, 4.2, 1.45), 'hq': (4400, 5.0, 1.95)}
+OVU = [  # name, root, team, card h, max hp, deploy frame, last frame, hp curve
+    ('whale1', W1['root'], 1, 2.3, 4700, 24, 362, whp1), ('lmao', LM['root'], 0, 1.35, 640, 112, 362, None),
+    ('whale2', W2['root'], 1, 2.3, 4700, 372, DIE - 1, whp2)] + \
+    [(f'us{i}', u['root'], 0, 0.8, 135, F_US + i * 2, 720, None) for i, u in enumerate(US)]
 for f in range(1, LAST + 1):
-    sc.frame_set(f); R = {}
+    sc.frame_set(f); R = {'t': [], 'u': []}
     def scr(v):
-        c = world_to_camera_view(sc, cam, v); return [round(c.x, 4), round(1 - c.y, 4), round(c.z, 2)]
-    if 18 <= f <= 362:
-        x, z, _ = wpos(path1, max(f, 24)); R['whale'] = scr(P(x, z, 4.0)) + [round(whp1[f], 3)]
-    if 366 <= f < DIE:
-        x, z, _ = wpos(path2, max(f, 372)); R['whale'] = scr(P(x, z, 4.0)) + [round(whp2[f], 3)]
-    R['myL'] = scr(P(3.5, 25.5, 5.3)) + [round(thp1[f] if f <= 362 else 1.0, 3)]
-    R['myR'] = scr(P(14.5, 25.5, 5.3)) + [1.0]
-    R['myK'] = scr(P(9, 29.5, 6.3)) + [1.0]
-    if F_IDOL <= f <= 720: R['idol'] = scr(P(*IDOL, 3.3)) + [round(ihp[f], 3)]
+        c = world_to_camera_view(sc, cam, v); return [round(c.x, 4), round(1 - c.y, 4)]
+    for key, x, z, team, typ in TOWERS:
+        mx, h, r = TDEF[typ]; hp = mx * (thp1[f] if (key == 'myL' and f <= 362) else 1.0)
+        pt = P(x, z + r * 1.2, 0) if team == 0 else P(x, z, h * 1.2 + (2.2 if typ == 'hq' else 2.3))
+        R['t'].append(scr(pt) + [team, typ, round(hp), mx])
+    for name, root, team, h, mx, fd, fe, curve in OVU:
+        if not (fd <= f <= fe): continue
+        loc = root.matrix_world.translation; H = visH(h) * 1.05
+        hp = (curve[f] if curve else 1.0) * mx
+        R['u'].append(scr(Vector((loc.x, loc.y, loc.z + H + 0.2))) + [team, round(hp), mx, round(min(1.0, (f - fd) / 30), 3), f - fd])
+    if F_IDOL <= f <= 720:
+        R['b'] = scr(P(*IDOL, 1.6 * 1.3 + 0.6)) + [0, round(ihp[f], 3)]
     rows[f] = R
 ovl['frames'] = rows
 ovl['marks'] = {'title': [1, 60], 'noob': [61, 362], 'pro': [363, 720], 'x_at': 268, 'check_at': DIE + 12,

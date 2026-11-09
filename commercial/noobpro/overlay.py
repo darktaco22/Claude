@@ -1,13 +1,13 @@
 """The 2D layer of NOOB vs PRO, drawn over the rendered 3D frames, plus the sound mix.
 
-python3 overlay.py FRAMES_DIR overlay.json OUT_DIR
+python3 overlay.py FRAMES_DIR overlay.json OUT_DIR [HUD_DIR]
   FRAMES_DIR has f_0001.png .. f_0720.png (the Blender render); OUT_DIR gets c_0001.png .. c_0810.png
   (frames 721-810 are the end card) and mix.wav. assemble.sh turns those into the final mp4.
 """
 import json, os, sys, math, subprocess
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
-FR, OVL, OUT = sys.argv[1:4]
+FR, OVL, OUT = sys.argv[1:4]; HUD = sys.argv[4] if len(sys.argv) > 4 else os.path.join(FR, '..', 'hud')
 HERE = os.path.dirname(os.path.abspath(__file__)); A = os.path.join(HERE, '..', 'assets')
 os.makedirs(OUT, exist_ok=True)
 O = json.load(open(OVL)); FRAMES = {int(k): v for k, v in O['frames'].items()}; MK = O['marks']
@@ -49,6 +49,48 @@ def green_check(k):
     return im
 XIMG, CIMG = red_x(1), green_check(1)
 
+# ---- the game's own 2D layer (src/render/overlay.js), ported: tower plates, unit bars with level badges, deploy clocks
+SC = 1.25                                   # the game's overlay scale at 720 px wide
+COL = [(124, 255, 107), (255, 77, 109)]; DARKC = [(29, 74, 23), (74, 21, 32)]; INK = (11, 12, 16)
+RUBIK = os.path.join(A, 'rubik.ttf')
+def rubik(sz):
+    f = ImageFont.truetype(RUBIK, int(sz))
+    try: f.set_variation_by_axes([800])
+    except Exception: pass
+    return f
+def game_layer(d, R):
+    s = SC
+    for x, y, team, typ, hp, mx in R['t']:
+        X, Y = x * W, y * H; hq = typ == 'hq'; h = 13 * s
+        Y += (h / 2 + 4 * s) if team == 0 else -(h / 2 + 2 * s)
+        w = (84 if hq else 66) * s; x0, y0 = X - w / 2, Y - h / 2; k = max(0, hp / mx)
+        if not (-60 < X < W + 60 and -30 < Y < H + 30): continue
+        d.rounded_rectangle((x0 - 3, y0 - 3, x0 + w + 3, y0 + h + 3), int(6 * s), fill=INK + (230,))
+        d.rounded_rectangle((x0, y0, x0 + w, y0 + h), int(4 * s), fill=DARKC[team])
+        if k > 0:
+            d.rounded_rectangle((x0, y0, x0 + max(h * 0.6, w * k), y0 + h), int(4 * s), fill=COL[team])
+            d.rounded_rectangle((x0 + 2, y0 + 1.5, x0 + 2 + max(0, w * k - 4), y0 + 1.5 + h * 0.32), 3, fill=(255, 255, 255, 71))
+        d.text((X, Y + 0.5), f'{int(math.ceil(hp)):,}', font=rubik(11 * s), fill=(242, 238, 223), stroke_width=int(3 * s / 2 + 0.5), stroke_fill=INK, anchor='mm')
+        if hq:
+            d.text((X + w / 2 + 12 * s, Y - 8 * s), 'ZZZ', font=font(int(10 * s)), fill=(201, 208, 255), stroke_width=2, stroke_fill=INK, anchor='mm')
+    for x, y, team, hp, mx, dep, age in R['u']:
+        X, Y = x * W, y * H
+        if dep < 1.0:      # the deploy clock
+            r = 8 * s; d.ellipse((X - r, Y - r, X + r, Y + r), fill=INK + (190,))
+            d.pieslice((X - r + 2, Y - r + 2, X + r - 2, Y + r - 2), -90, -90 + 360 * dep, fill=COL[team]); continue
+        dmg = hp < mx; recent = age < 30 + 48
+        if not dmg and not recent: continue
+        big = mx > 1500; w = (40 if big else 18 if mx < 300 else 28) * s; h = 5 * s; x0 = X - w / 2 + 4 * s; y0 = Y
+        d.rounded_rectangle((x0 - 1.5, y0 - 1.5, x0 + w + 1.5, y0 + h + 1.5), 3, fill=INK + (217,))
+        d.rounded_rectangle((x0, y0, x0 + max(1, w * max(0, hp / mx)), y0 + h), 2, fill=COL[team])
+        bx = x0 - 7 * s
+        d.rounded_rectangle((bx - 5 * s, y0 - 2.5 * s, bx + 5 * s, y0 + 7.5 * s), int(2 * s), fill=(42, 122, 34) if team == 0 else (154, 34, 56), outline=INK, width=2)
+        d.text((bx, y0 + 2.6 * s), '11' if team == 1 else '9', font=rubik(7.5 * s), fill=(242, 238, 223), anchor='mm')
+    if 'b' in R:
+        x, y, team, k = R['b']; X, Y = x * W, y * H; w = 34 * s; h = 5 * s; x0 = X - w / 2
+        d.rounded_rectangle((x0 - 1.5, Y - 1.5, x0 + w + 1.5, Y + h + 1.5), 3, fill=INK + (217,))
+        d.rounded_rectangle((x0, Y, x0 + max(1, w * max(0, k)), Y + h), 2, fill=COL[team])
+
 def bar(d, cx, cy, frac, color, w=96, h=14, label=None):
     x0, y0 = cx - w / 2, cy - h / 2
     d.rounded_rectangle((x0 - 3, y0 - 3, x0 + w + 3, y0 + h + 3), 6, fill=(20, 10, 48))
@@ -72,18 +114,9 @@ def frame(f):
         base = Image.open(os.path.join(FR, f'f_{LAST3D:04d}.png')).convert('RGBA').filter(ImageFilter.GaussianBlur(10))
     ov = Image.new('RGBA', (W, H), (0, 0, 0, 0)); d = ImageDraw.Draw(ov)
     if f <= LAST3D:
-        R = FRAMES[f]
-        # HP bars: my towers (blue), the whale (red), the idol (blue)
-        for key in ('myL', 'myR', 'myK'):
-            x, y, z, hp = R[key]
-            if 0 < x < 1 and 0 < y < 1 and z > 0:
-                bar(d, x * W, y * H - 10, hp, (70, 150, 255), 110 if key == 'myK' else 96, 14, str(int(round(hp * (4400 if key == 'myK' else 2600)))))
-        if 'whale' in R:
-            x, y, z, hp = R['whale']
-            if 0 < x < 1 and 0 < y < 1: bar(d, x * W, y * H, hp, (240, 60, 60), 110, 14)
-        if 'idol' in R:
-            x, y, z, hp = R['idol']
-            if 0 < x < 1 and 0 < y < 1: bar(d, x * W, y * H, hp, (70, 150, 255), 80, 12)
+        game_layer(d, FRAMES[f])
+        hp_ = os.path.join(HUD, f'h_{f:04d}.png')
+        if os.path.exists(hp_): ov.alpha_composite(Image.open(hp_).convert('RGBA'))
     # segments
     t0, t1 = MK['title']
     if f <= t1 + 8:
@@ -99,15 +132,15 @@ def frame(f):
             paste_scaled(ov, scaled_text_img('in MEME ROYALE', 44, (255, 214, 80), 5), W / 2, 700, pop(f, t0 + 24, 8) * a)
     def segment(lab, color, f0, f1, mark_at, mark_img, caps):
         if not (f0 <= f <= f1): return
-        pill(d, (24, 40), lab, color)
+        pill(d, (W / 2 - (font(40).getbbox(lab)[2] + 40) / 2, 74), lab, color)
         paste_scaled(ov, scaled_text_img('Pro tip :', 52, (255, 255, 255), 5), W * 0.76, H * 0.30, pop(f, f0 + 6, 8))
         if f >= mark_at:
             paste_scaled(ov, mark_img, W * 0.76, H * 0.30 + 105, pop(f, mark_at, 9) * 0.75)
             kb = ease((f - mark_at - 10) / 6)
-            if kb > 0: d.rectangle((0, H - 360, W, H - 230), fill=(20, 10, 48, int(150 * kb)))
+            if kb > 0: d.rectangle((0, H - 440, W, H - 310), fill=(20, 10, 48, int(150 * kb)))
             for i, c in enumerate(caps):
                 k = ease((f - mark_at - 12 - 10 * i) / 8)
-                if k > 0: text(d, (W / 2, H - 325 + 56 * i), c, 40, (255, 255, 255) if i else (255, 214, 80), 5)
+                if k > 0: text(d, (W / 2, H - 405 + 56 * i), c, 40, (255, 255, 255) if i else (255, 214, 80), 5)
     segment('NOOB', (220, 50, 50), MK['noob'][0], MK['noob'][1], MK['x_at'], XIMG, NOOB_CAP)
     segment('PRO', (40, 170, 70), MK['pro'][0], MK['pro'][1], MK['check_at'], CIMG, PRO_CAP)
     base.alpha_composite(ov)
