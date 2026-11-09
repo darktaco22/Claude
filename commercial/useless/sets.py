@@ -66,7 +66,7 @@ def team(root_objs, rgb):
 # ---------------------------------------------------------------- the tunnel
 def tunnel():
     T = {}
-    floor = pbr('t_floor', 'cobblestone_floor_08', scale=1.0, tint=(0.75, 0.66, 0.56))
+    floor = pbr('t_floor', 'cobblestone_floor_08', scale=1.0, tint=(0.75, 0.66, 0.56), rough_mul=0.62)
     wall = pbr('t_wall', 'castle_wall_slates', scale=1.0, tint=(0.62, 0.55, 0.48))
     y0, y1 = -TL / 2, GATE_Y
     plane('t_floor', (TW, y1 - y0 + 6), (TX, (y0 + y1) / 2 + 3, 0), (0, 0, 0), floor, uv_scale=0.4)
@@ -111,6 +111,13 @@ def tunnel():
     gl.data.size = gw; gl.data.size_y = gh; gl.data.energy = 900; gl.data.color = (1.0, 0.84, 0.6)
     gl.location = (TX, GATE_Y + 0.3, gh / 2 + 0.3); gl.rotation_euler = (math.radians(-90 + 8), 0, 0)
     bpy.context.scene.collection.objects.link(gl); T['gate_sun'] = gl
+    if os.environ.get('NU_HAZE', '1') == '1':
+        hz = bpy.data.materials.new('t_haze'); hz.use_nodes = True; nt = hz.node_tree; nt.nodes.clear()
+        o_ = nt.nodes.new('ShaderNodeOutputMaterial'); pv = nt.nodes.new('ShaderNodeVolumePrincipled'); pv.name = 'vol'
+        pv.inputs['Color'].default_value = (1, 0.95, 0.88, 1); pv.inputs['Density'].default_value = 0.022; pv.inputs['Anisotropy'].default_value = 0.45
+        nt.links.new(pv.outputs[0], o_.inputs['Volume'])
+        box('t_haze', (TX - TW / 2 + 0.02, y0 + 0.02, 0.02), (TX + TW / 2 - 0.02, GATE_Y + 3.9, TH - 0.02), hz)
+        hb = bpy.context.active_object; hb.visible_shadow = False; T['haze_mat'] = hz
     T['dust'] = motes('dust', (TX - TW / 2, -9, 0.2), (TX + TW / 2, GATE_Y, TH - 0.2), 700, 0.0045, fall=0.0, drift=0.25,
                       mat=flat('dust_m', (1, 0.9, 0.7), 0.5, emit=((1.0, 0.85, 0.6), 0.5)))
     return T
@@ -154,7 +161,7 @@ def motes(name, lo, hi, n, r, fall=0.0, mat=None, seed=3, drift=0.15):
     amp = N.new('ShaderNodeVectorMath'); amp.operation = 'SCALE'; amp.inputs['Scale'].default_value = drift * 4
     Lk.new(sub.outputs[0], amp.inputs[0])
     p2 = N.new('ShaderNodeVectorMath'); p2.operation = 'ADD'; Lk.new(pos.outputs[0], p2.inputs[0]); Lk.new(amp.outputs[0], p2.inputs[1])
-    if fall > 0:   # z' = lo.z + mod(z - lo.z - fall * t, size.z)
+    if fall:   # z' = lo.z + mod(z - lo.z - fall * t, size.z)
         sep = N.new('ShaderNodeSeparateXYZ'); Lk.new(p2.outputs[0], sep.inputs[0])
         ft = N.new('ShaderNodeMath'); ft.operation = 'MULTIPLY'; ft.inputs[1].default_value = fall; Lk.new(tm.outputs['Seconds'], ft.inputs[0])
         a = N.new('ShaderNodeMath'); a.operation = 'SUBTRACT'; Lk.new(sep.outputs['Z'], a.inputs[0]); Lk.new(ft.outputs[0], a.inputs[1])
@@ -194,11 +201,35 @@ def arena():
     A = {}
     gd = f'{G}/arenas/cold'
     ground = img_mat('a_ground', f'{gd}/ground.webp', repeat=1.0, normal=f'{gd}/ground_n.webp', tint=(0.92, 0.95, 1.0), rough=0.55)
+    nt = ground.node_tree; b = nt.nodes['Principled BSDF']; nm = b.inputs['Normal'].links[0].from_node
+    tc = nt.nodes.new('ShaderNodeTexCoord'); n1 = nt.nodes.new('ShaderNodeTexNoise'); n1.inputs['Scale'].default_value = 38; n1.inputs['Detail'].default_value = 5
+    n2 = nt.nodes.new('ShaderNodeTexNoise'); n2.inputs['Scale'].default_value = 2.2; n2.inputs['Detail'].default_value = 3
+    nt.links.new(tc.outputs['Object'], n1.inputs['Vector']); nt.links.new(tc.outputs['Object'], n2.inputs['Vector'])
+    ad = nt.nodes.new('ShaderNodeMath'); ad.operation = 'MULTIPLY_ADD'; ad.inputs[1].default_value = 6.0
+    nt.links.new(n2.outputs['Fac'], ad.inputs[0]); nt.links.new(n1.outputs['Fac'], ad.inputs[2])
+    bp = nt.nodes.new('ShaderNodeBump'); bp.inputs['Strength'].default_value = 0.35; bp.inputs['Distance'].default_value = 0.012
+    nt.links.new(ad.outputs[0], bp.inputs['Height']); nt.links.new(nm.outputs[0], bp.inputs['Normal']); nt.links.new(bp.outputs[0], b.inputs['Normal'])
+    rr = nt.nodes.new('ShaderNodeMapRange'); rr.inputs['To Min'].default_value = 0.38; rr.inputs['To Max'].default_value = 0.7
+    nt.links.new(n1.outputs['Fac'], rr.inputs['Value']); nt.links.new(rr.outputs[0], b.inputs['Roughness'])
+    b.inputs['Sheen Weight'].default_value = 0.25; b.inputs['Sheen Roughness'].default_value = 0.4
     # ground: two banks either side of the river, generous run-off all round
     for s in (-1, 1):
         o = plane('a_ground', (60, 34), (0, s * (1.3 + 17), 0), (0, 0, 0), ground, uv_scale=0.09)
     water = flat('a_ice', (0.04, 0.22, 0.45), 0.08); b = water.node_tree.nodes['Principled BSDF']
     b.inputs['Emission Color'].default_value = (0.1, 0.45, 0.9, 1); b.inputs['Emission Strength'].default_value = 0.25
+    nt = water.node_tree; tc = nt.nodes.new('ShaderNodeTexCoord')
+    vo = nt.nodes.new('ShaderNodeTexVoronoi'); vo.feature = 'DISTANCE_TO_EDGE'; vo.inputs['Scale'].default_value = 1.6
+    wn = nt.nodes.new('ShaderNodeTexNoise'); wn.inputs['Scale'].default_value = 3.0; wn.inputs['Detail'].default_value = 4
+    wv = nt.nodes.new('ShaderNodeMix'); wv.data_type = 'VECTOR'; wv.inputs[0].default_value = 0.12
+    nt.links.new(tc.outputs['Object'], wn.inputs['Vector']); nt.links.new(tc.outputs['Object'], wv.inputs[4]); nt.links.new(wn.outputs['Color'], wv.inputs[5])
+    nt.links.new(wv.outputs[1], vo.inputs['Vector'])
+    cr = nt.nodes.new('ShaderNodeMapRange'); cr.inputs['From Min'].default_value = 0.0; cr.inputs['From Max'].default_value = 0.035
+    cr.inputs['To Min'].default_value = 1.0; cr.inputs['To Max'].default_value = 0.0; nt.links.new(vo.outputs['Distance'], cr.inputs['Value'])
+    cm = nt.nodes.new('ShaderNodeMix'); cm.data_type = 'RGBA'; cm.inputs[6].default_value = (0.03, 0.2, 0.42, 1); cm.inputs[7].default_value = (0.55, 0.85, 1.0, 1)
+    nt.links.new(cr.outputs[0], cm.inputs[0]); nt.links.new(cm.outputs[2], b.inputs['Base Color']); nt.links.new(cm.outputs[2], b.inputs['Emission Color'])
+    bp = nt.nodes.new('ShaderNodeBump'); bp.inputs['Strength'].default_value = 0.25; bp.inputs['Distance'].default_value = 0.02
+    nt.links.new(wn.outputs['Fac'], bp.inputs['Height']); nt.links.new(bp.outputs[0], b.inputs['Normal'])
+    b.inputs['Roughness'].default_value = 0.06; b.inputs['Coat Weight'].default_value = 0.6
     plane('a_river', (60, 2.6), (0, 0, -0.35), (0, 0, 0), water)
     bank = flat('a_bank', (0.42, 0.55, 0.78), 0.7)
     for s in (-1, 1): box('a_bankwall', (-30, s * 1.3 - 0.06, -0.36), (30, s * 1.3 + 0.06, 0.0), bank)
@@ -236,17 +267,39 @@ def arena():
     A['backdrop_mat'] = bd
     # snowy pines and snow piles outside the playfield
     rng = random.Random(23); mats = (flat('pine', (0.05, 0.25, 0.16), 0.8), flat('pine_snow', (0.93, 0.96, 1.0), 0.6))
+    nt = mats[0].node_tree; oi = nt.nodes.new('ShaderNodeObjectInfo'); hs = nt.nodes.new('ShaderNodeHueSaturation')
+    mr = nt.nodes.new('ShaderNodeMapRange'); mr.inputs['To Min'].default_value = 0.55; mr.inputs['To Max'].default_value = 1.5
+    nt.links.new(oi.outputs['Random'], mr.inputs['Value']); nt.links.new(mr.outputs[0], hs.inputs['Value']); hs.inputs['Color'].default_value = (0.05, 0.25, 0.16, 1)
+    nt.links.new(hs.outputs[0], nt.nodes['Principled BSDF'].inputs['Base Color'])
     for _ in range(70):
         while True:
             x, y = rng.uniform(-26, 26), rng.uniform(-24, 30)
             if abs(x) > 10.5 or abs(y) > 19: break
         pine((x, y), rng.uniform(0.55, 1.0), rng, mats)
-    sp = flat('snowpile', (0.92, 0.95, 1.0), 0.7)
+    sp = flat('snowpile', (0.92, 0.95, 1.0), 0.6)
+    nt = sp.node_tree; tc = nt.nodes.new('ShaderNodeTexCoord'); n1 = nt.nodes.new('ShaderNodeTexNoise'); n1.inputs['Scale'].default_value = 30; n1.inputs['Detail'].default_value = 5
+    bp = nt.nodes.new('ShaderNodeBump'); bp.inputs['Strength'].default_value = 0.3; bp.inputs['Distance'].default_value = 0.015
+    nt.links.new(tc.outputs['Object'], n1.inputs['Vector']); nt.links.new(n1.outputs['Fac'], bp.inputs['Height']); nt.links.new(bp.outputs[0], nt.nodes['Principled BSDF'].inputs['Normal'])
+    nt.nodes['Principled BSDF'].inputs['Sheen Weight'].default_value = 0.25
+    # low drifts at the edges of the field and against the towers (never where anyone walks or the camera lies)
+    for _ in range(260):
+        x, y = rng.uniform(-10, 10), rng.uniform(-18, 18)
+        if not (x > 3.8 or x < -7.4 or y > 6.5 or y < -15.2): continue
+        if abs(y) < 2.0 or (abs(abs(x) - BRIDGE_X) < 1.6 and abs(y) < 3.5): continue
+        bpy.ops.mesh.primitive_uv_sphere_add(segments=20, ring_count=10, radius=1.0, location=(x, y, -0.03))
+        o = bpy.context.active_object; r = rng.uniform(0.35, 1.1); o.scale = (r * rng.uniform(0.8, 1.5), r * rng.uniform(0.8, 1.3), r * rng.uniform(0.14, 0.26))
+        o.rotation_euler.z = rng.uniform(0, 3.1); o.data.materials.append(sp)
+        for p in o.data.polygons: p.use_smooth = True
     for _ in range(40):
         x, y = rng.uniform(-24, 24), rng.uniform(-22, 26)
         if abs(x) < 9.5 and abs(y) < 17: continue
         bpy.ops.mesh.primitive_uv_sphere_add(segments=16, ring_count=8, radius=1.0, location=(x, y, -0.3))
         o = bpy.context.active_object; o.scale = (rng.uniform(0.8, 2.0), rng.uniform(0.8, 1.8), rng.uniform(0.4, 0.8)); o.data.materials.append(sp)
+        for p in o.data.polygons: p.use_smooth = True
+    em = flat('ember_m', (1, 0.4, 0.1), 0.5, emit=((1.0, 0.38, 0.08), 14.0))
+    A['ruins'] = [OUR_PRINC[0]] + EN_PRINC
+    for i, p in enumerate(A['ruins']):
+        motes(f'embers{i}', (p.x - 0.7, p.y - 0.7, 0.3), (p.x + 0.7, p.y + 0.7, 3.4), 46, 0.008, fall=-0.55, drift=0.3, mat=em, seed=30 + i)
     # falling snow over the whole field
     A['snow'] = motes('snow', (-16, -22, 0.0), (16, 18, 12), 9000, 0.016, fall=0.9, drift=0.35,
                       mat=flat('snow_m', (1, 1, 1), 0.5, emit=((0.85, 0.92, 1.0), 0.6)), seed=7)

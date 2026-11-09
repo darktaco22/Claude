@@ -60,7 +60,7 @@ def heading(d): return math.atan2(d.x, -d.y)       # facing(h) = (sin h, -cos h)
 
 def setup_render(res):
     sc = bpy.context.scene; sc.render.fps = FPS; sc.frame_start = 1; sc.frame_end = NF
-    sc.render.engine = 'CYCLES'; sc.cycles.device = 'CPU'; sc.cycles.samples = 20; sc.cycles.use_denoising = True
+    sc.render.engine = 'CYCLES'; sc.cycles.device = 'CPU'; sc.cycles.samples = 24; sc.cycles.use_denoising = True
     sc.cycles.denoising_input_passes = 'RGB_ALBEDO_NORMAL'; sc.cycles.max_bounces = 6; sc.cycles.diffuse_bounces = 2
     sc.cycles.glossy_bounces = 2; sc.cycles.transparent_max_bounces = 12; sc.cycles.transmission_bounces = 2; sc.cycles.volume_bounces = 0
     sc.cycles.light_tree = True; sc.cycles.adaptive_threshold = 0.03
@@ -73,10 +73,12 @@ def setup_render(res):
     finish(sc)
     w = bpy.data.worlds.new('sky'); sc.world = w; w.use_nodes = True
     w.node_tree.nodes['Background'].inputs[0].default_value = (0.0033, 0.074, 0.216, 1); w.node_tree.nodes['Background'].inputs[1].default_value = 1.0
+    w.mist_settings.start = 9.0; w.mist_settings.depth = 42.0; w.mist_settings.falloff = 'QUADRATIC'
 
 
 def finish(sc):
     """Compositor: soft bloom on the highlights, a hint of lens dispersion, a gentle vignette."""
+    bpy.context.view_layer.use_pass_mist = True
     sc.use_nodes = True; nt = sc.node_tree; nt.nodes.clear()
     rl = nt.nodes.new('CompositorNodeRLayers'); out = nt.nodes.new('CompositorNodeComposite')
     gl = nt.nodes.new('CompositorNodeGlare'); gl.glare_type = 'FOG_GLOW'; gl.quality = 'HIGH'; gl.threshold = 0.85; gl.size = 8; gl.mix = -0.82
@@ -86,7 +88,14 @@ def finish(sc):
     mr = nt.nodes.new('CompositorNodeMapRange'); mr.inputs['To Min'].default_value = 0.68; mr.inputs['To Max'].default_value = 1.0
     mx = nt.nodes.new('CompositorNodeMixRGB'); mx.blend_type = 'MULTIPLY'; mx.inputs[0].default_value = 1.0
     L = nt.links.new
-    L(rl.outputs['Image'], gl.inputs['Image']); L(gl.outputs['Image'], ld.inputs['Image'])
+    # aerial haze in the arena (keyed off in the tunnel), then a gentle split-tone grade
+    mk = nt.nodes.new('CompositorNodeValue'); mk.name = 'mistk'; mk.outputs[0].default_value = 0.0
+    mm = nt.nodes.new('CompositorNodeMath'); mm.operation = 'MULTIPLY'; L(rl.outputs['Mist'], mm.inputs[0]); L(mk.outputs[0], mm.inputs[1])
+    hz = nt.nodes.new('CompositorNodeMixRGB'); hz.inputs[2].default_value = (0.30, 0.50, 0.82, 1)
+    L(mm.outputs[0], hz.inputs[0]); L(rl.outputs['Image'], hz.inputs[1])
+    cb = nt.nodes.new('CompositorNodeColorBalance'); cb.correction_method = 'LIFT_GAMMA_GAIN'
+    cb.lift = (0.97, 1.0, 1.04); cb.gamma = (1.0, 1.0, 1.0); cb.gain = (1.04, 1.0, 0.95)
+    L(hz.outputs['Image'], gl.inputs['Image']); L(gl.outputs['Image'], cb.inputs['Image']); L(cb.outputs['Image'], ld.inputs['Image'])
     L(em.outputs['Mask'], bl.inputs['Image']); L(bl.outputs['Image'], mr.inputs['Value'])
     L(ld.outputs['Image'], mx.inputs[1]); L(mr.outputs['Value'], mx.inputs[2]); L(mx.outputs['Image'], out.inputs['Image'])
 
@@ -241,6 +250,37 @@ def act(C, K):
         game.layer(C[f't_coin{i}'], NF, tun_pose)
 
 
+def puffs(K):
+    """Snow kicked up by every landing, blow and footfall: small clumps on ballistic arcs."""
+    bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=2, radius=1.0); src = bpy.context.active_object; me = src.data
+    for p in me.polygons: p.use_smooth = True
+    me.materials.append(sets.flat('puff', (0.93, 0.96, 1.0), 0.6)); bpy.data.objects.remove(src)
+    rng = random.Random(9); sc = bpy.context.scene
+    def burst(t0, p, n, power, r):
+        for _ in range(n):
+            o = bpy.data.objects.new('puff', me); sc.collection.objects.link(o); o.visible_shadow = False
+            a = rng.uniform(0, 6.283); vr = rng.uniform(0.25, 1.0) * power; vz = rng.uniform(0.7, 2.3) * power
+            life = rng.uniform(0.4, 0.9); rr = r * rng.uniform(0.3, 1.3); f0 = F(t0); off = rng.uniform(0, 0.12)
+            for i in range(3): K.add(o, 'scale', i, f0 - 1, 0.0)
+            for j in range(int(life * FPS) + 1):
+                tt = j / FPS; s = rr * (1 - tt / life) ** 0.6
+                pos = (p.x + math.cos(a) * (off + vr * tt), p.y + math.sin(a) * (off + vr * tt), max(0.0, 0.03 + vz * tt - 2.6 * tt * tt))
+                for i in range(3): K.add(o, 'location', i, f0 + j, pos[i]); K.add(o, 'scale', i, f0 + j, s)
+            for i in range(3): K.add(o, 'scale', i, f0 + int(life * FPS) + 1, 0.0)
+    for i in range(4): burst(DEPLOY + 0.32 + 0.05 * i, COINS_A[i], 14, 0.8, 0.034)
+    ctr = sum(COINS_A, V(0, 0)) / 4; burst(IMPACT, ctr, 60, 1.5, 0.045)
+    for i in (1, 2, 3): burst(IMPACT + 0.55, SIB_FLY[i], 18, 0.8, 0.034)
+    for tt, p in ((IMPACT + 0.4, HERO_KNOCK), (23.1, HIT2), (25.2, HIT3)): burst(tt, p, 18, 0.75, 0.032)
+    dg = (GOAT_STOP - HIT3).normalized(); burst(FALL1, HIT3 - dg * 0.42, 44, 0.6, 0.03)
+    t = CHARGE + 0.1
+    while t < IMPACT: burst(t, GOAT_PATH[-1][1].lerp(GOAT_STOP, ease(ramp(t, CHARGE, IMPACT + 0.1))), 7, 0.55, 0.03); t += 0.12
+    front = GOAT_STOP + V(0.25, -0.95)
+    for (a, b, pa, pb) in ((STAND, 22.3, HERO_KNOCK, front), (23.95, 24.35, HIT2, front)):
+        t = a + 0.08
+        while t < b: burst(t, pa.lerp(pb, ease(ramp(t, a, b))), 4, 0.4, 0.022); t += 0.1
+    for tt in (22.62, 24.72): burst(tt, front, 16, 0.9, 0.034)
+
+
 POS = {}
 
 
@@ -321,6 +361,7 @@ def camera(cam, C, f, K, cache):
     else:                             # the next morning: from the gate side, warm; the light finds them first
         k = ease(ramp(t, MORNING, END)); c = V(TX - 1.35, 9.3 - 0.3 * k, 0.62); r = shot(c, V(TX + 0.5, 7.15, 0.5), 40 - 4 * k, 2.8)
     pos, q, fov, focus, fstop = r; pos = pos + hand
+    cache.setdefault('cam', {})[f] = (pos.copy(), pos + q @ Vector((0, 0, -1)) * focus)
     for i in range(3): K.add(cam, 'location', i, f, pos[i])
     for i in range(4): K.add(cam, 'rotation_quaternion', i, f, q[i])
     K.add(cam.data, 'lens', 0, f, 12.0 / math.tan(math.radians(fov) / 2))
@@ -341,6 +382,11 @@ def lights(S, Ar, C, K, cache):
     light('arena_fill', 'AREA', (0, -26, 14), 0.0, (0.55, 0.68, 1.0), 20, (0, 0, 0))
     light('hero_warm', 'SPOT', (0, 0, 6), 0.0, (1.0, 0.75, 0.45), 0.4); L['hero_warm'].data.spot_size = math.radians(14); L['hero_warm'].data.spot_blend = 0.8
     light('tunnel_fill', 'AREA', (TX, -6, TH - 0.2), 0.0, (1.0, 0.8, 0.6), 3.0, (TX, -6, 0))
+    light('rim', 'SPOT', (0, 0, 5), 0.0, (0.6, 0.95, 1.0), 0.25); L['rim'].data.spot_size = math.radians(46); L['rim'].data.spot_blend = 0.6
+    L['rim'].rotation_mode = 'QUATERNION'
+    for i, p in enumerate(Ar['ruins']): light(f'ember{i}', 'POINT', (p.x, p.y, 0.9), 0.0, (1.0, 0.42, 0.12), 0.35)
+    light('king_glow', 'POINT', (0, -12.3, 1.6), 260, sets.OURS, 0.5); light('en_glow', 'POINT', (0, 12.3, 1.6), 260, sets.THEIRS, 0.5)
+    sc_nt = sc.node_tree
     rng = random.Random(5)
     bm = S['beam_mat'].node_tree.nodes['strength'].inputs[1]
     blaze = S['blaze_mat'].node_tree.nodes['Principled BSDF'].inputs
@@ -352,12 +398,12 @@ def lights(S, Ar, C, K, cache):
         gold, cold = Vector((1.0, 0.84, 0.6)), Vector((0.45, 0.6, 1.0))
         col = gold.lerp(cold, night)
         for i in range(3): K.add(S['gate_sun'].data, 'color', i, f, col[i])
-        K.add(S['gate_sun'].data, 'energy', 0, f, lerp(900, 120, night) * (0.22 if t >= MORNING else 1.0))
+        K.add(S['gate_sun'].data, 'energy', 0, f, lerp(900, 230, night) * (0.3 if t >= MORNING else 1.0))
         for i in range(3): K.add(S['blaze_mat'].node_tree, 'nodes["Principled BSDF"].inputs["Emission Color"].default_value', i, f, col[i])
         K.add(S['blaze_mat'].node_tree, 'nodes["Principled BSDF"].inputs["Emission Strength"].default_value', 0, f, lerp(6.0, 1.2, night) * (0.35 if t >= MORNING else 1.0))
         for j, ln in enumerate(S['lanterns']):
             fl = 0.82 + 0.18 * math.sin(t * 9.1 + j * 1.7) * math.sin(t * 5.3 + j)
-            K.add(ln.data, 'energy', 0, f, 34 * fl * lerp(1.0, 0.55, night))
+            K.add(ln.data, 'energy', 0, f, 40 * fl * lerp(1.0, 0.5, night))
         K.add(L['tunnel_fill'].data, 'energy', 0, f, lerp(18, 6, night))
         # the light that chooses
         target, on = None, 0.0
@@ -372,9 +418,25 @@ def lights(S, Ar, C, K, cache):
         for i in range(3): K.add(S['choose'], 'location', i, f, tl[i])
         K.add(S['choose'].data, 'energy', 0, f, (3500 if CHOSEN <= t < DEPLOY else 900) * on)
         for i in range(2): K.add(S['beam'], 'location', i, f, tl[i])
-        K.add(S['beam_mat'].node_tree, 'nodes["strength"].inputs[1].default_value', 0, f, (0.35 if CHOSEN <= t < DEPLOY else 0.2 if t >= MORNING else 0.5) * on)
+        K.add(S['beam_mat'].node_tree, 'nodes["strength"].inputs[1].default_value', 0, f, (0.16 if CHOSEN <= t < DEPLOY else 0.2 if t >= MORNING else 0.5) * on)
         # arena: cold moonlight; a warm spot on the hero after the horn
-        K.add(L['moon'].data, 'energy', 0, f, 2.2); K.add(L['arena_fill'].data, 'energy', 0, f, 1600)
+        K.add(L['moon'].data, 'energy', 0, f, 2.9); K.add(L['arena_fill'].data, 'energy', 0, f, 1150)
+        K.add(sc_nt, 'nodes["mistk"].outputs[0].default_value', 0, f, 0.24 if in_arena else 0.0)
+        for i in range(len(Ar['ruins'])):
+            fl = 0.7 + 0.3 * math.sin(t * 11.3 + i * 2.1) * math.sin(t * 6.7 + i) + 0.12 * math.sin(t * 23.0 + i)
+            K.add(L[f'ember{i}'].data, 'energy', 0, f, 420 * fl)
+        # a rim light that always sits behind whoever the lens is on: aurora-cold in the arena, lantern-warm in the tunnel
+        cp, ct = cache['cam'][f]; dv = Vector((ct.x - cp.x, ct.y - cp.y, 0))
+        dv = dv.normalized() if dv.length > 0.1 else Vector((0, 1, 0)); sd = Vector((-dv.y, dv.x, 0))
+        rp = ct + dv * 3.2 + sd * 1.3; rp.z = ct.z + 2.6
+        if in_arena: rcol = Vector((0.55, 0.95, 1.0)); ren = 2600.0
+        else:
+            rp.x = clamp(rp.x, TX - 1.9, TX + 1.9); rp.y = clamp(rp.y, -10.5, GATE_Y - 0.8); rp.z = min(rp.z, TH - 0.3)
+            rcol = Vector((1.0, 0.62, 0.32)).lerp(Vector((0.5, 0.66, 1.0)), night); ren = lerp(420.0, 260.0, night)
+        rq = (Vector((ct.x, ct.y, ct.z)) - rp).to_track_quat('-Z', 'Y')
+        for i in range(3): K.add(L['rim'], 'location', i, f, rp[i]); K.add(L['rim'].data, 'color', i, f, rcol[i])
+        for i in range(4): K.add(L['rim'], 'rotation_quaternion', i, f, rq[i])
+        K.add(L['rim'].data, 'energy', 0, f, ren)
         hw = ease(ramp(t, HORN + 0.6, HORN + 2.0)) * (t < MORNING)
         hp = cache['a_coin0'][f]
         for i, v in enumerate((hp.x + 0.4, hp.y - 1.0, 6.0)): K.add(L['hero_warm'], 'location', i, f, v)
@@ -404,7 +466,7 @@ def main():
     S = sets.tunnel(); Ar = sets.arena()
     C = cast()
     K = rigctl.Keys()
-    act(C, K); K.flush()
+    act(C, K); puffs(K); K.flush()
     for u in C.values():               # hide toggles must not interpolate
         ad = u.mesh.animation_data
         if ad and ad.action:
