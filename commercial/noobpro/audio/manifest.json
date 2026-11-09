@@ -1,0 +1,2363 @@
+{
+ "ui_tap": {
+  "file": "ui_tap.mp3",
+  "vol": 0.8,
+  "dur": 0.48,
+  "loop": false,
+  "group": "ui",
+  "variants": []
+ },
+ "ui_back": {
+  "file": "ui_back.mp3",
+  "vol": 0.8,
+  "dur": 0.3,
+  "loop": false,
+  "group": "ui",
+  "variants": []
+ },
+ "ui_swoosh": {
+  "file": "ui_swoosh.mp3",
+  "vol": 0.8,
+  "dur": 0.393,
+  "loop": false,
+  "group": "ui",
+  "variants": []
+ },
+ "card_pick": {
+  "file": "card_pick.mp3",
+  "vol": 0.8,
+  "dur": 0.48,
+  "loop": false,
+  "group": "ui",
+  "variants": []
+ },
+ "card_deny": {
+  "file": "card_deny.mp3",
+  "vol": 0.8,
+  "dur": 0.49,
+  "loop": false,
+  "group": "ui",
+  "variants": []
+ },
+ "deploy_drop": {
+  "file": "deploy_drop.mp3",
+  "vol": 0.8,
+  "dur": 0.6,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "deploy_spell": {
+  "file": "deploy_spell.mp3",
+  "vol": 0.8,
+  "dur": 0.52,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "emote_pop": {
+  "file": "emote_pop.mp3",
+  "vol": 0.8,
+  "dur": 0.48,
+  "loop": false,
+  "group": "ui",
+  "variants": []
+ },
+ "battle_start": {
+  "file": "battle_start.mp3",
+  "vol": 0.8,
+  "dur": 2,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "countdown_tick": {
+  "file": "countdown_tick.mp3",
+  "vol": 0.8,
+  "dur": 0.48,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "overdose": {
+  "file": "overdose.mp3",
+  "vol": 0.8,
+  "dur": 1.48,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "overtime": {
+  "file": "overtime.mp3",
+  "vol": 0.8,
+  "dur": 1.2,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "w_gain": {
+  "file": "w_gain.mp3",
+  "vol": 0.8,
+  "dur": 1.48,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "w_lose": {
+  "file": "w_lose.mp3",
+  "vol": 0.8,
+  "dur": 0.887,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "victory": {
+  "file": "victory.mp3",
+  "vol": 0.8,
+  "dur": 4,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "defeat": {
+  "file": "defeat.mp3",
+  "vol": 0.8,
+  "dur": 2.868,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "draw": {
+  "file": "draw.mp3",
+  "vol": 0.8,
+  "dur": 1.455,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "tower_shot": {
+  "file": "tower_shot_1.mp3",
+  "vol": 0.8,
+  "dur": 0.48,
+  "loop": false,
+  "group": "sfx",
+  "variants": [
+   "tower_shot_1.mp3",
+   "tower_shot_2.mp3",
+   "tower_shot_3.mp3"
+  ]
+ },
+ "tower_hit": {
+  "file": "tower_hit_1.mp3",
+  "vol": 0.8,
+  "dur": 0.48,
+  "loop": false,
+  "group": "sfx",
+  "variants": [
+   "tower_hit_1.mp3",
+   "tower_hit_2.mp3",
+   "tower_hit_3.mp3"
+  ]
+ },
+ "tower_destroy": {
+  "file": "tower_destroy.mp3",
+  "vol": 0.8,
+  "dur": 2.161,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "hq_destroy": {
+  "file": "hq_destroy.mp3",
+  "vol": 0.8,
+  "dur": 3.48,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "hq_wake": {
+  "file": "hq_wake.mp3",
+  "vol": 0.8,
+  "dur": 1.2,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "punch_light": {
+  "file": "punch_light_1.mp3",
+  "vol": 0.8,
+  "dur": 0.48,
+  "loop": false,
+  "group": "sfx",
+  "variants": [
+   "punch_light_1.mp3",
+   "punch_light_2.mp3"
+  ]
+ },
+ "punch_heavy": {
+  "file": "punch_heavy_1.mp3",
+  "vol": 0.8,
+  "dur": 0.48,
+  "loop": false,
+  "group": "sfx",
+  "variants": [
+   "punch_heavy_1.mp3",
+   "punch_heavy_2.mp3",
+   "punch_heavy_3.mp3"
+  ]
+ },
+ "swing": {
+  "file": "swing_1.mp3",
+  "vol": 0.8,
+  "dur": 0.48,
+  "loop": false,
+  "group": "sfx",
+  "variants": [
+   "swing_1.mp3",
+   "swing_2.mp3",
+   "swing_3.mp3"
+  ]
+ },
+ "throw": {
+  "file": "throw.mp3",
+  "vol": 0.8,
+  "dur": 0.313,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "bread_hit": {
+  "file": "bread_hit.mp3",
+  "vol": 0.8,
+  "dur": 0.414,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "rocket_launch": {
+  "file": "rocket_launch.mp3",
+  "vol": 0.8,
+  "dur": 0.68,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "rocket_explode": {
+  "file": "rocket_explode.mp3",
+  "vol": 0.8,
+  "dur": 0.8,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "laugh_blast": {
+  "file": "laugh_blast.mp3",
+  "vol": 0.8,
+  "dur": 0.8,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "beam_loop": {
+  "file": "beam_loop.mp3",
+  "vol": 0.45,
+  "dur": 8.25,
+  "loop": true,
+  "group": "sfx",
+  "variants": [],
+  "loopStart": 2.75,
+  "loopEnd": 5.5
+ },
+ "heal": {
+  "file": "heal.mp3",
+  "vol": 0.8,
+  "dur": 0.8,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "sticky_splat": {
+  "file": "sticky_splat.mp3",
+  "vol": 0.8,
+  "dur": 0.48,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "coin_jingle": {
+  "file": "coin_jingle_1.mp3",
+  "vol": 0.8,
+  "dur": 0.48,
+  "loop": false,
+  "group": "sfx",
+  "variants": [
+   "coin_jingle_1.mp3",
+   "coin_jingle_2.mp3"
+  ]
+ },
+ "whale_slam": {
+  "file": "whale_slam.mp3",
+  "vol": 0.8,
+  "dur": 0.979,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "house_stomp": {
+  "file": "house_stomp.mp3",
+  "vol": 0.8,
+  "dur": 0.8,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "cat_hiss": {
+  "file": "cat_hiss.mp3",
+  "vol": 0.8,
+  "dur": 0.6,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "cat_revive": {
+  "file": "cat_revive.mp3",
+  "vol": 0.8,
+  "dur": 1.096,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "charge_rush": {
+  "file": "charge_rush.mp3",
+  "vol": 0.8,
+  "dur": 0.783,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "unit_die": {
+  "file": "unit_die_1.mp3",
+  "vol": 0.8,
+  "dur": 0.65,
+  "loop": false,
+  "group": "sfx",
+  "variants": [
+   "unit_die_1.mp3",
+   "unit_die_2.mp3"
+  ]
+ },
+ "spell_fud": {
+  "file": "spell_fud.mp3",
+  "vol": 0.8,
+  "dur": 1,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "spell_rug": {
+  "file": "spell_rug.mp3",
+  "vol": 0.8,
+  "dur": 2.388,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "spell_pump": {
+  "file": "spell_pump.mp3",
+  "vol": 0.8,
+  "dur": 0.939,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "bag_shake": {
+  "file": "bag_shake.mp3",
+  "vol": 0.8,
+  "dur": 0.64,
+  "loop": false,
+  "group": "ui",
+  "variants": []
+ },
+ "bag_open": {
+  "file": "bag_open.mp3",
+  "vol": 0.8,
+  "dur": 1,
+  "loop": false,
+  "group": "ui",
+  "variants": []
+ },
+ "card_reveal": {
+  "file": "card_reveal.mp3",
+  "vol": 0.8,
+  "dur": 0.6,
+  "loop": false,
+  "group": "ui",
+  "variants": []
+ },
+ "card_reveal_epic": {
+  "file": "card_reveal_epic.mp3",
+  "vol": 0.8,
+  "dur": 1.2,
+  "loop": false,
+  "group": "ui",
+  "variants": []
+ },
+ "card_reveal_legendary": {
+  "file": "card_reveal_legendary.mp3",
+  "vol": 0.8,
+  "dur": 1.525,
+  "loop": false,
+  "group": "ui",
+  "variants": []
+ },
+ "coins": {
+  "file": "coins.mp3",
+  "vol": 0.8,
+  "dur": 1,
+  "loop": false,
+  "group": "ui",
+  "variants": []
+ },
+ "level_up": {
+  "file": "level_up.mp3",
+  "vol": 0.8,
+  "dur": 2.005,
+  "loop": false,
+  "group": "ui",
+  "variants": []
+ },
+ "clout_up": {
+  "file": "clout_up.mp3",
+  "vol": 0.8,
+  "dur": 1,
+  "loop": false,
+  "group": "ui",
+  "variants": []
+ },
+ "clout_down": {
+  "file": "clout_down.mp3",
+  "vol": 0.8,
+  "dur": 0.8,
+  "loop": false,
+  "group": "ui",
+  "variants": []
+ },
+ "league_up": {
+  "file": "league_up.mp3",
+  "vol": 0.8,
+  "dur": 2.982,
+  "loop": false,
+  "group": "ui",
+  "variants": []
+ },
+ "mus_menu": {
+  "file": "mus_menu.mp3",
+  "vol": 0.4,
+  "dur": 62.651,
+  "loop": true,
+  "group": "music",
+  "variants": [],
+  "loopStart": 1.637143,
+  "loopEnd": 61.651088,
+  "bpm": 112,
+  "lufs": -16.8
+ },
+ "mus_battle": {
+  "file": "mus_battle.mp3",
+  "vol": 0.4,
+  "dur": 111.927,
+  "loop": true,
+  "group": "music",
+  "variants": [],
+  "loopStart": 1.828186,
+  "loopEnd": 110.927007,
+  "bpm": 132,
+  "lufs": -16.2
+ },
+ "mus_overdose": {
+  "file": "mus_overdose.mp3",
+  "vol": 0.45,
+  "dur": 55.467,
+  "loop": true,
+  "group": "music",
+  "variants": [],
+  "loopStart": 1.199955,
+  "loopEnd": 54.46678,
+  "bpm": 162.17,
+  "lufs": -16.2
+ },
+ "vo_rumble": {
+  "file": "vo_rumble.mp3",
+  "vol": 0.8,
+  "dur": 1.303,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "vo_fight": {
+  "file": "vo_fight.mp3",
+  "vol": 0.8,
+  "dur": 0.725,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "vo_title": {
+  "file": "vo_title.mp3",
+  "vol": 0.8,
+  "dur": 1.525,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "vo_overdose": {
+  "file": "vo_overdose.mp3",
+  "vol": 0.8,
+  "dur": 1.977,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "vo_overtime": {
+  "file": "vo_overtime.mp3",
+  "vol": 0.8,
+  "dur": 1.284,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "vo_lastminute": {
+  "file": "vo_lastminute.mp3",
+  "vol": 0.8,
+  "dur": 1.393,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "vo_victory": {
+  "file": "vo_victory.mp3",
+  "vol": 0.8,
+  "dur": 1.426,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "vo_defeat": {
+  "file": "vo_defeat.mp3",
+  "vol": 0.8,
+  "dur": 1.367,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "vo_draw": {
+  "file": "vo_draw.mp3",
+  "vol": 0.8,
+  "dur": 0.962,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "bark_useless": {
+  "file": "bark_useless.mp3",
+  "vol": 0.8,
+  "dur": 1.138,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "bark_chillguy": {
+  "file": "bark_chillguy.mp3",
+  "vol": 0.8,
+  "dur": 1.476,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "bark_jeanphil": {
+  "file": "bark_jeanphil.mp3",
+  "vol": 0.8,
+  "dur": 0.861,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "bark_lmao": {
+  "file": "bark_lmao.mp3",
+  "vol": 0.8,
+  "dur": 0.8,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "bark_chillhouse": {
+  "file": "bark_chillhouse.mp3",
+  "vol": 0.8,
+  "dur": 1.358,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "bark_mensa": {
+  "file": "bark_mensa.mp3",
+  "vol": 0.8,
+  "dur": 1.361,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "bark_troll": {
+  "file": "bark_troll.mp3",
+  "vol": 0.8,
+  "dur": 0.996,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "bark_ket": {
+  "file": "bark_ket.mp3",
+  "vol": 0.8,
+  "dur": 1.059,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "bark_zcat": {
+  "file": "bark_zcat.mp3",
+  "vol": 0.8,
+  "dur": 1.217,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "bark_cupsey": {
+  "file": "bark_cupsey.mp3",
+  "vol": 0.8,
+  "dur": 1.494,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "bark_cate": {
+  "file": "bark_cate.mp3",
+  "vol": 0.8,
+  "dur": 1.475,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "bark_triplet": {
+  "file": "bark_triplet.mp3",
+  "vol": 0.8,
+  "dur": 1.343,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "bark_baton": {
+  "file": "bark_baton.mp3",
+  "vol": 0.8,
+  "dur": 1.091,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "bark_mitch": {
+  "file": "bark_mitch.mp3",
+  "vol": 0.8,
+  "dur": 1.266,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "bark_alon": {
+  "file": "bark_alon.mp3",
+  "vol": 0.8,
+  "dur": 1.171,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "bark_whale": {
+  "file": "bark_whale.mp3",
+  "vol": 0.8,
+  "dur": 1.452,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "bark_neet": {
+  "file": "bark_neet.mp3",
+  "vol": 0.8,
+  "dur": 1.983,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "amb_basement": {
+  "file": "amb_basement.mp3",
+  "vol": 0.5,
+  "dur": 31,
+  "loop": true,
+  "group": "sfx",
+  "variants": [],
+  "loopStart": 0.5,
+  "loopEnd": 30,
+  "lufs": -24.4
+ },
+ "amb_backyard": {
+  "file": "amb_backyard.mp3",
+  "vol": 0.5,
+  "dur": 31,
+  "loop": true,
+  "group": "sfx",
+  "variants": [],
+  "loopStart": 0.5,
+  "loopEnd": 30,
+  "lufs": -24
+ },
+ "amb_parking": {
+  "file": "amb_parking.mp3",
+  "vol": 0.5,
+  "dur": 31,
+  "loop": true,
+  "group": "sfx",
+  "variants": [],
+  "loopStart": 0.5,
+  "loopEnd": 30,
+  "lufs": -24.3
+ },
+ "amb_plaza": {
+  "file": "amb_plaza.mp3",
+  "vol": 0.5,
+  "dur": 31,
+  "loop": true,
+  "group": "sfx",
+  "variants": [],
+  "loopStart": 0.5,
+  "loopEnd": 30,
+  "lufs": -24.2
+ },
+ "amb_beach": {
+  "file": "amb_beach.mp3",
+  "vol": 0.5,
+  "dur": 31,
+  "loop": true,
+  "group": "sfx",
+  "variants": [],
+  "loopStart": 0.5,
+  "loopEnd": 30,
+  "lufs": -24.4
+ },
+ "amb_exchange": {
+  "file": "amb_exchange.mp3",
+  "vol": 0.5,
+  "dur": 31,
+  "loop": true,
+  "group": "sfx",
+  "variants": [],
+  "loopStart": 0.5,
+  "loopEnd": 30,
+  "lufs": -24.4
+ },
+ "amb_casino": {
+  "file": "amb_casino.mp3",
+  "vol": 0.5,
+  "dur": 31,
+  "loop": true,
+  "group": "sfx",
+  "variants": [],
+  "loopStart": 0.5,
+  "loopEnd": 30,
+  "lufs": -24.4
+ },
+ "amb_cold": {
+  "file": "amb_cold.mp3",
+  "vol": 0.5,
+  "dur": 31,
+  "loop": true,
+  "group": "sfx",
+  "variants": [],
+  "loopStart": 0.5,
+  "loopEnd": 30,
+  "lufs": -24.4
+ },
+ "amb_penthouse": {
+  "file": "amb_penthouse.mp3",
+  "vol": 0.5,
+  "dur": 31,
+  "loop": true,
+  "group": "sfx",
+  "variants": [],
+  "loopStart": 0.5,
+  "loopEnd": 30,
+  "lufs": -24.4
+ },
+ "amb_moon": {
+  "file": "amb_moon.mp3",
+  "vol": 0.5,
+  "dur": 31,
+  "loop": true,
+  "group": "sfx",
+  "variants": [],
+  "loopStart": 0.5,
+  "loopEnd": 30,
+  "lufs": -24.4
+ },
+ "mus_battle_lofi": {
+  "file": "mus_battle_lofi.mp3",
+  "vol": 0.4,
+  "dur": 102.132,
+  "loop": true,
+  "group": "music",
+  "variants": [],
+  "loopStart": 0.493878,
+  "loopEnd": 101.132063,
+  "bpm": 124,
+  "lufs": -16.3
+ },
+ "mus_battle_summer": {
+  "file": "mus_battle_summer.mp3",
+  "vol": 0.4,
+  "dur": 98.042,
+  "loop": true,
+  "group": "music",
+  "variants": [],
+  "loopStart": 7.051247,
+  "loopEnd": 97.041701,
+  "bpm": 128,
+  "lufs": -16.2
+ },
+ "mus_battle_casino": {
+  "file": "mus_battle_casino.mp3",
+  "vol": 0.4,
+  "dur": 103.525,
+  "loop": true,
+  "group": "music",
+  "variants": [],
+  "loopStart": 0.714535,
+  "loopEnd": 102.524785,
+  "bpm": 132,
+  "lufs": -16.2
+ },
+ "mus_battle_space": {
+  "file": "mus_battle_space.mp3",
+  "vol": 0.4,
+  "dur": 100.462,
+  "loop": true,
+  "group": "music",
+  "variants": [],
+  "loopStart": 0.631179,
+  "loopEnd": 99.462086,
+  "bpm": 136,
+  "lufs": -16.3
+ },
+ "mus_trophy": {
+  "file": "mus_trophy.mp3",
+  "vol": 0.45,
+  "dur": 20.065,
+  "loop": true,
+  "group": "music",
+  "variants": [],
+  "loopStart": 3.06,
+  "loopEnd": 19.064649,
+  "bpm": 120,
+  "lufs": -16.3
+ },
+ "crowd_cheer": {
+  "file": "crowd_cheer.mp3",
+  "vol": 0.8,
+  "dur": 1.48,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "crowd_boo": {
+  "file": "crowd_boo.mp3",
+  "vol": 0.8,
+  "dur": 1.428,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "crowd_laugh": {
+  "file": "crowd_laugh.mp3",
+  "vol": 0.8,
+  "dur": 1.467,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "crowd_gasp": {
+  "file": "crowd_gasp.mp3",
+  "vol": 0.8,
+  "dur": 0.962,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "crowd_ooh": {
+  "file": "crowd_ooh.mp3",
+  "vol": 0.8,
+  "dur": 1.423,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "tower_crumble": {
+  "file": "tower_crumble.mp3",
+  "vol": 0.8,
+  "dur": 1.698,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "w_fanfare": {
+  "file": "w_fanfare.mp3",
+  "vol": 0.8,
+  "dur": 1.337,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "arena_unlock": {
+  "file": "arena_unlock.mp3",
+  "vol": 0.8,
+  "dur": 4,
+  "loop": false,
+  "group": "ui",
+  "variants": []
+ },
+ "gem_buy": {
+  "file": "gem_buy.mp3",
+  "vol": 0.8,
+  "dur": 1.029,
+  "loop": false,
+  "group": "ui",
+  "variants": []
+ },
+ "reward_claim": {
+  "file": "reward_claim.mp3",
+  "vol": 0.8,
+  "dur": 1,
+  "loop": false,
+  "group": "ui",
+  "variants": []
+ },
+ "ui_pop": {
+  "file": "ui_pop.mp3",
+  "vol": 0.8,
+  "dur": 0.48,
+  "loop": false,
+  "group": "ui",
+  "variants": []
+ },
+ "ui_tab": {
+  "file": "ui_tab.mp3",
+  "vol": 0.8,
+  "dur": 0.466,
+  "loop": false,
+  "group": "ui",
+  "variants": []
+ },
+ "atk_whale": {
+  "file": "atk_whale.mp3",
+  "vol": 0.8,
+  "dur": 0.6,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "atk_troll": {
+  "file": "atk_troll.mp3",
+  "vol": 0.8,
+  "dur": 0.48,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "atk_chillguy": {
+  "file": "atk_chillguy.mp3",
+  "vol": 0.8,
+  "dur": 0.378,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "atk_zcat": {
+  "file": "atk_zcat.mp3",
+  "vol": 0.8,
+  "dur": 0.48,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "atk_cupsey": {
+  "file": "atk_cupsey.mp3",
+  "vol": 0.8,
+  "dur": 0.48,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "atk_mensa": {
+  "file": "atk_mensa.mp3",
+  "vol": 0.8,
+  "dur": 0.6,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "atk_baton": {
+  "file": "atk_baton.mp3",
+  "vol": 0.8,
+  "dur": 0.48,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "atk_alon": {
+  "file": "atk_alon.mp3",
+  "vol": 0.8,
+  "dur": 0.65,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "atk_mitch": {
+  "file": "atk_mitch.mp3",
+  "vol": 0.8,
+  "dur": 0.406,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "atk_lmao": {
+  "file": "atk_lmao.mp3",
+  "vol": 0.8,
+  "dur": 0.48,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "atk_chillhouse": {
+  "file": "atk_chillhouse.mp3",
+  "vol": 0.8,
+  "dur": 0.6,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "atk_cate": {
+  "file": "atk_cate.mp3",
+  "vol": 0.8,
+  "dur": 0.419,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "atk_ket": {
+  "file": "atk_ket.mp3",
+  "vol": 0.8,
+  "dur": 0.48,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "atk_triplet": {
+  "file": "atk_triplet.mp3",
+  "vol": 0.8,
+  "dur": 0.452,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "atk_jeanphil": {
+  "file": "atk_jeanphil.mp3",
+  "vol": 0.8,
+  "dur": 0.48,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "atk_useless": {
+  "file": "atk_useless.mp3",
+  "vol": 0.8,
+  "dur": 0.48,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "atk_neet": {
+  "file": "atk_neet.mp3",
+  "vol": 0.8,
+  "dur": 0.473,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "die_useless": {
+  "file": "die_useless.mp3",
+  "vol": 0.8,
+  "dur": 0.989,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "die_chillguy": {
+  "file": "die_chillguy.mp3",
+  "vol": 0.8,
+  "dur": 0.818,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "die_jeanphil": {
+  "file": "die_jeanphil.mp3",
+  "vol": 0.8,
+  "dur": 0.932,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "die_lmao": {
+  "file": "die_lmao.mp3",
+  "vol": 0.8,
+  "dur": 0.68,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "die_chillhouse": {
+  "file": "die_chillhouse.mp3",
+  "vol": 0.8,
+  "dur": 0.968,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "die_mensa": {
+  "file": "die_mensa.mp3",
+  "vol": 0.8,
+  "dur": 0.984,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "die_troll": {
+  "file": "die_troll.mp3",
+  "vol": 0.8,
+  "dur": 0.989,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "die_ket": {
+  "file": "die_ket.mp3",
+  "vol": 0.8,
+  "dur": 0.986,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "die_zcat": {
+  "file": "die_zcat.mp3",
+  "vol": 0.8,
+  "dur": 0.995,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "die_cupsey": {
+  "file": "die_cupsey.mp3",
+  "vol": 0.8,
+  "dur": 0.976,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "die_cate": {
+  "file": "die_cate.mp3",
+  "vol": 0.8,
+  "dur": 0.996,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "die_triplet": {
+  "file": "die_triplet.mp3",
+  "vol": 0.8,
+  "dur": 0.978,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "die_baton": {
+  "file": "die_baton.mp3",
+  "vol": 0.8,
+  "dur": 0.996,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "die_mitch": {
+  "file": "die_mitch.mp3",
+  "vol": 0.8,
+  "dur": 0.904,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "die_alon": {
+  "file": "die_alon.mp3",
+  "vol": 0.8,
+  "dur": 0.884,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "die_whale": {
+  "file": "die_whale.mp3",
+  "vol": 0.8,
+  "dur": 0.986,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "die_neet": {
+  "file": "die_neet.mp3",
+  "vol": 0.8,
+  "dur": 0.992,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "emo_cope": {
+  "file": "emo_cope.mp3",
+  "vol": 0.8,
+  "dur": 0.88,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "emo_gg": {
+  "file": "emo_gg.mp3",
+  "vol": 0.8,
+  "dur": 0.6,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "emo_lmao": {
+  "file": "emo_lmao.mp3",
+  "vol": 0.8,
+  "dur": 0.68,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "emo_wagmi": {
+  "file": "emo_wagmi.mp3",
+  "vol": 0.8,
+  "dur": 0.8,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "emo_ngmi": {
+  "file": "emo_ngmi.mp3",
+  "vol": 0.8,
+  "dur": 0.68,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "emo_seethe": {
+  "file": "emo_seethe.mp3",
+  "vol": 0.8,
+  "dur": 0.667,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "spell_airdrop": {
+  "file": "spell_airdrop.mp3",
+  "vol": 0.8,
+  "dur": 1.2,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "spell_freeze": {
+  "file": "spell_freeze.mp3",
+  "vol": 0.8,
+  "dur": 1,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "liquidation_loop": {
+  "file": "liquidation_loop.mp3",
+  "vol": 0.35,
+  "dur": 8.25,
+  "loop": true,
+  "group": "sfx",
+  "variants": [],
+  "loopStart": 2.75,
+  "loopEnd": 5.5
+ },
+ "spell_godcandle": {
+  "file": "spell_godcandle.mp3",
+  "vol": 0.8,
+  "dur": 1.015,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "spell_hammer": {
+  "file": "spell_hammer.mp3",
+  "vol": 0.8,
+  "dur": 1.2,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "bld_drop": {
+  "file": "bld_drop.mp3",
+  "vol": 0.8,
+  "dur": 0.68,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "turret_shot": {
+  "file": "turret_shot_1.mp3",
+  "vol": 0.8,
+  "dur": 0.48,
+  "loop": false,
+  "group": "sfx",
+  "variants": [
+   "turret_shot_1.mp3",
+   "turret_shot_2.mp3",
+   "turret_shot_3.mp3"
+  ]
+ },
+ "rig_hum": {
+  "file": "rig_hum.mp3",
+  "vol": 0.3,
+  "dur": 11.25,
+  "loop": true,
+  "group": "sfx",
+  "variants": [],
+  "loopStart": 3.75,
+  "loopEnd": 7.5
+ },
+ "copium_gain": {
+  "file": "copium_gain.mp3",
+  "vol": 0.8,
+  "dur": 0.48,
+  "loop": false,
+  "group": "ui",
+  "variants": []
+ },
+ "bld_destroy": {
+  "file": "bld_destroy.mp3",
+  "vol": 0.8,
+  "dur": 0.522,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "unfreeze": {
+  "file": "unfreeze.mp3",
+  "vol": 0.8,
+  "dur": 0.48,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "account_created": {
+  "file": "account_created.mp3",
+  "vol": 0.8,
+  "dur": 1.539,
+  "loop": false,
+  "group": "ui",
+  "variants": []
+ },
+ "leaderboard_open": {
+  "file": "leaderboard_open.mp3",
+  "vol": 0.8,
+  "dur": 0.8,
+  "loop": false,
+  "group": "ui",
+  "variants": []
+ },
+ "arena_swipe": {
+  "file": "arena_swipe.mp3",
+  "vol": 0.8,
+  "dur": 0.48,
+  "loop": false,
+  "group": "ui",
+  "variants": []
+ },
+ "bark_pepe": {
+  "file": "bark_pepe.mp3",
+  "vol": 0.8,
+  "dur": 1.491,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "die_pepe": {
+  "file": "die_pepe.mp3",
+  "vol": 0.8,
+  "dur": 1.294,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "bark_bonk": {
+  "file": "bark_bonk.mp3",
+  "vol": 0.8,
+  "dur": 1.475,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "die_bonk": {
+  "file": "die_bonk.mp3",
+  "vol": 0.8,
+  "dur": 0.977,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "bark_moodeng": {
+  "file": "bark_moodeng.mp3",
+  "vol": 0.8,
+  "dur": 0.903,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "die_moodeng": {
+  "file": "die_moodeng.mp3",
+  "vol": 0.8,
+  "dur": 0.94,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "bark_popcat": {
+  "file": "bark_popcat.mp3",
+  "vol": 0.8,
+  "dur": 0.668,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "die_popcat": {
+  "file": "die_popcat.mp3",
+  "vol": 0.8,
+  "dur": 0.757,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "bark_wojak": {
+  "file": "bark_wojak.mp3",
+  "vol": 0.8,
+  "dur": 1.497,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "die_wojak": {
+  "file": "die_wojak.mp3",
+  "vol": 0.8,
+  "dur": 0.971,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "bark_giga": {
+  "file": "bark_giga.mp3",
+  "vol": 0.8,
+  "dur": 1.42,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "die_giga": {
+  "file": "die_giga.mp3",
+  "vol": 0.8,
+  "dur": 0.961,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "bark_pnut": {
+  "file": "bark_pnut.mp3",
+  "vol": 0.8,
+  "dur": 1.394,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "die_pnut": {
+  "file": "die_pnut.mp3",
+  "vol": 0.8,
+  "dur": 0.881,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "bark_dope": {
+  "file": "bark_dope.mp3",
+  "vol": 0.8,
+  "dur": 0.68,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "die_dope": {
+  "file": "die_dope.mp3",
+  "vol": 0.8,
+  "dur": 0.937,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "bark_swordcat": {
+  "file": "bark_swordcat.mp3",
+  "vol": 0.8,
+  "dur": 1.479,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "die_swordcat": {
+  "file": "die_swordcat.mp3",
+  "vol": 0.8,
+  "dur": 0.64,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "atk_pepe": {
+  "file": "atk_pepe.mp3",
+  "vol": 0.8,
+  "dur": 0.48,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "atk_bonk": {
+  "file": "atk_bonk.mp3",
+  "vol": 0.8,
+  "dur": 0.48,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "atk_moodeng": {
+  "file": "atk_moodeng.mp3",
+  "vol": 0.8,
+  "dur": 0.17,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "atk_popcat": {
+  "file": "atk_popcat.mp3",
+  "vol": 0.8,
+  "dur": 0.159,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "atk_wojak": {
+  "file": "atk_wojak.mp3",
+  "vol": 0.8,
+  "dur": 0.318,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "atk_giga": {
+  "file": "atk_giga.mp3",
+  "vol": 0.8,
+  "dur": 0.48,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "atk_pnut": {
+  "file": "atk_pnut.mp3",
+  "vol": 0.8,
+  "dur": 0.8,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "atk_dope": {
+  "file": "atk_dope.mp3",
+  "vol": 0.8,
+  "dur": 0.48,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "atk_swordcat": {
+  "file": "atk_swordcat.mp3",
+  "vol": 0.8,
+  "dur": 0.48,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "fart_cast": {
+  "file": "fart_cast.mp3",
+  "vol": 0.8,
+  "dur": 1,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "fart_cloud": {
+  "file": "fart_cloud.mp3",
+  "vol": 0.8,
+  "dur": 1.187,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "teleport": {
+  "file": "teleport.mp3",
+  "vol": 0.8,
+  "dur": 0.506,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "surprise_hit": {
+  "file": "surprise_hit.mp3",
+  "vol": 0.8,
+  "dur": 0.48,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "shockwave": {
+  "file": "shockwave.mp3",
+  "vol": 0.8,
+  "dur": 0.8,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "spin_slash": {
+  "file": "spin_slash.mp3",
+  "vol": 0.8,
+  "dur": 0.6,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "charge": {
+  "file": "charge.mp3",
+  "vol": 0.8,
+  "dur": 1,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "acorn_boom": {
+  "file": "acorn_boom.mp3",
+  "vol": 0.8,
+  "dur": 0.161,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "magic_hit": {
+  "file": "magic_hit.mp3",
+  "vol": 0.8,
+  "dur": 0.524,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "weaken": {
+  "file": "weaken.mp3",
+  "vol": 0.8,
+  "dur": 1,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "bark_thisisfine": {
+  "file": "bark_thisisfine.mp3",
+  "vol": 0.8,
+  "dur": 1.243,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "die_thisisfine": {
+  "file": "die_thisisfine.mp3",
+  "vol": 0.8,
+  "dur": 0.979,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "atk_thisisfine": {
+  "file": "atk_thisisfine.mp3",
+  "vol": 0.65,
+  "dur": 0.667,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "bark_nyancat": {
+  "file": "bark_nyancat.mp3",
+  "vol": 0.8,
+  "dur": 0.8,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "atk_nyancat": {
+  "file": "atk_nyancat.mp3",
+  "vol": 0.8,
+  "dur": 0.48,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "die_nyancat": {
+  "file": "die_nyancat.mp3",
+  "vol": 0.8,
+  "dur": 0.971,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "fire_start": {
+  "file": "fire_start.mp3",
+  "vol": 0.75,
+  "dur": 0.805,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "rainbow": {
+  "file": "rainbow.mp3",
+  "vol": 0.8,
+  "dur": 0.8,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "mus_battle_backyard": {
+  "file": "mus_battle_backyard.mp3",
+  "vol": 0.4,
+  "dur": 101.318,
+  "loop": true,
+  "group": "music",
+  "variants": [],
+  "loopStart": 0.489977,
+  "loopEnd": 100.317914,
+  "bpm": 125.01,
+  "lufs": -16.3
+ },
+ "mus_battle_parking": {
+  "file": "mus_battle_parking.mp3",
+  "vol": 0.4,
+  "dur": 95.146,
+  "loop": true,
+  "group": "music",
+  "variants": [],
+  "loopStart": 5.538458,
+  "loopEnd": 94.14576,
+  "bpm": 130,
+  "lufs": -16.3
+ },
+ "mus_battle_exchange": {
+  "file": "mus_battle_exchange.mp3",
+  "vol": 0.4,
+  "dur": 105.572,
+  "loop": true,
+  "group": "music",
+  "variants": [],
+  "loopStart": 1.714286,
+  "loopEnd": 104.572381,
+  "bpm": 140,
+  "lufs": -16.3
+ },
+ "mus_battle_cold": {
+  "file": "mus_battle_cold.mp3",
+  "vol": 0.4,
+  "dur": 92.88,
+  "loop": true,
+  "group": "music",
+  "variants": [],
+  "loopStart": 1.895011,
+  "loopEnd": 91.880431,
+  "bpm": 128,
+  "lufs": -16.2
+ },
+ "mus_battle_penthouse": {
+  "file": "mus_battle_penthouse.mp3",
+  "vol": 0.4,
+  "dur": 102.033,
+  "loop": true,
+  "group": "music",
+  "variants": [],
+  "loopStart": 3.521247,
+  "loopEnd": 101.03263,
+  "bpm": 128,
+  "lufs": -16.2
+ },
+ "mus_battle_factory": {
+  "file": "mus_battle_factory.mp3",
+  "vol": 0.4,
+  "dur": 95.934,
+  "loop": true,
+  "group": "music",
+  "variants": [],
+  "loopStart": 1.811043,
+  "loopEnd": 94.934263,
+  "bpm": 134,
+  "lufs": -16.3
+ },
+ "mus_battle_dump": {
+  "file": "mus_battle_dump.mp3",
+  "vol": 0.5,
+  "dur": 104.542,
+  "loop": true,
+  "group": "music",
+  "variants": [],
+  "loopStart": 1.233605,
+  "loopEnd": 103.541859,
+  "bpm": 122,
+  "lufs": -18.2
+ },
+ "mus_battle_cemetery": {
+  "file": "mus_battle_cemetery.mp3",
+  "vol": 0.4,
+  "dur": 105.813,
+  "loop": true,
+  "group": "music",
+  "variants": [],
+  "loopStart": 0.454785,
+  "loopEnd": 104.813107,
+  "bpm": 138,
+  "lufs": -16.2
+ },
+ "mus_battle_trench": {
+  "file": "mus_battle_trench.mp3",
+  "vol": 0.4,
+  "dur": 99.607,
+  "loop": true,
+  "group": "music",
+  "variants": [],
+  "loopStart": 7.192857,
+  "loopEnd": 98.606916,
+  "bpm": 126,
+  "lufs": -16.3
+ },
+ "mus_battle_mine": {
+  "file": "mus_battle_mine.mp3",
+  "vol": 0.4,
+  "dur": 98.857,
+  "loop": true,
+  "group": "music",
+  "variants": [],
+  "loopStart": 1.856145,
+  "loopEnd": 97.857302,
+  "bpm": 130,
+  "lufs": -16.3
+ },
+ "mus_battle_clouds": {
+  "file": "mus_battle_clouds.mp3",
+  "vol": 0.4,
+  "dur": 103.606,
+  "loop": true,
+  "group": "music",
+  "variants": [],
+  "loopStart": 1.955488,
+  "loopEnd": 102.606032,
+  "bpm": 124,
+  "lufs": -16.2
+ },
+ "mus_battle_metaverse": {
+  "file": "mus_battle_metaverse.mp3",
+  "vol": 0.4,
+  "dur": 101.598,
+  "loop": true,
+  "group": "music",
+  "variants": [],
+  "loopStart": 1.764717,
+  "loopEnd": 100.597574,
+  "bpm": 136,
+  "lufs": -16.2
+ },
+ "bark_floki": {
+  "file": "bark_floki.mp3",
+  "vol": 0.8,
+  "dur": 1.261,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "die_floki": {
+  "file": "die_floki.mp3",
+  "vol": 0.8,
+  "dur": 0.868,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "bark_toshi": {
+  "file": "bark_toshi.mp3",
+  "vol": 0.8,
+  "dur": 1.0,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "bark_slerf": {
+  "file": "bark_slerf.mp3",
+  "vol": 0.8,
+  "dur": 1.48,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "bark_michi": {
+  "file": "bark_michi.mp3",
+  "vol": 0.8,
+  "dur": 1.0,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "bark_pippin": {
+  "file": "bark_pippin.mp3",
+  "vol": 0.8,
+  "dur": 1.0,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "bark_pudgy": {
+  "file": "bark_pudgy.mp3",
+  "vol": 0.8,
+  "dur": 0.754,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "bark_bome": {
+  "file": "bark_bome.mp3",
+  "vol": 0.8,
+  "dur": 0.754,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "bark_apu": {
+  "file": "bark_apu.mp3",
+  "vol": 0.8,
+  "dur": 0.911,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "bark_walter": {
+  "file": "bark_walter.mp3",
+  "vol": 0.8,
+  "dur": 0.464,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "bark_goat": {
+  "file": "bark_goat.mp3",
+  "vol": 0.8,
+  "dur": 0.948,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "bark_farter": {
+  "file": "bark_farter.mp3",
+  "vol": 0.8,
+  "dur": 1.0,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "die_toshi": {
+  "file": "die_toshi.mp3",
+  "vol": 0.8,
+  "dur": 0.8,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "die_slerf": {
+  "file": "die_slerf.mp3",
+  "vol": 0.8,
+  "dur": 1.2,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "die_michi": {
+  "file": "die_michi.mp3",
+  "vol": 0.8,
+  "dur": 0.8,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "die_pippin": {
+  "file": "die_pippin.mp3",
+  "vol": 0.8,
+  "dur": 0.8,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "die_pudgy": {
+  "file": "die_pudgy.mp3",
+  "vol": 0.8,
+  "dur": 0.8,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "die_bome": {
+  "file": "die_bome.mp3",
+  "vol": 0.8,
+  "dur": 0.461,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "die_apu": {
+  "file": "die_apu.mp3",
+  "vol": 0.8,
+  "dur": 0.8,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "die_walter": {
+  "file": "die_walter.mp3",
+  "vol": 0.8,
+  "dur": 0.691,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "die_goat": {
+  "file": "die_goat.mp3",
+  "vol": 0.8,
+  "dur": 0.8,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "die_farter": {
+  "file": "die_farter.mp3",
+  "vol": 0.8,
+  "dur": 1.0,
+  "loop": false,
+  "group": "voice",
+  "variants": []
+ },
+ "atk_floki": {
+  "file": "atk_floki.mp3",
+  "vol": 0.8,
+  "dur": 0.6,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "atk_toshi": {
+  "file": "atk_toshi.mp3",
+  "vol": 0.8,
+  "dur": 0.48,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "atk_slerf": {
+  "file": "atk_slerf.mp3",
+  "vol": 0.8,
+  "dur": 0.8,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "atk_michi": {
+  "file": "atk_michi.mp3",
+  "vol": 0.8,
+  "dur": 0.6,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "atk_pippin": {
+  "file": "atk_pippin.mp3",
+  "vol": 0.8,
+  "dur": 0.48,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "atk_pudgy": {
+  "file": "atk_pudgy.mp3",
+  "vol": 0.8,
+  "dur": 0.434,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "atk_bome": {
+  "file": "atk_bome.mp3",
+  "vol": 0.8,
+  "dur": 0.424,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "atk_apu": {
+  "file": "atk_apu.mp3",
+  "vol": 0.8,
+  "dur": 0.48,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "atk_walter": {
+  "file": "atk_walter.mp3",
+  "vol": 0.8,
+  "dur": 0.48,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "atk_goat": {
+  "file": "atk_goat.mp3",
+  "vol": 0.8,
+  "dur": 0.592,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "atk_farter": {
+  "file": "atk_farter.mp3",
+  "vol": 0.8,
+  "dur": 0.48,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "berserk": {
+  "file": "berserk.mp3",
+  "vol": 0.8,
+  "dur": 1.0,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "snared": {
+  "file": "snared.mp3",
+  "vol": 0.8,
+  "dur": 0.564,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "shield_break": {
+  "file": "shield_break.mp3",
+  "vol": 0.8,
+  "dur": 0.68,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "mend": {
+  "file": "mend.mp3",
+  "vol": 0.8,
+  "dur": 0.6,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "dig": {
+  "file": "dig.mp3",
+  "vol": 0.8,
+  "dur": 0.8,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "surface": {
+  "file": "surface.mp3",
+  "vol": 0.8,
+  "dur": 0.8,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "feared": {
+  "file": "feared.mp3",
+  "vol": 0.8,
+  "dur": 0.6,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "zone_stink": {
+  "file": "zone_stink.mp3",
+  "vol": 0.8,
+  "dur": 1.0,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "zone_paperstorm": {
+  "file": "zone_paperstorm.mp3",
+  "vol": 0.8,
+  "dur": 1.2,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "dash_toshi": {
+  "file": "dash_toshi.mp3",
+  "vol": 0.8,
+  "dur": 0.441,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "charge_pudgy": {
+  "file": "charge_pudgy.mp3",
+  "vol": 0.8,
+  "dur": 0.8,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "charge_goat": {
+  "file": "charge_goat.mp3",
+  "vol": 0.8,
+  "dur": 0.8,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "boom_bubblemachine": {
+  "file": "boom_bubblemachine.mp3",
+  "vol": 0.8,
+  "dur": 0.8,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "boom_bome": {
+  "file": "boom_bome.mp3",
+  "vol": 0.8,
+  "dur": 1.2,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "atk_lasereyes": {
+  "file": "atk_lasereyes.mp3",
+  "vol": 0.8,
+  "dur": 0.48,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "atk_bubblemachine": {
+  "file": "atk_bubblemachine.mp3",
+  "vol": 0.8,
+  "dur": 0.48,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "atk_sniperbot": {
+  "file": "atk_sniperbot.mp3",
+  "vol": 0.8,
+  "dur": 0.292,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "spawn_tokenburner": {
+  "file": "spawn_tokenburner.mp3",
+  "vol": 0.8,
+  "dur": 0.605,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "spawn_backdoor": {
+  "file": "spawn_backdoor.mp3",
+  "vol": 0.8,
+  "dur": 0.68,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "spell_hardfork": {
+  "file": "spell_hardfork.mp3",
+  "vol": 0.8,
+  "dur": 1.2,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "spell_liquiditydrain": {
+  "file": "spell_liquiditydrain.mp3",
+  "vol": 0.8,
+  "dur": 1.059,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "spell_marketcrash": {
+  "file": "spell_marketcrash.mp3",
+  "vol": 0.8,
+  "dur": 1.48,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "spell_panicsell": {
+  "file": "spell_panicsell.mp3",
+  "vol": 0.8,
+  "dur": 1.0,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ },
+ "spell_diamondhands": {
+  "file": "spell_diamondhands.mp3",
+  "vol": 0.8,
+  "dur": 1.0,
+  "loop": false,
+  "group": "sfx",
+  "variants": []
+ }
+}
