@@ -95,16 +95,22 @@ def basement():
     box('stripe', (0.12, 0.102, 0.8), (0, 1.25, room.SEAT_H + 0.4), red)
     box('pole', (0.06, 0.06, room.SEAT_H - 0.1), (0, 0.95, (room.SEAT_H - 0.1) / 2), props.mat('pole', (0.1, 0.1, 0.1), 0.3, metal=0.8))
     desk = props.mat('desk', (0.06, 0.05, 0.045), 0.6)
-    box('desk', (1.5, 0.6, 0.04), (0, 0.15, 0.74), desk, 0.005)
-    for x in (-0.7, 0.7): box('leg', (0.04, 0.55, 0.72), (x, 0.15, 0.36), desk)
-    mon = box('monitor', (0.62, 0.04, 0.38), (0, 0.2, 1.02), props.mat('monb', (0.01, 0.01, 0.012), 0.3), 0.01)
-    box('monstand', (0.06, 0.06, 0.12), (0, 0.22, 0.81), props.mat('monb2', (0.02, 0.02, 0.02), 0.4))
+    box('desk', (0.7, 1.4, 0.04), (-0.85, 0.9, 0.74), desk, 0.005)
+    for y in (0.3, 1.5): box('leg', (0.6, 0.04, 0.72), (-0.85, y, 0.36), desk)
+    MON = Vector((-0.8, 0.55, 1.02)); MROT = math.radians(-35)
+    mon = box('monitor', (0.62, 0.04, 0.38), MON, props.mat('monb', (0.01, 0.01, 0.012), 0.3), 0.01, rot=(0, 0, MROT))
+    box('monstand', (0.06, 0.06, 0.12), MON + Vector((0, 0.02, -0.21)), props.mat('monb2', (0.02, 0.02, 0.02), 0.4))
+    fwd = Vector((math.sin(-MROT) * -1, math.cos(MROT), 0)).normalized()   # the screen's facing (toward NEET)
+    fwd = Vector((-math.sin(MROT), math.cos(MROT), 0))
     sm, ti = seqmat('mon_screen', os.path.join(os.environ['FY_LOSS'], 'm_0001.png'), 2.2)
-    scr = room.plane('mon_scr', (0.215, 0.36), (0, 0.222, 1.02), (math.pi / 2, 0, math.pi), sm)       # portrait game window on a landscape monitor
+    scr = room.plane('mon_scr', (0.215, 0.36), MON + fwd * 0.022, (math.pi / 2, 0, math.pi + MROT), sm)       # portrait game window on a landscape monitor
     S['mon_ti'] = ti
-    room.plane('mon_bg', (0.6, 0.36), (0, 0.2225, 1.02), (math.pi / 2, 0, math.pi), props.mat('monbg', (0, 0, 0), 0.4, emit=(0.02, 0.01, 0.06), estr=1.0))
-    S['monglow'] = area('monglow', (0.65, 0.75, 1.0), 18, (0, 0.27, 1.05), (math.radians(-90), 0, 0), 0.5)
-    for i, (x, y) in enumerate([(0.5, 0.05), (0.6, 0.25), (-0.55, 0.1), (-0.62, 0.3), (0.45, 0.33)]):
+    room.plane('mon_bg', (0.6, 0.36), MON + fwd * 0.0215, (math.pi / 2, 0, math.pi + MROT), props.mat('monbg', (0, 0, 0), 0.4, emit=(0.02, 0.01, 0.06), estr=1.0))
+    S['monglow'] = area('monglow', (0.6, 0.72, 1.0), 70, MON + fwd * 0.1, (0, 0, 0), 0.5); aim(S['monglow'], (0, 0.85, 1.2))
+    S['MON'] = MON; S['MONF'] = fwd
+    k = area('neet_key', (0.55, 0.65, 1.0), 25, (0.9, -0.6, 1.6), (0, 0, 0), 0.6); aim(k, (0, 0.85, 1.2))
+    rim = area('neet_rim', (0.5, 0.55, 0.9), 40, (0.6, 1.9, 2.0), (0, 0, 0), 0.8); aim(rim, (0, 0.95, 1.3))
+    for i, (x, y) in enumerate([(-0.65, 0.85), (-1.0, 1.0), (-0.75, 1.2), (-1.05, 0.35), (-0.6, 1.4)]):
         c = props.can(f'can{i}'); c.location = (x, y, 0.76); c.rotation_euler.z = i
     for i, (x, y) in enumerate([(-0.9, 0.9), (0.95, 1.4), (1.1, 0.6)]):
         c = props.can(f'fcan{i}'); c.location = (x, y, 0.033); c.rotation_euler = (math.pi / 2, 0, i * 1.1)
@@ -159,7 +165,7 @@ def stakeout():
     vo = nt.nodes.new('ShaderNodeTexVoronoi'); vo.inputs['Scale'].default_value = 40
     rp = nt.nodes.new('ShaderNodeValToRGB'); rp.color_ramp.elements[0].color = (0.005, 0.02, 0.005, 1); rp.color_ramp.elements[1].color = (0.04, 0.12, 0.03, 1)
     nt.links.new(vo.outputs['Distance'], rp.inputs['Fac']); nt.links.new(rp.outputs['Color'], b.inputs['Base Color'])
-    h = box('hedge', (3.0, 0.7, 0.95), (ox, 1.2, 0.475), hedge, 0.2)
+    h = box('hedge', (3.4, 0.7, 0.95), (ox, 2.5, 0.475), hedge, 0.2)
     d = h.modifiers.new('d', 'DISPLACE'); tx = bpy.data.textures.new('leafy', 'CLOUDS'); tx.noise_scale = 0.08; d.texture = tx; d.strength = 0.12
     sub = h.modifiers.new('s', 'SUBSURF'); sub.levels = 3; h.modifiers.move(2, 0)
     area('moon_s', (0.4, 0.5, 0.85), 80, (ox - 3, -2, 5), (math.radians(40), 0, math.radians(-30)), 3.0)
@@ -255,8 +261,8 @@ def seat_neet(N):
 
 # ================================================================== Grandma
 def grandma_actor():
-    humans.CAST['grandma'] = dict(humans.CAST['pam']); humans.CAST['grandma']['tint'] = {
-        'toigo_fisherman_sweater': (0.92, 0.9, 1.15, (0.82, 0.55, 0.62)), 'bob02': (0.0, 0.1, 0.92, None)}     # dusty-rose cardigan, white hair
+    humans.CAST['grandma'] = dict(humans.CAST['pam']); humans.CAST['grandma']['hair'] = 'toigo_curled_under_bob'; humans.CAST['grandma']['tint'] = {
+        'toigo_fisherman_sweater': (0.92, 0.9, 1.15, (0.82, 0.55, 0.62)), 'toigo_curled_under_bob': (0.0, 0.08, 2.3, (0.95, 0.94, 0.93))}     # dusty-rose cardigan, white hair
     rig, body, parts = humans.build('grandma')
     a = rigctl.Actor('grandma', rig, body); a.parts = parts
     c, M, w = grips.phone(a, 'R'); a.G = {'phone': (c, M)}
@@ -283,12 +289,14 @@ def main():
     sx = {'L': 1, 'R': -1}; st = dict(yaw=0.0, pitch=0.55)
     # monitor / phone image sequence offsets: the loss capture starts at the RUG PULL; the grandma capture's frame 1 = t 30
     B['mon_ti'].image_user.frame_offset = 0; ti.image_user.frame_offset = 0
+    N['root'].location = sit_loc; bpy.context.scene.frame_set(150); bpy.context.view_layer.update()
+    NH = N['rig'].matrix_world @ N['rig'].pose.bones['mixamorig:Head'].head + Vector((0, -0.06, 0.07)); print('NEET head', NH)
     for f in range(1, NF + 1):
         t = T(f); kind = shot(t)[1]
         # ---------------- NEET: where he is in each part
         if t < 22.3: loc, rz = sit_loc, 0.0
         elif t < 27.0: loc, rz = Vector((-1.25, 0.85, 0)), math.radians(-90)       # standing at the board, facing it
-        else: loc, rz = Vector((60.0, 1.75, -0.95)), 0.0                            # crouched behind the hedge: only his head shows
+        else: loc, rz = Vector((60.25, 1.95, -0.52)), math.pi                      # crouched behind the hedge, peeking at the home
         for i in range(3): K.add(N['root'], 'location', i, f, loc[i])
         K.add(N['root'], 'rotation_euler', 2, f, rz)
         # ---------------- lightning
@@ -312,7 +320,7 @@ def main():
             Q[f'orbicularis04.{s}'] = a.local_q(f'orbicularis04.{s}', rigctl.qrot((1, 0, 0), -0.2 * blink + 0.12 * smile))
         Q['jaw'] = a.local_q('jaw', rigctl.qrot((1, 0, 0), tv * 0.1))
         ph_ = math.sin(t * 12.0) * 0.5 + 0.5
-        shape = {'v_aa': tv * 0.3, 'v_ow': tv * 0.25 * ph_, 'v_ee': smile * 0.6 + tv * 0.2 * (1 - ph_), 'v_mm': 0.0, 'v_ff': 0.0}
+        shape = {'v_aa': tv * 0.25, 'v_ow': tv * 0.22 * ph_, 'v_ee': smile * 0.3 + tv * 0.15 * (1 - ph_), 'v_mm': 0.15 * smile * (tv < 0.05), 'v_ff': 0.0}
         feet, poles = {}, {}
         for s in 'LR':
             hip = a.hip[s] + root_loc; ank = Vector((hip.x + sx[s] * 0.06, -(a.thigh + 0.04), 0.085))
@@ -349,17 +357,17 @@ def main():
         geyes = GS @ eyes
         # ---------------- camera
         c0 = shot(t)[0]; u = t - c0; nheadZ = sit_loc.z + 1.15
-        nh = Vector((0, 0.9, 1.22))         # NEET's face (seated)
-        if kind == 'monitor':   loc = Vector((0.0, -0.25, 1.05)) + Vector((0, 0.1, 0)) * ease(u / 3); look = Vector((0, 0.22, 1.02)); lens = 50
+        nh = NH.copy()                       # NEET's face (seated)
+        if kind == 'monitor':   mon_c = B['MON'] + B['MONF'] * 0.02; loc = mon_c + B['MONF'] * (0.75 - 0.2 * ease(u / 3)) + Vector((0.12, 0, 0.12)); look = mon_c; lens = 45
         elif kind == 'neet_face': loc = nh + Vector((0.25, -0.75, -0.02)); look = nh; lens = 55
         elif kind == 'mono_wide': loc = Vector((0.0, -1.6, 1.35)) + Vector((0, 0.35, -0.05)) * ease(u / 5); look = nh + Vector((0, 0, -0.12)); lens = 35
         elif kind == 'mono_med':  loc = nh + Vector((0.0, -1.05, 0.02)) + Vector((0, 0.15, 0)) * ease(u / 4); look = nh + Vector((0, 0, -0.05)); lens = 45
         elif kind == 'mono_close': loc = nh + Vector((0.0, -0.62, 0.03)) + Vector((0, 0.08, 0)) * ease(u / 3.7); look = nh; lens = 55
         elif kind == 'mono_xcu':  loc = nh + Vector((0.0, -0.40, 0.06)) + Vector((0, 0.06, 0)) * ease(u / 5); look = nh + Vector((0, 0, 0.05)); lens = 70
-        elif kind == 'board_pan': loc = Vector((-1.25, 1.6 - 0.7 * ease(u / 1.6), 1.6)); look = loc + Vector((-1, 0, -0.05)); lens = 40
-        elif kind == 'neet_monitor': loc = Vector((0.7, 1.9, 1.75)); look = Vector((-1.2, 0.85, 1.35)); lens = 30
-        elif kind == 'board_string': loc = Vector((-1.45, 0.7, 1.35)) + Vector((0, 0.15, 0.05)) * ease(u / 1.6); look = Vector((-1.95, 1.4, 1.35)); lens = 45
-        elif kind == 'stakeout':  loc = Vector((60.35, -0.9, 1.05)) + Vector((0, 0.25, 0)) * ease(u / 3); look = Vector((60.3, 3.0, 1.15)); lens = 32
+        elif kind == 'board_pan': loc = Vector((-0.55, 1.25 - 0.55 * ease(u / 1.6), 1.5)); look = Vector((-1.97, 0.95 - 0.1 * ease(u / 1.6), 1.45)); lens = 32
+        elif kind == 'neet_monitor': loc = Vector((0.9, 1.9, 1.8)); look = Vector((-1.4, 0.9, 1.35)); lens = 26
+        elif kind == 'board_string': loc = Vector((-1.15, 0.55, 1.4)) + Vector((0, 0.15, 0.03)) * ease(u / 1.6); look = Vector((-1.95, 1.3, 1.35)); lens = 38
+        elif kind == 'stakeout':  loc = Vector((60.75, 0.75, 1.15)) + Vector((0, 0.2, 0)) * ease(u / 3); look = Vector((60.4, 5.0, 1.2)); lens = 30
         elif kind == 'lounge_wide': loc = Vector((-59.6, -1.9, 1.3)) + Vector((-0.1, 0.45, -0.05)) * ease(u / 1.6); look = geyes + Vector((0, 0, -0.25)); lens = 35
         elif kind in ('gran_close', 'insert'): loc = geyes + Vector((0.05, -0.75, 0.02)) - Vector((0, 0.06, 0)) * ease(u / 1.4); look = geyes; lens = 50
         else: loc = geyes + Vector((-0.12, -0.6, 0.0)); look = geyes; lens = 55
