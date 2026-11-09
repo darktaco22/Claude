@@ -41,9 +41,9 @@ def grade(a, t, f):
     else:             # warm afternoon
         a = a * np.array([1.05, 1.0, 0.92], np.float32)
     # bloom: the monitor, the RGB strip, the window and the lightning bleed a soft glow into the frame
-    hi = np.clip((a - 0.62) / 0.38, 0, 1) * a
+    hi = np.clip((a.max(axis=2, keepdims=True) - 0.85) / 0.15, 0, 1) * a
     hb = Image.fromarray((hi * 255).astype(np.uint8)).resize((W // 4, H // 4), Image.BILINEAR).filter(ImageFilter.GaussianBlur(7))
-    a = a + np.asarray(hb.resize((W, H), Image.BILINEAR), np.float32) / 255.0 * 0.55
+    a = a + np.asarray(hb.resize((W, H), Image.BILINEAR), np.float32) / 255.0 * 0.3
     a = a * VIG
     g = np.random.default_rng(f).normal(0, 0.018, (H, W, 1)).astype(np.float32)
     return a + g
