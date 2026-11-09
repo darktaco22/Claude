@@ -6,7 +6,7 @@ Three sets side by side: the basement (x=0), the stakeout outside Sunny Acres (x
 NEET is the game's own model and clips. Grandma is a MakeHuman person (MPFB 2, CC0) posed with the Degens toolkit."""
 import bpy, sys, os, math, json, random
 from mathutils import Vector, Matrix
-HERE = os.path.dirname(os.path.abspath(__file__)); DG = os.path.join(HERE, '..', 'degens'); sys.path.insert(0, DG)
+HERE = os.path.dirname(os.path.abspath(__file__)); DG = os.path.join(HERE, '..', 'degens'); sys.path.insert(0, DG); sys.path.insert(0, HERE)
 os.environ.setdefault('DA_STUDIO', os.path.join(DG, 'studio'))
 import humans, rigctl, assets, props, room, grips
 from neet_mouth import add_mouth
