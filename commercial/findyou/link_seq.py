@@ -14,10 +14,14 @@ def link(src_list, dst_dir, prefix, pick):
 L = frames(cl); G = frames(cg) if os.path.isdir(cg) else L
 # loss capture frames are numbered by capture index (battle starts at its start); the shot range began at battle 2.5 s
 first_loss = int(os.path.basename(L[0])[2:6])
-link(L, os.path.join(out, 'loss'), 'm', lambda f: (f - 1) + 30)                         # opens just before her RUG PULL (battle 3.6 s)
+def lpick(f):
+    t = (f - 1) / FPS
+    if t < 4.6: return 30 + int(2.4 * (f - 1))       # the cold open: her RUG PULL, his king falls, DEFEAT (sped up), then held
+    if t >= 22.0: return 25 + (f - 1 - 660)          # the montage: he replays the moment, frame by frame
+    return len(L) - 1
+link(L, os.path.join(out, 'loss'), 'm', lpick)
 first_g = int(os.path.basename(G[0])[2:6]) if G else 0
 def gpick(f):
-    bt = (f - 1) / FPS - 28.1                      # battle seconds
-    idx = int(round(bt * FPS)) - first_g; return idx
+    return (f - 1) - 900 + 20                      # film 30.0 s = capture shot 20; her RUG PULL (shot ~125) lands at ~33.5 s
 link(G, os.path.join(out, 'gran'), 'g', gpick)
 print('LINKED', len(L), len(G), 'first', first_loss, first_g)
