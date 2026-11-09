@@ -149,3 +149,20 @@ stalls, render its frames locally from k1.blend (tracked). Then
 glitch scan `python3 scratchpad/spikes.py scratchpad/kd/frames`, send the MP4 to the user, commit and push.
 The user wants a message only when the video is done. A fallback check is scheduled for 16:39 UTC.
 Lesson from CASH 4 GOLD: volumetric smoke made frames ~20x slower; avoid long smoke in shot or spread those frames.
+
+## NO UTILITY (USELESS tragedy short) — render state, started 2026-11-09 ~19:30 UTC
+Code: commercial/useless (director.py, sets.py, game.py, overlay.html/overlays.js, audio.py, *.sh), commit 17e9ae8.
+Native 1080x1920, 1080 frames (36 s) + 3 s end card held from the last frame. ~77 s/frame.
+| Machine | Frames | Output |
+|---|---|---|
+| this session (task bta6heo9m, W=scratchpad/nu/lw) | 1-150 | frames in scratchpad/nu/lw/frames; then overlays -> scratchpad/nu/ovl, mix -> scratchpad/nu/mix.m4a |
+| part-2 session_011y2L9gpQAxugSUWVRRHu2U | 151-305 | claude/degens-part-2 commercial/renders/upart_0151_0305.mp4 |
+| part-2b session_011y2L9iQnevydUzK69bSkEC | 306-460 | claude/degens-part-2b upart_0306_0460.mp4 |
+| part-2c session_011y2L9hi1yPvG77Fmtky1C2 | 461-615 | claude/degens-part-2c upart_0461_0615.mp4 |
+| part-2d session_011y2L9hwrQnn4cYRc1wmzHW | 616-770 | claude/degens-part-2d upart_0616_0770.mp4 |
+| part-2e session_011y2L9eqzr9vpBoRgeJVmGr | 771-925 | claude/degens-part-2e upart_0771_0925.mp4 |
+| part-2f session_011y2L9drzqzTRCjM3pB3d7y | 926-1080 | claude/degens-part-2f upart_0926_1080.mp4 |
+Finish: scratchpad/nu/unpack.sh BRANCH FILE FIRST for each part (fills scratchpad/nu/lw/frames); local exit 3 -> rerun the
+same render command (W=scratchpad/nu/lw bash commercial/useless/render_part.sh 1 150 ...); when 1080 frames are in:
+commercial/useless/assemble.sh scratchpad/nu/lw/frames scratchpad/nu/ovl scratchpad/nu/mix.m4a commercial/output/meme-royale-no-utility.mp4,
+check stills, SendUserFile, commit + push to claude/meme-royale-research. User wants a message only when the video is done.
