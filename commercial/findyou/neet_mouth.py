@@ -28,8 +28,10 @@ def add_mouth(rig, me, tex):
     for i, p in enumerate(full): k.data[i].co = p
     # into the mesh's own space, skinned to the Head bone like the face around it
     M = me.matrix_world.copy()
-    for d in (mo.data.vertices, k.data, mo.data.shape_keys.key_blocks['Basis'].data):
-        for v in d: v.co = M.inverted() @ v.co
+    Minv = M.inverted(); B = mo.data.shape_keys.key_blocks['Basis']
+    for kb in (B, k):
+        for v in kb.data: v.co = Minv @ v.co
+    for i, v in enumerate(mo.data.vertices): v.co = B.data[i].co
     mo.parent = me.parent; mo.matrix_parent_inverse = me.matrix_parent_inverse.copy(); mo.matrix_basis = me.matrix_basis.copy()
     vg = mo.vertex_groups.new(name='mixamorig:Head'); vg.add(list(range(len(mo.data.vertices))), 1.0, 'REPLACE')
     am = mo.modifiers.new('arm', 'ARMATURE'); am.object = rig
