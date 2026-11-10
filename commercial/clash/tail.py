@@ -114,7 +114,9 @@ for i, dx in enumerate((0.0, 0.22, -0.2, 0.14, -0.1, 0.05, 0.0)): e.location.x =
 e.location.x = cx; dust(Vector((14.5, -6.8, 3.6)), T_CRASH, 2.2, 31, 8); sparks(Vector((14.5, -7.2, 3.8)), T_CRASH, 26, 32, 8.0); explode(Vector((14.5, -7.4, 3.2)), T_CRASH, 1.3, FIRE, 14, 33, DUST)
 # the blue king's cannon answers
 MUZ = Vector((9, -26.6, 5.25)); TGT = Vector((14.5, -6.6, 3.4)); T_BALL = T_TOWER - T_FIRE
-ball = sphere('cannonball', 0.42, MUZ, mat('ballm', (0.03, 0.03, 0.035), 0.3, metal=0.7)); ball.scale = (0.001,) * 3; key(ball, 'scale', F(T_FIRE) - 1); ball.scale = (1, 1, 1); key(ball, 'scale', F(T_FIRE))
+ball = sphere('cannonball', 0.6, MUZ, mat('ballm', (0.05, 0.03, 0.02), 0.4, emit=(1.0, 0.35, 0.05), estr=5.0))
+bl_ = bpy.data.lights.new('ballL', 'POINT'); bl_.color = (1.0, 0.5, 0.2); bl_.energy = 0; bl_.shadow_soft_size = 0.6; blo = bpy.data.objects.new('ballL', bl_); COL.objects.link(blo); blo.parent = ball
+for f_, e_ in ((F(T_FIRE) - 1, 0), (F(T_FIRE), 12000), (F(T_TOWER), 12000), (F(T_TOWER) + 1, 0)): bl_.energy = e_; bl_.keyframe_insert('energy', frame=f_); ball.scale = (0.001,) * 3; key(ball, 'scale', F(T_FIRE) - 1); ball.scale = (1, 1, 1); key(ball, 'scale', F(T_FIRE))
 nb = F(T_TOWER) - F(T_FIRE)
 for i in range(nb + 1):
     u_ = i / nb; ball.location = MUZ.lerp(TGT, u_) + Vector((0, 0, 9.0 * 4 * u_ * (1 - u_))); key(ball, 'location', F(T_FIRE) + i)
