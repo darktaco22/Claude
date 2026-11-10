@@ -37,7 +37,7 @@ MORNING = 32.0
 INS = [('giga', 5.0, 45), ('whale', 7.0, 45), ('bonk', 7.66, 17), ('cate', 8.33, 17), ('walter', 9.0, 17)]
 INS_T = [END + sum(n for _, _, n in INS[:i]) / FPS for i in range(len(INS))]
 NFX = NF + sum(n for _, _, n in INS)
-I_LAND = V(2.6, -5.4); I_GOAT = V(2.95, -2.7); I_QUICK = V(1.4, -6.4)
+I_LAND = V(1.9, -5.4); I_GOAT = V(2.25, -2.7); I_QUICK = V(1.4, -6.4)
 
 
 def ins_at(t):
@@ -356,8 +356,8 @@ def camera(cam, C, f, K, cache):
     ia = ins_at(t)
     if ia:                            # gameplay cutaway: the picked card lands in the match (framed above the hand UI)
         i, k, u = ia; ku = ease(u / (INS[i][2] / FPS)); la = I_LAND.to_3d(); qq = I_QUICK.to_3d()
-        if k == 'giga': c = V(4.3 - 0.25 * ku, -8.3 + 0.3 * ku, 0.5); r = shot(c, V(2.85, -3.9, 0.55), 46, 4.0, focus=(c - la).length)
-        elif k == 'whale': c = V(-0.3 + 0.2 * ku, -7.4, 0.55); r = shot(c, V(2.8, -4.2, 0.6), 48, 4.0, focus=(c - la).length)
+        if k == 'giga': c = V(3.45 - 0.25 * ku, -8.1 + 0.3 * ku, 0.5); r = shot(c, V(2.1, -3.9, 0.55), 46, 4.0, focus=(c - la).length)      # behind him (clear of the snow drifts at x > 3.8)
+        elif k == 'whale': c = I_GOAT.to_3d() + V(-1.1 + 0.15 * ku, 2.1, 0.95); r = shot(c, la + V(0.1, 0.6, 0.5), 46, 4.0, focus=(c - la).length)      # over THE GOAT's shoulder
         else:
             c = qq + dict(bonk=V(0.5, 2.9, 0.35), cate=V(2.6, 1.5, 0.45), walter=V(-1.8, 2.4, 1.2))[k]
             r = shot(c, qq + V(0, 0, 0.35), 42, 2.8, focus=(c - qq).length)
