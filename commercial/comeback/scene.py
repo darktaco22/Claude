@@ -194,7 +194,7 @@ for i, (x, y, h, r) in enumerate([(-36, 8, 30, 4.5), (-34, -44, 26, 4), (52, 4, 
     bpy.ops.mesh.primitive_cone_add(radius1=r * 1.25, depth=r * 2.2, vertices=24, location=(x, y, h + r * 1.1)); bpy.context.object.data.materials.append(REDC if i % 2 == 0 else BLUEC)
 
 # the blimp and the scoreboard under it
-BL = Vector((9, -16, 21.5)); SB = Vector((9, -16, 12.0))
+BL = Vector((9, -16, 35.0)); SB = Vector((9, -16, 12.0))
 purple = mat('blimp', (0.25, 0.06, 0.55), 0.35)
 bl = sphere('blimp', 1.0, BL, purple, 32); bl.scale = (4.2, 9.5, 4.0)
 for sx_ in (-1, 1):
@@ -288,8 +288,19 @@ def fling(u, t, away, up=9.0, dist=7.0, dur=1.3):
     s = r.scale.copy(); key(r, 'scale', F(t) + n - 1); r.scale = s * 0.0001; key(r, 'scale', F(t) + n); const(r)
 
 # ================================================================ FX
-FIRE = mat('fire', (1, 0.4, 0.05), 0.5, emit=(1.0, 0.33, 0.04), estr=14); FIREG = mat('fireg', (1, 0.8, 0.1), 0.5, emit=(1.0, 0.7, 0.1), estr=16)
-FIREGRN = mat('firegrn', (0.2, 1, 0.2), 0.5, emit=(0.15, 1.0, 0.2), estr=12)
+def fire_mat(name, c0, c1, c2, estr):
+    m = bpy.data.materials.new(name); m.use_nodes = True; nt = m.node_tree; b = nt.nodes['Principled BSDF']; b.inputs['Base Color'].default_value = (0, 0, 0, 1)
+    tc = nt.nodes.new('ShaderNodeTexCoord'); nz = nt.nodes.new('ShaderNodeTexNoise'); nz.inputs['Scale'].default_value = 1.6; nz.inputs['Detail'].default_value = 5; nz.inputs['Roughness'].default_value = 0.65
+    nt.links.new(tc.outputs['Object'], nz.inputs['Vector']); lw = nt.nodes.new('ShaderNodeLayerWeight'); lw.inputs['Blend'].default_value = 0.4
+    mu = nt.nodes.new('ShaderNodeMath'); mu.operation = 'MULTIPLY'; mu.inputs[1].default_value = 1.0
+    sub = nt.nodes.new('ShaderNodeMath'); sub.operation = 'SUBTRACT'; sub.inputs[0].default_value = 1.15; nt.links.new(lw.outputs['Facing'], sub.inputs[1])
+    nt.links.new(nz.outputs['Fac'], mu.inputs[0]); nt.links.new(sub.outputs[0], mu.inputs[1])
+    rp = nt.nodes.new('ShaderNodeValToRGB'); E = rp.color_ramp.elements; E[0].position = 0.22; E[0].color = (*c0, 1); E[1].position = 0.75; E[1].color = (*c2, 1); e = E.new(0.45); e.color = (*c1, 1)
+    nt.links.new(mu.outputs[0], rp.inputs['Fac']); nt.links.new(rp.outputs['Color'], b.inputs['Emission Color']); b.inputs['Emission Strength'].default_value = estr
+    al = nt.nodes.new('ShaderNodeMath'); al.operation = 'MULTIPLY'; al.inputs[1].default_value = 3.2; al.use_clamp = True; nt.links.new(mu.outputs[0], al.inputs[0]); nt.links.new(al.outputs[0], b.inputs['Alpha'])
+    return m
+FIRE = fire_mat('fire', (0.25, 0.01, 0.0), (1.0, 0.22, 0.02), (1.0, 0.8, 0.35), 22); FIREG = fire_mat('fireg', (0.4, 0.08, 0.0), (1.0, 0.5, 0.04), (1.0, 0.95, 0.6), 26)
+FIREGRN = fire_mat('firegrn', (0.0, 0.15, 0.01), (0.1, 0.9, 0.12), (0.75, 1.0, 0.7), 18)
 def smoke_mat(name, col, dens=0.85):
     m = bpy.data.materials.new(name); m.use_nodes = True; nt = m.node_tree; b = nt.nodes['Principled BSDF']
     b.inputs['Base Color'].default_value = (*col, 1); b.inputs['Roughness'].default_value = 1.0
@@ -301,7 +312,7 @@ def smoke_mat(name, col, dens=0.85):
     mu = nt.nodes.new('ShaderNodeMath'); mu.operation = 'MULTIPLY'; nt.links.new(pw.outputs[0], mu.inputs[0]); nt.links.new(nz.outputs['Fac'], mu.inputs[1])
     m2 = nt.nodes.new('ShaderNodeMath'); m2.operation = 'MULTIPLY'; m2.inputs[1].default_value = dens * 2.2; m2.use_clamp = True; nt.links.new(mu.outputs[0], m2.inputs[0])
     nt.links.new(m2.outputs[0], b.inputs['Alpha']); return m
-SMOKE = smoke_mat('smoke', (0.07, 0.065, 0.06)); DUST = smoke_mat('dust', (0.55, 0.5, 0.42), 0.6); SMOKEG = smoke_mat('smokeg', (0.05, 0.3, 0.06), 0.7)
+SMOKE = smoke_mat('smoke', (0.09, 0.085, 0.08), 0.65); DUST = smoke_mat('dust', (0.55, 0.5, 0.42), 0.6); SMOKEG = smoke_mat('smokeg', (0.05, 0.3, 0.06), 0.7)
 RUB = [STONE, mat('rub2', (0.3, 0.29, 0.28), 0.9), WOOD]
 def explode(c, t, R=3.5, fire=FIRE, n_deb=44, seed=1, smoke=SMOKE, light=(1.0, 0.55, 0.2)):
     r_ = random.Random(seed); f0 = F(t); c = Vector(c)
@@ -472,7 +483,7 @@ def hero(uid, side, row, a, h=1.95, items=None, yaw=0.0, team='n'):
     KEEP_OUT.append((p, 0.85)); return u
 # the knight who has seen enough (west stand, blue half), and the frogs around him
 KN_ROW, KN_A0, KN_A1 = 2, -15.2, -19.6
-KN = unit('swordcat', 2.1); kp0, krz = spot('W', KN_ROW, KN_A0); kp1, _ = spot('W', KN_ROW, KN_A1)
+KN = unit('swordcat', 2.35); kp0, krz = spot('W', KN_ROW, KN_A0); kp1, _ = spot('W', KN_ROW, KN_A1)
 for a in [KN_A0 + 1.0 - 0.55 * i for i in range(20)]: KEEP_OUT.append((spot('W', KN_ROW, a)[0], 0.7))
 place(KN, kp0, krz, 1); key(KN['root'], 'rotation_euler', F(16.6)); place(KN, kp0, 0.0, F(17.2))        # turns to go
 key(KN['root'], 'location', F(17.3)); place(KN, kp1, 0.0, F(21.3)); key(KN['root'], 'rotation_euler', F(29.9))
@@ -480,7 +491,7 @@ place(KN, kp1, krz + 0.25, F(30.9)); linear(KN['root'])
 sched(KN, [(0, 'lose', 1.0), (15.9, 'hit', 0.6), (17.2, 'walk', 0.8), (21.3, 'hit', 0.5), (22.6, 'idle', 1.0), (T_T1 + 0.3, 'hit', 0.5), (T_T1 + 1.6, 'idle', 1), (30.9, 'ready', 1.0), (32.2, 'win', 1.1), (T_T2 + 0.3, 'emote', 1.0), (T_T2 + 3.2, 'win', 1.2)])
 frog_items = lambda j: [(0, 'emote', 0.9 + 0.2 * j), (5.0 + 3 * j, 'win', 0.9 + 0.2 * j), (T_C + 0.3, 'hit', 0.5), (T_C + 1.6, 'idle', 1), (T_T1 + 0.3, 'hit', 0.5), (T_T1 + 1.5, 'lose', 1.2), (T_T2 + 0.4, 'win', 1.1 + 0.2 * j)]
 for i, (uid, row, a, h) in enumerate([('pepe', 1, -14.2, 1.9), ('apu', 1, -15.9, 1.8), ('floki', 1, -17.6, 2.0), ('pepe', 1, -19.0, 1.85), ('apu', 1, -20.6, 1.9), ('dope', 1, -12.6, 1.7),
-                                       ('apu', 3, -14.6, 1.9), ('cupsey', 3, -16.1, 1.9), ('pepe', 3, -17.5, 2.0), ('moodeng', 3, -19.2, 1.7), ('apu', 3, -20.9, 1.9), ('pepe', 3, -13.0, 1.9),
+                                       ('apu', 3, -14.6, 1.9), ('pepe', 3, -16.1, 1.85), ('pepe', 3, -17.5, 2.0), ('moodeng', 3, -19.2, 1.7), ('apu', 3, -20.9, 1.9), ('pepe', 3, -13.0, 1.9),
                                        ('walter', 2, -13.4, 1.95), ('goat', 2, -21.4, 2.0), ('slerf', 4, -15.5, 2.1), ('michi', 4, -17.9, 1.9), ('pippin', 4, -19.9, 1.9), ('jeanphil', 0, -16.8, 1.9), ('ket', 0, -18.6, 1.8), ('toshi', 0, -14.9, 1.9), ('cate', 0, -20.3, 1.8)]):
     hero(uid, 'W', row, a, h, frog_items(rnd.random()))
 # the giant (west stand, red half)
@@ -491,8 +502,8 @@ G_ROW, G_A = 1, -11.5
 TR = hero('troll', 'E', G_ROW, G_A, 2.05, [(0, 'idle', 1), (11.0, 'emote', 1.0), (15.0, 'idle', 1), (T_C + 0.3, 'hit', 0.5), (T_C + 1.6, 'idle', 1), (T_T1 + 0.3, 'hit', 0.45), (T_T1 + 1.8, 'lose', 1.0), (52.0, 'idle', 1), (54.6, 'hit', 0.5), (55.6, 'lose', 2.0)])
 POP = hero('popcat', 'E', G_ROW, G_A + 1.25, 1.9, [(0, 'win', 1.0), (T_C + 0.3, 'hit', 0.5), (T_C + 1.6, 'idle', 1), (T_T1 + 0.3, 'hit', 0.45), (T_T1 + 1.8, 'lose', 1.0), (52.0, 'idle', 1), (53.9, 'hit', 0.5), (55.0, 'lose', 1.6)])
 LM = hero('lmao', 'E', G_ROW, G_A - 1.25, 1.9, [(0, 'emote', 1.0), (6, 'win', 1.1), (T_C + 0.3, 'hit', 0.5), (T_C + 1.6, 'idle', 1), (T_T1 + 0.3, 'hit', 0.45), (T_T1 + 1.8, 'lose', 1.1), (52.0, 'lose', 1.0), (54.2, 'hit', 0.5), (55.2, 'lose', 1.8)])
-for uid, row, a in (('wojak', 2, G_A + 0.6), ('giga', 2, G_A - 0.7), ('useless', 2, G_A + 2.0), ('chillhouse', 2, G_A - 2.1), ('farter', 0, G_A + 0.7), ('thisisfine', 0, G_A - 0.8), ('nyancat', 0, G_A + 2.2), ('bonk', 0, G_A - 2.3), ('chillguy', 1, G_A + 2.6), ('zcat', 1, G_A - 2.6)):
-    hero(uid, 'E', row, a, 1.9, None, team='r')
+for uid, row, a in (('michi', 2, G_A + 0.6), ('pippin', 2, G_A - 0.7), ('cupsey', 2, G_A + 2.0), ('chillhouse', 2, G_A - 2.1), ('farter', 0, G_A + 0.7), ('thisisfine', 0, G_A - 0.8), ('nyancat', 0, G_A + 2.2), ('bonk', 0, G_A - 2.3), ('chillguy', 1, G_A + 2.6), ('zcat', 1, G_A - 2.6)):
+    hero(uid, 'E', row, a, 1.5 if row == 2 else 1.9, None, team='r')
 # the bomb in the troll's hand, and its fuse
 hb = next((b for b in TR['arm'].pose.bones if b.name.endswith('RightHand')), None) or next((b for b in TR['arm'].pose.bones if 'Right' in b.name and 'Arm' in b.name), None) or TR['arm'].pose.bones[0]
 print('BOMB BONE', hb.name)
@@ -533,28 +544,28 @@ def SH(t0, t1, p0, p1, l0, l1, lens, fstop=2.8, shake=0.0, lens1=None, focus=Non
     return dict(t0=t0, t1=t1, p0=V(p0), p1=V(p1), l0=V(l0), l1=V(l1), lens=lens, lens1=lens1 or lens, fstop=fstop, shake=shake, focus=focus)
 SHOTS = [
     SH(2.0, 6.0, (9, 9.5, 12.5), (9, 6.0, 10.6), (9, -18, 4.5), (9, -20, 4.0), 22, 8),                                   # behind the red king: the whole arena, 2-0
-    SH(6.0, 7.6, (10.8, -23.2, 5.5), (10.5, -23.8, 5.5), (9, -28.9, 5.25), (9, -28.9, 5.3), 70, 2.4, 0.15),             # the blue king, sweating it
-    SH(7.6, 9.6, (7.4, -9.4, 3.3), (7.7, -8.8, 3.4), (9, -3.05, 5.9), (9, -3.05, 6.0), 60, 2.6),                         # the red king, smug
+    SH(6.0, 7.6, (12.3, -24.4, 6.9), (12.0, -24.9, 6.9), (9, -28.9, 5.45), (9, -28.9, 5.5), 80, 2.6, 0.15),             # the blue king, sweating it
+    SH(7.6, 9.6, (5.2, -8.2, 4.6), (5.6, -7.6, 4.7), (9, -3.05, 5.9), (9, -3.05, 6.0), 70, 2.8),                         # the red king, smug
     SH(9.6, 11.6, (10.0, -10.5, 4.5), (9.0, -9.5, 4.6), gi + V((0, 3, -1.5)), gi + V((0, 1, -1.2)), 38, 4),               # the stands and the giant
     SH(11.6, 13.6, gag + V((-6.4, 1.0, 0.6)), gag + V((-5.8, 0.6, 0.55)), gag + V((0, 0.2, -0.1)), gag + V((0, 0.1, -0.1)), 58, 2.4, 0.1),   # troll, popcat, lmao
-    SH(13.6, 15.6, (26.5, -3.0, 6.5), (27.5, -5.0, 6.3), (31.0, 3.0, 7.0), (31.5, 1.5, 7.0), 40, 2.8, 0.1),               # red fans going wild
+    SH(13.6, 15.6, (22.4, -7.5, 3.2), (22.6, -5.5, 3.4), (28.5, -3.0, 6.2), (28.5, -1.5, 6.2), 35, 3.2, 0.1),             # red fans going wild
     SH(15.6, 19.0, kn0 + V((6.6, 1.6, 1.5)), kn0 + V((6.2, -0.4, 1.5)), kn0 + V((0, 0, -0.1)), kn0 + V((0, -1.6, -0.1)), 70, 2.2, 0.08),     # the knight gives up
-    SH(19.0, 20.7, (-3.0, -40.5, 2.6), (-3.4, -40.8, 2.7), (9, -23, 52), (9, -23, 26), 20, 8, 0.25),                      # the sky: GOD CANDLE
+    SH(19.0, 20.7, (-2.5, -36.0, 1.2), (-2.6, -36.2, 1.25), (9, -23, 140), (9, -23, 50), 45, 8, 0.25, 32),                # the sky: GOD CANDLE
     SH(20.7, 22.6, (-11.5, -12.5, 7.2), (-11.9, -12.3, 7.3), (9, -22, 3.0), (9, -22, 2.5), 28, 4, 0.5),                   # from the stands: it lands
     SH(22.6, 24.7, (4.2, -13.5, 1.1), (6.8, -6.0, 1.3), (3.6, -18.5, 1.6), (3.6, -10.0, 1.8), 28, 4, 0.3),                # the charge, from in front
     SH(24.7, 25.5, (10.5, -14.5, 2.2), (10.9, -14.9, 2.4), (3.5, -6.5, 3.0), (3.5, -6.5, 3.6), 35, 4, 1.0),               # the tower goes
     SH(25.5, 26.4, (9, -26.0, 8.0), (9, -25.2, 8.3), SB, SB, 40, 4),                                                      # 1-2
-    SH(26.4, 27.6, (7.6, -9.0, 3.6), (7.8, -8.7, 3.65), (9, -3.05, 6.0), (9, -3.05, 6.0), 80, 2.6, 0.1),                   # the red king, less smug
+    SH(26.4, 27.6, (5.4, -7.9, 4.8), (5.6, -7.6, 4.85), (9, -3.05, 6.0), (9, -3.05, 6.0), 90, 2.8, 0.1),                   # the red king, less smug
     SH(27.6, 29.6, gag + V((-5.6, -0.6, 0.5)), gag + V((-5.1, -0.3, 0.5)), gag + V((0, 0.4, -0.05)), gag + V((0, 0.5, -0.05)), 65, 2.2, 0.1),  # jaws drop
     SH(29.6, 33.0, kn1 + V((6.0, -1.8, 1.4)), kn1 + V((5.4, -0.8, 1.4)), kn1 + V((0, 0, -0.1)), kn1 + V((0, 0, -0.1)), 75, 2.2, 0.08),        # the knight looks back
     SH(33.0, 35.0, (-3.5, -30.0, 5.0), (-3.2, -27.0, 5.2), (-13, -36, 7.0), (-13, -33, 7.0), 40, 2.8, 0.15),              # blue fans
     SH(35.0, 36.2, (10.6, -13.2, 0.9), (10.9, -12.8, 1.0), (14.5, -6.5, 4.6), (14.5, -6.5, 4.9), 24, 5),                  # the second tower, from below
-    SH(36.2, 39.0, (9.3, -22.0, 1.4), (9.9, -12.0, 1.6), (14.5, -19.0, 2.5), (14.5, -10.0, 2.7), 24, 4, 0.35),            # the whale's run
+    SH(36.2, 39.0, (8.3, -22.5, 1.4), (8.9, -12.5, 1.7), (14.5, -19.0, 2.5), (14.5, -10.0, 2.7), 21, 4, 0.35),            # the whale's run
     SH(39.0, 42.4, (10.4, -14.6, 1.5), (16.6, -13.4, 2.4), (14.5, -9.0, 3.0), (14.5, -7.2, 3.6), 28, 3.5, 0.2, 24),       # slow motion: the slam
     SH(42.4, 43.4, (9, -6.0, 8.4), (9, -6.8, 8.7), SB, SB, 40, 4),                                                        # 2-2
-    SH(43.4, 44.8, (10.6, -23.6, 5.5), (10.2, -24.0, 5.5), (9, -28.9, 5.3), (9, -28.9, 5.4), 75, 2.4, 0.12),              # the blue king: fist pump
-    SH(44.8, 46.2, (7.5, -9.2, 3.2), (7.9, -8.6, 3.3), (9, -3.05, 6.0), (9, -3.05, 6.0), 60, 2.6, 0.2),                    # the red king panics
-    SH(46.2, 48.4, (9, -9.0, 30.0), (9, -6.5, 24.0), (9, -4.5, 0), (9, -3.2, 0), 30, 8, 0.6),                             # from above: the king tower
+    SH(43.4, 44.8, (12.2, -24.6, 6.9), (11.8, -25.0, 6.9), (9, -28.9, 5.5), (9, -28.9, 5.6), 85, 2.6, 0.12),              # the blue king: fist pump
+    SH(44.8, 46.2, (5.3, -8.1, 4.5), (5.7, -7.5, 4.6), (9, -3.05, 6.0), (9, -3.05, 6.0), 70, 2.8, 0.2),                    # the red king panics
+    SH(46.2, 48.4, (9, -5.5, 30.0), (9, -4.2, 23.0), (9, -3.6, 0), (9, -3.0, 0), 30, 8, 0.6),                             # from above: the king tower
     SH(48.4, 50.4, (11.0, -12.5, 4.2), (10.0, -10.5, 4.6), gi + V((0, 3, -2)), gi + V((0, 1.5, -1.5)), 32, 4, 0.2),        # the stands erupt
     SH(50.4, 52.4, kn1 + V((5.6, 1.2, 1.4)), kn1 + V((5.2, 0.8, 1.4)), kn1 + V((0, 0, -0.1)), kn1 + V((0, 0, -0.1)), 65, 2.2, 0.15),          # the knight, cheering
     SH(52.4, 56.3, gag + V((-6.2, 1.0, 0.6)), gag + V((-4.4, 0.5, 0.4)), gag + V((0, 0.2, -0.1)), gag + V((0, 0.0, -0.15)), 55, 2.2, 0.08, 80),  # the fuse
