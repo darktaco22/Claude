@@ -138,13 +138,14 @@ for o in ARENA:
     for k, (x, y) in TPOS.items():
         if abs(c.x - x) < 2.6 and abs(c.y - y) < 2.6:
             mw = o.matrix_world.copy(); o.parent = TW[k]; o.matrix_world = mw; break
+for k in ('bK', 'rK'): TW[k].rotation_euler.z = math.pi      # the export has both king towers facing outward: cannons to the court
 
 # ================================================================ sky, sun, ground
 w = bpy.data.worlds.new('sky'); sc.world = w; w.use_nodes = True; nt = w.node_tree; bg = nt.nodes['Background']
 env = nt.nodes.new('ShaderNodeTexEnvironment'); env.image = bpy.data.images.load(os.path.join(TEX, 'sky.hdr'))
 tc = nt.nodes.new('ShaderNodeTexCoord'); mp = nt.nodes.new('ShaderNodeMapping'); mp.inputs['Rotation'].default_value = (0, 0, math.radians(float(arg('--skyrot', '200'))))
 nt.links.new(tc.outputs['Generated'], mp.inputs['Vector']); nt.links.new(mp.outputs['Vector'], env.inputs['Vector']); nt.links.new(env.outputs['Color'], bg.inputs['Color'])
-bg.inputs['Strength'].default_value = 1.15
+bg.inputs['Strength'].default_value = 1.35
 GRASS = texmat('grass', 'grass.jpg', 0.09, 0.9, tint=(0.75, 1.0, 0.6)); STONE = texmat('stone', 'stone.jpg', 0.22, 0.85, tint=(1.0, 0.95, 0.88)); WOOD = texmat('wood', 'wood.jpg', 0.3, 0.7)
 plane('ground', 600, 600, (9, -16, -0.03), (0, 0, 0), GRASS)
 RED = mat('red', (0.62, 0.03, 0.03), 0.6); BLUE = mat('blue', (0.03, 0.14, 0.62), 0.6); GOLD = mat('gold', (1.0, 0.62, 0.12), 0.3, metal=0.9)
@@ -287,8 +288,8 @@ def fling(u, t, away, up=9.0, dist=7.0, dur=1.3):
     s = r.scale.copy(); key(r, 'scale', F(t) + n - 1); r.scale = s * 0.0001; key(r, 'scale', F(t) + n); const(r)
 
 # ================================================================ FX
-FIRE = mat('fire', (1, 0.4, 0.05), 0.5, emit=(1.0, 0.33, 0.04), estr=38); FIREG = mat('fireg', (1, 0.8, 0.1), 0.5, emit=(1.0, 0.7, 0.1), estr=45)
-FIREGRN = mat('firegrn', (0.2, 1, 0.2), 0.5, emit=(0.15, 1.0, 0.2), estr=40)
+FIRE = mat('fire', (1, 0.4, 0.05), 0.5, emit=(1.0, 0.33, 0.04), estr=14); FIREG = mat('fireg', (1, 0.8, 0.1), 0.5, emit=(1.0, 0.7, 0.1), estr=16)
+FIREGRN = mat('firegrn', (0.2, 1, 0.2), 0.5, emit=(0.15, 1.0, 0.2), estr=12)
 def smoke_mat(name, col, dens=0.85):
     m = bpy.data.materials.new(name); m.use_nodes = True; nt = m.node_tree; b = nt.nodes['Principled BSDF']
     b.inputs['Base Color'].default_value = (*col, 1); b.inputs['Roughness'].default_value = 1.0
@@ -305,7 +306,7 @@ RUB = [STONE, mat('rub2', (0.3, 0.29, 0.28), 0.9), WOOD]
 def explode(c, t, R=3.5, fire=FIRE, n_deb=44, seed=1, smoke=SMOKE, light=(1.0, 0.55, 0.2)):
     r_ = random.Random(seed); f0 = F(t); c = Vector(c)
     ld = bpy.data.lights.new('boom', 'POINT'); ld.color = light; ld.shadow_soft_size = 2.0; lo = bpy.data.objects.new('boom', ld); COL.objects.link(lo); lo.location = c + Vector((0, 0, 3))
-    for f, e in ((f0 - 1, 0), (f0 + 1, 600000 * R), (f0 + 5, 250000 * R), (f0 + 16, 0)): ld.energy = e; ld.keyframe_insert('energy', frame=f)
+    for f, e in ((f0 - 1, 0), (f0 + 1, 45000 * R), (f0 + 5, 20000 * R), (f0 + 16, 0)): ld.energy = e; ld.keyframe_insert('energy', frame=f)
     for i in range(9):
         off = Vector((r_.uniform(-1, 1), r_.uniform(-1, 1), r_.uniform(0.2, 1.4))) * R * 0.45; rr = R * r_.uniform(0.45, 0.8)
         o = ico('fire', 1.0, c + off, fire)
@@ -315,8 +316,7 @@ def explode(c, t, R=3.5, fire=FIRE, n_deb=44, seed=1, smoke=SMOKE, light=(1.0, 0
         off = Vector((r_.uniform(-1, 1), r_.uniform(-1, 1), r_.uniform(0.0, 1.2))) * R * 0.6; rr = R * r_.uniform(0.55, 0.95)
         o = ico('smoke', 1.0, c + off, smoke if i % 3 else DUST)
         drift = Vector((r_.uniform(-0.6, 0.6), r_.uniform(-0.6, 0.6), r_.uniform(5, 9)))
-        for f, s, u_ in ((f0, 0.001, 0), (f0 + 8, rr, 0.08), (f0 + 50, rr * 1.7, 0.4), (f0 + 400, rr * 2.6, 1.6), (LAST, rr * 3.0, 2.2)):
-            if f > LAST and f != LAST: continue
+        for f, s, u_ in ((f0, 0.001, 0), (f0 + 8, rr, 0.08), (f0 + 36, rr * 1.3, 0.45), (f0 + 80, 0.001, 1.3)):
             o.scale = (s,) * 3; key(o, 'scale', f); o.location = c + off + drift * u_; key(o, 'location', f)
     for i in range(n_deb):
         s = r_.uniform(0.18, 0.75); o = box('deb', (s, s * r_.uniform(0.5, 1.2), s * r_.uniform(0.4, 1.0)), c, RUB[i % 3])
@@ -335,20 +335,23 @@ def rubble(c, f_on, seed=3, n=26, R=2.4):
         s = r_.uniform(0.4, 1.3); a = r_.uniform(0, 6.28); d = r_.uniform(0, R)
         o = box('rub', (s, s * r_.uniform(0.6, 1.2), s * r_.uniform(0.4, 0.9)), (math.cos(a) * d, math.sin(a) * d, s * 0.25 + (R - d) * 0.35), RUB[i % 3], rot=(r_.uniform(-0.6, 0.6), r_.uniform(-0.6, 0.6), r_.uniform(0, 3)), parent=par)
     if f_on > 1: show(par, f_on)
-def plume(c, seed=5):
+def plume(c, seed=5, f_on=1):
     r_ = random.Random(seed)
-    for i in range(10):
-        o = ico('plume', 1.0, c, SMOKE if i % 4 else DUST); z0 = 1.0 + i * 2.3; rr = 1.3 + i * 0.42
-        for f, u_ in ((1, 0.0), (LAST, 1.0)):
+    for i in range(9):
+        o = ico('plume', 1.0, c, SMOKE if i % 4 else DUST); z0 = 1.0 + i * 2.2; rr = 0.9 + i * 0.3
+        if f_on > 1: o.scale = (0.001,) * 3; key(o, 'scale', f_on - 1)
+        for f, u_ in ((f_on, 0.0), (LAST, 1.0)):
             o.location = Vector(c) + Vector((0.5 * i + u_ * 3.0 + r_.uniform(-0.4, 0.4), 0.25 * i + r_.uniform(-0.4, 0.4), z0 + u_ * 7.0)); key(o, 'location', f)
             o.scale = (rr * (1 + 0.5 * u_),) * 3; key(o, 'scale', f)
         linear(o)
+        for fc in o.animation_data.action.fcurves:
+            if fc.data_path == 'scale' and f_on > 1: fc.keyframe_points[0].interpolation = 'CONSTANT'
 def kill_tower(k, t, seed, crew=(), fire=FIRE):
     c = Vector((*TPOS[k], 0)); e = TW[k]; f0 = F(t)
     for f, dx in ((f0 - 6, 0.0), (f0 - 4, 0.12), (f0 - 2, -0.12), (f0, 0.0)): e.location.x = c.x + dx; key(e, 'location', f)
     key(e, 'scale', f0); e.scale = (0.0001,) * 3; key(e, 'scale', f0 + 1); const(e)
     explode(c + Vector((0, 0, 2.2)), t, 3.6 if k[1] != 'K' else 5.0, fire, 50 if k[1] != 'K' else 80, seed)
-    rubble(c, f0 + 1, seed)
+    rubble(c, f0 + 1, seed); plume(c + Vector((0, 0, 1.0)), seed, f0 + 30)
     for u in crew: fling(u, t, (rnd.uniform(-1, 1), rnd.uniform(0.2, 1)), up=14, dist=9, dur=1.6)
 
 # ================================================================ battle cast
@@ -358,9 +361,9 @@ def fielder(uid, h, team):
 CREW = {}
 for k in ('rL', 'rR'):
     u = unit('chillguy', 1.87); place(u, (*TPOS[k], 3.86), 0.0); sched(u, [(0, 'idle', 1), (T_T1 - 2.5 if k == 'rL' else 35.2, 'hit', 0.6), ((T_T1 - 1.6) if k == 'rL' else 36.4, 'lose', 1.2)]); CREW[k] = u
-KB = unit('neet', 2.2); place(KB, (9, -29.5 - 0.55, 3.75), math.pi)
+KB = unit('neet', 2.2); place(KB, (9, -29.5 + 0.55, 3.75), math.pi)
 sched(KB, [(0, 'sitangry', 1), (9.0, 'sit', 1), (19.2, 'sityell', 1), (21.4, 'sitcheer', 1), (25.0, 'sitfistpump', 1), (27.5, 'sitclap', 1), (35.0, 'sityell', 1), (41.7, 'sitfistpump', 1), (46.0, 'sitcheer', 1)])
-KR = unit('pudgy', 2.5); place(KR, (9, -3.75, 3.75), 0.0)
+KR = unit('pudgy', 2.5); place(KR, (9, -3.05, 4.3), 0.0)
 sched(KR, [(0, 'win', 0.8), (6.5, 'emote', 1.0), (9.6, 'win', 0.8), (20.9, 'hit', 0.5), (22.4, 'idle', 1), (25.3, 'hit', 0.45), (27.2, 'lose', 1.3), (41.7, 'hit', 0.5), (43.0, 'lose', 1.6)])
 fling(KR, T_T3, (0.25, 1.0), up=22, dist=16, dur=2.3)
 # blue's towers are already gone: rubble and smoke
@@ -383,13 +386,13 @@ for i, (uid, h, x, y) in enumerate([('giga', 3.1, 9.0, -26.3), ('triplet', 2.6, 
     fling(u, T_C + 0.02 * i, (x - CANDLE.x + 0.01 * (i - 4), y - CANDLE.y), up=rnd.uniform(8, 14), dist=rnd.uniform(8, 14), dur=1.5); REDS.append(u)
 # the GOD CANDLE
 candle = bpy.data.objects.new('candle', None); COL.objects.link(candle)
-cg = mat('candle', (0.1, 0.9, 0.2), 0.3, emit=(0.08, 1.0, 0.16), estr=9)
+cg = mat('candle', (0.1, 0.9, 0.2), 0.3, emit=(0.08, 1.0, 0.16), estr=14)
 box('cbody', (4.2, 4.2, 15), (0, 0, 7.5), cg, parent=candle); box('cwick', (0.5, 0.5, 28), (0, 0, 14), cg, parent=candle)
 cl = bpy.data.lights.new('candleL', 'POINT'); cl.color = (0.2, 1.0, 0.3); cl.shadow_soft_size = 4; clo = bpy.data.objects.new('candleL', cl); COL.objects.link(clo); clo.parent = candle; clo.location = (0, -6, 6)
 for t, z in ((18.8, 150.0), (20.7, 46.0), (T_C, 0.0), (23.4, 0.0), (24.3, -32.0)):
     candle.location = CANDLE + Vector((0, 0, z)); key(candle, 'location', F(t))
 linear(candle)
-for t, e in ((18.8, 3e6), (T_C, 2.5e6), (23.4, 1.2e6), (24.3, 0)): cl.energy = e; cl.keyframe_insert('energy', frame=F(t))
+for t, e in ((18.8, 5e5), (T_C, 4e5), (23.4, 2e5), (24.3, 0)): cl.energy = e; cl.keyframe_insert('energy', frame=F(t))
 explode(CANDLE + Vector((0, 0, 0.5)), T_C, 4.2, FIREGRN, 30, 21, SMOKEG, light=(0.3, 1.0, 0.3))
 sw = bpy.data.objects.new('shock', None); COL.objects.link(sw); sw.location = CANDLE + Vector((0, 0, 0.3))
 bpy.ops.mesh.primitive_torus_add(major_radius=1.0, minor_radius=0.06, major_segments=64, location=(0, 0, 0)); tor = bpy.context.object; tor.data.materials.append(mat('shockm', (0.2, 1, 0.3), 0.3, emit=(0.2, 1.0, 0.3), estr=30)); tor.parent = sw
@@ -530,31 +533,31 @@ def SH(t0, t1, p0, p1, l0, l1, lens, fstop=2.8, shake=0.0, lens1=None, focus=Non
     return dict(t0=t0, t1=t1, p0=V(p0), p1=V(p1), l0=V(l0), l1=V(l1), lens=lens, lens1=lens1 or lens, fstop=fstop, shake=shake, focus=focus)
 SHOTS = [
     SH(2.0, 6.0, (9, 9.5, 12.5), (9, 6.0, 10.6), (9, -18, 4.5), (9, -20, 4.0), 22, 8),                                   # behind the red king: the whole arena, 2-0
-    SH(6.0, 7.6, (10.2, -24.2, 6.1), (9.9, -24.8, 6.0), (9, -30.0, 5.3), (9, -30.0, 5.35), 70, 2.2, 0.15),              # the blue king, sweating it
-    SH(7.6, 9.6, (8.0, -8.2, 3.6), (8.3, -7.6, 3.7), (9, -2.3, 5.6), (9, -2.3, 5.7), 60, 2.4),                           # the red king, smug
+    SH(6.0, 7.6, (10.8, -23.2, 5.5), (10.5, -23.8, 5.5), (9, -28.9, 5.25), (9, -28.9, 5.3), 70, 2.4, 0.15),             # the blue king, sweating it
+    SH(7.6, 9.6, (7.4, -9.4, 3.3), (7.7, -8.8, 3.4), (9, -3.05, 5.9), (9, -3.05, 6.0), 60, 2.6),                         # the red king, smug
     SH(9.6, 11.6, (10.0, -10.5, 4.5), (9.0, -9.5, 4.6), gi + V((0, 3, -1.5)), gi + V((0, 1, -1.2)), 38, 4),               # the stands and the giant
-    SH(11.6, 13.6, gag + V((-5.2, 0.6, 0.2)), gag + V((-4.6, 0.2, 0.2)), gag + V((0, 0.3, -0.1)), gag + V((0, 0.2, -0.1)), 75, 2.0, 0.1),   # troll, popcat, lmao
-    SH(13.6, 15.6, (26.5, -3.0, 6.5), (27.5, -5.0, 6.3), (31.0, 3.0, 7.0), (31.5, 1.5, 7.0), 50, 2.8, 0.1),               # red fans going wild
-    SH(15.6, 19.0, kn0 + V((5.0, 0.6, -0.1)), kn0 + V((4.6, -0.6, -0.05)), kn0, kn0 + V((0, -1.6, 0)), 80, 2.0, 0.08),     # the knight gives up
-    SH(19.0, 20.7, (10.5, -14.0, 1.2), (10.3, -14.5, 1.1), (9, -23, 60), (9, -23, 42), 20, 8, 0.25),                      # the sky: GOD CANDLE
+    SH(11.6, 13.6, gag + V((-6.4, 1.0, 0.6)), gag + V((-5.8, 0.6, 0.55)), gag + V((0, 0.2, -0.1)), gag + V((0, 0.1, -0.1)), 58, 2.4, 0.1),   # troll, popcat, lmao
+    SH(13.6, 15.6, (26.5, -3.0, 6.5), (27.5, -5.0, 6.3), (31.0, 3.0, 7.0), (31.5, 1.5, 7.0), 40, 2.8, 0.1),               # red fans going wild
+    SH(15.6, 19.0, kn0 + V((6.6, 1.6, 1.5)), kn0 + V((6.2, -0.4, 1.5)), kn0 + V((0, 0, -0.1)), kn0 + V((0, -1.6, -0.1)), 70, 2.2, 0.08),     # the knight gives up
+    SH(19.0, 20.7, (-3.0, -40.5, 2.6), (-3.4, -40.8, 2.7), (9, -23, 52), (9, -23, 26), 20, 8, 0.25),                      # the sky: GOD CANDLE
     SH(20.7, 22.6, (-11.5, -12.5, 7.2), (-11.9, -12.3, 7.3), (9, -22, 3.0), (9, -22, 2.5), 28, 4, 0.5),                   # from the stands: it lands
-    SH(22.6, 24.7, (3.9, -13.5, 0.9), (3.0, -6.8, 1.2), (3.6, -17.0, 1.5), (3.6, -9.0, 1.9), 24, 4, 0.3),                 # the charge, from in front
-    SH(24.7, 25.5, (-1.5, -13.0, 2.0), (-2.0, -13.5, 2.2), (3.5, -6.5, 3.0), (3.5, -6.5, 3.5), 28, 4, 1.0),               # the tower goes
-    SH(25.5, 26.4, (9, -24.5, 9.5), (9, -23.5, 9.8), SB, SB, 85, 4),                                                      # 1-2
-    SH(26.4, 27.6, (8.2, -8.0, 3.8), (8.4, -7.7, 3.85), (9, -2.3, 5.7), (9, -2.3, 5.7), 85, 2.4, 0.1),                     # the red king, less smug
-    SH(27.6, 29.6, gag + V((-4.4, -0.5, 0.25)), gag + V((-4.0, -0.2, 0.25)), gag + V((0, 0.4, -0.05)), gag + V((0, 0.5, -0.05)), 85, 2.0, 0.1),  # jaws drop
-    SH(29.6, 33.0, kn1 + V((4.8, -1.2, 0.0)), kn1 + V((4.2, -0.4, 0.05)), kn1, kn1, 85, 2.0, 0.08),                        # the knight looks back
-    SH(33.0, 35.0, (-3.5, -30.0, 5.0), (-3.2, -27.0, 5.2), (-13, -36, 7.0), (-13, -33, 7.0), 45, 2.8, 0.15),              # blue fans
-    SH(35.0, 36.2, (13.0, -11.5, 0.7), (13.2, -11.0, 0.8), (14.5, -6.5, 5.2), (14.5, -6.5, 5.4), 26, 5),                  # the second tower, from below
-    SH(36.2, 39.0, (18.6, -21.0, 1.5), (18.9, -11.5, 1.7), (14.5, -19.0, 2.6), (14.5, -10.0, 2.8), 30, 4, 0.35),          # the whale's run
-    SH(39.0, 42.4, (11.0, -13.6, 1.6), (17.6, -12.2, 2.6), (14.5, -9.0, 3.2), (14.5, -7.2, 3.6), 32, 3.5, 0.2, 26),       # slow motion: the slam
-    SH(42.4, 43.4, (9, -8.5, 10.2), (9, -9.5, 10.6), SB, SB, 85, 4),                                                      # 2-2
-    SH(43.4, 44.8, (10.0, -24.6, 6.0), (9.6, -25.0, 6.0), (9, -30.0, 5.4), (9, -30.0, 5.5), 75, 2.2, 0.12),               # the blue king: fist pump
-    SH(44.8, 46.2, (8.3, -8.4, 3.2), (8.6, -7.9, 3.3), (9, -2.3, 5.7), (9, -2.3, 5.7), 60, 2.4, 0.2),                      # the red king panics
+    SH(22.6, 24.7, (4.2, -13.5, 1.1), (6.8, -6.0, 1.3), (3.6, -18.5, 1.6), (3.6, -10.0, 1.8), 28, 4, 0.3),                # the charge, from in front
+    SH(24.7, 25.5, (10.5, -14.5, 2.2), (10.9, -14.9, 2.4), (3.5, -6.5, 3.0), (3.5, -6.5, 3.6), 35, 4, 1.0),               # the tower goes
+    SH(25.5, 26.4, (9, -26.0, 8.0), (9, -25.2, 8.3), SB, SB, 40, 4),                                                      # 1-2
+    SH(26.4, 27.6, (7.6, -9.0, 3.6), (7.8, -8.7, 3.65), (9, -3.05, 6.0), (9, -3.05, 6.0), 80, 2.6, 0.1),                   # the red king, less smug
+    SH(27.6, 29.6, gag + V((-5.6, -0.6, 0.5)), gag + V((-5.1, -0.3, 0.5)), gag + V((0, 0.4, -0.05)), gag + V((0, 0.5, -0.05)), 65, 2.2, 0.1),  # jaws drop
+    SH(29.6, 33.0, kn1 + V((6.0, -1.8, 1.4)), kn1 + V((5.4, -0.8, 1.4)), kn1 + V((0, 0, -0.1)), kn1 + V((0, 0, -0.1)), 75, 2.2, 0.08),        # the knight looks back
+    SH(33.0, 35.0, (-3.5, -30.0, 5.0), (-3.2, -27.0, 5.2), (-13, -36, 7.0), (-13, -33, 7.0), 40, 2.8, 0.15),              # blue fans
+    SH(35.0, 36.2, (10.6, -13.2, 0.9), (10.9, -12.8, 1.0), (14.5, -6.5, 4.6), (14.5, -6.5, 4.9), 24, 5),                  # the second tower, from below
+    SH(36.2, 39.0, (9.3, -22.0, 1.4), (9.9, -12.0, 1.6), (14.5, -19.0, 2.5), (14.5, -10.0, 2.7), 24, 4, 0.35),            # the whale's run
+    SH(39.0, 42.4, (10.4, -14.6, 1.5), (16.6, -13.4, 2.4), (14.5, -9.0, 3.0), (14.5, -7.2, 3.6), 28, 3.5, 0.2, 24),       # slow motion: the slam
+    SH(42.4, 43.4, (9, -6.0, 8.4), (9, -6.8, 8.7), SB, SB, 40, 4),                                                        # 2-2
+    SH(43.4, 44.8, (10.6, -23.6, 5.5), (10.2, -24.0, 5.5), (9, -28.9, 5.3), (9, -28.9, 5.4), 75, 2.4, 0.12),              # the blue king: fist pump
+    SH(44.8, 46.2, (7.5, -9.2, 3.2), (7.9, -8.6, 3.3), (9, -3.05, 6.0), (9, -3.05, 6.0), 60, 2.6, 0.2),                    # the red king panics
     SH(46.2, 48.4, (9, -9.0, 30.0), (9, -6.5, 24.0), (9, -4.5, 0), (9, -3.2, 0), 30, 8, 0.6),                             # from above: the king tower
     SH(48.4, 50.4, (11.0, -12.5, 4.2), (10.0, -10.5, 4.6), gi + V((0, 3, -2)), gi + V((0, 1.5, -1.5)), 32, 4, 0.2),        # the stands erupt
-    SH(50.4, 52.4, kn1 + V((4.6, 0.4, 0.0)), kn1 + V((4.2, 0.2, 0.05)), kn1, kn1, 70, 2.0, 0.15),                          # the knight, cheering
-    SH(52.4, 56.3, gag + V((-4.6, 0.7, 0.3)), gag + V((-3.4, 0.3, 0.2)), gag + V((0, 0.2, -0.1)), gag + V((0, 0.0, -0.15)), 70, 2.0, 0.08, 95),  # the fuse
+    SH(50.4, 52.4, kn1 + V((5.6, 1.2, 1.4)), kn1 + V((5.2, 0.8, 1.4)), kn1 + V((0, 0, -0.1)), kn1 + V((0, 0, -0.1)), 65, 2.2, 0.15),          # the knight, cheering
+    SH(52.4, 56.3, gag + V((-6.2, 1.0, 0.6)), gag + V((-4.4, 0.5, 0.4)), gag + V((0, 0.2, -0.1)), gag + V((0, 0.0, -0.15)), 55, 2.2, 0.08, 80),  # the fuse
     SH(56.3, 58.0, (9, -44.0, 16.0), (9, -47.0, 18.0), (12, -14, 5.0), (12, -14, 5.5), 24, 8, 0.15),                       # the whole stadium; a puff in the east stand
 ]
 import mathutils
