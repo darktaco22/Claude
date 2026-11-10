@@ -4,7 +4,7 @@ for o in ARENA:      # the court, wet: it mirrors the lights
         for m in o.data.materials:
             bs = m.node_tree.nodes.get('Principled BSDF') if m and m.use_nodes else None
             if bs and not bs.inputs['Roughness'].links: bs.inputs['Roughness'].default_value = 0.28
-sun = bpy.data.objects.new('sun', bpy.data.lights.new('sun', 'SUN')); COL.objects.link(sun); sun.data.energy = 1.9; sun.data.angle = math.radians(2.5); sun.data.color = (1.0, 0.62, 0.36)
+sun = bpy.data.objects.new('sun', bpy.data.lights.new('sun', 'SUN')); COL.objects.link(sun); sun.data.energy = 1.35; sun.data.angle = math.radians(2.5); sun.data.color = (1.0, 0.62, 0.36)
 sun.rotation_euler = (math.radians(74), 0, math.radians(float(arg('--sunrot', '205'))))
 def keylight(name, loc, target, e, size=4.0, col=(1.0, 0.95, 0.85)):
     ld = bpy.data.lights.new(name, 'AREA'); ld.energy = e; ld.size = size; ld.color = col; o = bpy.data.objects.new(name, ld); COL.objects.link(o)
@@ -23,9 +23,9 @@ def SH(t0, t1, p0, p1, l0, l1, lens, fstop=2.8, shake=0.0, lens1=None, focus=Non
     return dict(t0=t0, t1=t1, p0=V(p0), p1=V(p1), l0=V(l0), l1=V(l1), lens=lens, lens1=lens1 or lens, fstop=fstop, shake=shake, focus=focus)
 SHOTS = [
     SH(1.5, 4.5, (9, -52, 27), (9, -45, 18), (9, -14, 5), (9, -14, 4), 24, 8),                                    # the stadium at dusk
-    SH(4.5, 7.0, (1.2, -12.6, 0.9), (6.5, -12.6, 1.0), (3.5, -9.0, 1.9), (8.5, -9.0, 1.9), 35, 2.4, 0.1),          # red's line, low dolly
+    SH(4.5, 7.0, (1.3, -13.4, 1.0), (5.6, -13.4, 1.1), (2.6, -9.0, 1.7), (4.4, -9.0, 1.75), 28, 2.8, 0.1),          # red's line, low dolly
     SH(7.0, 9.2, (12.9, -13.4, 1.2), (13.2, -12.9, 1.3), (14.5, -9.6, 2.4), (14.5, -9.6, 2.5), 35, 2.4, 0.1),       # the champion taunts
-    SH(9.2, 12.0, (14.9, -18.3, 0.9), (14.7, -19.0, 1.1), (14.5, -22.4, 2.6), (14.5, -22.4, 2.8), 19, 3.2, 0.1, 23),   # blue's right wing: the whale
+    SH(9.2, 12.0, (11.2, -18.6, 1.5), (11.6, -19.2, 1.7), (14.5, -22.6, 2.8), (14.5, -22.6, 3.0), 24, 3.2, 0.1, 28),   # blue's right wing: the whale
     SH(12.0, 13.6, (3.9, -18.8, 1.7), (3.7, -19.3, 1.8), (3.5, -22.6, 2.3), (3.5, -22.6, 2.35), 32, 2.8, 0.1),      # the viking and his wing
     SH(13.6, 15.0, (0.9, -16.0, 2.2), (1.2, -16.0, 2.3), (9.5, -16.0, 2.0), (9.5, -16.0, 2.0), 19, 5.6, 0.1),      # across the river: both lines; lightning
     SH(15.0, 16.4, (7.2, -21.5, 0.8), (7.0, -17.4, 0.9), (3.5, -21.8, 1.6), (3.6, -17.4, 1.6), 24, 4, 0.5),        # the charge
