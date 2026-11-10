@@ -397,7 +397,7 @@ for i, (uid, h, x, y) in enumerate([('giga', 3.1, 9.0, -26.3), ('triplet', 2.6, 
     fling(u, T_C + 0.02 * i, (x - CANDLE.x + 0.01 * (i - 4), y - CANDLE.y), up=rnd.uniform(8, 14), dist=rnd.uniform(8, 14), dur=1.5); REDS.append(u)
 # the GOD CANDLE
 candle = bpy.data.objects.new('candle', None); COL.objects.link(candle)
-cg = mat('candle', (0.1, 0.9, 0.2), 0.3, emit=(0.08, 1.0, 0.16), estr=14)
+cg = mat('candle', (0.1, 0.9, 0.2), 0.3, emit=(0.03, 1.0, 0.1), estr=3.2)
 box('cbody', (4.2, 4.2, 15), (0, 0, 7.5), cg, parent=candle); box('cwick', (0.5, 0.5, 28), (0, 0, 14), cg, parent=candle)
 cl = bpy.data.lights.new('candleL', 'POINT'); cl.color = (0.2, 1.0, 0.3); cl.shadow_soft_size = 4; clo = bpy.data.objects.new('candleL', cl); COL.objects.link(clo); clo.parent = candle; clo.location = (0, -6, 6)
 for t, z in ((18.8, 150.0), (20.7, 46.0), (T_C, 0.0), (23.4, 0.0), (24.3, -32.0)):
@@ -535,6 +535,12 @@ for i in range(520):
 sun = bpy.data.objects.new('sun', bpy.data.lights.new('sun', 'SUN')); COL.objects.link(sun); sun.data.energy = 3.2; sun.data.angle = math.radians(1.2); sun.data.color = (1.0, 0.93, 0.82)
 sun.rotation_euler = (math.radians(52), 0, math.radians(float(arg('--sunrot', '125'))))
 
+# soft key lights for the hero spots in the stands (the knight's second spot sits in shade)
+def keylight(name, loc, target, e, size=4.0, col=(1.0, 0.95, 0.85)):
+    ld = bpy.data.lights.new(name, 'AREA'); ld.energy = e; ld.size = size; ld.color = col; o = bpy.data.objects.new(name, ld); COL.objects.link(o)
+    o.location = loc; o.rotation_euler = (Vector(target) - Vector(loc)).to_track_quat('-Z', 'Y').to_euler(); return o
+keylight('key_kn1', kp1 + Vector((7.5, -3.0, 6.0)), kp1 + Vector((0, 0, 1.5)), 9000)
+keylight('key_gag', spot('E', G_ROW, G_A)[0] + Vector((-7.0, 2.5, 5.0)), spot('E', G_ROW, G_A)[0] + Vector((0, 0, 1.5)), 3500)
 # ================================================================ camera
 cam = bpy.data.objects.new('cam', bpy.data.cameras.new('cam')); COL.objects.link(cam); sc.camera = cam
 cam.data.sensor_width = 36; cam.data.dof.use_dof = True; cam.data.clip_end = 2000
@@ -544,7 +550,7 @@ def SH(t0, t1, p0, p1, l0, l1, lens, fstop=2.8, shake=0.0, lens1=None, focus=Non
     return dict(t0=t0, t1=t1, p0=V(p0), p1=V(p1), l0=V(l0), l1=V(l1), lens=lens, lens1=lens1 or lens, fstop=fstop, shake=shake, focus=focus)
 SHOTS = [
     SH(2.0, 6.0, (9, 9.5, 12.5), (9, 6.0, 10.6), (9, -18, 4.5), (9, -20, 4.0), 22, 8),                                   # behind the red king: the whole arena, 2-0
-    SH(6.0, 7.6, (12.3, -24.4, 6.6), (12.0, -24.9, 6.6), (9, -28.9, 4.95), (9, -28.9, 5.0), 62, 2.6, 0.15),             # the blue king, sweating it
+    SH(6.0, 7.6, (12.6, -24.0, 6.9), (12.3, -24.5, 6.9), (9, -28.9, 5.2), (9, -28.9, 5.25), 52, 2.6, 0.15),             # the blue king, sweating it
     SH(7.6, 9.6, (5.2, -8.2, 4.6), (5.6, -7.6, 4.7), (9, -3.05, 5.9), (9, -3.05, 6.0), 70, 2.8),                         # the red king, smug
     SH(9.6, 11.6, (10.0, -10.5, 4.5), (9.0, -9.5, 4.6), gi + V((0, 3, -1.5)), gi + V((0, 1, -1.2)), 38, 4),               # the stands and the giant
     SH(11.6, 13.6, gag + V((-6.4, 1.0, 0.6)), gag + V((-5.8, 0.6, 0.55)), gag + V((0, 0.2, -0.1)), gag + V((0, 0.1, -0.1)), 58, 2.4, 0.1),   # troll, popcat, lmao
@@ -563,7 +569,7 @@ SHOTS = [
     SH(36.2, 39.0, (8.3, -22.5, 1.4), (8.9, -12.5, 1.7), (14.5, -19.0, 2.5), (14.5, -10.0, 2.7), 21, 4, 0.35),            # the whale's run
     SH(39.0, 42.4, (10.4, -14.6, 1.5), (16.6, -13.4, 2.4), (14.5, -9.0, 3.0), (14.5, -7.2, 3.6), 28, 3.5, 0.2, 24),       # slow motion: the slam
     SH(42.4, 43.4, (9, -6.0, 8.4), (9, -6.8, 8.7), SB, SB, 40, 4),                                                        # 2-2
-    SH(43.4, 44.8, (12.2, -24.6, 6.6), (11.8, -25.0, 6.6), (9, -28.9, 5.0), (9, -28.9, 5.1), 66, 2.6, 0.12),              # the blue king: fist pump
+    SH(43.4, 44.8, (12.5, -24.2, 6.9), (12.1, -24.6, 6.9), (9, -28.9, 5.25), (9, -28.9, 5.3), 56, 2.6, 0.12),             # the blue king: fist pump
     SH(44.8, 46.2, (5.3, -8.1, 4.5), (5.7, -7.5, 4.6), (9, -3.05, 6.0), (9, -3.05, 6.0), 70, 2.8, 0.2),                    # the red king panics
     SH(46.2, 48.4, (9, -5.5, 30.0), (9, -4.2, 23.0), (9, -3.6, 0), (9, -3.0, 0), 30, 8, 0.6),                             # from above: the king tower
     SH(48.4, 50.4, (11.0, -12.5, 4.2), (10.0, -10.5, 4.6), gi + V((0, 3, -2)), gi + V((0, 1.5, -1.5)), 32, 4, 0.2),        # the stands erupt
