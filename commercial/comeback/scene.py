@@ -299,8 +299,8 @@ def fire_mat(name, c0, c1, c2, estr):
     nt.links.new(mu.outputs[0], rp.inputs['Fac']); nt.links.new(rp.outputs['Color'], b.inputs['Emission Color']); b.inputs['Emission Strength'].default_value = estr
     al = nt.nodes.new('ShaderNodeMath'); al.operation = 'MULTIPLY'; al.inputs[1].default_value = 3.2; al.use_clamp = True; nt.links.new(mu.outputs[0], al.inputs[0]); nt.links.new(al.outputs[0], b.inputs['Alpha'])
     return m
-FIRE = fire_mat('fire', (0.25, 0.01, 0.0), (1.0, 0.22, 0.02), (1.0, 0.8, 0.35), 22); FIREG = fire_mat('fireg', (0.4, 0.08, 0.0), (1.0, 0.5, 0.04), (1.0, 0.95, 0.6), 26)
-FIREGRN = fire_mat('firegrn', (0.0, 0.15, 0.01), (0.1, 0.9, 0.12), (0.75, 1.0, 0.7), 18)
+FIRE = fire_mat('fire', (0.2, 0.005, 0.0), (1.0, 0.16, 0.01), (1.0, 0.6, 0.12), 9); FIREG = fire_mat('fireg', (0.4, 0.06, 0.0), (1.0, 0.42, 0.02), (1.0, 0.85, 0.3), 11)
+FIREGRN = fire_mat('firegrn', (0.0, 0.12, 0.01), (0.05, 0.8, 0.08), (0.5, 1.0, 0.45), 8)
 def smoke_mat(name, col, dens=0.85):
     m = bpy.data.materials.new(name); m.use_nodes = True; nt = m.node_tree; b = nt.nodes['Principled BSDF']
     b.inputs['Base Color'].default_value = (*col, 1); b.inputs['Roughness'].default_value = 1.0
@@ -320,12 +320,12 @@ def explode(c, t, R=3.5, fire=FIRE, n_deb=44, seed=1, smoke=SMOKE, light=(1.0, 0
     for f, e in ((f0 - 1, 0), (f0 + 1, 45000 * R), (f0 + 5, 20000 * R), (f0 + 16, 0)): ld.energy = e; ld.keyframe_insert('energy', frame=f)
     for i in range(9):
         off = Vector((r_.uniform(-1, 1), r_.uniform(-1, 1), r_.uniform(0.2, 1.4))) * R * 0.45; rr = R * r_.uniform(0.45, 0.8)
-        o = ico('fire', 1.0, c + off, fire)
+        o = ico('fire', 1.0, c + off, fire); o.visible_shadow = False
         for f, s, dz in ((f0 - 1, 0.001, 0), (f0 + 3, rr, 0.3), (f0 + 10, rr * 1.25, 1.2), (f0 + 20, 0.001, 2.6)):
             o.scale = (s,) * 3; key(o, 'scale', f); o.location = c + off + Vector((0, 0, dz)); key(o, 'location', f)
     for i in range(11):
         off = Vector((r_.uniform(-1, 1), r_.uniform(-1, 1), r_.uniform(0.0, 1.2))) * R * 0.6; rr = R * r_.uniform(0.55, 0.95)
-        o = ico('smoke', 1.0, c + off, smoke if i % 3 else DUST)
+        o = ico('smoke', 1.0, c + off, smoke if i % 3 else DUST); o.visible_shadow = False
         drift = Vector((r_.uniform(-0.6, 0.6), r_.uniform(-0.6, 0.6), r_.uniform(5, 9)))
         for f, s, u_ in ((f0, 0.001, 0), (f0 + 8, rr, 0.08), (f0 + 36, rr * 1.3, 0.45), (f0 + 80, 0.001, 1.3)):
             o.scale = (s,) * 3; key(o, 'scale', f); o.location = c + off + drift * u_; key(o, 'location', f)
@@ -349,10 +349,10 @@ def rubble(c, f_on, seed=3, n=26, R=2.4):
 def plume(c, seed=5, f_on=1):
     r_ = random.Random(seed)
     for i in range(9):
-        o = ico('plume', 1.0, c, SMOKE if i % 4 else DUST); z0 = 1.0 + i * 2.2; rr = 0.9 + i * 0.3
+        o = ico('plume', 1.0, c, SMOKE if i % 4 else DUST); z0 = 1.0 + i * 2.2; rr = 0.9 + i * 0.26; o.visible_shadow = False; sg = -1.0 if Vector(c).x < 9 else 1.0
         if f_on > 1: o.scale = (0.001,) * 3; key(o, 'scale', f_on - 1)
         for f, u_ in ((f_on, 0.0), (LAST, 1.0)):
-            o.location = Vector(c) + Vector((0.5 * i + u_ * 3.0 + r_.uniform(-0.4, 0.4), 0.25 * i + r_.uniform(-0.4, 0.4), z0 + u_ * 7.0)); key(o, 'location', f)
+            o.location = Vector(c) + Vector((sg * (0.7 * i + u_ * 3.0) + r_.uniform(-0.4, 0.4), 0.25 * i + r_.uniform(-0.4, 0.4), z0 + u_ * 7.0)); key(o, 'location', f)
             o.scale = (rr * (1 + 0.5 * u_),) * 3; key(o, 'scale', f)
         linear(o)
         for fc in o.animation_data.action.fcurves:
@@ -544,13 +544,13 @@ def SH(t0, t1, p0, p1, l0, l1, lens, fstop=2.8, shake=0.0, lens1=None, focus=Non
     return dict(t0=t0, t1=t1, p0=V(p0), p1=V(p1), l0=V(l0), l1=V(l1), lens=lens, lens1=lens1 or lens, fstop=fstop, shake=shake, focus=focus)
 SHOTS = [
     SH(2.0, 6.0, (9, 9.5, 12.5), (9, 6.0, 10.6), (9, -18, 4.5), (9, -20, 4.0), 22, 8),                                   # behind the red king: the whole arena, 2-0
-    SH(6.0, 7.6, (12.3, -24.4, 6.9), (12.0, -24.9, 6.9), (9, -28.9, 5.45), (9, -28.9, 5.5), 80, 2.6, 0.15),             # the blue king, sweating it
+    SH(6.0, 7.6, (12.3, -24.4, 6.6), (12.0, -24.9, 6.6), (9, -28.9, 4.95), (9, -28.9, 5.0), 62, 2.6, 0.15),             # the blue king, sweating it
     SH(7.6, 9.6, (5.2, -8.2, 4.6), (5.6, -7.6, 4.7), (9, -3.05, 5.9), (9, -3.05, 6.0), 70, 2.8),                         # the red king, smug
     SH(9.6, 11.6, (10.0, -10.5, 4.5), (9.0, -9.5, 4.6), gi + V((0, 3, -1.5)), gi + V((0, 1, -1.2)), 38, 4),               # the stands and the giant
     SH(11.6, 13.6, gag + V((-6.4, 1.0, 0.6)), gag + V((-5.8, 0.6, 0.55)), gag + V((0, 0.2, -0.1)), gag + V((0, 0.1, -0.1)), 58, 2.4, 0.1),   # troll, popcat, lmao
     SH(13.6, 15.6, (22.4, -7.5, 3.2), (22.6, -5.5, 3.4), (28.5, -3.0, 6.2), (28.5, -1.5, 6.2), 35, 3.2, 0.1),             # red fans going wild
     SH(15.6, 19.0, kn0 + V((6.6, 1.6, 1.5)), kn0 + V((6.2, -0.4, 1.5)), kn0 + V((0, 0, -0.1)), kn0 + V((0, -1.6, -0.1)), 70, 2.2, 0.08),     # the knight gives up
-    SH(19.0, 20.7, (-2.5, -36.0, 1.2), (-2.6, -36.2, 1.25), (9, -23, 140), (9, -23, 50), 45, 8, 0.25, 32),                # the sky: GOD CANDLE
+    SH(19.0, 20.7, (-2.5, -36.0, 1.2), (-2.6, -36.2, 1.25), (9, -23, 139), (9, -23, 52), 120, 8, 0.2, 60),                # the sky: GOD CANDLE
     SH(20.7, 22.6, (-11.5, -12.5, 7.2), (-11.9, -12.3, 7.3), (9, -22, 3.0), (9, -22, 2.5), 28, 4, 0.5),                   # from the stands: it lands
     SH(22.6, 24.7, (4.2, -13.5, 1.1), (6.8, -6.0, 1.3), (3.6, -18.5, 1.6), (3.6, -10.0, 1.8), 28, 4, 0.3),                # the charge, from in front
     SH(24.7, 25.5, (10.5, -14.5, 2.2), (10.9, -14.9, 2.4), (3.5, -6.5, 3.0), (3.5, -6.5, 3.6), 35, 4, 1.0),               # the tower goes
@@ -563,7 +563,7 @@ SHOTS = [
     SH(36.2, 39.0, (8.3, -22.5, 1.4), (8.9, -12.5, 1.7), (14.5, -19.0, 2.5), (14.5, -10.0, 2.7), 21, 4, 0.35),            # the whale's run
     SH(39.0, 42.4, (10.4, -14.6, 1.5), (16.6, -13.4, 2.4), (14.5, -9.0, 3.0), (14.5, -7.2, 3.6), 28, 3.5, 0.2, 24),       # slow motion: the slam
     SH(42.4, 43.4, (9, -6.0, 8.4), (9, -6.8, 8.7), SB, SB, 40, 4),                                                        # 2-2
-    SH(43.4, 44.8, (12.2, -24.6, 6.9), (11.8, -25.0, 6.9), (9, -28.9, 5.5), (9, -28.9, 5.6), 85, 2.6, 0.12),              # the blue king: fist pump
+    SH(43.4, 44.8, (12.2, -24.6, 6.6), (11.8, -25.0, 6.6), (9, -28.9, 5.0), (9, -28.9, 5.1), 66, 2.6, 0.12),              # the blue king: fist pump
     SH(44.8, 46.2, (5.3, -8.1, 4.5), (5.7, -7.5, 4.6), (9, -3.05, 6.0), (9, -3.05, 6.0), 70, 2.8, 0.2),                    # the red king panics
     SH(46.2, 48.4, (9, -5.5, 30.0), (9, -4.2, 23.0), (9, -3.6, 0), (9, -3.0, 0), 30, 8, 0.6),                             # from above: the king tower
     SH(48.4, 50.4, (11.0, -12.5, 4.2), (10.0, -10.5, 4.6), gi + V((0, 3, -2)), gi + V((0, 1.5, -1.5)), 32, 4, 0.2),        # the stands erupt
