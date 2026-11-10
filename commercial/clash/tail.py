@@ -119,7 +119,7 @@ bl_ = bpy.data.lights.new('ballL', 'POINT'); bl_.color = (1.0, 0.5, 0.2); bl_.en
 for f_, e_ in ((F(T_FIRE) - 1, 0), (F(T_FIRE), 12000), (F(T_TOWER), 12000), (F(T_TOWER) + 1, 0)): bl_.energy = e_; bl_.keyframe_insert('energy', frame=f_); ball.scale = (0.001,) * 3; key(ball, 'scale', F(T_FIRE) - 1); ball.scale = (1, 1, 1); key(ball, 'scale', F(T_FIRE))
 nb = F(T_TOWER) - F(T_FIRE)
 for i in range(nb + 1):
-    u_ = i / nb; ball.location = MUZ.lerp(TGT, u_) + Vector((0, 0, 9.0 * 4 * u_ * (1 - u_))); key(ball, 'location', F(T_FIRE) + i)
+    u_ = i / nb; ball.location = MUZ.lerp(TGT, u_) + Vector((0, 0, 4.0 * 4 * u_ * (1 - u_))); key(ball, 'location', F(T_FIRE) + i)
 ball.scale = (0.001,) * 3; key(ball, 'scale', F(T_TOWER) + 1); const(ball); linear(ball)
 explode(MUZ + Vector((0, 0.6, 0)), T_FIRE, 1.1, FIRE, 0, 34, DUST, light=(1.0, 0.7, 0.3)); sparks(MUZ + Vector((0, 0.8, 0)), T_FIRE, 24, 35, 10.0)
 kill_tower('rR', T_TOWER, 61, [CREW['rR']])
