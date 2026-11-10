@@ -13,6 +13,12 @@ cd $HERE/../degens; mkdir -p $W/frames
 [ -f $W/scene.blend ] || { rm -f $W/part_*.txt.done; $BL -b -P $HERE/director.py -- --out $W/scene.blend --res 1080 > $W/build.log 2>&1; }
 L=$W/part_$1_$2.txt; seq $1 $2 | tr '\n' ' ' > $L
 [ -f $L.done ] && [ $W/scene.blend -nt $L.done ] && rm -f $L.done
+# KEEP="1-330 961-1080": frames already in $W/frames inside these ranges are taken as finished (a scene change that left them alone)
+if [ -n "$KEEP" ] && [ ! -f $L.done ]; then
+  for f in $(seq $1 $2); do for r in $KEEP; do
+    [ $f -ge ${r%-*} ] && [ $f -le ${r#*-} ] && [ -s $W/frames/$(printf 'f_%04d.png' $f) ] && printf '%s ' $f >> $L.done
+  done; done
+fi
 rc=0; $BL -b $W/scene.blend -P render_list.py -- $L >> $W/render.log 2>&1 || rc=$?
 if [ $rc = 3 ]; then echo "RELAUNCH: time budget used, $(grep -o 'BUDGET-STOP [0-9]*' $W/render.log | tail -1) frames left"; exit 3; fi
 [ $rc = 0 ] || { echo "render failed ($rc), see $W/render.log"; exit $rc; }

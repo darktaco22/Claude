@@ -32,6 +32,22 @@ STAND = 21.8
 HORN = 26.0
 VICTORY = (28.0, 32.0)   # UI over the blurred arena
 MORNING = 32.0
+# Gameplay cutaways: where each picked card goes (kind, the story time the cutaway comes in at, frames). They are extra
+# frames after the film (scene time >= END), so the film's own frames stay as they are; edit.py splices them in.
+INS = [('giga', 5.0, 45), ('whale', 7.0, 45), ('bonk', 7.66, 17), ('cate', 8.33, 17), ('walter', 9.0, 17)]
+INS_T = [END + sum(n for _, _, n in INS[:i]) / FPS for i in range(len(INS))]
+NFX = NF + sum(n for _, _, n in INS)
+I_LAND = V(1.9, -5.4); I_GOAT = V(2.25, -2.7); I_QUICK = V(1.4, -6.4)
+
+
+def ins_at(t):
+    """(index, kind, seconds into it) when scene time t is inside a cutaway."""
+    j = int(round(t * FPS)) - NF
+    if j < 0: return None
+    for i, (k, at, n) in enumerate(INS):
+        if j < n: return i, k, j / FPS
+        j -= n
+    return None
 
 # tunnel line-up (x offset from TX, y); heading pi = facing the gate (+Y)
 LINE = dict(giga=(-0.85, 5.4), whale=(0.1, 8.3), bonk=(1.2, 4.4), cate=(-1.3, 2.3), walter=(1.05, 1.2))
@@ -109,6 +125,8 @@ def cast():
     C['goat'] = game.Unit('goat', 'goat')
     C['a_giga'] = game.Unit('giga', 'a_giga'); C['a_whale'] = game.Unit('whale', 'a_whale')
     for i in range(4): C[f'a_coin{i}'] = game.Unit('useless', f'a_coin{i}')
+    for k, _, _ in INS: C['i_' + k] = game.Unit(k, 'i_' + k)
+    C['i_goat'] = game.Unit('goat', 'i_goat')
     return C
 
 
@@ -250,17 +268,17 @@ def act(C, K):
         game.layer(C[f't_coin{i}'], NF, tun_pose)
 
 
-def puffs(K):
+def puffs(K, extra=()):
     """Snow kicked up by every landing, blow and footfall: small clumps on ballistic arcs."""
     bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=2, radius=1.0); src = bpy.context.active_object; me = src.data
     for p in me.polygons: p.use_smooth = True
     me.materials.append(sets.flat('puff', (0.93, 0.96, 1.0), 0.6)); bpy.data.objects.remove(src)
     rng = random.Random(9); sc = bpy.context.scene
-    def burst(t0, p, n, power, r):
+    def burst(t0, p, n, power, r, ring=0.0):
         for _ in range(n):
             o = bpy.data.objects.new('puff', me); sc.collection.objects.link(o); o.visible_shadow = False
             a = rng.uniform(0, 6.283); vr = rng.uniform(0.25, 1.0) * power; vz = rng.uniform(0.7, 2.3) * power
-            life = rng.uniform(0.4, 0.9); rr = r * rng.uniform(0.3, 1.3); f0 = F(t0); off = rng.uniform(0, 0.12)
+            life = rng.uniform(0.4, 0.9); rr = r * rng.uniform(0.3, 1.3); f0 = F(t0); off = ring + rng.uniform(0, 0.12)
             for i in range(3): K.add(o, 'scale', i, f0 - 1, 0.0)
             for j in range(int(life * FPS) + 1):
                 tt = j / FPS; s = rr * (1 - tt / life) ** 0.6
@@ -271,7 +289,7 @@ def puffs(K):
     ctr = sum(COINS_A, V(0, 0)) / 4; burst(IMPACT, ctr, 60, 1.5, 0.045)
     for i in (1, 2, 3): burst(IMPACT + 0.55, SIB_FLY[i], 18, 0.8, 0.034)
     for tt, p in ((IMPACT + 0.4, HERO_KNOCK), (23.1, HIT2), (25.2, HIT3)): burst(tt, p, 18, 0.75, 0.032)
-    dg = (GOAT_STOP - HIT3).normalized(); burst(FALL1, HIT3 - dg * 0.42, 44, 0.6, 0.03)
+    dg = (GOAT_STOP - HIT3).normalized(); burst(FALL1, HIT3 - dg * 0.42, 44, 0.6, 0.02, ring=0.36)      # thrown out from under its rim, not through its face
     t = CHARGE + 0.1
     while t < IMPACT: burst(t, GOAT_PATH[-1][1].lerp(GOAT_STOP, ease(ramp(t, CHARGE, IMPACT + 0.1))), 7, 0.55, 0.03); t += 0.12
     front = GOAT_STOP + V(0.25, -0.95)
@@ -279,6 +297,37 @@ def puffs(K):
         t = a + 0.08
         while t < b: burst(t, pa.lerp(pb, ease(ramp(t, a, b))), 4, 0.4, 0.022); t += 0.1
     for tt in (22.62, 24.72): burst(tt, front, 16, 0.9, 0.034)
+    for b in extra: burst(*b)
+
+
+def cutaways(C, K):
+    """The gameplay cutaways: the card drops into the match (and the two stars hit THE GOAT). Returns their snow bursts."""
+    bursts = []
+    for k in ('a_giga', 'a_whale', 'goat'):
+        K.add(C[k].mesh, 'hide_render', 0, 1, False); K.add(C[k].mesh, 'hide_render', 0, NF + 1, True)
+    for i in range(4): K.add(C[f'a_coin{i}'].mesh, 'hide_render', 0, NF + 1, True)
+    gsch = [(0, 'idle', 1.0, 60)]
+    adv = (I_GOAT - I_LAND).normalized() * 1.0
+    for i, (k, at, n) in enumerate(INS):
+        s0 = INS_T[i]; u = C['i_' + k]; big = n > 30
+        land = I_LAND if big else I_QUICK; face = heading(I_GOAT - I_LAND) if big else math.pi
+        sch = [(0, 'idle', 1.0, 60), (s0 + 0.22, 'ready', 1.4, 1, 0.04)]
+        if big:
+            sch += [(s0 + 0.42, 'run', 1.3, 3, 0.1), (s0 + 0.7, 'attack1', 1.0, 1, 0.08)]
+            gsch += [(s0 - 0.05, 'idle', 1.0, 10, 0.0), (s0 + 0.95, 'hit', 1.0, 1, 0.04)]
+            bursts.append((s0 + 0.95, I_GOAT, 14, 0.8, 0.034))
+        u.play(sch); bursts.append((s0 + 0.23, land, 22 if big else 16, 0.9, 0.036))
+        for f in range(1, NFX + 1):
+            t = T(f); on = F(s0) <= f < F(s0) + n
+            K.add(u.mesh, 'hide_render', 0, f, not on)
+            if on or f == 1:
+                p = land + adv * ease(ramp(t, s0 + 0.42, s0 + 0.72)) if big else land
+                key_ctrl(K, u, f, p, face, 6.0 * (1 - ramp(t, s0, s0 + 0.22)) ** 2)
+    g = C['i_goat']; g.play(gsch)
+    for f in range(1, NFX + 1):
+        ia = ins_at(T(f)); K.add(g.mesh, 'hide_render', 0, f, not (ia and INS[ia[0]][2] > 30))
+    key_ctrl(K, g, 1, I_GOAT, heading(I_LAND - I_GOAT))
+    return bursts
 
 
 POS = {}
@@ -304,7 +353,15 @@ def camera(cam, C, f, K, cache):
     hero_t = cache['t_coin0'][f]; hero_a = cache['a_coin0'][f]; goat = cache['goat'][f]
     dg = (GOAT_STOP - HIT3).to_3d().normalized()
     def rot(v, a): return V(v.x * math.cos(a) - v.y * math.sin(a), v.x * math.sin(a) + v.y * math.cos(a), 0)
-    if t < 3.0:                       # behind the line-up: silhouettes against the gate; slow push in
+    ia = ins_at(t)
+    if ia:                            # gameplay cutaway: the picked card lands in the match (framed above the hand UI)
+        i, k, u = ia; ku = ease(u / (INS[i][2] / FPS)); la = I_LAND.to_3d(); qq = I_QUICK.to_3d()
+        if k == 'giga': c = V(3.45 - 0.25 * ku, -8.1 + 0.3 * ku, 0.5); r = shot(c, V(2.1, -3.9, 0.55), 46, 4.0, focus=(c - la).length)      # behind him (clear of the snow drifts at x > 3.8)
+        elif k == 'whale': c = I_GOAT.to_3d() + V(-1.3 + 0.15 * ku, 2.7, 1.0); r = shot(c, la + V(0.1, 0.6, 0.55), 48, 4.0, focus=(c - la).length)      # over THE GOAT's shoulder
+        else:
+            c = qq + dict(bonk=V(0.5, 2.9, 0.35), cate=V(2.6, 1.5, 0.45), walter=V(-1.8, 2.4, 1.2))[k]
+            r = shot(c, qq + V(0, 0, 0.35), 42, 2.8, focus=(c - qq).length)
+    elif t < 3.0:                     # behind the line-up: silhouettes against the gate; slow push in
         k = ease(ramp(t, 0, 3.0)); r = shot(V(TX - 0.2, -9.6 + 1.6 * k, 0.55 + 0.1 * k), V(TX + 0.4, 3.0, 1.3), 34, 4.0, focus=7.5)
     elif t < 4.0:                     # GIGA is chosen: over the coins' heads, the light on him
         g_ = cache['t_giga'][f]; c = V(TX + 0.35, -4.7, 1.3); r = shot(c, g_ + V(0, 0, 0.25), 24, 2.8, focus=(c - g_).length)
@@ -390,9 +447,9 @@ def lights(S, Ar, C, K, cache):
     rng = random.Random(5)
     bm = S['beam_mat'].node_tree.nodes['strength'].inputs[1]
     blaze = S['blaze_mat'].node_tree.nodes['Principled BSDF'].inputs
-    for f in range(1, NF + 1):
+    for f in range(1, NFX + 1):
         t = T(f)
-        in_arena = (ARENA[0] <= t < CHOSEN) or (DEPLOY <= t < MORNING)
+        in_arena = (ARENA[0] <= t < CHOSEN) or (DEPLOY <= t < MORNING) or t >= END
         # gate light: gold by day, cold at night, gold again in the morning
         night = ease(ramp(t, NIGHT, NIGHT + 1.6)) * (1 - (t >= MORNING))
         gold, cold = Vector((1.0, 0.84, 0.6)), Vector((0.45, 0.6, 1.0))
@@ -457,6 +514,10 @@ def overlay_events(cam, C):
     for (tt, who) in ((22.5, 'goat'), (24.55, 'goat')):
         f = F(tt); p = C['goat'].ctrl.matrix_world.translation + V(0, 0, C['goat'].height * 0.85)
         ev.append(dict(kind='dmg', t=tt, text='-56', at=scr(p, f)))
+    for i, (k, at, n) in enumerate(INS):
+        if n > 30:
+            g = C['i_goat']; p = g.ctrl.matrix_world.translation + V(0, 0, g.height * 0.85)
+            ev.append(dict(kind='idmg', ins=i, u=0.97, text=dict(giga='-212', whale='-340')[k], at=scr(p, F(INS_T[i] + 0.97))))
     return ev
 
 
@@ -468,7 +529,7 @@ def main():
     S = sets.tunnel(); Ar = sets.arena()
     C = cast()
     K = rigctl.Keys()
-    act(C, K); puffs(K); K.flush()
+    act(C, K); puffs(K, cutaways(C, K)); K.flush()
     for u in C.values():               # hide toggles must not interpolate
         ad = u.mesh.animation_data
         if ad and ad.action:
@@ -476,24 +537,25 @@ def main():
                 for kp in fc.keyframe_points: kp.interpolation = 'CONSTANT'
     sc = bpy.context.scene
     cache = {k: {} for k in ('t_coin0', 'a_coin0', 'goat', 't_giga', 't_whale', 't_bonk', 't_cate', 't_walter', 'a_giga')}
-    for f in range(1, NF + 1):
+    for f in range(1, NFX + 1):
         sc.frame_set(f)
         for k in cache: cache[k][f] = C[k].ctrl.matrix_world.translation.copy() + V(0, 0, C[k].height * 0.45)
     cam = make_camera(); K2 = rigctl.Keys()
-    for f in range(1, NF + 1): camera(cam, C, f, K2, cache)
+    for f in range(1, NFX + 1): camera(cam, C, f, K2, cache)
     L = lights(S, Ar, C, K2, cache)
     K2.flush()
-    cut_frames = {F(c) for c in CUTS}
+    cut_frames = {F(c) for c in CUTS} | {F(END)} | {F(x) for x in INS_T}; sc.frame_end = NFX
     for idb in (cam, cam.data):
         for fc in idb.animation_data.action.fcurves:
             for kp in fc.keyframe_points: kp.interpolation = 'CONSTANT' if int(round(kp.co.x)) + 1 in cut_frames else 'LINEAR'
     ev = overlay_events(cam, C)
     json.dump(dict(fps=FPS, end=END, cuts=CUTS, picks=PICKS, night=NIGHT, arena=ARENA, chosen=CHOSEN, deploy=DEPLOY,
-                   charge=CHARGE, impact=IMPACT, stand=STAND, horn=HORN, victory=VICTORY, morning=MORNING, events=ev),
+                   charge=CHARGE, impact=IMPACT, stand=STAND, horn=HORN, victory=VICTORY, morning=MORNING, events=ev,
+                   inserts=[dict(kind=k, at=at, n=n) for k, at, n in INS]),
               open(os.path.join(os.environ['W'], 'timeline.json'), 'w'), indent=1)
     sc.frame_set(1)
     bpy.ops.wm.save_as_mainfile(filepath=arg('--out'), compress=False)
-    print('SAVED', arg('--out'), NF, 'frames')
+    print('SAVED', arg('--out'), NFX, 'frames')
 
 
 if __name__ == '__main__':

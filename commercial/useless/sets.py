@@ -255,7 +255,7 @@ def arena():
     for poly in cyl.data.polygons:
         for li in poly.loop_indices:
             v = cyl.data.vertices[cyl.data.loops[li].vertex_index].co
-            ang = math.atan2(v.y, v.x); u = (ang / (2 * math.pi)) % 1.0 * 2.0      # the painting twice around
+            ang = math.atan2(v.y, v.x); u = (1.0 - (ang / (2 * math.pi)) % 1.0) * 2.0      # the painting twice around; u runs clockwise so it reads true from inside
             uv.data[li].uv = (u, min(0.999, 0.1 + 1.25 * (v.z + 22) / 44))
     # fix the seam: polygons spanning the wrap get u + 2
     for poly in cyl.data.polygons:
