@@ -566,6 +566,7 @@ SHOTS = [
 
 import mathutils
 nz = mathutils.noise
+PREV_ROT = None
 for f in range(1, LAST + 1):
     t = (f - 1) / FPS; s = next((s for s in SHOTS if s['t0'] <= t < s['t1']), SHOTS[0] if t < 2 else SHOTS[-1])
     u = ease((t - s['t0']) / (s['t1'] - s['t0'])); p = s['p0'].lerp(s['p1'], u); l = s['l0'].lerp(s['l1'], u)
@@ -573,7 +574,7 @@ for f in range(1, LAST + 1):
     if sh:
         n1 = nz.noise_vector(V((t * 2.3, s['t0'], 0.0))); n2 = nz.noise_vector(V((t * 9.0, s['t0'] + 7, 3.0)))
         l = l + (n1 * 0.10 + n2 * 0.035) * sh * (p - l).length * 0.12; p = p + n1 * 0.04 * sh
-    d = l - p; rot = d.to_track_quat('-Z', 'Y').to_euler()
+    d = l - p; q_ = d.to_track_quat('-Z', 'Y'); rot = q_.to_euler('XYZ', PREV_ROT) if PREV_ROT else q_.to_euler(); PREV_ROT = rot.copy()      # continuous angles: no wrap for the motion blur to smear
     cam.location = p; cam.rotation_euler = rot; cam.data.lens = lerp(s['lens'], s['lens1'], u); cam.data.dof.focus_distance = d.length; cam.data.dof.aperture_fstop = s['fstop']
     cam.keyframe_insert('location', frame=f); cam.keyframe_insert('rotation_euler', frame=f); cam.data.keyframe_insert('lens', frame=f)
     cam.data.keyframe_insert('dof.focus_distance', frame=f); cam.data.keyframe_insert('dof.aperture_fstop', frame=f)
