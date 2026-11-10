@@ -27,7 +27,7 @@ def sparks(c, t, n=16, seed=1, speed=7.0):
         for k_ in range(0, 13, 2):
             tt = k_ / FPS; o.location = c + v * tt + Vector((0, 0, -0.5 * 14 * tt * tt)); key(o, 'location', f0 + k_)
         o.scale = (0.001,) * 3; key(o, 'scale', f0 + 13); const(o)
-def dust(c, t, R=1.6, seed=2, n=6):
+def dust(c, t, R=1.0, seed=2, n=5):
     r_ = random.Random(seed); f0 = F(t); c = Vector(c)
     for i in range(n):
         off = Vector((r_.uniform(-1, 1), r_.uniform(-1, 1), r_.uniform(0.1, 0.5))) * R * 0.7; rr = R * r_.uniform(0.5, 0.9)
@@ -62,9 +62,9 @@ def mid(a, b_, z=1.8): return Vector(((a['pos'][0] + b_['pos'][0]) / 2, (a['pos'
 def ko(u, t, away, **kw):     # fights until t, then is sent flying
     fight(u, u['t_arr'], t, 1.1, sum(map(ord, u['id'])) % 3); fling(u, t, away, **kw)
 # --- the left bridge
-ko(R['zcat'], 17.5, (-1.0, 0.8), up=9, dist=9, dur=1.3); sparks(mid(B['bonk'], R['zcat']), 17.5, 18, 3); dust(mid(B['bonk'], R['zcat'], 0.3), 17.5, 1.4, 3)
+ko(R['zcat'], 17.5, (-1.0, 0.8), up=9, dist=9, dur=1.3); sparks(mid(B['bonk'], R['zcat']), 17.5, 18, 3); dust(mid(B['bonk'], R['zcat'], 0.3), 17.5, 0.9, 3)
 for i, t in enumerate((16.7, 17.6, 18.5, 19.4, 20.2)): sparks(mid(B['swordcat'], R['baton'], 2.0), t, 12, 10 + i, 5.0)
-ko(R['troll'], 19.3, (0.3, 1.0), up=11, dist=11, dur=1.4); sparks(mid(B['floki'], R['troll']), 19.3, 20, 4); dust(mid(B['floki'], R['troll'], 0.3), 19.3, 1.6, 4)
+ko(R['troll'], 19.3, (0.3, 1.0), up=11, dist=11, dur=1.4); sparks(mid(B['floki'], R['troll']), 19.3, 20, 4); dust(mid(B['floki'], R['troll'], 0.3), 19.3, 1.0, 4)
 ko(R['baton'], 20.9, (1.0, 0.7), up=10, dist=10, dur=1.3); sparks(mid(B['swordcat'], R['baton']), 20.9, 20, 5)
 fight(B['floki'], B['floki']['t_arr'], 18.2, 1.1); clip(B['floki'], 'hit', F(18.2), F(18.9), 1.0); fight(B['floki'], 18.9, 19.6, 1.2); clip(B['floki'], 'win', F(19.6), F(T_TOWER + 2.2))
 fight(B['bonk'], B['bonk']['t_arr'], 17.9, 1.2, 1); clip(B['bonk'], 'win', F(17.9), F(T_TOWER + 2.2))
@@ -87,7 +87,7 @@ WH, GG = B['whale'], R['giga']
 fight(GG, GG['t_arr'], T_SLAM, 1.0)
 fight(WH, WH['t_arr'], 17.7, 0.9); clip(WH, 'hit', F(17.7), F(18.5), 0.9); fight(WH, 18.5, 19.8, 0.9); clip(WH, 'hit', F(19.8), F(20.6), 0.9); clip(WH, 'ready', F(20.6), F(22.2))
 for t, back in ((17.7, 0.7), (19.8, 0.8)):      # the champion's punches drive the whale back
-    key(WH['root'], 'location', F(t)); WH['root'].location.y -= back; key(WH['root'], 'location', F(t) + 7); sparks(mid(WH, GG, 2.6), t, 14, int(t * 10), 6.0); dust(Vector((14.5, WH['root'].location.y, 0.3)), t, 1.3, int(t))
+    key(WH['root'], 'location', F(t)); WH['root'].location.y -= back; key(WH['root'], 'location', F(t) + 7); sparks(mid(WH, GG, 2.6), t, 14, int(t * 10), 6.0); dust(Vector((14.5, WH['root'].location.y, 0.3)), t, 0.9, int(t))
 bolt(pp, Vector((GG['pos'][0], GG['pos'][1], 2.4)), 19.95, 20.3); explode(Vector((GG['pos'][0], GG['pos'][1], 2.2)), 20.3, 1.2, FIREGRN, 0, 52, SMOKEG, light=(0.3, 1.0, 0.3))
 bpy.context.view_layer.update()
 aw = WH['clips']['attack1']; slam_len = (aw.frame_range[1] - aw.frame_range[0]) * 0.8 / 0.45; hit_frac = (UJ['whale']['clips']['attack1']['hit'] or 0.4) / UJ['whale']['clips']['attack1']['dur']
@@ -95,7 +95,7 @@ f_sl = F(T_SLAM) - int(slam_len * hit_frac); clip(WH, 'attack1', f_sl, f_sl + in
 gy = GG['pos'][1]; sw2 = bpy.data.objects.new('shock2', None); COL.objects.link(sw2); sw2.location = (14.5, gy - 0.8, 0.25)
 bpy.ops.mesh.primitive_torus_add(major_radius=1.0, minor_radius=0.07, major_segments=64, location=(0, 0, 0)); tor = bpy.context.object; tor.data.materials.append(mat('shock2m', (0.4, 0.7, 1), 0.3, emit=(0.4, 0.7, 1.0), estr=30)); tor.parent = sw2
 for f, s in ((F(T_SLAM) - 1, 0.001), (F(T_SLAM), 1.0), (F(T_SLAM) + 16, 16.0), (F(T_SLAM) + 17, 0.001)): sw2.scale = (s, s, min(s, 1.0)); key(sw2, 'scale', f)
-linear(sw2); dust(Vector((14.5, gy - 0.8, 0.3)), T_SLAM, 3.0, 9, 10); sparks(Vector((14.5, gy - 0.5, 2.2)), T_SLAM, 30, 77, 9.0)
+linear(sw2); dust(Vector((14.5, gy - 0.8, 0.3)), T_SLAM, 1.7, 9, 7); sparks(Vector((14.5, gy - 0.5, 2.2)), T_SLAM, 30, 77, 9.0)
 # the champion leaves the bridge and arrives in his own tower
 r = GG['root']; sc.frame_set(F(T_SLAM)); p0 = r.matrix_world.translation.copy(); p1 = Vector((14.5, -6.6, 3.6)); n = F(T_TOWER) - F(T_SLAM)
 for i in range(n + 1):
