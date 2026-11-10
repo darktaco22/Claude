@@ -357,7 +357,7 @@ def camera(cam, C, f, K, cache):
     if ia:                            # gameplay cutaway: the picked card lands in the match (framed above the hand UI)
         i, k, u = ia; ku = ease(u / (INS[i][2] / FPS)); la = I_LAND.to_3d(); qq = I_QUICK.to_3d()
         if k == 'giga': c = V(3.45 - 0.25 * ku, -8.1 + 0.3 * ku, 0.5); r = shot(c, V(2.1, -3.9, 0.55), 46, 4.0, focus=(c - la).length)      # behind him (clear of the snow drifts at x > 3.8)
-        elif k == 'whale': c = I_GOAT.to_3d() + V(-1.1 + 0.15 * ku, 2.1, 0.95); r = shot(c, la + V(0.1, 0.6, 0.5), 46, 4.0, focus=(c - la).length)      # over THE GOAT's shoulder
+        elif k == 'whale': c = I_GOAT.to_3d() + V(-1.3 + 0.15 * ku, 2.7, 1.0); r = shot(c, la + V(0.1, 0.6, 0.55), 48, 4.0, focus=(c - la).length)      # over THE GOAT's shoulder
         else:
             c = qq + dict(bonk=V(0.5, 2.9, 0.35), cate=V(2.6, 1.5, 0.45), walter=V(-1.8, 2.4, 1.2))[k]
             r = shot(c, qq + V(0, 0, 0.35), 42, 2.8, focus=(c - qq).length)
