@@ -1,0 +1,582 @@
+"""MEME ROYALE: "IT'S NOT OVER UNTIL IT'S OVER" - a 60 s cinematic stadium commercial built from the game's own models.
+
+blender -b --factory-startup -P scene.py -- --out scene.blend
+
+The game's arena (exported from the live game) sits in a packed stadium; the crowd is the game's whole roster.
+Blue (NEET, the game's king) is down 0-2. A GOD CANDLE drops, the push comes back, 3-2.
+Coordinates: court X 0..18, Y 0 (red end) .. -32 (blue end). Unit models face -Y at rotation 0.
+Deterministic (seeded): every worker builds the same scene. 24 fps; frames 1..48 and 1393..1488 are 2D (finish.py).
+"""
+import bpy, math, json, os, sys, random
+from mathutils import Vector, Euler
+
+A = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
+def arg(k, d=None): return A[A.index(k) + 1] if k in A else d
+OUT = arg('--out', 'scene.blend')
+HERE = os.path.dirname(os.path.abspath(__file__)); M = os.path.join(HERE, 'models'); TEX = os.path.join(HERE, 'tex')
+FPS = 24; LAST = 1392
+F = lambda t: int(round(t * FPS)) + 1
+rnd = random.Random(7)
+
+bpy.ops.wm.read_factory_settings(use_empty=True)
+sc = bpy.context.scene
+sc.render.fps = FPS; sc.frame_start = 1; sc.frame_end = LAST
+sc.render.resolution_x, sc.render.resolution_y = 1280, 720
+sc.render.engine = 'CYCLES'; sc.cycles.device = 'CPU'; sc.cycles.samples = int(arg('--samples', '12'))
+sc.cycles.use_denoising = True; sc.cycles.denoiser = 'OPENIMAGEDENOISE'
+sc.cycles.max_bounces = 5; sc.cycles.diffuse_bounces = 2; sc.cycles.glossy_bounces = 2; sc.cycles.transmission_bounces = 2
+sc.cycles.transparent_max_bounces = 16
+sc.cycles.use_adaptive_sampling = True; sc.cycles.adaptive_threshold = 0.04
+sc.render.use_motion_blur = True; sc.render.motion_blur_shutter = 0.35; sc.cycles.motion_blur_position = 'START'
+sc.view_settings.view_transform = 'AgX'; sc.view_settings.look = 'AgX - Punchy'
+sc.render.image_settings.file_format = 'PNG'; sc.render.image_settings.color_depth = '8'
+COL = sc.collection
+
+# ================================================================ helpers
+def mat(name, color, rough=0.6, emit=None, estr=0.0, metal=0.0):
+    m = bpy.data.materials.new(name); m.use_nodes = True; b = m.node_tree.nodes['Principled BSDF']
+    b.inputs['Base Color'].default_value = (*color, 1); b.inputs['Roughness'].default_value = rough; b.inputs['Metallic'].default_value = metal
+    if emit: b.inputs['Emission Color'].default_value = (*emit, 1); b.inputs['Emission Strength'].default_value = estr
+    return m
+def texmat(name, fn, scale=1.0, rough=0.8, tint=(1, 1, 1), emit=0.0, alpha=False, box=True):
+    m = bpy.data.materials.new(name); m.use_nodes = True; nt = m.node_tree; b = nt.nodes['Principled BSDF']
+    ti = nt.nodes.new('ShaderNodeTexImage'); ti.image = bpy.data.images.load(os.path.join(TEX, fn) if not os.path.isabs(fn) else fn)
+    if box:
+        tc = nt.nodes.new('ShaderNodeTexCoord'); mp = nt.nodes.new('ShaderNodeMapping'); mp.inputs['Scale'].default_value = (scale,) * 3
+        nt.links.new(tc.outputs['Object'], mp.inputs['Vector']); nt.links.new(mp.outputs['Vector'], ti.inputs['Vector']); ti.projection = 'BOX'; ti.projection_blend = 0.2
+    mx = nt.nodes.new('ShaderNodeMixRGB'); mx.blend_type = 'MULTIPLY'; mx.inputs[0].default_value = 1.0; mx.inputs[2].default_value = (*tint, 1)
+    nt.links.new(ti.outputs['Color'], mx.inputs[1]); nt.links.new(mx.outputs['Color'], b.inputs['Base Color']); b.inputs['Roughness'].default_value = rough
+    bp = nt.nodes.new('ShaderNodeBump'); bp.inputs['Strength'].default_value = 0.35; nt.links.new(ti.outputs['Color'], bp.inputs['Height']); nt.links.new(bp.outputs['Normal'], b.inputs['Normal'])
+    if emit: nt.links.new(ti.outputs['Color'], b.inputs['Emission Color']); b.inputs['Emission Strength'].default_value = emit
+    if alpha: nt.links.new(ti.outputs['Alpha'], b.inputs['Alpha'])
+    return m
+def box(name, size, loc, m, rot=(0, 0, 0), parent=None):
+    bpy.ops.mesh.primitive_cube_add(size=1, location=loc, rotation=rot); o = bpy.context.object; o.name = name; o.scale = size
+    bpy.ops.object.transform_apply(scale=True); o.data.materials.append(m)
+    if parent: o.parent = parent
+    return o
+def plane(name, w, h, loc, rot, m):
+    bpy.ops.mesh.primitive_plane_add(size=1, location=loc, rotation=rot); o = bpy.context.object; o.name = name; o.scale = (w, h, 1)
+    bpy.ops.object.transform_apply(scale=True); o.data.materials.append(m); return o
+def sphere(name, r, loc, m, seg=16):
+    bpy.ops.mesh.primitive_uv_sphere_add(radius=r, location=loc, segments=seg, ring_count=seg // 2); o = bpy.context.object; o.name = name
+    for p in o.data.polygons: p.use_smooth = True
+    o.data.materials.append(m); return o
+def ico(name, r, loc, m, sub=2):
+    bpy.ops.mesh.primitive_ico_sphere_add(radius=r, location=loc, subdivisions=sub); o = bpy.context.object; o.name = name
+    for p in o.data.polygons: p.use_smooth = True
+    o.data.materials.append(m); return o
+def key(o, path, f, v=None, idx=-1):
+    if v is not None:
+        if idx >= 0: getattr(o, path)[idx] = v
+        else: setattr(o, path, v)
+    o.keyframe_insert(path, frame=f, index=idx)
+def const(o, paths=('scale',)):
+    if o.animation_data and o.animation_data.action:
+        for fc in o.animation_data.action.fcurves:
+            if fc.data_path in paths:
+                for k in fc.keyframe_points: k.interpolation = 'CONSTANT'
+def linear(o):
+    if o.animation_data and o.animation_data.action:
+        for fc in o.animation_data.action.fcurves:
+            for k in fc.keyframe_points:
+                if k.interpolation != 'CONSTANT': k.interpolation = 'LINEAR'
+def show(o, f_on, f_off=None):
+    """Visible from f_on (to f_off), by keyed scale."""
+    s = o.scale.copy()
+    ks = [(f_on - 1, 0), (f_on, 1)] + ([(f_off, 1), (f_off + 1, 0)] if f_off else [])
+    for f, v in ks:
+        o.scale = s * (1.0 if v else 0.0001); o.keyframe_insert('scale', frame=f)
+    const(o); o.scale = s
+def ease(u): u = max(0.0, min(1.0, u)); return u * u * (3 - 2 * u)
+def lerp(a, b, u): return a + (b - a) * u
+def heading(dx, dy): return math.atan2(dx, -dy)
+def import_glb(fn):
+    before = set(bpy.data.objects); ab = set(bpy.data.actions)
+    bpy.ops.import_scene.gltf(filepath=os.path.join(M, fn))
+    new = [o for o in bpy.data.objects if o not in before]; acts = [a for a in bpy.data.actions if a not in ab]
+    root = bpy.data.objects.new(fn.split('.')[0] + '_root', None); COL.objects.link(root)
+    for o in new:
+        if o.parent is None: o.parent = root
+    return root, new, acts
+
+# ================================================================ the game's arena, outdoors
+_, ARENA, _ = import_glb('arena_basement.glb')
+UJ = json.load(open(os.path.join(HERE, '..', 'noobpro', 'models', 'units.json'))); UNITS = set(UJ)
+def bbox(o):
+    bb = [o.matrix_world @ Vector(c) for c in o.bound_box]
+    return Vector([min(v[i] for v in bb) for i in range(3)]), Vector([max(v[i] for v in bb) for i in range(3)])
+bpy.context.view_layer.update()
+for o in list(ARENA):
+    if o.type != 'MESH': continue
+    lo, hi = bbox(o); c = (lo + hi) / 2; mats = [m.name for m in o.data.materials if m]
+    crew = any(n.split('.')[0] in UNITS for n in mats)
+    outside = c.x < -0.8 or c.x > 18.8 or c.y > 0.8 or c.y < -32.8 or (hi - lo).length > 60
+    if crew or outside or any(n.startswith('SHADER_') for n in mats): bpy.data.objects.remove(o)
+ARENA = [o for o in ARENA if o.name in bpy.data.objects.keys()] if False else [o for o in bpy.data.objects if o.type == 'MESH']
+for o in ARENA:
+    for m in o.data.materials:
+        if m and m.use_nodes and m.name.startswith('glow'):
+            bs = m.node_tree.nodes.get('Principled BSDF')
+            if bs: bs.inputs['Emission Strength'].default_value = max(4.0, bs.inputs['Emission Strength'].default_value)
+# the canal's goo (the game draws it with its own shader)
+goo = bpy.data.materials.new('goo'); goo.use_nodes = True; nt = goo.node_tree; b = nt.nodes['Principled BSDF']; b.inputs['Roughness'].default_value = 0.15
+tc = nt.nodes.new('ShaderNodeTexCoord'); vo = nt.nodes.new('ShaderNodeTexVoronoi'); vo.feature = 'DISTANCE_TO_EDGE'; vo.inputs['Scale'].default_value = 1.6
+nt.links.new(tc.outputs['Object'], vo.inputs['Vector']); rp = nt.nodes.new('ShaderNodeValToRGB'); E_ = rp.color_ramp.elements
+E_[0].position = 0.0; E_[0].color = (0.68, 1.0, 0.32, 1); E_[1].position = 0.09; E_[1].color = (0.013, 0.64, 0.045, 1); e = E_.new(0.35); e.color = (0.003, 0.19, 0.011, 1)
+nt.links.new(vo.outputs['Distance'], rp.inputs['Fac']); nt.links.new(rp.outputs['Color'], b.inputs['Base Color']); nt.links.new(rp.outputs['Color'], b.inputs['Emission Color']); b.inputs['Emission Strength'].default_value = 1.4
+plane('goo', 19.0, 2.4, (9, -16, -0.25), (0, 0, 0), goo)
+# towers: every tower object under an empty per tower (to shake, hide and blow up)
+TPOS = {'bL': (3.5, -25.5), 'bR': (14.5, -25.5), 'bK': (9, -29.5), 'rL': (3.5, -6.5), 'rR': (14.5, -6.5), 'rK': (9, -2.5)}
+TW = {}
+for k, (x, y) in TPOS.items():
+    e = bpy.data.objects.new('tower_' + k, None); COL.objects.link(e); e.location = (x, y, 0); TW[k] = e
+bpy.context.view_layer.update()
+for o in ARENA:
+    if not any(m and m.name.startswith(('tower_rig', 'battlestation', 'team_glow')) for m in o.data.materials): continue
+    lo, hi = bbox(o); c = (lo + hi) / 2
+    for k, (x, y) in TPOS.items():
+        if abs(c.x - x) < 2.6 and abs(c.y - y) < 2.6:
+            mw = o.matrix_world.copy(); o.parent = TW[k]; o.matrix_world = mw; break
+
+# ================================================================ sky, sun, ground
+w = bpy.data.worlds.new('sky'); sc.world = w; w.use_nodes = True; nt = w.node_tree; bg = nt.nodes['Background']
+env = nt.nodes.new('ShaderNodeTexEnvironment'); env.image = bpy.data.images.load(os.path.join(TEX, 'sky.hdr'))
+tc = nt.nodes.new('ShaderNodeTexCoord'); mp = nt.nodes.new('ShaderNodeMapping'); mp.inputs['Rotation'].default_value = (0, 0, math.radians(float(arg('--skyrot', '200'))))
+nt.links.new(tc.outputs['Generated'], mp.inputs['Vector']); nt.links.new(mp.outputs['Vector'], env.inputs['Vector']); nt.links.new(env.outputs['Color'], bg.inputs['Color'])
+bg.inputs['Strength'].default_value = 1.15
+GRASS = texmat('grass', 'grass.jpg', 0.09, 0.9, tint=(0.75, 1.0, 0.6)); STONE = texmat('stone', 'stone.jpg', 0.22, 0.85, tint=(1.0, 0.95, 0.88)); WOOD = texmat('wood', 'wood.jpg', 0.3, 0.7)
+plane('ground', 600, 600, (9, -16, -0.03), (0, 0, 0), GRASS)
+RED = mat('red', (0.62, 0.03, 0.03), 0.6); BLUE = mat('blue', (0.03, 0.14, 0.62), 0.6); GOLD = mat('gold', (1.0, 0.62, 0.12), 0.3, metal=0.9)
+WHITE = mat('white', (0.9, 0.88, 0.82), 0.7); DARK = mat('dark', (0.05, 0.05, 0.06), 0.6)
+REDC = mat('redcloth', (0.75, 0.05, 0.04), 0.8); BLUEC = mat('bluecloth', (0.05, 0.2, 0.8), 0.8)
+
+# ================================================================ the stadium
+ROWS = 12; RISE = 0.7; DEPTH = 1.1; WALL = 2.0; XW, XE, YN, YS = -6.0, 24.0, 7.0, -39.0
+def row_z(i): return WALL + RISE * i
+def stand(side):
+    """side: 'W','E','N','S'. Stepped terraces, a stone front wall with team banners, a back wall with tents and flags."""
+    Lx = (XE - XW) if side in 'NS' else (YN - YS) + 2 * ROWS * DEPTH
+    cen = (XW + XE) / 2 if side in 'NS' else (YN + YS) / 2
+    def P(d, along, z):      # d: distance outward from the front wall
+        if side == 'W': return (XW - d, along, z)
+        if side == 'E': return (XE + d, along, z)
+        if side == 'N': return (along, YN + d, z)
+        return (along, YS - d, z)
+    def S(a, d, z): return (d, a, z) if side in 'WE' else (a, d, z)
+    box(f'wall{side}', S(Lx, 0.5, WALL + 0.3), P(-0.05, cen, (WALL + 0.3) / 2), STONE)
+    for i in range(ROWS):
+        box(f'step{side}{i}', S(Lx, DEPTH, row_z(i)), P(DEPTH * (i + 0.5) + 0.2, cen, row_z(i) / 2), WOOD if i % 2 else STONE)
+    back = DEPTH * ROWS + 0.2
+    box(f'back{side}', S(Lx, 0.8, row_z(ROWS) + 3.5), P(back + 0.4, cen, (row_z(ROWS) + 3.5) / 2), STONE)
+    n = int(Lx // 6)
+    for j in range(n):
+        a = cen - Lx / 2 + (j + 0.5) * Lx / n
+        team_red = (a > -16) if side in 'WE' else (side == 'N')
+        cloth = REDC if team_red else BLUEC
+        # banner on the front wall, gold trimmed
+        if side in 'WE': rot = (math.pi / 2, 0, math.pi / 2 if side == 'W' else -math.pi / 2)
+        else: rot = (math.pi / 2, 0, 0 if side == 'S' else math.pi)
+        plane(f'ban{side}{j}', 2.2, 1.5, P(-0.32, a, 1.15), rot, cloth); plane(f'bant{side}{j}', 2.4, 0.12, P(-0.33, a, 1.95), rot, GOLD)
+        # tent over the top rows + flag
+        bpy.ops.mesh.primitive_cone_add(vertices=4, radius1=4.4, depth=2.6, location=P(back - 2.0, a, row_z(ROWS) + 6.0), rotation=(0, 0, math.pi / 4))
+        t = bpy.context.object; t.data.materials.append(cloth)
+        for dd in (-2.6, 2.6):
+            bpy.ops.mesh.primitive_cylinder_add(radius=0.07, depth=5.0, vertices=8, location=P(back - 2.0 + dd, a + dd, row_z(ROWS) + 2.4)); bpy.context.object.data.materials.append(WOOD)
+            bpy.ops.mesh.primitive_cylinder_add(radius=0.07, depth=5.0, vertices=8, location=P(back - 2.0 + dd, a - dd, row_z(ROWS) + 2.4)); bpy.context.object.data.materials.append(WOOD)
+        bpy.ops.mesh.primitive_cylinder_add(radius=0.06, depth=3.0, vertices=8, location=P(back + 0.4, a + 3.0, row_z(ROWS) + 5.0)); bpy.context.object.data.materials.append(GOLD)
+        fl = plane(f'flag{side}{j}', 1.5, 0.9, P(back + 0.4, a + 3.0, row_z(ROWS) + 6.0), (math.pi / 2, 0, 0.6), cloth); fl.location.x += 0.75
+for s in 'WENS': stand(s)
+# distant castle towers for the skyline
+for i, (x, y, h, r) in enumerate([(-36, 8, 30, 4.5), (-34, -44, 26, 4), (52, 4, 32, 5), (54, -42, 27, 4.2), (9, 44, 36, 6), (-12, 40, 24, 3.5), (30, 40, 24, 3.5), (9, -70, 30, 5)]):
+    bpy.ops.mesh.primitive_cylinder_add(radius=r, depth=h, vertices=24, location=(x, y, h / 2)); bpy.context.object.data.materials.append(STONE)
+    bpy.ops.mesh.primitive_cone_add(radius1=r * 1.25, depth=r * 2.2, vertices=24, location=(x, y, h + r * 1.1)); bpy.context.object.data.materials.append(REDC if i % 2 == 0 else BLUEC)
+
+# the blimp and the scoreboard under it
+BL = Vector((9, -16, 21.5)); SB = Vector((9, -16, 12.0))
+purple = mat('blimp', (0.25, 0.06, 0.55), 0.35)
+bl = sphere('blimp', 1.0, BL, purple, 32); bl.scale = (4.2, 9.5, 4.0)
+for sx_ in (-1, 1):
+    lg = plane('blimplogo', 6.2, 5.9, BL + Vector((sx_ * 4.05, 0, 0)), (math.pi / 2, 0, sx_ * math.pi / 2), texmat('logo', os.path.join(HERE, '..', 'assets', 'logo.png'), alpha=True, box=False, rough=0.4, emit=0.3))
+for fx, fy in ((0, 8.3),):
+    for rz in (0, math.pi / 2): box('fin', (0.15, 3.0, 5.0), BL + Vector((0, 8.0, 0)), GOLD, rot=(0, rz and math.pi / 2, 0))
+for dx, dy in ((-3.4, -0.3), (3.4, -0.3), (-3.4, 0.3), (3.4, 0.3)):
+    A_ = SB + Vector((dx, dy, 1.6)); B_ = BL + Vector((dx * 0.6, dy * 6, -3.3)); mid = (A_ + B_) / 2
+    bpy.ops.mesh.primitive_cylinder_add(radius=0.04, depth=(B_ - A_).length, vertices=6, location=mid); o = bpy.context.object
+    o.rotation_euler = (B_ - A_).to_track_quat('Z', 'Y').to_euler(); o.data.materials.append(DARK)
+box('board', (8.2, 0.5, 3.4), SB, WOOD); box('boardtrim', (8.6, 0.6, 0.25), SB + Vector((0, 0, 1.75)), GOLD); box('boardtrim2', (8.6, 0.6, 0.25), SB + Vector((0, 0, -1.75)), GOLD)
+SCORE = {}     # (side, team, digit) -> plane
+for sy, rz in ((-1, 0.0), (1, math.pi)):      # a face toward each end
+    y = SB.y + sy * 0.27
+    for team, x0, m_ in (('b', -2.6, BLUE), ('r', 2.6, RED)):
+        px = SB.x + (x0 if sy < 0 else -x0)
+        plane('panel', 2.7, 2.7, (px, y, SB.z), (math.pi / 2, 0, rz), m_)
+        for d in range(4):
+            dm = texmat(f'digit{d}', f'digit{d}.png', alpha=True, box=False, rough=0.5, emit=0.6)
+            p = plane(f'dig_{team}{d}', 2.3, 2.3, (px, y + sy * 0.02, SB.z), (math.pi / 2, 0, rz), dm); SCORE[(sy, team, d)] = p
+    plane('vs', 1.7, 1.7, (SB.x, y + sy * 0.01, SB.z), (math.pi / 2, 0, rz), texmat('vs', 'vs.png', alpha=True, box=False, emit=0.4))
+def score_timeline(team, changes):
+    """changes: [(frame, digit)]: the digit card flips (squash) to the next one."""
+    for sy in (-1, 1):
+        for d in range(4):
+            p = SCORE[(sy, team, d)]; on = [(f, dd == d) for f, dd in changes]
+            p.scale = (1, 1, 1) if on[0][1] else (1, 0.0001, 0.0001); key(p, 'scale', 1)
+            for f, v in on[1:]:
+                key(p, 'scale', f - 1 if v else f - 5); p.scale = (1, 1, 1) if v else (1, 0.0001, 0.0001); key(p, 'scale', f + 4 if v else f - 1)
+T_T1, T_T2, T_T3 = 24.9, 41.6, 47.3      # the three red towers fall
+score_timeline('b', [(1, 0), (F(25.7), 1), (F(42.5), 2), (F(48.0), 3)]); score_timeline('r', [(1, 2)])
+
+# ================================================================ units
+def unit(uid, h, parent_col=None):
+    root, objs, acts = import_glb(uid + '.glb')
+    for o in objs:
+        if o.name.startswith('Icosphere'): bpy.data.objects.remove(o)
+    objs = [o for o in objs if o.name in bpy.data.objects.keys()] if False else [o for o in root.children_recursive]
+    arm = [o for o in objs if o.type == 'ARMATURE'][0]
+    clips = {a.name.split('_')[0]: a for a in acts}
+    for a in acts: a.use_fake_user = True
+    root.scale = (h / UJ[uid]['height'],) * 3
+    arm.animation_data_create(); arm.animation_data.action = None
+    u = {'id': uid, 'root': root, 'arm': arm, 'clips': clips, 'h': h, 'objs': objs}
+    if parent_col is not None:
+        for o in [root] + objs:
+            for c in list(o.users_collection): c.objects.unlink(o)
+            parent_col.objects.link(o)
+    return u
+def clip(u, name, f0, f1, speed=1.0, blend=3):
+    if name not in u['clips']: name = 'idle'
+    a = u['clips'][name]; a0, a1 = a.frame_range
+    tr = u['arm'].animation_data.nla_tracks.new(); tr.name = f'{name}_{f0}'
+    s = tr.strips.new(f'{name}_{f0}', int(f0), a); s.action_frame_start = a0; s.action_frame_end = a1
+    s.scale = (FPS / 30.0) / speed; s.repeat = max(0.01, (f1 - f0) / ((a1 - a0) * s.scale))
+    s.extrapolation = 'NOTHING'; s.blend_type = 'REPLACE'; s.use_auto_blend = False; s.blend_in = blend; s.blend_out = 0
+def sched(u, items, end=LAST + 2, jit=0.0):
+    """items: [(t_seconds, clip, speed)]: each plays (looping) until the next."""
+    for i, (t, name, sp) in enumerate(items):
+        f0 = F(t + (jit if i else 0)); f1 = F(items[i + 1][0] + jit) if i + 1 < len(items) else end
+        if i == 0: f0 = F(t) - int(abs(jit) * 40)
+        clip(u, name, f0, f1, sp)
+def place(u, loc, rz, f=None):
+    u['root'].location = loc; u['root'].rotation_euler = (0, 0, rz)
+    if f is not None: key(u['root'], 'location', f); key(u['root'], 'rotation_euler', f)
+def run_to(u, pts, t0, speed, clipname='run', cs=1.0):
+    """Move along pts [(x,y)] from t0 at `speed` m/s; returns arrival time."""
+    t = t0; place(u, (pts[0][0], pts[0][1], 0), heading(pts[1][0] - pts[0][0], pts[1][1] - pts[0][1]), F(t))
+    for a, b_ in zip(pts, pts[1:]):
+        d = (Vector(b_) - Vector(a)).length; hd = heading(b_[0] - a[0], b_[1] - a[1])
+        u['root'].rotation_euler = (0, 0, hd); key(u['root'], 'rotation_euler', F(t) + 1)
+        t += d / speed; place(u, (b_[0], b_[1], 0), hd, F(t))
+    clip(u, clipname, F(t0), F(t), cs); linear(u['root']); return t
+def drop(u, x, y, t, rz):
+    r = u['root']; show(r, F(t) - 5)
+    for ff, z in ((F(t) - 5, 9.0), (F(t), 0.0)):
+        r.location = (x, y, z); key(r, 'location', ff); r.rotation_euler = (0, 0, rz); key(r, 'rotation_euler', ff)
+def ring(u, team):
+    m = RINGB if team == 'b' else RINGR
+    bpy.ops.mesh.primitive_torus_add(major_radius=0.62, minor_radius=0.05, location=(0, 0, 0.05)); o = bpy.context.object; o.data.materials.append(m); o.parent = u['root']
+RINGB = mat('ringb', (0.1, 0.4, 1.0), 0.4, emit=(0.1, 0.45, 1.0), estr=6); RINGR = mat('ringr', (1.0, 0.1, 0.1), 0.4, emit=(1.0, 0.12, 0.08), estr=6)
+def fling(u, t, away, up=9.0, dist=7.0, dur=1.3):
+    """Knocked into the air from where it stands at t: a spinning arc, then gone."""
+    r = u['root']; sc.frame_set(F(t)); p0 = r.matrix_world.translation.copy(); rz = r.rotation_euler.z
+    d = Vector((away[0], away[1], 0)); d = d.normalized() if d.length > 0 else Vector((1, 0, 0))
+    n = int(dur * FPS)
+    for i in range(n + 1):
+        u_ = i / n; p = p0 + d * dist * u_ + Vector((0, 0, up * 4 * u_ * (1 - u_) + 0.0))
+        r.location = p; key(r, 'location', F(t) + i); r.rotation_euler = (u_ * 7.0, u_ * 3.0, rz + u_ * 5.0); key(r, 'rotation_euler', F(t) + i)
+    clip(u, 'die', F(t), F(t) + n, 1.0, 0)
+    s = r.scale.copy(); key(r, 'scale', F(t) + n - 1); r.scale = s * 0.0001; key(r, 'scale', F(t) + n); const(r)
+
+# ================================================================ FX
+FIRE = mat('fire', (1, 0.4, 0.05), 0.5, emit=(1.0, 0.33, 0.04), estr=38); FIREG = mat('fireg', (1, 0.8, 0.1), 0.5, emit=(1.0, 0.7, 0.1), estr=45)
+FIREGRN = mat('firegrn', (0.2, 1, 0.2), 0.5, emit=(0.15, 1.0, 0.2), estr=40)
+def smoke_mat(name, col, dens=0.85):
+    m = bpy.data.materials.new(name); m.use_nodes = True; nt = m.node_tree; b = nt.nodes['Principled BSDF']
+    b.inputs['Base Color'].default_value = (*col, 1); b.inputs['Roughness'].default_value = 1.0
+    lw = nt.nodes.new('ShaderNodeLayerWeight'); lw.inputs['Blend'].default_value = 0.35
+    nz = nt.nodes.new('ShaderNodeTexNoise'); nz.inputs['Scale'].default_value = 1.3; nz.inputs['Detail'].default_value = 4
+    tc = nt.nodes.new('ShaderNodeTexCoord'); nt.links.new(tc.outputs['Object'], nz.inputs['Vector'])
+    inv = nt.nodes.new('ShaderNodeMath'); inv.operation = 'SUBTRACT'; inv.inputs[0].default_value = 1.0; nt.links.new(lw.outputs['Facing'], inv.inputs[1])
+    pw = nt.nodes.new('ShaderNodeMath'); pw.operation = 'POWER'; pw.inputs[1].default_value = 1.6; nt.links.new(inv.outputs[0], pw.inputs[0])
+    mu = nt.nodes.new('ShaderNodeMath'); mu.operation = 'MULTIPLY'; nt.links.new(pw.outputs[0], mu.inputs[0]); nt.links.new(nz.outputs['Fac'], mu.inputs[1])
+    m2 = nt.nodes.new('ShaderNodeMath'); m2.operation = 'MULTIPLY'; m2.inputs[1].default_value = dens * 2.2; m2.use_clamp = True; nt.links.new(mu.outputs[0], m2.inputs[0])
+    nt.links.new(m2.outputs[0], b.inputs['Alpha']); return m
+SMOKE = smoke_mat('smoke', (0.07, 0.065, 0.06)); DUST = smoke_mat('dust', (0.55, 0.5, 0.42), 0.6); SMOKEG = smoke_mat('smokeg', (0.05, 0.3, 0.06), 0.7)
+RUB = [STONE, mat('rub2', (0.3, 0.29, 0.28), 0.9), WOOD]
+def explode(c, t, R=3.5, fire=FIRE, n_deb=44, seed=1, smoke=SMOKE, light=(1.0, 0.55, 0.2)):
+    r_ = random.Random(seed); f0 = F(t); c = Vector(c)
+    ld = bpy.data.lights.new('boom', 'POINT'); ld.color = light; ld.shadow_soft_size = 2.0; lo = bpy.data.objects.new('boom', ld); COL.objects.link(lo); lo.location = c + Vector((0, 0, 3))
+    for f, e in ((f0 - 1, 0), (f0 + 1, 600000 * R), (f0 + 5, 250000 * R), (f0 + 16, 0)): ld.energy = e; ld.keyframe_insert('energy', frame=f)
+    for i in range(9):
+        off = Vector((r_.uniform(-1, 1), r_.uniform(-1, 1), r_.uniform(0.2, 1.4))) * R * 0.45; rr = R * r_.uniform(0.45, 0.8)
+        o = ico('fire', 1.0, c + off, fire)
+        for f, s, dz in ((f0 - 1, 0.001, 0), (f0 + 3, rr, 0.3), (f0 + 10, rr * 1.25, 1.2), (f0 + 20, 0.001, 2.6)):
+            o.scale = (s,) * 3; key(o, 'scale', f); o.location = c + off + Vector((0, 0, dz)); key(o, 'location', f)
+    for i in range(11):
+        off = Vector((r_.uniform(-1, 1), r_.uniform(-1, 1), r_.uniform(0.0, 1.2))) * R * 0.6; rr = R * r_.uniform(0.55, 0.95)
+        o = ico('smoke', 1.0, c + off, smoke if i % 3 else DUST)
+        drift = Vector((r_.uniform(-0.6, 0.6), r_.uniform(-0.6, 0.6), r_.uniform(5, 9)))
+        for f, s, u_ in ((f0, 0.001, 0), (f0 + 8, rr, 0.08), (f0 + 50, rr * 1.7, 0.4), (f0 + 400, rr * 2.6, 1.6), (LAST, rr * 3.0, 2.2)):
+            if f > LAST and f != LAST: continue
+            o.scale = (s,) * 3; key(o, 'scale', f); o.location = c + off + drift * u_; key(o, 'location', f)
+    for i in range(n_deb):
+        s = r_.uniform(0.18, 0.75); o = box('deb', (s, s * r_.uniform(0.5, 1.2), s * r_.uniform(0.4, 1.0)), c, RUB[i % 3])
+        ang = r_.uniform(0, 2 * math.pi); v = Vector((math.cos(ang), math.sin(ang), 0)) * r_.uniform(3, 15); vz = r_.uniform(9, 22); p0 = c + Vector((r_.uniform(-1.5, 1.5), r_.uniform(-1.5, 1.5), r_.uniform(1, 5)))
+        o.scale = (0.001,) * 3; key(o, 'scale', f0 - 1); o.scale = (1, 1, 1); key(o, 'scale', f0)
+        spin = Vector((r_.uniform(-9, 9), r_.uniform(-9, 9), r_.uniform(-9, 9))); tt = 0.0; landed = False
+        for k_ in range(0, 80, 2):
+            tt = k_ / FPS; z = p0.z + vz * tt - 0.5 * 26 * tt * tt
+            if z <= s * 0.3: z = s * 0.3; landed = True
+            o.location = (p0.x + v.x * tt, p0.y + v.y * tt, z); key(o, 'location', f0 + k_); o.rotation_euler = spin * tt; key(o, 'rotation_euler', f0 + k_)
+            if landed: break
+        const(o)
+def rubble(c, f_on, seed=3, n=26, R=2.4):
+    r_ = random.Random(seed); par = bpy.data.objects.new('rubble', None); COL.objects.link(par); par.location = c
+    for i in range(n):
+        s = r_.uniform(0.4, 1.3); a = r_.uniform(0, 6.28); d = r_.uniform(0, R)
+        o = box('rub', (s, s * r_.uniform(0.6, 1.2), s * r_.uniform(0.4, 0.9)), (math.cos(a) * d, math.sin(a) * d, s * 0.25 + (R - d) * 0.35), RUB[i % 3], rot=(r_.uniform(-0.6, 0.6), r_.uniform(-0.6, 0.6), r_.uniform(0, 3)), parent=par)
+    if f_on > 1: show(par, f_on)
+def plume(c, seed=5):
+    r_ = random.Random(seed)
+    for i in range(10):
+        o = ico('plume', 1.0, c, SMOKE if i % 4 else DUST); z0 = 1.0 + i * 2.3; rr = 1.3 + i * 0.42
+        for f, u_ in ((1, 0.0), (LAST, 1.0)):
+            o.location = Vector(c) + Vector((0.5 * i + u_ * 3.0 + r_.uniform(-0.4, 0.4), 0.25 * i + r_.uniform(-0.4, 0.4), z0 + u_ * 7.0)); key(o, 'location', f)
+            o.scale = (rr * (1 + 0.5 * u_),) * 3; key(o, 'scale', f)
+        linear(o)
+def kill_tower(k, t, seed, crew=(), fire=FIRE):
+    c = Vector((*TPOS[k], 0)); e = TW[k]; f0 = F(t)
+    for f, dx in ((f0 - 6, 0.0), (f0 - 4, 0.12), (f0 - 2, -0.12), (f0, 0.0)): e.location.x = c.x + dx; key(e, 'location', f)
+    key(e, 'scale', f0); e.scale = (0.0001,) * 3; key(e, 'scale', f0 + 1); const(e)
+    explode(c + Vector((0, 0, 2.2)), t, 3.6 if k[1] != 'K' else 5.0, fire, 50 if k[1] != 'K' else 80, seed)
+    rubble(c, f0 + 1, seed)
+    for u in crew: fling(u, t, (rnd.uniform(-1, 1), rnd.uniform(0.2, 1)), up=14, dist=9, dur=1.6)
+
+# ================================================================ battle cast
+def fielder(uid, h, team):
+    u = unit(uid, h); ring(u, team); u['root'].scale = u['root'].scale; return u
+# tower crews
+CREW = {}
+for k in ('rL', 'rR'):
+    u = unit('chillguy', 1.87); place(u, (*TPOS[k], 3.86), 0.0); sched(u, [(0, 'idle', 1), (T_T1 - 2.5 if k == 'rL' else 35.2, 'hit', 0.6), ((T_T1 - 1.6) if k == 'rL' else 36.4, 'lose', 1.2)]); CREW[k] = u
+KB = unit('neet', 2.2); place(KB, (9, -29.5 - 0.55, 3.75), math.pi)
+sched(KB, [(0, 'sitangry', 1), (9.0, 'sit', 1), (19.2, 'sityell', 1), (21.4, 'sitcheer', 1), (25.0, 'sitfistpump', 1), (27.5, 'sitclap', 1), (35.0, 'sityell', 1), (41.7, 'sitfistpump', 1), (46.0, 'sitcheer', 1)])
+KR = unit('pudgy', 2.5); place(KR, (9, -3.75, 3.75), 0.0)
+sched(KR, [(0, 'win', 0.8), (6.5, 'emote', 1.0), (9.6, 'win', 0.8), (20.9, 'hit', 0.5), (22.4, 'idle', 1), (25.3, 'hit', 0.45), (27.2, 'lose', 1.3), (41.7, 'hit', 0.5), (43.0, 'lose', 1.6)])
+fling(KR, T_T3, (0.25, 1.0), up=22, dist=16, dur=2.3)
+# blue's towers are already gone: rubble and smoke
+for k, sd in (('bL', 11), ('bR', 12)):
+    TW[k].scale = (0.0001,) * 3; rubble(Vector((*TPOS[k], 0)), 1, sd); plume(Vector((*TPOS[k], 1.0)), sd)
+# red's push at the blue king's gate (until the candle lands)
+CANDLE = Vector((9, -23.0, 0)); T_C = 21.2
+REDS = []
+for i, (uid, h, x, y) in enumerate([('giga', 3.1, 9.0, -26.3), ('triplet', 2.6, 7.1, -25.9), ('zcat', 2.4, 10.9, -25.9), ('ket', 2.3, 6.0, -24.0), ('baton', 2.6, 12.0, -24.2), ('alon', 2.4, 9.0, -22.6), ('mitch', 2.4, 7.6, -21.4), ('cate', 2.4, 10.6, -21.3)]):
+    u = fielder(uid, h, 'r'); tgt = (9, -29.0)
+    if i < 3:
+        place(u, (x, y, 0), heading(tgt[0] - x, tgt[1] - y)); f = F(0) - i * 5
+        while f < F(T_C):
+            clip(u, 'attack1', f, f + 20, 1.0); f += 20
+    else:
+        run_to(u, [(x, y + 9.0 + i * 0.4), (x, y)], 1.5 + i * 0.25, 2.6, 'run'); clip(u, 'idle', 1, F(1.5 + i * 0.25)); t_ar = 1.5 + i * 0.25 + (9.0 + i * 0.4) / 2.6
+        f = F(t_ar)
+        while f < F(T_C):
+            clip(u, 'attack1' if i % 2 else 'ready', f, f + 20, 1.0); f += 20
+    fling(u, T_C + 0.02 * i, (x - CANDLE.x + 0.01 * (i - 4), y - CANDLE.y), up=rnd.uniform(8, 14), dist=rnd.uniform(8, 14), dur=1.5); REDS.append(u)
+# the GOD CANDLE
+candle = bpy.data.objects.new('candle', None); COL.objects.link(candle)
+cg = mat('candle', (0.1, 0.9, 0.2), 0.3, emit=(0.08, 1.0, 0.16), estr=9)
+box('cbody', (4.2, 4.2, 15), (0, 0, 7.5), cg, parent=candle); box('cwick', (0.5, 0.5, 28), (0, 0, 14), cg, parent=candle)
+cl = bpy.data.lights.new('candleL', 'POINT'); cl.color = (0.2, 1.0, 0.3); cl.shadow_soft_size = 4; clo = bpy.data.objects.new('candleL', cl); COL.objects.link(clo); clo.parent = candle; clo.location = (0, -6, 6)
+for t, z in ((18.8, 150.0), (20.7, 46.0), (T_C, 0.0), (23.4, 0.0), (24.3, -32.0)):
+    candle.location = CANDLE + Vector((0, 0, z)); key(candle, 'location', F(t))
+linear(candle)
+for t, e in ((18.8, 3e6), (T_C, 2.5e6), (23.4, 1.2e6), (24.3, 0)): cl.energy = e; cl.keyframe_insert('energy', frame=F(t))
+explode(CANDLE + Vector((0, 0, 0.5)), T_C, 4.2, FIREGRN, 30, 21, SMOKEG, light=(0.3, 1.0, 0.3))
+sw = bpy.data.objects.new('shock', None); COL.objects.link(sw); sw.location = CANDLE + Vector((0, 0, 0.3))
+bpy.ops.mesh.primitive_torus_add(major_radius=1.0, minor_radius=0.06, major_segments=64, location=(0, 0, 0)); tor = bpy.context.object; tor.data.materials.append(mat('shockm', (0.2, 1, 0.3), 0.3, emit=(0.2, 1.0, 0.3), estr=30)); tor.parent = sw
+for f, s in ((F(T_C) - 1, 0.001), (F(T_C), 1.0), (F(T_C) + 14, 20.0), (F(T_C) + 22, 34.0), (F(T_C) + 23, 0.001)): sw.scale = (s, s, max(0.001, min(s, 1.0) * (1.0 if s < 21 else 0.3))); key(sw, 'scale', f)
+linear(sw)
+# blue's push 1 (left lane): four cards drop behind the candle and charge the left princess tower
+P1 = []
+for i, (uid, h, x) in enumerate([('floki', 2.9, 3.0), ('bonk', 2.6, 4.6), ('toshi', 2.6, 2.2), ('dope', 2.5, 5.2)]):
+    u = fielder(uid, h, 'b'); y0 = -19.5 - (i % 2) * 1.2; td = 21.55 + i * 0.12
+    drop(u, x, y0, td, math.pi * 0 + heading(0, 1)); clip(u, 'ready', F(td) - 5, F(22.4))
+    ty = -9.6 - (i % 2) * 1.1; tx = 3.5 + (x - 3.7) * 0.9
+    ta = run_to(u, [(x, y0), (3.4 + (x - 3.7) * 0.5, -16.0), (tx, ty)], 22.4, 4.6 + 0.15 * i, 'run', 1.25)
+    f = F(ta)
+    while f < F(T_T1) + 8: clip(u, 'attack1', f, f + 16, 1.25); f += 16
+    clip(u, 'win', F(T_T1) + 8 + i, F(35.0 + i * 0.3)); P1.append((u, tx, ty))
+kill_tower('rL', T_T1, 31, [CREW['rL']])
+# red's defenders step into the right lane; the whale goes through them
+DEF = []
+for i, (uid, h, x, y) in enumerate([('troll', 2.7, 14.0, -12.4), ('wojak', 2.3, 15.3, -11.2), ('thisisfine', 2.4, 13.2, -10.6)]):
+    u = fielder(uid, h, 'r'); show(u['root'], F(33.0)); run_to(u, [(x, y + 6.0), (x, y)], 33.2 + 0.2 * i, 3.0, 'walk', 1.3); clip(u, 'ready', F(35.3 + 0.2 * i), F(38.2))
+    DEF.append(u)
+WH = fielder('whale', 4.4, 'b'); drop(WH, 14.5, -20.5, 35.6, heading(0, 1)); clip(WH, 'ready', F(35.6) - 5, F(36.3))
+t_wh = run_to(WH, [(14.5, -20.5), (14.5, -10.3)], 36.3, 4.3, 'run', 1.0)
+for i, u in enumerate(DEF): fling(u, 37.9 + 0.12 * i, ((-1) ** i * 1.0 + 0.3, 0.5), up=11, dist=10, dur=1.4)
+# slow-motion slam on the right princess tower
+f = F(t_wh); clip(WH, 'attack1', f, F(T_T2) + 4, 0.42); clip(WH, 'win', F(T_T2) + 4, F(44.6))
+kill_tower('rR', T_T2, 32, [CREW['rR']])
+# everyone on the king
+FIN = [(u, tx, ty) for u, tx, ty in P1] + [(WH, 14.5, -10.3)]
+for i, (u, x0, y0) in enumerate(FIN):
+    a = -0.9 + i * 0.45; tx, ty = 9 + math.sin(a) * 4.3, -2.5 - math.cos(a) * 4.3 - (1.2 if u is WH else 0)
+    ta = run_to(u, [(x0, y0), (tx, ty)], 44.6 if u is WH else 35.0 + i * 0.3, 3.6 if u is WH else 1.0 + 0.0 * i, 'run' if u is WH else 'walk', 1.0)
+    f = F(ta)
+    while f < F(T_T3) + 6: clip(u, 'attack1', f, f + 16, 1.2); f += 16
+    clip(u, 'win', F(T_T3) + 6 + i, LAST + 2)
+kill_tower('rK', T_T3, 33, [], FIREG)
+
+# ================================================================ the crowd
+SRC = bpy.data.collections.new('crowd_src')        # not linked to the scene: only instanced
+CROWD_IDS = [u for u in UJ if u not in ('mensa', 'neet', 'bome')]
+def fan_sched(team, j):
+    if team == 'r':  return [(0, 'win', 0.9 + 0.2 * j), (T_C + 0.25, 'hit', 0.55), (T_C + 1.5, 'idle', 1), (T_T1 + 0.3, 'hit', 0.5), (T_T1 + 1.7, 'lose', 1.0 + 0.3 * j), (T_T2 + 0.3, 'hit', 0.5), (T_T2 + 1.7, 'lose', 1.3)]
+    if team == 'b':  return [(0, 'lose', 0.9 + 0.3 * j), (T_C + 0.2, 'ready', 1.2), (T_T1 + 0.25, 'win', 1.0 + 0.2 * j), (T_T2 + 0.2, 'emote', 1.0), (T_T2 + 3.0, 'win', 1.1 + 0.2 * j)]
+    return [(0, 'win', 0.8 + 0.3 * j), (T_C + 0.3, 'hit', 0.5), (T_C + 1.6, 'ready', 1.0), (T_T1 + 0.3, 'hit', 0.5), (T_T1 + 1.6, 'idle', 1.0), (T_T2 + 0.3, 'win', 1.0 + 0.2 * j)]
+SOURCES = {'r': [], 'b': []}
+for i, uid in enumerate(CROWD_IDS):
+    for team in 'rb':
+        col = bpy.data.collections.new(f'src_{uid}_{team}'); SRC.children.link(col)
+        u = unit(uid, 1.9, col); j = rnd.random(); sched(u, fan_sched(team, j), jit=rnd.uniform(-0.35, 0.35)); SOURCES[team].append(col)
+def spot(side, i, a):
+    d = DEPTH * (i + 0.5) + 0.2; z = row_z(i)
+    if side == 'W': return Vector((XW - d, a, z)), math.pi / 2
+    if side == 'E': return Vector((XE + d, a, z)), -math.pi / 2
+    if side == 'N': return Vector((a, YN + d, z)), 0.0
+    return Vector((a, YS - d, z)), math.pi
+KEEP_OUT = []     # (centre, radius): hand-placed heroes and the giant stand here
+def crowd():
+    n = 0; par = bpy.data.objects.new('crowd', None); COL.objects.link(par)
+    for side in 'WENS':
+        a0, a1 = (YS - ROWS * DEPTH + 1, YN + ROWS * DEPTH - 1) if side in 'WE' else (XW + 0.6, XE - 0.6)
+        for i in range(ROWS):
+            a = a0 + rnd.uniform(0, 0.5)
+            while a < a1:
+                p, rz = spot(side, i, a); a += rnd.uniform(0.9, 1.15)
+                if any((p - c).length < r for c, r in KEEP_OUT): continue
+                red_end = p.y > -16
+                team = ('r' if rnd.random() < 0.72 else 'b') if red_end else ('b' if rnd.random() < 0.72 else 'r')
+                e = bpy.data.objects.new('fan', None); e.instance_type = 'COLLECTION'; e.instance_collection = rnd.choice(SOURCES[team])
+                e.location = p + Vector((rnd.uniform(-0.12, 0.12), rnd.uniform(-0.12, 0.12), 0)); tgt = Vector((9, -16, 0)) - p
+                e.rotation_euler = (0, 0, lerp(rz, heading(tgt.x, tgt.y), 0.0) + rnd.uniform(-0.35, 0.35)); s = rnd.uniform(0.86, 1.1); e.scale = (s, s, s)
+                e.parent = par; COL.objects.link(e); n += 1
+    print('CROWD', n)
+
+# ---- heroes in the stands
+def hero(uid, side, row, a, h=1.95, items=None, yaw=0.0, team='n'):
+    u = unit(uid, h); p, rz = spot(side, row, a); place(u, p, rz + yaw); sched(u, items or fan_sched(team, rnd.random()), jit=rnd.uniform(-0.2, 0.2))
+    KEEP_OUT.append((p, 0.85)); return u
+# the knight who has seen enough (west stand, blue half), and the frogs around him
+KN_ROW, KN_A0, KN_A1 = 2, -15.2, -19.6
+KN = unit('swordcat', 2.1); kp0, krz = spot('W', KN_ROW, KN_A0); kp1, _ = spot('W', KN_ROW, KN_A1)
+for a in [KN_A0 + 1.0 - 0.55 * i for i in range(20)]: KEEP_OUT.append((spot('W', KN_ROW, a)[0], 0.7))
+place(KN, kp0, krz, 1); key(KN['root'], 'rotation_euler', F(16.6)); place(KN, kp0, 0.0, F(17.2))        # turns to go
+key(KN['root'], 'location', F(17.3)); place(KN, kp1, 0.0, F(21.3)); key(KN['root'], 'rotation_euler', F(29.9))
+place(KN, kp1, krz + 0.25, F(30.9)); linear(KN['root'])
+sched(KN, [(0, 'lose', 1.0), (15.9, 'hit', 0.6), (17.2, 'walk', 0.8), (21.3, 'hit', 0.5), (22.6, 'idle', 1.0), (T_T1 + 0.3, 'hit', 0.5), (T_T1 + 1.6, 'idle', 1), (30.9, 'ready', 1.0), (32.2, 'win', 1.1), (T_T2 + 0.3, 'emote', 1.0), (T_T2 + 3.2, 'win', 1.2)])
+frog_items = lambda j: [(0, 'emote', 0.9 + 0.2 * j), (5.0 + 3 * j, 'win', 0.9 + 0.2 * j), (T_C + 0.3, 'hit', 0.5), (T_C + 1.6, 'idle', 1), (T_T1 + 0.3, 'hit', 0.5), (T_T1 + 1.5, 'lose', 1.2), (T_T2 + 0.4, 'win', 1.1 + 0.2 * j)]
+for i, (uid, row, a, h) in enumerate([('pepe', 1, -14.2, 1.9), ('apu', 1, -15.9, 1.8), ('floki', 1, -17.6, 2.0), ('pepe', 1, -19.0, 1.85), ('apu', 1, -20.6, 1.9), ('dope', 1, -12.6, 1.7),
+                                       ('apu', 3, -14.6, 1.9), ('cupsey', 3, -16.1, 1.9), ('pepe', 3, -17.5, 2.0), ('moodeng', 3, -19.2, 1.7), ('apu', 3, -20.9, 1.9), ('pepe', 3, -13.0, 1.9),
+                                       ('walter', 2, -13.4, 1.95), ('goat', 2, -21.4, 2.0), ('slerf', 4, -15.5, 2.1), ('michi', 4, -17.9, 1.9), ('pippin', 4, -19.9, 1.9), ('jeanphil', 0, -16.8, 1.9), ('ket', 0, -18.6, 1.8), ('toshi', 0, -14.9, 1.9), ('cate', 0, -20.3, 1.8)]):
+    hero(uid, 'W', row, a, h, frog_items(rnd.random()))
+# the giant (west stand, red half)
+GI = unit('moodeng', 7.0); gp, grz = spot('W', 5, -5.5); place(GI, gp + Vector((0, 0, -0.2)), grz); KEEP_OUT.append((gp + Vector((0, 0, 1.5)), 4.2))
+sched(GI, [(0, 'win', 0.7), (T_C + 0.3, 'hit', 0.4), (T_C + 2.2, 'idle', 1), (T_T1 + 0.3, 'hit', 0.4), (T_T1 + 2.2, 'idle', 0.8), (T_T2 + 0.4, 'emote', 0.8), (T_T2 + 4.0, 'win', 0.9)])
+# the bomb gag (east stand, red half)
+G_ROW, G_A = 1, -11.5
+TR = hero('troll', 'E', G_ROW, G_A, 2.05, [(0, 'idle', 1), (11.0, 'emote', 1.0), (15.0, 'idle', 1), (T_C + 0.3, 'hit', 0.5), (T_C + 1.6, 'idle', 1), (T_T1 + 0.3, 'hit', 0.45), (T_T1 + 1.8, 'lose', 1.0), (52.0, 'idle', 1), (54.6, 'hit', 0.5), (55.6, 'lose', 2.0)])
+POP = hero('popcat', 'E', G_ROW, G_A + 1.25, 1.9, [(0, 'win', 1.0), (T_C + 0.3, 'hit', 0.5), (T_C + 1.6, 'idle', 1), (T_T1 + 0.3, 'hit', 0.45), (T_T1 + 1.8, 'lose', 1.0), (52.0, 'idle', 1), (53.9, 'hit', 0.5), (55.0, 'lose', 1.6)])
+LM = hero('lmao', 'E', G_ROW, G_A - 1.25, 1.9, [(0, 'emote', 1.0), (6, 'win', 1.1), (T_C + 0.3, 'hit', 0.5), (T_C + 1.6, 'idle', 1), (T_T1 + 0.3, 'hit', 0.45), (T_T1 + 1.8, 'lose', 1.1), (52.0, 'lose', 1.0), (54.2, 'hit', 0.5), (55.2, 'lose', 1.8)])
+for uid, row, a in (('wojak', 2, G_A + 0.6), ('giga', 2, G_A - 0.7), ('useless', 2, G_A + 2.0), ('chillhouse', 2, G_A - 2.1), ('farter', 0, G_A + 0.7), ('thisisfine', 0, G_A - 0.8), ('nyancat', 0, G_A + 2.2), ('bonk', 0, G_A - 2.3), ('chillguy', 1, G_A + 2.6), ('zcat', 1, G_A - 2.6)):
+    hero(uid, 'E', row, a, 1.9, None, team='r')
+# the bomb in the troll's hand, and its fuse
+hb = next((b for b in TR['arm'].pose.bones if b.name.endswith('RightHand')), None) or next((b for b in TR['arm'].pose.bones if 'Right' in b.name and 'Arm' in b.name), None) or TR['arm'].pose.bones[0]
+print('BOMB BONE', hb.name)
+bomb = sphere('bomb', 0.2, (0, 0, 0), mat('bombm', (0.02, 0.02, 0.025), 0.25, metal=0.6)); bomb.parent = TR['arm']; bomb.parent_type = 'BONE'; bomb.parent_bone = hb.name; bomb.location = (0, 0.12, 0); bomb.scale = (1 / TR['arm'].scale.x / TR['root'].scale.x * 1.0,) * 3
+fz = box('fuse', (0.02, 0.02, 0.14), (0, 0, 0.26), mat('fusem', (0.6, 0.5, 0.3), 0.8), parent=bomb)
+sp = ico('spark', 0.045, (0, 0, 0.34), mat('sparkm', (1, 0.8, 0.3), 0.4, emit=(1.0, 0.7, 0.2), estr=60), 1); sp.parent = bomb
+spl = bpy.data.lights.new('sparkL', 'POINT'); spl.color = (1.0, 0.7, 0.3); spl.shadow_soft_size = 0.1; splo = bpy.data.objects.new('sparkL', spl); COL.objects.link(splo); splo.parent = bomb; splo.location = (0, 0, 0.4)
+T_FUSE, T_BOMB = 52.9, 56.5
+sp.scale = (0.001,) * 3; key(sp, 'scale', F(T_FUSE) - 1)
+for f in range(F(T_FUSE), F(T_BOMB)):
+    s = rnd.uniform(0.7, 1.8); sp.scale = (s, s, s); key(sp, 'scale', f); spl.energy = rnd.uniform(25, 70); spl.keyframe_insert('energy', frame=f)
+spl.energy = 0; spl.keyframe_insert('energy', frame=F(T_FUSE) - 1)
+gpos = spot('E', G_ROW, G_A)[0]
+explode(gpos + Vector((0, 0, 1.2)), T_BOMB, 2.0, FIRE, 0, 41, SMOKE)
+for u in (TR, POP, LM): fling(u, T_BOMB, (rnd.uniform(-0.6, -0.2), rnd.uniform(-1, 1)), up=10, dist=6, dur=1.4)
+crowd()
+
+# confetti from the last tower on
+CF = [mat(f'conf{i}', c, 0.5, emit=c, estr=0.4) for i, c in enumerate([(1, 0.8, 0.1), (0.1, 0.4, 1), (1, 0.15, 0.2), (0.2, 1, 0.3), (1, 1, 1), (0.7, 0.2, 1)])]
+for i in range(520):
+    x = rnd.uniform(-16, 34); y = rnd.uniform(-48, 16); z0 = rnd.uniform(9, 30); o = plane('conf', 0.22, 0.12, (x, y, z0), (0, 0, 0), CF[i % 6])
+    t0 = T_T3 + rnd.uniform(0.2, 2.0); fall = rnd.uniform(2.2, 3.6)
+    o.scale = (0.001,) * 3; key(o, 'scale', F(t0) - 1); o.scale = (1, 1, 1); key(o, 'scale', F(t0)); const(o)
+    key(o, 'location', F(t0)); key(o, 'rotation_euler', F(t0)); dt = (LAST - F(t0)) / FPS
+    o.location = (x + rnd.uniform(-3, 3), y + rnd.uniform(-3, 3), max(0.1, z0 - fall * dt)); o.rotation_euler = (rnd.uniform(-40, 40), rnd.uniform(-40, 40), rnd.uniform(-10, 10))
+    key(o, 'location', LAST); key(o, 'rotation_euler', LAST); linear(o)
+
+# a real sun on top of the sky's, for crisp shadows
+sun = bpy.data.objects.new('sun', bpy.data.lights.new('sun', 'SUN')); COL.objects.link(sun); sun.data.energy = 3.2; sun.data.angle = math.radians(1.2); sun.data.color = (1.0, 0.93, 0.82)
+sun.rotation_euler = (math.radians(52), 0, math.radians(float(arg('--sunrot', '125'))))
+
+# ================================================================ camera
+cam = bpy.data.objects.new('cam', bpy.data.cameras.new('cam')); COL.objects.link(cam); sc.camera = cam
+cam.data.sensor_width = 36; cam.data.dof.use_dof = True; cam.data.clip_end = 2000
+V = Vector
+kn0 = kp0 + V((0, 0, 1.75)); kn1 = kp1 + V((0, 0, 1.75)); gag = gpos + V((0, 0, 1.6)); gi = gp + V((0, 0, 4.5))
+def SH(t0, t1, p0, p1, l0, l1, lens, fstop=2.8, shake=0.0, lens1=None, focus=None):
+    return dict(t0=t0, t1=t1, p0=V(p0), p1=V(p1), l0=V(l0), l1=V(l1), lens=lens, lens1=lens1 or lens, fstop=fstop, shake=shake, focus=focus)
+SHOTS = [
+    SH(2.0, 6.0, (9, 9.5, 12.5), (9, 6.0, 10.6), (9, -18, 4.5), (9, -20, 4.0), 22, 8),                                   # behind the red king: the whole arena, 2-0
+    SH(6.0, 7.6, (10.2, -24.2, 6.1), (9.9, -24.8, 6.0), (9, -30.0, 5.3), (9, -30.0, 5.35), 70, 2.2, 0.15),              # the blue king, sweating it
+    SH(7.6, 9.6, (8.0, -8.2, 3.6), (8.3, -7.6, 3.7), (9, -2.3, 5.6), (9, -2.3, 5.7), 60, 2.4),                           # the red king, smug
+    SH(9.6, 11.6, (10.0, -10.5, 4.5), (9.0, -9.5, 4.6), gi + V((0, 3, -1.5)), gi + V((0, 1, -1.2)), 38, 4),               # the stands and the giant
+    SH(11.6, 13.6, gag + V((-5.2, 0.6, 0.2)), gag + V((-4.6, 0.2, 0.2)), gag + V((0, 0.3, -0.1)), gag + V((0, 0.2, -0.1)), 75, 2.0, 0.1),   # troll, popcat, lmao
+    SH(13.6, 15.6, (26.5, -3.0, 6.5), (27.5, -5.0, 6.3), (31.0, 3.0, 7.0), (31.5, 1.5, 7.0), 50, 2.8, 0.1),               # red fans going wild
+    SH(15.6, 19.0, kn0 + V((5.0, 0.6, -0.1)), kn0 + V((4.6, -0.6, -0.05)), kn0, kn0 + V((0, -1.6, 0)), 80, 2.0, 0.08),     # the knight gives up
+    SH(19.0, 20.7, (10.5, -14.0, 1.2), (10.3, -14.5, 1.1), (9, -23, 60), (9, -23, 42), 20, 8, 0.25),                      # the sky: GOD CANDLE
+    SH(20.7, 22.6, (-11.5, -12.5, 7.2), (-11.9, -12.3, 7.3), (9, -22, 3.0), (9, -22, 2.5), 28, 4, 0.5),                   # from the stands: it lands
+    SH(22.6, 24.7, (3.9, -13.5, 0.9), (3.0, -6.8, 1.2), (3.6, -17.0, 1.5), (3.6, -9.0, 1.9), 24, 4, 0.3),                 # the charge, from in front
+    SH(24.7, 25.5, (-1.5, -13.0, 2.0), (-2.0, -13.5, 2.2), (3.5, -6.5, 3.0), (3.5, -6.5, 3.5), 28, 4, 1.0),               # the tower goes
+    SH(25.5, 26.4, (9, -24.5, 9.5), (9, -23.5, 9.8), SB, SB, 85, 4),                                                      # 1-2
+    SH(26.4, 27.6, (8.2, -8.0, 3.8), (8.4, -7.7, 3.85), (9, -2.3, 5.7), (9, -2.3, 5.7), 85, 2.4, 0.1),                     # the red king, less smug
+    SH(27.6, 29.6, gag + V((-4.4, -0.5, 0.25)), gag + V((-4.0, -0.2, 0.25)), gag + V((0, 0.4, -0.05)), gag + V((0, 0.5, -0.05)), 85, 2.0, 0.1),  # jaws drop
+    SH(29.6, 33.0, kn1 + V((4.8, -1.2, 0.0)), kn1 + V((4.2, -0.4, 0.05)), kn1, kn1, 85, 2.0, 0.08),                        # the knight looks back
+    SH(33.0, 35.0, (-3.5, -30.0, 5.0), (-3.2, -27.0, 5.2), (-13, -36, 7.0), (-13, -33, 7.0), 45, 2.8, 0.15),              # blue fans
+    SH(35.0, 36.2, (13.0, -11.5, 0.7), (13.2, -11.0, 0.8), (14.5, -6.5, 5.2), (14.5, -6.5, 5.4), 26, 5),                  # the second tower, from below
+    SH(36.2, 39.0, (18.6, -21.0, 1.5), (18.9, -11.5, 1.7), (14.5, -19.0, 2.6), (14.5, -10.0, 2.8), 30, 4, 0.35),          # the whale's run
+    SH(39.0, 42.4, (11.0, -13.6, 1.6), (17.6, -12.2, 2.6), (14.5, -9.0, 3.2), (14.5, -7.2, 3.6), 32, 3.5, 0.2, 26),       # slow motion: the slam
+    SH(42.4, 43.4, (9, -8.5, 10.2), (9, -9.5, 10.6), SB, SB, 85, 4),                                                      # 2-2
+    SH(43.4, 44.8, (10.0, -24.6, 6.0), (9.6, -25.0, 6.0), (9, -30.0, 5.4), (9, -30.0, 5.5), 75, 2.2, 0.12),               # the blue king: fist pump
+    SH(44.8, 46.2, (8.3, -8.4, 3.2), (8.6, -7.9, 3.3), (9, -2.3, 5.7), (9, -2.3, 5.7), 60, 2.4, 0.2),                      # the red king panics
+    SH(46.2, 48.4, (9, -9.0, 30.0), (9, -6.5, 24.0), (9, -4.5, 0), (9, -3.2, 0), 30, 8, 0.6),                             # from above: the king tower
+    SH(48.4, 50.4, (11.0, -12.5, 4.2), (10.0, -10.5, 4.6), gi + V((0, 3, -2)), gi + V((0, 1.5, -1.5)), 32, 4, 0.2),        # the stands erupt
+    SH(50.4, 52.4, kn1 + V((4.6, 0.4, 0.0)), kn1 + V((4.2, 0.2, 0.05)), kn1, kn1, 70, 2.0, 0.15),                          # the knight, cheering
+    SH(52.4, 56.3, gag + V((-4.6, 0.7, 0.3)), gag + V((-3.4, 0.3, 0.2)), gag + V((0, 0.2, -0.1)), gag + V((0, 0.0, -0.15)), 70, 2.0, 0.08, 95),  # the fuse
+    SH(56.3, 58.0, (9, -44.0, 16.0), (9, -47.0, 18.0), (12, -14, 5.0), (12, -14, 5.5), 24, 8, 0.15),                       # the whole stadium; a puff in the east stand
+]
+import mathutils
+nz = mathutils.noise
+for f in range(1, LAST + 1):
+    t = (f - 1) / FPS; s = next((s for s in SHOTS if s['t0'] <= t < s['t1']), SHOTS[0] if t < 2 else SHOTS[-1])
+    u = ease((t - s['t0']) / (s['t1'] - s['t0'])); p = s['p0'].lerp(s['p1'], u); l = s['l0'].lerp(s['l1'], u)
+    sh = s['shake']
+    if sh:
+        n1 = nz.noise_vector(V((t * 2.3, s['t0'], 0.0))); n2 = nz.noise_vector(V((t * 9.0, s['t0'] + 7, 3.0)))
+        l = l + (n1 * 0.10 + n2 * 0.035) * sh * (p - l).length * 0.12; p = p + n1 * 0.04 * sh
+    d = l - p; rot = d.to_track_quat('-Z', 'Y').to_euler()
+    cam.location = p; cam.rotation_euler = rot; cam.data.lens = lerp(s['lens'], s['lens1'], u); cam.data.dof.focus_distance = d.length; cam.data.dof.aperture_fstop = s['fstop']
+    cam.keyframe_insert('location', frame=f); cam.keyframe_insert('rotation_euler', frame=f); cam.data.keyframe_insert('lens', frame=f)
+    cam.data.keyframe_insert('dof.focus_distance', frame=f); cam.data.keyframe_insert('dof.aperture_fstop', frame=f)
+cuts = {F(s['t0']) for s in SHOTS}
+for idb in (cam, cam.data):
+    for fc in idb.animation_data.action.fcurves:
+        for kp in fc.keyframe_points: kp.interpolation = 'CONSTANT' if int(round(kp.co.x)) + 1 in cuts else 'LINEAR'
+for o in bpy.data.objects:
+    if o.type == 'LIGHT': o.visible_camera = False
+json.dump([dict(t0=s['t0'], t1=s['t1']) for s in SHOTS], open(os.path.join(HERE, 'shots.json'), 'w'))
+sc.frame_set(1)
+bpy.ops.wm.save_as_mainfile(filepath=os.path.abspath(OUT), compress=False)
+print('SAVED', OUT)
