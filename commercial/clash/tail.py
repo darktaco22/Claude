@@ -1,6 +1,6 @@
 # ================================================================ CLASH AT THE BRIDGE: the battle
-T_FIGHT, T_MEET, T_SLAM, T_TOWER, T_WIN = 15.0, 16.3, 23.6, 24.6, 27.4
-THUNDER = [2.6, 14.4, 23.6, 28.6]
+T_FIGHT, T_MEET, T_SLAM, T_CRASH, T_FIRE, T_TOWER, T_WIN = 15.0, 16.3, 23.6, 24.6, 25.4, 26.9, 29.9      # animation time (the film re-times it: cams.py)
+THUNDER = [2.6, 14.4, 23.6, 31.1]
 def smooth(u):
     """The game's low-poly models: welded, smooth-shaded and subdivided at render time for the close-ups."""
     import bmesh
@@ -47,7 +47,7 @@ for uid, h, x, y, lane, dx in (('floki', 3.0, 3.5, -22.6, 3.5, 0.0), ('bonk', 2.
                                ('whale', 4.6, 14.5, -22.4, 14.5, 0.0), ('toshi', 2.7, 16.1, -23.5, 14.5, 1.3), ('pepe', 2.6, 12.7, -24.3, 14.5, -1.8)):
     u = fighter(uid, h, 'b'); BLUE[uid] = u; u['lane'] = lane; u['dx'] = dx
     stand(u, x, y, N_, 0, T_FIGHT, 'ready' if uid != 'whale' else 'idle')
-    ymeet = -17.5 - (0.5 if dx else 0) - (0.4 if uid == 'whale' else 0)
+    ymeet = -17.0 - (0.3 if dx else 0) - (0.5 if uid == 'whale' else 0)
     if uid == 'pepe': ymeet = -21.5
     u['t_arr'] = run_to(u, [(x, y), (lane + dx, ymeet)], T_FIGHT + 0.05 * abs(dx), 4.6 if uid != 'whale' else 3.9, 'run', 1.15); u['pos'] = (lane + dx, ymeet)
 for uid, h, x, y, lane, dx in (('troll', 2.8, 3.5, -9.4, 3.5, 0.0), ('zcat', 2.5, 2.1, -8.6, 3.5, -1.1), ('baton', 2.7, 4.9, -8.6, 3.5, 1.1),
@@ -55,7 +55,7 @@ for uid, h, x, y, lane, dx in (('troll', 2.8, 3.5, -9.4, 3.5, 0.0), ('zcat', 2.5
     u = fighter(uid, h, 'r'); REDU[uid] = u; u['lane'] = lane; u['dx'] = dx
     if uid == 'giga': stand(u, x, y, S_, 0, 6.6, 'ready'); clip(u, 'emote', F(6.6), F(9.6)); clip(u, 'ready', F(9.6), F(T_FIGHT))
     else: stand(u, x, y, S_, 0, T_FIGHT, 'ready')
-    ymeet = -14.5 + (0.5 if dx else 0) + (0.4 if uid == 'giga' else 0)
+    ymeet = -15.0 + (0.3 if dx else 0) + (0.4 if uid == 'giga' else 0)
     u['t_arr'] = run_to(u, [(x, y), (lane + dx, ymeet)], T_FIGHT + 0.05 * abs(dx), 4.6, 'run', 1.15); u['pos'] = (lane + dx, ymeet)
 B, R = BLUE, REDU
 def mid(a, b_, z=1.8): return Vector(((a['pos'][0] + b_['pos'][0]) / 2, (a['pos'][1] + b_['pos'][1]) / 2, z))
@@ -97,17 +97,29 @@ bpy.ops.mesh.primitive_torus_add(major_radius=1.0, minor_radius=0.07, major_segm
 for f, s in ((F(T_SLAM) - 1, 0.001), (F(T_SLAM), 1.0), (F(T_SLAM) + 16, 16.0), (F(T_SLAM) + 17, 0.001)): sw2.scale = (s, s, min(s, 1.0)); key(sw2, 'scale', f)
 linear(sw2); dust(Vector((14.5, gy - 0.8, 0.3)), T_SLAM, 1.7, 9, 7); sparks(Vector((14.5, gy - 0.5, 2.2)), T_SLAM, 30, 77, 9.0)
 # the champion leaves the bridge and arrives in his own tower
-r = GG['root']; sc.frame_set(F(T_SLAM)); p0 = r.matrix_world.translation.copy(); p1 = Vector((14.5, -6.6, 3.6)); n = F(T_TOWER) - F(T_SLAM)
+r = GG['root']; sc.frame_set(F(T_SLAM)); p0 = r.matrix_world.translation.copy(); p1 = Vector((14.5, -6.6, 3.6)); n = F(T_CRASH) - F(T_SLAM)
 for i in range(n + 1):
     u_ = i / n; p = p0.lerp(p1, u_) + Vector((0, 0, 5.5 * 4 * u_ * (1 - u_))); r.location = p; key(r, 'location', F(T_SLAM) + i); r.rotation_euler = (-u_ * 9.0, 0, r.rotation_euler.z); key(r, 'rotation_euler', F(T_SLAM) + i)
-clip(GG, 'die', F(T_SLAM), F(T_TOWER) + 1, 0.8, 0); sx = r.scale.copy(); key(r, 'scale', F(T_TOWER)); r.scale = sx * 0.0001; key(r, 'scale', F(T_TOWER) + 1); const(r)
+clip(GG, 'die', F(T_SLAM), F(T_CRASH) + 1, 0.8, 0); sx = r.scale.copy(); key(r, 'scale', F(T_CRASH)); r.scale = sx * 0.0001; key(r, 'scale', F(T_CRASH) + 1); const(r)
 CREW = {}
 for k in ('rL', 'rR'):
-    u = unit('chillguy', 1.87); place(u, (*TPOS[k], 3.86), 0.0); sched(u, [(0, 'idle', 1), (T_MEET, 'ready', 1), (T_SLAM + 0.2, 'hit', 0.6)] if k == 'rR' else [(0, 'idle', 1), (T_TOWER + 0.3, 'hit', 0.5), (T_TOWER + 1.6, 'lose', 1)]); CREW[k] = u
+    u = unit('chillguy', 1.87); place(u, (*TPOS[k], 3.86), 0.0); sched(u, [(0, 'idle', 1), (T_MEET, 'ready', 1), (T_CRASH, 'hit', 0.6), (T_CRASH + 1.2, 'lose', 1.5)] if k == 'rR' else [(0, 'idle', 1), (T_TOWER + 0.3, 'hit', 0.5), (T_TOWER + 1.6, 'lose', 1)]); CREW[k] = u
 for k in ('bL', 'bR'):
     u = unit('chillguy', 1.87); place(u, (*TPOS[k], 3.86), math.pi); sched(u, [(0, 'idle', 1), (T_MEET, 'ready', 1), (T_TOWER + 0.4, 'win', 1)])
-KB = unit('neet', 2.2); place(KB, (9, -29.5 + 0.55, 3.75), math.pi); sched(KB, [(0, 'sit', 1), (T_FIGHT, 'sityell', 1), (T_MEET + 1.5, 'sitcheer', 1), (T_SLAM, 'sitfistpump', 1), (T_TOWER + 2.0, 'sitclap', 1)])
-KR = unit('pudgy', 2.5); place(KR, (9, -3.05, 4.3), 0.0); sched(KR, [(0, 'idle', 1), (6.6, 'emote', 1.0), (9.8, 'win', 0.8), (T_MEET + 1.4, 'ready', 1), (T_TOWER + 0.3, 'hit', 0.45), (T_TOWER + 1.9, 'lose', 1.3)])
+KB = unit('neet', 2.2); place(KB, (9, -29.5 + 0.55, 3.75), math.pi); sched(KB, [(0, 'sit', 1), (T_FIGHT, 'sityell', 1), (T_MEET + 1.5, 'sitcheer', 1), (T_SLAM, 'sitfistpump', 1), (T_FIRE - 0.5, 'sityell', 1), (T_TOWER, 'sitfistpump', 1), (T_TOWER + 2.5, 'sitclap', 1)])
+KR = unit('pudgy', 2.5); place(KR, (9, -3.05, 4.3), 0.0); sched(KR, [(0, 'idle', 1), (6.6, 'emote', 1.0), (9.8, 'win', 0.8), (T_MEET + 1.4, 'ready', 1), (T_CRASH + 0.1, 'hit', 0.45), (T_CRASH + 1.7, 'lose', 1.6), (T_TOWER + 0.1, 'hit', 0.45), (T_TOWER + 1.7, 'lose', 1.3)])
+# the crash: the tower shakes and coughs dust but holds
+e = TW['rR']; cx = TPOS['rR'][0]
+for i, dx in enumerate((0.0, 0.22, -0.2, 0.14, -0.1, 0.05, 0.0)): e.location.x = cx + dx; key(e, 'location', F(T_CRASH) + i * 2)
+e.location.x = cx; dust(Vector((14.5, -6.8, 3.6)), T_CRASH, 2.2, 31, 8); sparks(Vector((14.5, -7.2, 3.8)), T_CRASH, 26, 32, 8.0); explode(Vector((14.5, -7.4, 3.2)), T_CRASH, 1.3, FIRE, 14, 33, DUST)
+# the blue king's cannon answers
+MUZ = Vector((9, -26.6, 5.25)); TGT = Vector((14.5, -6.6, 3.4)); T_BALL = T_TOWER - T_FIRE
+ball = sphere('cannonball', 0.42, MUZ, mat('ballm', (0.03, 0.03, 0.035), 0.3, metal=0.7)); ball.scale = (0.001,) * 3; key(ball, 'scale', F(T_FIRE) - 1); ball.scale = (1, 1, 1); key(ball, 'scale', F(T_FIRE))
+nb = F(T_TOWER) - F(T_FIRE)
+for i in range(nb + 1):
+    u_ = i / nb; ball.location = MUZ.lerp(TGT, u_) + Vector((0, 0, 9.0 * 4 * u_ * (1 - u_))); key(ball, 'location', F(T_FIRE) + i)
+ball.scale = (0.001,) * 3; key(ball, 'scale', F(T_TOWER) + 1); const(ball); linear(ball)
+explode(MUZ + Vector((0, 0.6, 0)), T_FIRE, 1.1, FIRE, 0, 34, DUST, light=(1.0, 0.7, 0.3)); sparks(MUZ + Vector((0, 0.8, 0)), T_FIRE, 24, 35, 10.0)
 kill_tower('rR', T_TOWER, 61, [CREW['rR']])
 # the heroes regroup and pose
 for i, (uid, x, y) in enumerate((('floki', 5.2, -12.2), ('bonk', 3.6, -12.8), ('swordcat', 6.9, -12.6), ('whale', 9.6, -10.6), ('toshi', 12.3, -12.5), ('pepe', 14.0, -12.9))):

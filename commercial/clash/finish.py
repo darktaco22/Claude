@@ -7,7 +7,7 @@ import numpy as np, soundfile as sf
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 FR, OUT = sys.argv[1:3]; os.makedirs(OUT, exist_ok=True)
 HERE = os.path.dirname(os.path.abspath(__file__)); A = os.path.join(HERE, '..', 'assets'); AU = os.path.join(HERE, 'audio')
-W, H, FPS, N3A, N3B, NF = 1920, 1080, 24, 37, 744, 840
+W, H, FPS, N3A, N3B, NF = 1920, 1080, 24, 37, 1332, 1428
 ONLY = [int(x) for x in sys.argv[3].split(',')] if len(sys.argv) > 3 else None
 def font(s): return ImageFont.truetype(os.path.join(A, 'lilita.ttf'), s)
 def rub(s, w=700):
@@ -16,8 +16,15 @@ def rub(s, w=700):
     except Exception: pass
     return f
 def ease(x): x = max(0.0, min(1.0, x)); return 1 - (1 - x) ** 3
-T_FIGHT, T_MEET, T_SLAM, T_TOWER, T_WIN = 15.0, 16.3, 23.6, 24.6, 27.4
-THUNDER = [2.6, 14.4, 23.6, 28.6]
+T_FIGHT, T_MEET, T_SLAM, T_CRASH, T_FIRE, T_TOWER, T_WIN = 15.0, 16.3, 23.6, 24.6, 25.4, 26.9, 29.9      # animation time
+THUNDER = [2.6, 14.4, 23.6, 31.1]
+EDL = json.load(open(os.path.join(HERE, 'edl.json')))['shots']
+def anim(t):          # film time -> animation time (None outside the 3D part)
+    s_ = next((x for x in EDL if x['t0'] <= t < x['t1']), None)
+    return None if s_ is None else s_['a0'] + (t - s_['t0']) * s_['speed']
+def fts(a):           # animation time -> every film time that shows it
+    return [x['t0'] + (a - x['a0']) / x['speed'] for x in EDL if x['a0'] <= a < x['a0'] + (x['t1'] - x['t0']) * x['speed']]
+def ft(a, d=None): r = fts(a); return r[0] if r else d
 yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
 VIG = (1 - 0.34 * (((xx - W / 2) / (W / 2)) ** 2 + ((yy - H / 2) / (H / 2)) ** 2) ** 1.25)[..., None]
 def grade(a, t, f):
@@ -28,9 +35,10 @@ def grade(a, t, f):
     hi = np.clip((a.max(axis=2, keepdims=True) - 0.8) / 0.2, 0, 1) * a
     hb = Image.fromarray((hi * 255).astype(np.uint8)).resize((W // 4, H // 4), Image.BILINEAR).filter(ImageFilter.GaussianBlur(9))
     a = a + np.asarray(hb.resize((W, H), Image.BILINEAR), np.float32) / 255.0 * 0.5
-    fl = sum(max(0.0, 1 - abs(t - th - d) / 0.06) * w_ for th in THUNDER for d, w_ in ((0.0, 1.0), (0.17, 0.5), (0.29, 0.8)))      # lightning
+    ta = anim(t); ta = -99 if ta is None else ta
+    fl = sum(max(0.0, 1 - abs(ta - th - d) / 0.06) * w_ for th in THUNDER for d, w_ in ((0.0, 1.0), (0.17, 0.5), (0.29, 0.8)))      # lightning
     if fl > 0: a = a + fl * 0.16 * np.array([0.8, 0.88, 1.0], np.float32)
-    fl = max(0.0, 1 - abs(t - T_TOWER - 0.03) / 0.09)
+    fl = max(0.0, 1 - abs(ta - T_TOWER - 0.03) / 0.09)
     if fl > 0: a = a + fl * 0.3 * np.array([1.0, 0.85, 0.6], np.float32)
     a = a * VIG
     return a + np.random.default_rng(f).normal(0, 0.012, (H, W, 1)).astype(np.float32)
@@ -96,10 +104,11 @@ def put(x, t, g=1.0):
 def seg(x, t0, t1): return x[int(t0 * SR):int(t1 * SR)]
 def envelope(pts, length): return np.interp(np.arange(length) / SR, [p[0] for p in pts], [p[1] for p in pts]).astype(np.float32)[:, None]
 def mono(s): return np.stack([s, s], 1).astype(np.float32)
-# music: a low drone and war drums for the stand-off; the game's OVERDOSE theme from the charge; the menu theme under the logo
-tt = np.arange(int(15.2 * SR)) / SR
+C0 = ft(15.05)                      # the charge begins (film time)
+END3 = N3B / FPS
+tt = np.arange(int((C0 + 0.2) * SR)) / SR
 dr = (np.sin(2 * np.pi * 49 * tt) + 0.6 * np.sin(2 * np.pi * 73.4 * tt) + 0.35 * np.sin(2 * np.pi * 98 * tt + 0.4)) * (0.7 + 0.3 * np.sin(2 * np.pi * 0.2 * tt))
-put(mono(dr) * envelope([(0, 0), (1.5, 0.16), (13.5, 0.22), (15.0, 0.3), (15.2, 0)], len(tt)), 0.0)
+put(mono(dr) * envelope([(0, 0), (1.5, 0.16), (C0 - 1.5, 0.22), (C0, 0.3), (C0 + 0.2, 0)], len(tt)), 0.0)
 def taiko(t, g=0.5, f0=80):
     x = np.arange(int(0.7 * SR)) / SR; s = np.sin(2 * np.pi * (f0 * x - 45 * x * x)) * np.exp(-x / 0.16) + rng.normal(0, 1, len(x)) * np.exp(-x / 0.012) * 0.35
     put(mono(s), t, g)
@@ -114,13 +123,20 @@ def riser(t0, t1, g=0.5):
     x = np.arange(int((t1 - t0) * SR)) / SR; u = x / (t1 - t0); nz = rng.normal(0, 1, len(x)); k = nz - np.concatenate([[0], nz[:-1]]) * (1 - u)
     put(mono((k * 0.25 + np.sin(2 * np.pi * (90 * x + 200 * x * x / (t1 - t0))) * 0.5) * u ** 2), t0, g)
 t = 4.5; i = 0
-while t < 14.9:      # the march: a drum pattern that tightens
-    taiko(t, 0.55 if i % 4 == 0 else 0.32, 78 if i % 4 == 0 else 96); t += 0.5 if t < 9.2 else (0.375 if t < 13.6 else 0.19); i += 1
-for th in THUNDER: thunder(th + 0.05, 0.85 if th < 20 else 0.6)
-riser(13.2, T_FIGHT, 0.5); riser(22.0, T_SLAM, 0.55)
-mo = load('mus_overdose'); x = seg(mo, 6.0, 6.0 + 16.2); put(x * envelope([(0, 0.0), (0.05, 0.95), (7.0, 0.85), (9.6, 0.9), (12.4, 0.9), (14.6, 0.55), (16.2, 0.0)], len(x)), T_FIGHT)
-mm = load('mus_menu'); x = seg(mm, 4.0, 4.0 + 5.0); put(x * envelope([(0, 0), (0.4, 0.75), (3.6, 0.75), (5.0, 0.0)], len(x)), 30.4)
-# the crowd
+while t < C0 - 0.1:      # the march: a drum pattern that tightens
+    taiko(t, 0.55 if i % 4 == 0 else 0.32, 78 if i % 4 == 0 else 96); t += 0.5 if t < 11 else (0.375 if t < C0 - 2.4 else 0.19); i += 1
+for th in THUNDER:
+    for x_ in fts(th)[:1]: thunder(x_ + 0.05, 0.85)
+riser(C0 - 1.8, C0, 0.5); riser(ft(22.6), ft(T_SLAM), 0.55); riser(ft(25.5), ft(T_TOWER), 0.45)
+mo = load('mus_overdose'); L_ = END3 - C0 + 1.2; x = seg(mo, 6.0, 6.0 + L_)
+put(x * envelope([(0, 0.0), (0.05, 0.95), (L_ - 9.0, 0.88), (L_ - 3.0, 0.8), (L_ - 1.0, 0.5), (L_, 0.0)], len(x)), C0)
+mm = load('mus_menu'); x = seg(mm, 4.0, 4.0 + 5.0); put(x * envelope([(0, 0), (0.4, 0.75), (3.6, 0.75), (5.0, 0.0)], len(x)), END3 - 0.6)
+def whoosh(t, dur=1.2, g=0.35):      # slow motion: a low swell
+    x = np.arange(int(dur * SR)) / SR; u = x / dur; nz = rng.normal(0, 1, len(x)); k = np.convolve(nz, np.ones(200) / 200, 'same') * 14
+    put(mono(k * np.sin(np.pi * u) ** 2 + 0.3 * np.sin(2 * np.pi * (60 + 50 * u) * x) * np.sin(np.pi * u) ** 2), t, g)
+for x_ in EDL:
+    if x_['speed'] < 0.8: whoosh(x_['t0'], min(1.6, x_['t1'] - x_['t0']), 0.4)
+    if x_['t0'] > C0 - 0.1 and x_['t0'] < ft(T_WIN): taiko(x_['t0'], 0.5, 70)      # a drum on every cut of the battle
 def roar(src, length, dens=30):
     out = np.zeros((int(length * SR), 2), np.float32); L = len(src)
     for i in range(int(length * dens)):
@@ -130,21 +146,26 @@ def roar(src, length, dens=30):
         out[p0:p0 + len(piece), 0] += piece[:, 0] * pan; out[p0:p0 + len(piece), 1] += piece[:, 1] * (1.3 - pan)
     return out / max(1e-6, np.abs(out).max())
 cheer = load('crowd_cheer'); ooh = load('crowd_ooh'); gasp = load('crowd_gasp')
-bed = roar(cheer, 35, 34) * 0.7 + roar(ooh, 35, 10) * 0.3
-put(bed * envelope([(0, 0), (1.2, 0), (2.0, 0.22), (4.5, 0.2), (7.0, 0.34), (9.2, 0.3), (12, 0.36), (14.0, 0.3), (T_FIGHT, 0.55), (T_MEET, 0.7), (22.4, 0.6), (23.0, 0.35), (T_SLAM, 0.4), (T_SLAM + 0.3, 0.9),
-                         (T_TOWER, 1.0), (T_TOWER + 0.4, 1.3), (T_WIN, 1.0), (T_WIN + 0.5, 1.3), (30.6, 1.0), (31.4, 0.3), (32.5, 0.0), (36, 0)], len(bed)), 0.0)
-for t_, s_, g in ((T_SLAM + 0.2, gasp, 1.2), (17.7, ooh, 0.8), (19.4, ooh, 0.8), (21.0, ooh, 0.8)): put(s_, t_, g)
-# the game's own announcer and effects
-for t_, name, g in ((1.6, 'vo_rumble', 0.9), (7.4, 'laugh_blast', 0.6), (T_FIGHT - 0.25, 'vo_fight', 1.3), (T_FIGHT + 0.1, 'charge_rush', 1.0), (T_MEET, 'punch_heavy', 1.0), (T_MEET + 0.1, 'swing', 0.8),
-                    (16.7, 'swing', 0.7), (17.25, 'deploy_spell', 0.9), (17.5, 'punch_heavy', 0.9), (17.6, 'rocket_explode', 0.9), (17.6, 'unit_die', 0.7), (17.7, 'punch_heavy', 0.8), (18.5, 'swing', 0.7), (19.1, 'punch_heavy', 0.9),
-                    (19.1, 'unit_die', 0.6), (19.3, 'punch_heavy', 1.0), (19.3, 'unit_die', 0.7), (19.8, 'punch_heavy', 0.9), (19.95, 'deploy_spell', 0.8), (20.3, 'rocket_explode', 0.7), (20.9, 'punch_heavy', 1.0), (20.9, 'unit_die', 0.7),
-                    (T_SLAM - 0.05, 'whale_slam', 1.4), (T_SLAM, 'house_stomp', 1.0), (T_TOWER, 'tower_destroy', 1.5), (T_TOWER, 'rocket_explode', 1.1), (T_WIN + 0.2, 'vo_victory', 1.2), (T_WIN + 0.9, 'victory', 0.7), (25.4, 'level_up', 0.5)):
-    try: put(load(name), t_, g)
-    except Exception as e: print('sfx', name, e)
-for t_ in (16.7, 17.6, 18.5, 19.4, 20.2, 16.6, 17.4, 18.2):      # steel on steel
-    x = np.arange(int(0.35 * SR)) / SR; s_ = (np.sin(2 * np.pi * 2900 * x) + 0.6 * np.sin(2 * np.pi * 4350 * x) + 0.4 * np.sin(2 * np.pi * 6100 * x)) * np.exp(-x / 0.07) + rng.normal(0, 1, len(x)) * np.exp(-x / 0.006)
-    put(mono(s_), t_, 0.16)
-boom(T_MEET, 60, 1.2, 0.7); boom(T_SLAM, 50, 2.2, 1.0); boom(T_TOWER, 58, 1.8, 0.9); boom(1.5, 46, 2.4, 0.6)
+bed = roar(cheer, NF / FPS, 34) * 0.7 + roar(ooh, NF / FPS, 10) * 0.3
+put(bed * envelope([(0, 0), (1.2, 0), (2.0, 0.22), (4.5, 0.2), (7.0, 0.34), (12, 0.34), (C0 - 1.0, 0.3), (C0, 0.6), (ft(16.6), 0.75), (ft(22.4), 0.6), (ft(22.4) + 0.6, 0.35), (ft(T_SLAM), 0.4), (ft(T_SLAM) + 0.3, 0.9),
+                         (ft(T_CRASH), 0.9), (ft(T_FIRE), 0.6), (ft(T_TOWER), 0.7), (ft(T_TOWER) + 0.4, 1.3), (ft(T_WIN + 0.2), 1.0), (ft(T_WIN + 0.2) + 0.5, 1.3), (END3 - 0.4, 1.0), (END3 + 0.5, 0.3), (END3 + 1.6, 0.0), (NF / FPS + 1, 0)], len(bed)), 0.0)
+def ev(a, name, g):      # a game sound at every film moment that shows animation time a
+    for x_ in fts(a):
+        try: put(load(name), x_, g)
+        except Exception as e: print('sfx', name, e)
+put(load('vo_rumble'), 1.6, 0.9); put(load('laugh_blast'), ft(7.4), 0.6)
+for a, name, g in ((T_FIGHT + 0.05, 'vo_fight', 1.3), (T_FIGHT + 0.1, 'charge_rush', 0.9), (T_MEET, 'punch_heavy', 1.0), (T_MEET + 0.05, 'swing', 0.8), (16.7, 'swing', 0.7), (17.25, 'deploy_spell', 0.9), (17.5, 'punch_heavy', 1.0),
+                   (17.5, 'unit_die', 0.7), (17.6, 'rocket_explode', 0.9), (17.7, 'punch_heavy', 0.8), (18.5, 'swing', 0.7), (19.1, 'punch_heavy', 0.9), (19.1, 'unit_die', 0.6), (19.3, 'punch_heavy', 1.0), (19.3, 'unit_die', 0.7),
+                   (19.8, 'punch_heavy', 0.9), (19.95, 'deploy_spell', 0.8), (20.3, 'rocket_explode', 0.7), (20.9, 'punch_heavy', 1.0), (20.9, 'unit_die', 0.7), (T_SLAM - 0.05, 'whale_slam', 1.4), (T_SLAM, 'house_stomp', 1.0),
+                   (T_CRASH, 'tower_hit', 1.3), (T_CRASH, 'punch_heavy', 1.0), (T_FIRE, 'rocket_launch', 1.3), (T_FIRE, 'tower_shot', 1.2), (T_TOWER, 'tower_destroy', 1.5), (T_TOWER, 'rocket_explode', 1.1),
+                   (T_WIN + 0.3, 'vo_victory', 1.2), (T_WIN + 1.0, 'victory', 0.7), (27.7, 'level_up', 0.5)):
+    ev(a, name, g)
+for a in (16.7, 17.6, 18.5, 19.4, 20.2, 16.6, 17.4, 18.2):      # steel on steel
+    for x_ in fts(a):
+        x = np.arange(int(0.35 * SR)) / SR; s_ = (np.sin(2 * np.pi * 2900 * x) + 0.6 * np.sin(2 * np.pi * 4350 * x) + 0.4 * np.sin(2 * np.pi * 6100 * x)) * np.exp(-x / 0.07) + rng.normal(0, 1, len(x)) * np.exp(-x / 0.006)
+        put(mono(s_), x_, 0.16)
+for x_ in fts(T_MEET): boom(x_, 60, 1.2, 0.7)
+boom(ft(T_SLAM), 50, 2.2, 1.0); boom(ft(T_TOWER), 58, 1.8, 0.9); boom(ft(T_CRASH), 64, 1.2, 0.7); boom(ft(T_FIRE), 70, 0.9, 0.7); boom(1.5, 46, 2.4, 0.6)
 mix = np.tanh(mix * 0.9) * 0.95
 sf.write(os.path.join(OUT, 'mix.wav'), mix[:int(NF / FPS * SR)], SR)
 print('MIX-DONE')

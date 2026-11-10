@@ -15,26 +15,55 @@ bolt_l = bpy.data.objects.new('lightning', bpy.data.lights.new('lightning', 'SUN
 for f in range(1, LAST + 1):
     t = (f - 1) / FPS; e = sum(max(0.0, 1 - abs(t - th - d) / 0.05) * w_ for th in THUNDER for d, w_ in ((0.0, 1.0), (0.17, 0.5), (0.29, 0.8)))
     bolt_l.data.energy = 5.0 * e; bolt_l.data.keyframe_insert('energy', frame=f)
-# ================================================================ camera
+# ================================================================ the edit
+# Each shot shows a stretch of the ANIMATION (starting at a0, played at `speed`) from its own camera: slow motion and
+# overlapping angles of the same moment. render_edl.py renders film frames from edl.json.
 cam = bpy.data.objects.new('cam', bpy.data.cameras.new('cam')); COL.objects.link(cam); sc.camera = cam
 cam.data.sensor_width = 36; cam.data.dof.use_dof = True; cam.data.clip_end = 2000
-V = Vector
-def SH(t0, t1, p0, p1, l0, l1, lens, fstop=2.8, shake=0.0, lens1=None, focus=None):
-    return dict(t0=t0, t1=t1, p0=V(p0), p1=V(p1), l0=V(l0), l1=V(l1), lens=lens, lens1=lens1 or lens, fstop=fstop, shake=shake, focus=focus)
-SHOTS = [
-    SH(1.5, 4.5, (9, -52, 27), (9, -45, 18), (9, -14, 5), (9, -14, 4), 24, 8),                                    # the stadium at dusk
-    SH(4.5, 7.0, (1.3, -13.4, 1.0), (5.6, -13.4, 1.1), (2.6, -9.0, 1.7), (4.4, -9.0, 1.75), 28, 2.8, 0.1),          # red's line, low dolly
-    SH(7.0, 9.2, (12.9, -13.4, 1.2), (13.2, -12.9, 1.3), (14.5, -9.6, 2.4), (14.5, -9.6, 2.5), 35, 2.4, 0.1),       # the champion taunts
-    SH(9.2, 12.0, (11.2, -18.6, 1.5), (11.6, -19.2, 1.7), (14.5, -22.6, 2.8), (14.5, -22.6, 3.0), 24, 3.2, 0.1, 28),   # blue's right wing: the whale
-    SH(12.0, 13.6, (3.9, -18.8, 1.7), (3.7, -19.3, 1.8), (3.5, -22.6, 2.3), (3.5, -22.6, 2.35), 32, 2.8, 0.1),      # the viking and his wing
-    SH(13.6, 15.0, (0.9, -16.0, 2.2), (1.2, -16.0, 2.3), (9.5, -16.0, 2.0), (9.5, -16.0, 2.0), 19, 5.6, 0.1),      # across the river: both lines; lightning
-    SH(15.0, 16.4, (7.2, -21.5, 0.8), (7.0, -17.4, 0.9), (3.5, -21.8, 1.6), (3.6, -17.4, 1.6), 24, 4, 0.5),        # the charge
-    SH(16.4, 17.9, (6.9, -16.2, 1.3), (6.5, -16.0, 1.5), (3.4, -16.0, 1.7), (3.4, -16.0, 1.8), 28, 3.2, 0.7),      # left bridge: impact
-    SH(17.9, 19.0, (12.0, -24.6, 2.9), (12.2, -24.2, 2.9), (14.6, -15.5, 1.8), (14.6, -15.5, 1.8), 30, 4, 0.3),    # over the wizard's shoulder
-    SH(19.0, 21.0, (6.4, -12.6, 3.0), (6.0, -13.0, 2.6), (3.6, -16.4, 1.5), (3.8, -16.2, 1.6), 32, 3.2, 0.5),      # left bridge from red's side
-    SH(21.0, 22.4, (17.3, -16.6, 1.4), (17.2, -16.2, 1.5), (14.5, -16.4, 2.5), (14.5, -16.2, 2.6), 22, 4, 0.3),    # the giants, in profile
-    SH(22.4, 24.0, (12.6, -13.0, 0.7), (12.9, -13.3, 0.8), (14.5, -17.2, 3.0), (14.5, -17.0, 3.1), 21, 4, 0.5),    # the slam, from below
-    SH(24.0, 25.4, (10.9, -1.6, 8.4), (10.7, -1.4, 8.6), (14.5, -10.0, 4.5), (14.5, -6.8, 3.2), 26, 4, 0.9),        # the champion arrives in his tower (from the red king's side)
-    SH(25.4, 27.4, (9, -25.5, 5.0), (9, -23.5, 4.2), (11.5, -9, 3.5), (10.0, -11, 3.0), 30, 4, 0.3),               # smoke; the heroes regroup
-    SH(27.4, 31.0, (9.2, -18.2, 0.8), (9.2, -16.6, 1.0), (9.2, -11.8, 2.6), (9.2, -11.8, 2.9), 21, 4, 0.12, 25),   # the pose
-]
+SHOTS = []; _t = [1.5]
+def SH(dur, a0, speed, p0, p1, l0, l1, lens, fstop=2.8, shake=0.0, lens1=None):
+    SHOTS.append(dict(t0=round(_t[0], 4), t1=round(_t[0] + dur, 4), a0=a0, speed=speed, p0=list(p0), p1=list(p1), l0=list(l0), l1=list(l1), lens=lens, lens1=lens1 or lens, fstop=fstop, shake=shake)); _t[0] += dur
+def pos(u): return u['pos']
+bz, zc = pos(B['bonk']), pos(R['zcat']); ts, tp = pos(B['toshi']), pos(R['triplet']); sw_, ba = pos(B['swordcat']), pos(R['baton'])
+SH(3.0, 1.5, 1, (9, -52, 27), (9, -45, 18), (9, -14, 5), (9, -14, 4), 24, 8)                                     # the stadium at dusk
+SH(2.5, 4.5, 1, (1.3, -13.4, 1.0), (5.6, -13.4, 1.1), (2.6, -9.0, 1.7), (4.4, -9.0, 1.75), 28, 2.8, 0.1)          # red's line, low dolly
+SH(2.2, 7.0, 1, (12.9, -13.4, 1.2), (13.2, -12.9, 1.3), (14.5, -9.6, 2.4), (14.5, -9.6, 2.5), 35, 2.4, 0.1)       # the champion taunts
+SH(1.5, 8.0, 1, (5.2, -8.2, 4.6), (5.6, -7.6, 4.7), (9, -3.05, 5.9), (9, -3.05, 6.0), 70, 2.8)                    # the red king enjoys it
+SH(2.8, 9.2, 1, (11.2, -18.6, 1.5), (11.6, -19.2, 1.7), (14.5, -22.6, 2.8), (14.5, -22.6, 3.0), 24, 3.2, 0.1, 28) # blue's right wing: the whale
+SH(1.6, 12.0, 1, (3.9, -18.8, 1.7), (3.7, -19.3, 1.8), (3.5, -22.6, 2.3), (3.5, -22.6, 2.35), 32, 2.8, 0.1)       # the viking and his wing
+SH(1.5, 13.0, 1, (11.3, -24.8, 7.0), (11.0, -25.3, 7.0), (9, -28.9, 5.05), (9, -28.9, 5.1), 52, 2.8, 0.1)         # the blue king, at his cannon
+SH(1.4, 13.6, 1, (0.9, -16.0, 2.2), (1.2, -16.0, 2.3), (9.5, -16.0, 2.0), (9.5, -16.0, 2.0), 19, 5.6, 0.1)        # across the river: both lines; lightning
+SH(1.0, 15.0, 1, (11.0, -25.2, 6.9), (10.8, -25.5, 6.9), (9, -28.9, 5.1), (9, -28.9, 5.15), 62, 2.8, 0.25)        # "FIGHT!"
+# ---- the charge, from everywhere
+SH(1.6, 15.05, 0.4, (3.5, -15.6, 0.6), (3.5, -15.5, 0.65), (3.5, -21.0, 1.7), (3.5, -18.8, 1.7), 28, 2.8, 0.35)   # blue's left wing, head on, slow
+SH(1.6, 15.05, 0.4, (3.5, -16.4, 0.6), (3.5, -16.5, 0.65), (3.5, -11.0, 1.7), (3.5, -13.2, 1.7), 28, 2.8, 0.35)   # red's left wing, head on, slow
+SH(1.4, 15.3, 0.5, (10.8, -21.6, 1.2), (10.8, -19.0, 1.3), (14.5, -21.2, 2.6), (14.5, -18.6, 2.6), 30, 2.8, 0.3)  # the whale, tracking from the side
+SH(1.4, 15.3, 0.5, (14.9, -16.6, 0.7), (14.9, -16.7, 0.75), (14.5, -11.0, 2.4), (14.5, -13.9, 2.4), 32, 2.8, 0.35)  # the champion, straight at us
+SH(1.4, 15.1, 1.0, (9, -16.4, 27), (9, -16.4, 22), (9, -16.0, 0), (9, -16.0, 0), 26, 8, 0.15)                     # from above: two lines close on two bridges
+SH(1.0, 16.0, 0.3, (5.6, -16.0, 0.35), (5.5, -16.0, 0.4), (3.5, -16.0, 1.4), (3.5, -16.0, 1.45), 20, 4, 0.3)      # at ground level between them
+SH(1.1, 16.25, 0.35, (1.3, -16.0, 1.5), (1.45, -16.0, 1.5), (3.5, -16.0, 1.7), (3.5, -16.0, 1.7), 24, 3.2, 0.6)   # impact, slow
+# ---- the battle
+SH(1.0, 16.6, 0.7, (6.9, -16.2, 1.3), (6.5, -16.0, 1.5), (3.4, -16.0, 1.7), (3.4, -16.0, 1.8), 28, 3.2, 0.7)      # left bridge
+SH(1.2, 17.36, 0.35, (0.9, -16.7, 1.4), (1.0, -16.4, 1.45), (bz[0], -16.0, 1.7), (bz[0], -15.6, 1.9), 28, 3.2, 0.4)   # the bat connects, slow
+SH(1.1, 17.2, 1, (12.0, -24.6, 2.9), (12.2, -24.2, 2.9), (14.6, -15.5, 1.8), (14.6, -15.5, 1.8), 30, 4, 0.3)      # over the wizard's shoulder
+SH(1.4, 17.5, 1, (17.3, -16.6, 1.4), (17.2, -16.2, 1.5), (14.5, -16.4, 2.5), (14.5, -16.2, 2.6), 22, 4, 0.4)      # the giants trade blows
+SH(1.4, 19.0, 1, (6.4, -12.6, 3.0), (6.0, -13.0, 2.6), (3.6, -16.4, 1.5), (3.8, -16.2, 1.6), 32, 3.2, 0.5)        # left bridge from red's side
+SH(1.0, 18.9, 0.4, (17.3, -16.5, 1.5), (17.2, -16.3, 1.5), (ts[0], -16.0, 1.7), (ts[0], -15.7, 1.9), 28, 3.2, 0.4)    # the ninja's cut, slow
+SH(1.2, 20.2, 1, (7.0, -16.7, 1.6), (6.8, -16.4, 1.6), (sw_[0], -16.0, 1.8), (sw_[0], -15.8, 1.9), 35, 3.2, 0.5)  # steel on steel
+SH(1.4, 21.0, 1, (17.3, -16.6, 1.4), (17.2, -16.2, 1.5), (14.5, -16.4, 2.5), (14.5, -16.2, 2.6), 22, 4, 0.3)      # the giants, in profile
+SH(2.8, 22.4, 0.55, (12.6, -13.0, 0.7), (12.9, -13.3, 0.8), (14.5, -17.2, 3.0), (14.5, -17.0, 3.1), 21, 4, 0.5)   # the slam, from below, slow
+SH(1.4, 23.9, 1, (10.9, -1.6, 8.4), (10.7, -1.4, 8.6), (14.5, -10.0, 4.5), (14.5, -6.8, 3.2), 26, 4, 0.9)         # the champion arrives in his tower
+SH(1.2, 24.7, 1, (5.4, -7.9, 4.8), (5.6, -7.6, 4.85), (9, -3.05, 6.0), (9, -3.05, 6.0), 90, 2.8, 0.2)             # the red king, less amused
+SH(1.2, 25.0, 1, (12.6, -25.6, 6.3), (12.4, -25.9, 6.3), (9, -27.4, 5.2), (9, -27.2, 5.25), 35, 4, 0.5)           # the blue king fires
+SH(1.2, 25.5, 1, (4.0, -24.0, 9.0), (8.0, -10.0, 8.0), (9.4, -25.6, 7.6), (13.8, -9.2, 7.9), 40, 4, 0.3)          # with the cannonball
+SH(1.6, 26.7, 1, (9, -22.0, 3.5), (9, -20.5, 3.2), (13.5, -7.0, 4.0), (13.5, -7.0, 4.0), 30, 4, 0.8)              # the tower goes
+SH(2.0, 28.0, 1, (9, -25.5, 5.0), (9, -23.5, 4.2), (11.5, -9, 3.5), (10.0, -11, 3.0), 30, 4, 0.3)                 # smoke; the heroes regroup
+SH(3.4, 30.0, 1, (9.2, -18.2, 0.8), (9.2, -16.6, 1.0), (9.2, -11.8, 2.6), (9.2, -11.8, 2.9), 21, 4, 0.12, 25)     # the pose
+SH(2.5, 32.5, 1, (9, -21.0, 5.0), (9, -41.0, 21.0), (9, -12.0, 3.0), (9, -13.0, 3.0), 24, 8, 0.1)                 # up and away: the whole stadium
+print('FILM 3D ends at', _t[0], 'frames', F(_t[0]) - 1)
+json.dump(dict(fps=FPS, first=37, last=F(_t[0]) - 1, shots=SHOTS), open(os.path.join(HERE, 'edl.json'), 'w'), indent=0)
+for o in bpy.data.objects:
+    if o.type == 'LIGHT': o.visible_camera = False
+sc.frame_set(1)
+bpy.ops.wm.save_as_mainfile(filepath=os.path.abspath(OUT), compress=False)
+print('SAVED', OUT)

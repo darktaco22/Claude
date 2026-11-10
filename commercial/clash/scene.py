@@ -9,7 +9,7 @@ A = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
 def arg(k, d=None): return A[A.index(k) + 1] if k in A else d
 OUT = arg('--out', 'scene.blend')
 HERE = os.path.dirname(os.path.abspath(__file__)); M = os.path.join(HERE, '..', 'comeback', 'models'); TEX = os.path.join(HERE, '..', 'comeback', 'tex')
-FPS = 24; LAST = 744
+FPS = 24; LAST = 845
 F = lambda t: int(round(t * FPS)) + 1
 rnd = random.Random(7)
 
@@ -361,8 +361,8 @@ def kill_tower(k, t, seed, crew=(), fire=FIRE):
     for u in crew: fling(u, t, (rnd.uniform(-1, 1), rnd.uniform(0.2, 1)), up=14, dist=9, dur=1.6)
 
 # ================================================================ CLASH AT THE BRIDGE: the battle
-T_FIGHT, T_MEET, T_SLAM, T_TOWER, T_WIN = 15.0, 16.3, 23.6, 24.6, 27.4
-THUNDER = [2.6, 14.4, 23.6, 28.6]
+T_FIGHT, T_MEET, T_SLAM, T_CRASH, T_FIRE, T_TOWER, T_WIN = 15.0, 16.3, 23.6, 24.6, 25.4, 26.9, 29.9      # animation time (the film re-times it: cams.py)
+THUNDER = [2.6, 14.4, 23.6, 31.1]
 def smooth(u):
     """The game's low-poly models: welded, smooth-shaded and subdivided at render time for the close-ups."""
     import bmesh
@@ -409,7 +409,7 @@ for uid, h, x, y, lane, dx in (('floki', 3.0, 3.5, -22.6, 3.5, 0.0), ('bonk', 2.
                                ('whale', 4.6, 14.5, -22.4, 14.5, 0.0), ('toshi', 2.7, 16.1, -23.5, 14.5, 1.3), ('pepe', 2.6, 12.7, -24.3, 14.5, -1.8)):
     u = fighter(uid, h, 'b'); BLUE[uid] = u; u['lane'] = lane; u['dx'] = dx
     stand(u, x, y, N_, 0, T_FIGHT, 'ready' if uid != 'whale' else 'idle')
-    ymeet = -17.5 - (0.5 if dx else 0) - (0.4 if uid == 'whale' else 0)
+    ymeet = -17.0 - (0.3 if dx else 0) - (0.5 if uid == 'whale' else 0)
     if uid == 'pepe': ymeet = -21.5
     u['t_arr'] = run_to(u, [(x, y), (lane + dx, ymeet)], T_FIGHT + 0.05 * abs(dx), 4.6 if uid != 'whale' else 3.9, 'run', 1.15); u['pos'] = (lane + dx, ymeet)
 for uid, h, x, y, lane, dx in (('troll', 2.8, 3.5, -9.4, 3.5, 0.0), ('zcat', 2.5, 2.1, -8.6, 3.5, -1.1), ('baton', 2.7, 4.9, -8.6, 3.5, 1.1),
@@ -417,7 +417,7 @@ for uid, h, x, y, lane, dx in (('troll', 2.8, 3.5, -9.4, 3.5, 0.0), ('zcat', 2.5
     u = fighter(uid, h, 'r'); REDU[uid] = u; u['lane'] = lane; u['dx'] = dx
     if uid == 'giga': stand(u, x, y, S_, 0, 6.6, 'ready'); clip(u, 'emote', F(6.6), F(9.6)); clip(u, 'ready', F(9.6), F(T_FIGHT))
     else: stand(u, x, y, S_, 0, T_FIGHT, 'ready')
-    ymeet = -14.5 + (0.5 if dx else 0) + (0.4 if uid == 'giga' else 0)
+    ymeet = -15.0 + (0.3 if dx else 0) + (0.4 if uid == 'giga' else 0)
     u['t_arr'] = run_to(u, [(x, y), (lane + dx, ymeet)], T_FIGHT + 0.05 * abs(dx), 4.6, 'run', 1.15); u['pos'] = (lane + dx, ymeet)
 B, R = BLUE, REDU
 def mid(a, b_, z=1.8): return Vector(((a['pos'][0] + b_['pos'][0]) / 2, (a['pos'][1] + b_['pos'][1]) / 2, z))
@@ -459,17 +459,29 @@ bpy.ops.mesh.primitive_torus_add(major_radius=1.0, minor_radius=0.07, major_segm
 for f, s in ((F(T_SLAM) - 1, 0.001), (F(T_SLAM), 1.0), (F(T_SLAM) + 16, 16.0), (F(T_SLAM) + 17, 0.001)): sw2.scale = (s, s, min(s, 1.0)); key(sw2, 'scale', f)
 linear(sw2); dust(Vector((14.5, gy - 0.8, 0.3)), T_SLAM, 1.7, 9, 7); sparks(Vector((14.5, gy - 0.5, 2.2)), T_SLAM, 30, 77, 9.0)
 # the champion leaves the bridge and arrives in his own tower
-r = GG['root']; sc.frame_set(F(T_SLAM)); p0 = r.matrix_world.translation.copy(); p1 = Vector((14.5, -6.6, 3.6)); n = F(T_TOWER) - F(T_SLAM)
+r = GG['root']; sc.frame_set(F(T_SLAM)); p0 = r.matrix_world.translation.copy(); p1 = Vector((14.5, -6.6, 3.6)); n = F(T_CRASH) - F(T_SLAM)
 for i in range(n + 1):
     u_ = i / n; p = p0.lerp(p1, u_) + Vector((0, 0, 5.5 * 4 * u_ * (1 - u_))); r.location = p; key(r, 'location', F(T_SLAM) + i); r.rotation_euler = (-u_ * 9.0, 0, r.rotation_euler.z); key(r, 'rotation_euler', F(T_SLAM) + i)
-clip(GG, 'die', F(T_SLAM), F(T_TOWER) + 1, 0.8, 0); sx = r.scale.copy(); key(r, 'scale', F(T_TOWER)); r.scale = sx * 0.0001; key(r, 'scale', F(T_TOWER) + 1); const(r)
+clip(GG, 'die', F(T_SLAM), F(T_CRASH) + 1, 0.8, 0); sx = r.scale.copy(); key(r, 'scale', F(T_CRASH)); r.scale = sx * 0.0001; key(r, 'scale', F(T_CRASH) + 1); const(r)
 CREW = {}
 for k in ('rL', 'rR'):
-    u = unit('chillguy', 1.87); place(u, (*TPOS[k], 3.86), 0.0); sched(u, [(0, 'idle', 1), (T_MEET, 'ready', 1), (T_SLAM + 0.2, 'hit', 0.6)] if k == 'rR' else [(0, 'idle', 1), (T_TOWER + 0.3, 'hit', 0.5), (T_TOWER + 1.6, 'lose', 1)]); CREW[k] = u
+    u = unit('chillguy', 1.87); place(u, (*TPOS[k], 3.86), 0.0); sched(u, [(0, 'idle', 1), (T_MEET, 'ready', 1), (T_CRASH, 'hit', 0.6), (T_CRASH + 1.2, 'lose', 1.5)] if k == 'rR' else [(0, 'idle', 1), (T_TOWER + 0.3, 'hit', 0.5), (T_TOWER + 1.6, 'lose', 1)]); CREW[k] = u
 for k in ('bL', 'bR'):
     u = unit('chillguy', 1.87); place(u, (*TPOS[k], 3.86), math.pi); sched(u, [(0, 'idle', 1), (T_MEET, 'ready', 1), (T_TOWER + 0.4, 'win', 1)])
-KB = unit('neet', 2.2); place(KB, (9, -29.5 + 0.55, 3.75), math.pi); sched(KB, [(0, 'sit', 1), (T_FIGHT, 'sityell', 1), (T_MEET + 1.5, 'sitcheer', 1), (T_SLAM, 'sitfistpump', 1), (T_TOWER + 2.0, 'sitclap', 1)])
-KR = unit('pudgy', 2.5); place(KR, (9, -3.05, 4.3), 0.0); sched(KR, [(0, 'idle', 1), (6.6, 'emote', 1.0), (9.8, 'win', 0.8), (T_MEET + 1.4, 'ready', 1), (T_TOWER + 0.3, 'hit', 0.45), (T_TOWER + 1.9, 'lose', 1.3)])
+KB = unit('neet', 2.2); place(KB, (9, -29.5 + 0.55, 3.75), math.pi); sched(KB, [(0, 'sit', 1), (T_FIGHT, 'sityell', 1), (T_MEET + 1.5, 'sitcheer', 1), (T_SLAM, 'sitfistpump', 1), (T_FIRE - 0.5, 'sityell', 1), (T_TOWER, 'sitfistpump', 1), (T_TOWER + 2.5, 'sitclap', 1)])
+KR = unit('pudgy', 2.5); place(KR, (9, -3.05, 4.3), 0.0); sched(KR, [(0, 'idle', 1), (6.6, 'emote', 1.0), (9.8, 'win', 0.8), (T_MEET + 1.4, 'ready', 1), (T_CRASH + 0.1, 'hit', 0.45), (T_CRASH + 1.7, 'lose', 1.6), (T_TOWER + 0.1, 'hit', 0.45), (T_TOWER + 1.7, 'lose', 1.3)])
+# the crash: the tower shakes and coughs dust but holds
+e = TW['rR']; cx = TPOS['rR'][0]
+for i, dx in enumerate((0.0, 0.22, -0.2, 0.14, -0.1, 0.05, 0.0)): e.location.x = cx + dx; key(e, 'location', F(T_CRASH) + i * 2)
+e.location.x = cx; dust(Vector((14.5, -6.8, 3.6)), T_CRASH, 2.2, 31, 8); sparks(Vector((14.5, -7.2, 3.8)), T_CRASH, 26, 32, 8.0); explode(Vector((14.5, -7.4, 3.2)), T_CRASH, 1.3, FIRE, 14, 33, DUST)
+# the blue king's cannon answers
+MUZ = Vector((9, -26.6, 5.25)); TGT = Vector((14.5, -6.6, 3.4)); T_BALL = T_TOWER - T_FIRE
+ball = sphere('cannonball', 0.42, MUZ, mat('ballm', (0.03, 0.03, 0.035), 0.3, metal=0.7)); ball.scale = (0.001,) * 3; key(ball, 'scale', F(T_FIRE) - 1); ball.scale = (1, 1, 1); key(ball, 'scale', F(T_FIRE))
+nb = F(T_TOWER) - F(T_FIRE)
+for i in range(nb + 1):
+    u_ = i / nb; ball.location = MUZ.lerp(TGT, u_) + Vector((0, 0, 9.0 * 4 * u_ * (1 - u_))); key(ball, 'location', F(T_FIRE) + i)
+ball.scale = (0.001,) * 3; key(ball, 'scale', F(T_TOWER) + 1); const(ball); linear(ball)
+explode(MUZ + Vector((0, 0.6, 0)), T_FIRE, 1.1, FIRE, 0, 34, DUST, light=(1.0, 0.7, 0.3)); sparks(MUZ + Vector((0, 0.8, 0)), T_FIRE, 24, 35, 10.0)
 kill_tower('rR', T_TOWER, 61, [CREW['rR']])
 # the heroes regroup and pose
 for i, (uid, x, y) in enumerate((('floki', 5.2, -12.2), ('bonk', 3.6, -12.8), ('swordcat', 6.9, -12.6), ('whale', 9.6, -10.6), ('toshi', 12.3, -12.5), ('pepe', 14.0, -12.9))):
@@ -540,51 +552,55 @@ bolt_l = bpy.data.objects.new('lightning', bpy.data.lights.new('lightning', 'SUN
 for f in range(1, LAST + 1):
     t = (f - 1) / FPS; e = sum(max(0.0, 1 - abs(t - th - d) / 0.05) * w_ for th in THUNDER for d, w_ in ((0.0, 1.0), (0.17, 0.5), (0.29, 0.8)))
     bolt_l.data.energy = 5.0 * e; bolt_l.data.keyframe_insert('energy', frame=f)
-# ================================================================ camera
+# ================================================================ the edit
+# Each shot shows a stretch of the ANIMATION (starting at a0, played at `speed`) from its own camera: slow motion and
+# overlapping angles of the same moment. render_edl.py renders film frames from edl.json.
 cam = bpy.data.objects.new('cam', bpy.data.cameras.new('cam')); COL.objects.link(cam); sc.camera = cam
 cam.data.sensor_width = 36; cam.data.dof.use_dof = True; cam.data.clip_end = 2000
-V = Vector
-def SH(t0, t1, p0, p1, l0, l1, lens, fstop=2.8, shake=0.0, lens1=None, focus=None):
-    return dict(t0=t0, t1=t1, p0=V(p0), p1=V(p1), l0=V(l0), l1=V(l1), lens=lens, lens1=lens1 or lens, fstop=fstop, shake=shake, focus=focus)
-SHOTS = [
-    SH(1.5, 4.5, (9, -52, 27), (9, -45, 18), (9, -14, 5), (9, -14, 4), 24, 8),                                    # the stadium at dusk
-    SH(4.5, 7.0, (1.3, -13.4, 1.0), (5.6, -13.4, 1.1), (2.6, -9.0, 1.7), (4.4, -9.0, 1.75), 28, 2.8, 0.1),          # red's line, low dolly
-    SH(7.0, 9.2, (12.9, -13.4, 1.2), (13.2, -12.9, 1.3), (14.5, -9.6, 2.4), (14.5, -9.6, 2.5), 35, 2.4, 0.1),       # the champion taunts
-    SH(9.2, 12.0, (11.2, -18.6, 1.5), (11.6, -19.2, 1.7), (14.5, -22.6, 2.8), (14.5, -22.6, 3.0), 24, 3.2, 0.1, 28),   # blue's right wing: the whale
-    SH(12.0, 13.6, (3.9, -18.8, 1.7), (3.7, -19.3, 1.8), (3.5, -22.6, 2.3), (3.5, -22.6, 2.35), 32, 2.8, 0.1),      # the viking and his wing
-    SH(13.6, 15.0, (0.9, -16.0, 2.2), (1.2, -16.0, 2.3), (9.5, -16.0, 2.0), (9.5, -16.0, 2.0), 19, 5.6, 0.1),      # across the river: both lines; lightning
-    SH(15.0, 16.4, (7.2, -21.5, 0.8), (7.0, -17.4, 0.9), (3.5, -21.8, 1.6), (3.6, -17.4, 1.6), 24, 4, 0.5),        # the charge
-    SH(16.4, 17.9, (6.9, -16.2, 1.3), (6.5, -16.0, 1.5), (3.4, -16.0, 1.7), (3.4, -16.0, 1.8), 28, 3.2, 0.7),      # left bridge: impact
-    SH(17.9, 19.0, (12.0, -24.6, 2.9), (12.2, -24.2, 2.9), (14.6, -15.5, 1.8), (14.6, -15.5, 1.8), 30, 4, 0.3),    # over the wizard's shoulder
-    SH(19.0, 21.0, (6.4, -12.6, 3.0), (6.0, -13.0, 2.6), (3.6, -16.4, 1.5), (3.8, -16.2, 1.6), 32, 3.2, 0.5),      # left bridge from red's side
-    SH(21.0, 22.4, (17.3, -16.6, 1.4), (17.2, -16.2, 1.5), (14.5, -16.4, 2.5), (14.5, -16.2, 2.6), 22, 4, 0.3),    # the giants, in profile
-    SH(22.4, 24.0, (12.6, -13.0, 0.7), (12.9, -13.3, 0.8), (14.5, -17.2, 3.0), (14.5, -17.0, 3.1), 21, 4, 0.5),    # the slam, from below
-    SH(24.0, 25.4, (10.9, -1.6, 8.4), (10.7, -1.4, 8.6), (14.5, -10.0, 4.5), (14.5, -6.8, 3.2), 26, 4, 0.9),        # the champion arrives in his tower (from the red king's side)
-    SH(25.4, 27.4, (9, -25.5, 5.0), (9, -23.5, 4.2), (11.5, -9, 3.5), (10.0, -11, 3.0), 30, 4, 0.3),               # smoke; the heroes regroup
-    SH(27.4, 31.0, (9.2, -18.2, 0.8), (9.2, -16.6, 1.0), (9.2, -11.8, 2.6), (9.2, -11.8, 2.9), 21, 4, 0.12, 25),   # the pose
-]
-
-import mathutils
-nz = mathutils.noise
-PREV_ROT = None
-for f in range(1, LAST + 1):
-    t = (f - 1) / FPS; s = next((s for s in SHOTS if s['t0'] <= t < s['t1']), SHOTS[0] if t < 2 else SHOTS[-1])
-    u = ease((t - s['t0']) / (s['t1'] - s['t0'])); p = s['p0'].lerp(s['p1'], u); l = s['l0'].lerp(s['l1'], u)
-    sh = s['shake']
-    if sh:
-        n1 = nz.noise_vector(V((t * 2.3, s['t0'], 0.0))); n2 = nz.noise_vector(V((t * 9.0, s['t0'] + 7, 3.0)))
-        l = l + (n1 * 0.10 + n2 * 0.035) * sh * (p - l).length * 0.12; p = p + n1 * 0.04 * sh
-    d = l - p; q_ = d.to_track_quat('-Z', 'Y'); rot = q_.to_euler('XYZ', PREV_ROT) if PREV_ROT else q_.to_euler(); PREV_ROT = rot.copy()      # continuous angles: no wrap for the motion blur to smear
-    cam.location = p; cam.rotation_euler = rot; cam.data.lens = lerp(s['lens'], s['lens1'], u); cam.data.dof.focus_distance = d.length; cam.data.dof.aperture_fstop = s['fstop']
-    cam.keyframe_insert('location', frame=f); cam.keyframe_insert('rotation_euler', frame=f); cam.data.keyframe_insert('lens', frame=f)
-    cam.data.keyframe_insert('dof.focus_distance', frame=f); cam.data.keyframe_insert('dof.aperture_fstop', frame=f)
-cuts = {F(s['t0']) for s in SHOTS}
-for idb in (cam, cam.data):
-    for fc in idb.animation_data.action.fcurves:
-        for kp in fc.keyframe_points: kp.interpolation = 'CONSTANT' if int(round(kp.co.x)) + 1 in cuts else 'LINEAR'
+SHOTS = []; _t = [1.5]
+def SH(dur, a0, speed, p0, p1, l0, l1, lens, fstop=2.8, shake=0.0, lens1=None):
+    SHOTS.append(dict(t0=round(_t[0], 4), t1=round(_t[0] + dur, 4), a0=a0, speed=speed, p0=list(p0), p1=list(p1), l0=list(l0), l1=list(l1), lens=lens, lens1=lens1 or lens, fstop=fstop, shake=shake)); _t[0] += dur
+def pos(u): return u['pos']
+bz, zc = pos(B['bonk']), pos(R['zcat']); ts, tp = pos(B['toshi']), pos(R['triplet']); sw_, ba = pos(B['swordcat']), pos(R['baton'])
+SH(3.0, 1.5, 1, (9, -52, 27), (9, -45, 18), (9, -14, 5), (9, -14, 4), 24, 8)                                     # the stadium at dusk
+SH(2.5, 4.5, 1, (1.3, -13.4, 1.0), (5.6, -13.4, 1.1), (2.6, -9.0, 1.7), (4.4, -9.0, 1.75), 28, 2.8, 0.1)          # red's line, low dolly
+SH(2.2, 7.0, 1, (12.9, -13.4, 1.2), (13.2, -12.9, 1.3), (14.5, -9.6, 2.4), (14.5, -9.6, 2.5), 35, 2.4, 0.1)       # the champion taunts
+SH(1.5, 8.0, 1, (5.2, -8.2, 4.6), (5.6, -7.6, 4.7), (9, -3.05, 5.9), (9, -3.05, 6.0), 70, 2.8)                    # the red king enjoys it
+SH(2.8, 9.2, 1, (11.2, -18.6, 1.5), (11.6, -19.2, 1.7), (14.5, -22.6, 2.8), (14.5, -22.6, 3.0), 24, 3.2, 0.1, 28) # blue's right wing: the whale
+SH(1.6, 12.0, 1, (3.9, -18.8, 1.7), (3.7, -19.3, 1.8), (3.5, -22.6, 2.3), (3.5, -22.6, 2.35), 32, 2.8, 0.1)       # the viking and his wing
+SH(1.5, 13.0, 1, (11.3, -24.8, 7.0), (11.0, -25.3, 7.0), (9, -28.9, 5.05), (9, -28.9, 5.1), 52, 2.8, 0.1)         # the blue king, at his cannon
+SH(1.4, 13.6, 1, (0.9, -16.0, 2.2), (1.2, -16.0, 2.3), (9.5, -16.0, 2.0), (9.5, -16.0, 2.0), 19, 5.6, 0.1)        # across the river: both lines; lightning
+SH(1.0, 15.0, 1, (11.0, -25.2, 6.9), (10.8, -25.5, 6.9), (9, -28.9, 5.1), (9, -28.9, 5.15), 62, 2.8, 0.25)        # "FIGHT!"
+# ---- the charge, from everywhere
+SH(1.6, 15.05, 0.4, (3.5, -15.6, 0.6), (3.5, -15.5, 0.65), (3.5, -21.0, 1.7), (3.5, -18.8, 1.7), 28, 2.8, 0.35)   # blue's left wing, head on, slow
+SH(1.6, 15.05, 0.4, (3.5, -16.4, 0.6), (3.5, -16.5, 0.65), (3.5, -11.0, 1.7), (3.5, -13.2, 1.7), 28, 2.8, 0.35)   # red's left wing, head on, slow
+SH(1.4, 15.3, 0.5, (10.8, -21.6, 1.2), (10.8, -19.0, 1.3), (14.5, -21.2, 2.6), (14.5, -18.6, 2.6), 30, 2.8, 0.3)  # the whale, tracking from the side
+SH(1.4, 15.3, 0.5, (14.9, -16.6, 0.7), (14.9, -16.7, 0.75), (14.5, -11.0, 2.4), (14.5, -13.9, 2.4), 32, 2.8, 0.35)  # the champion, straight at us
+SH(1.4, 15.1, 1.0, (9, -16.4, 27), (9, -16.4, 22), (9, -16.0, 0), (9, -16.0, 0), 26, 8, 0.15)                     # from above: two lines close on two bridges
+SH(1.0, 16.0, 0.3, (5.6, -16.0, 0.35), (5.5, -16.0, 0.4), (3.5, -16.0, 1.4), (3.5, -16.0, 1.45), 20, 4, 0.3)      # at ground level between them
+SH(1.1, 16.25, 0.35, (1.3, -16.0, 1.5), (1.45, -16.0, 1.5), (3.5, -16.0, 1.7), (3.5, -16.0, 1.7), 24, 3.2, 0.6)   # impact, slow
+# ---- the battle
+SH(1.0, 16.6, 0.7, (6.9, -16.2, 1.3), (6.5, -16.0, 1.5), (3.4, -16.0, 1.7), (3.4, -16.0, 1.8), 28, 3.2, 0.7)      # left bridge
+SH(1.2, 17.36, 0.35, (0.9, -16.7, 1.4), (1.0, -16.4, 1.45), (bz[0], -16.0, 1.7), (bz[0], -15.6, 1.9), 28, 3.2, 0.4)   # the bat connects, slow
+SH(1.1, 17.2, 1, (12.0, -24.6, 2.9), (12.2, -24.2, 2.9), (14.6, -15.5, 1.8), (14.6, -15.5, 1.8), 30, 4, 0.3)      # over the wizard's shoulder
+SH(1.4, 17.5, 1, (17.3, -16.6, 1.4), (17.2, -16.2, 1.5), (14.5, -16.4, 2.5), (14.5, -16.2, 2.6), 22, 4, 0.4)      # the giants trade blows
+SH(1.4, 19.0, 1, (6.4, -12.6, 3.0), (6.0, -13.0, 2.6), (3.6, -16.4, 1.5), (3.8, -16.2, 1.6), 32, 3.2, 0.5)        # left bridge from red's side
+SH(1.0, 18.9, 0.4, (17.3, -16.5, 1.5), (17.2, -16.3, 1.5), (ts[0], -16.0, 1.7), (ts[0], -15.7, 1.9), 28, 3.2, 0.4)    # the ninja's cut, slow
+SH(1.2, 20.2, 1, (7.0, -16.7, 1.6), (6.8, -16.4, 1.6), (sw_[0], -16.0, 1.8), (sw_[0], -15.8, 1.9), 35, 3.2, 0.5)  # steel on steel
+SH(1.4, 21.0, 1, (17.3, -16.6, 1.4), (17.2, -16.2, 1.5), (14.5, -16.4, 2.5), (14.5, -16.2, 2.6), 22, 4, 0.3)      # the giants, in profile
+SH(2.8, 22.4, 0.55, (12.6, -13.0, 0.7), (12.9, -13.3, 0.8), (14.5, -17.2, 3.0), (14.5, -17.0, 3.1), 21, 4, 0.5)   # the slam, from below, slow
+SH(1.4, 23.9, 1, (10.9, -1.6, 8.4), (10.7, -1.4, 8.6), (14.5, -10.0, 4.5), (14.5, -6.8, 3.2), 26, 4, 0.9)         # the champion arrives in his tower
+SH(1.2, 24.7, 1, (5.4, -7.9, 4.8), (5.6, -7.6, 4.85), (9, -3.05, 6.0), (9, -3.05, 6.0), 90, 2.8, 0.2)             # the red king, less amused
+SH(1.2, 25.0, 1, (12.6, -25.6, 6.3), (12.4, -25.9, 6.3), (9, -27.4, 5.2), (9, -27.2, 5.25), 35, 4, 0.5)           # the blue king fires
+SH(1.2, 25.5, 1, (4.0, -24.0, 9.0), (8.0, -10.0, 8.0), (9.4, -25.6, 7.6), (13.8, -9.2, 7.9), 40, 4, 0.3)          # with the cannonball
+SH(1.6, 26.7, 1, (9, -22.0, 3.5), (9, -20.5, 3.2), (13.5, -7.0, 4.0), (13.5, -7.0, 4.0), 30, 4, 0.8)              # the tower goes
+SH(2.0, 28.0, 1, (9, -25.5, 5.0), (9, -23.5, 4.2), (11.5, -9, 3.5), (10.0, -11, 3.0), 30, 4, 0.3)                 # smoke; the heroes regroup
+SH(3.4, 30.0, 1, (9.2, -18.2, 0.8), (9.2, -16.6, 1.0), (9.2, -11.8, 2.6), (9.2, -11.8, 2.9), 21, 4, 0.12, 25)     # the pose
+SH(2.5, 32.5, 1, (9, -21.0, 5.0), (9, -41.0, 21.0), (9, -12.0, 3.0), (9, -13.0, 3.0), 24, 8, 0.1)                 # up and away: the whole stadium
+print('FILM 3D ends at', _t[0], 'frames', F(_t[0]) - 1)
+json.dump(dict(fps=FPS, first=37, last=F(_t[0]) - 1, shots=SHOTS), open(os.path.join(HERE, 'edl.json'), 'w'), indent=0)
 for o in bpy.data.objects:
     if o.type == 'LIGHT': o.visible_camera = False
-json.dump([dict(t0=s['t0'], t1=s['t1']) for s in SHOTS], open(os.path.join(HERE, 'shots.json'), 'w'))
 sc.frame_set(1)
 bpy.ops.wm.save_as_mainfile(filepath=os.path.abspath(OUT), compress=False)
 print('SAVED', OUT)

@@ -1,0 +1,28 @@
+"""Render film frames from the edit: blender -b scene.blend -P render_edl.py -- frames.txt
+Each film frame shows the animation at the time its shot maps it to (slow motion = sub-frames), from that shot's camera.
+Resumable (frames.txt.done) and budgeted (RENDER_BUDGET seconds, exit 3 if frames remain), like degens/render_list.py."""
+import bpy, os, sys, time, json
+from mathutils import Vector, noise
+T0 = time.time(); BUDGET = float(os.environ.get('RENDER_BUDGET', '0') or 0)
+lst = sys.argv[sys.argv.index('--') + 1]; E = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'edl.json')))
+fl = [int(x) for x in open(lst).read().split()]; done_file = lst + '.done'
+done = set(int(x) for x in open(done_file).read().split()) if os.path.exists(done_file) else set()
+fl = [f for f in fl if f not in done]; sc = bpy.context.scene; cam = sc.camera; FPS = E['fps']; sc.render.use_overwrite = True
+def ease(u): u = max(0.0, min(1.0, u)); return u * u * (3 - 2 * u)
+def setup(f):
+    t = (f - 1) / FPS; s = next((s for s in E['shots'] if s['t0'] <= t < s['t1']), E['shots'][-1])
+    u = (t - s['t0']) / (s['t1'] - s['t0']); a = s['a0'] + (t - s['t0']) * s['speed']; af = a * FPS + 1
+    sc.frame_set(int(af), subframe=af - int(af)); sc.render.motion_blur_shutter = max(0.08, 0.35 * s['speed'])
+    p = Vector(s['p0']).lerp(Vector(s['p1']), ease(u)); l = Vector(s['l0']).lerp(Vector(s['l1']), ease(u)); sh = s['shake']
+    if sh:
+        n1 = noise.noise_vector(Vector((t * 2.3, s['t0'], 0.0))); n2 = noise.noise_vector(Vector((t * 9.0, s['t0'] + 7, 3.0)))
+        l = l + (n1 * 0.10 + n2 * 0.035) * sh * (p - l).length * 0.12; p = p + n1 * 0.04 * sh
+    d = l - p; cam.location = p; cam.rotation_euler = d.to_track_quat('-Z', 'Y').to_euler()
+    cam.data.lens = s['lens'] + (s['lens1'] - s['lens']) * ease(u); cam.data.dof.focus_distance = d.length; cam.data.dof.aperture_fstop = s['fstop']
+last = 0.0
+for i, f in enumerate(fl):
+    if BUDGET and time.time() - T0 + 1.5 * last > BUDGET: print('BUDGET-STOP', len(fl) - i, 'frames left', flush=True); os._exit(3)
+    t = time.time(); setup(f); sc.render.filepath = os.environ['W'] + f'/frames/f_{f:04d}.png'
+    bpy.ops.render.render(write_still=True); print('DONE', f, flush=True)
+    with open(done_file, 'a') as fh: fh.write(f'{f} ')
+    last = time.time() - t
