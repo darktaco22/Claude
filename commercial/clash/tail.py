@@ -114,6 +114,14 @@ e = TW['rR']; cx = TPOS['rR'][0]
 for i, dx in enumerate((0.0, 0.22, -0.2, 0.14, -0.1, 0.05, 0.0)): e.location.x = cx + dx; key(e, 'location', F(T_CRASH) + i * 2)
 e.location.x = cx; dust(Vector((14.5, -6.8, 3.6)), T_CRASH, 2.2, 31, 8); sparks(Vector((14.5, -7.2, 3.8)), T_CRASH, 26, 32, 8.0); explode(Vector((14.5, -7.4, 3.2)), T_CRASH, 1.3, FIRE, 14, 33, DUST)
 rnd.uniform(-1, 1); rnd.uniform(0.2, 1)      # (keeps the crowd's random sequence as it was when the first parts were rendered)
+def run_near(u, pts, t0, speed, near, clipname='run', cs=1.0):
+    """run_to, with headings kept continuous around `near` (no long-way turns between keys) and the facing held until the start."""
+    r = u['root']; r.rotation_euler = (0, 0, near); key(r, 'rotation_euler', F(t0) - 1); t = t0
+    for a, b_ in zip(pts, pts[1:]):
+        hd = heading(b_[0] - a[0], b_[1] - a[1]); hd = near + ((hd - near + math.pi) % (2 * math.pi) - math.pi)
+        r.location = (a[0], a[1], 0); r.rotation_euler = (0, 0, hd); key(r, 'location', F(t)); key(r, 'rotation_euler', F(t) + 1)
+        t += (Vector(b_) - Vector(a)).length / speed; r.location = (b_[0], b_[1], 0); key(r, 'location', F(t)); key(r, 'rotation_euler', F(t))
+    clip(u, clipname, F(t0), F(t), cs); linear(r); return t
 # ---- no victory lap: the red king calls his reserves, the heroes hold the river, and it starts again
 ids2 = ['troll', 'alon', 'zcat', 'mitch', 'ket', 'cate', 'baton', 'wojak', 'triplet', 'thisisfine', 'jeanphil', 'lmao', 'useless']
 slots = [(1.6 + 2.4 * i, -9.3) for i in range(7)] + [(2.8 + 2.4 * i, -11.4) for i in range(6)]
@@ -127,4 +135,4 @@ for i, (uid, x) in enumerate((('bonk', 2.6), ('floki', 4.6), ('swordcat', 6.6), 
     u = B[uid]; t0 = T_CRASH + 0.9 + 0.1 * i; sc.frame_set(F(t0)); p = u['root'].matrix_world.translation; y = -19.4 if uid != 'whale' else -20.0
     ta = run_to(u, [(p.x, p.y), (x, y)], t0, 4.0, 'run', 1.1); place(u, (x, y, 0), N_, F(ta) + 6); clip(u, 'ready', F(ta), F(T_CH2 + 0.04 * i))
     bx = 3.5 if x < 8 else 14.5; tgt = (bx + (x - bx) * 0.25, -17.3 if uid != 'pepe' else -18.6)
-    tb = run_to(u, [(x, y), tgt], T_CH2 + 0.04 * i, 4.9 if uid != 'whale' else 4.3, 'run', 1.2); clip(u, 'ready', F(tb), LAST + 2)
+    tb = run_near(u, [(x, y), tgt], T_CH2 + 0.04 * i, 4.9 if uid != 'whale' else 4.3, N_, 'run', 1.2); clip(u, 'ready', F(tb), LAST + 2)
