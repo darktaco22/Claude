@@ -78,7 +78,7 @@ G = lambda n: f'{gen}/{n}.wav'; X = lambda n: f'{GA}/{n}.mp3'
 cues = [(G('drums'), 0, 0.9, 'aecho=0.8:0.6:90:0.25,'), (G('pad'), 0, 0.42, 'aecho=0.8:0.6:200:0.3,'), (G('blasts'), 0, 1.0, 'aecho=0.8:0.7:140|330:0.3|0.2,'),
         (G('blasts_muffled'), 0, 0.9, ''), (G('ring'), 0, 0.10, ''), (G('heart'), 0, 0.7, ''),
         (X('amb_cold'), 0, 0.3, ''), (X('amb_cold'), 22.0, 0.3, ''),
-        (X('battle_start'), SH['order']['t0'] + 0.5, 0.6, ''), (X('charge_rush'), SH['charge']['t0'], 0.8, ''), (X('charge_rush'), SH['enemy']['t0'] + 0.2, 0.6, 'asetrate=38000,'),
+        (X('battle_start'), SH['order']['t0'] + 0.5, 0.6, ''), (X('charge_rush'), SH['charge']['t0'], 0.8, ''), (X('charge_rush'), SH['stampede']['t0'], 0.7, 'asetrate=30000,'), (X('ui_swoosh'), SH['shell']['t0'], 0.8, 'asetrate=14000,'), (X('charge_rush'), SH['enemy']['t0'] + 0.2, 0.6, 'asetrate=38000,'),
         (X('ui_swoosh'), SH['clash']['t0'] - 0.1, 0.5, 'asetrate=22050,'), (X('swing_1'), at('clash', 0.3), 0.6, 'asetrate=30000,'), (X('punch_heavy_1'), at('clash', 0.46), 1.0, ''),
         (X('punch_light_1'), at('clash', 0.56), 0.7, ''), (X('unit_die_1'), at('clash', 0.62), 0.5, ''),
         (X('ui_swoosh'), SH['blast']['t0'], 0.5, 'asetrate=22050,'), (X('unit_die_1'), at('blast', 0.3), 0.5, ''),
