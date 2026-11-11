@@ -37,7 +37,7 @@ window.renderAt = t => {
   // the big hits bleach the frame for an instant
   let w = 0; for (const e of TL.fx) if (e.kind === 'flash' && t >= e.t && t < e.t + 0.18) w = Math.max(w, 0.5 * (1 - (t - e.t) / 0.18));
   $('white').style.opacity = w;
-  const sb = (TL.subs || []).find(x => t >= x[0] && t < x[1]); $('sub').style.opacity = sb ? io(t, sb[0], sb[1], 0.12) : 0; if (sb) $('sub').textContent = sb[2];
+  $('sub').style.opacity = 0;                // no subtitles: the picture and the sound carry it
   $('tag').style.opacity = io(t, TL.end - 2.4, TL.end + 0.1, 0.35);
   const ec = TL.end; $('card').style.opacity = t >= ec ? clamp((t - ec) / 0.25) : 0;
   $('logo').style.transform = `translate(-50%,-50%) scale(${0.6 + 0.4 * out3((t - ec) / 0.45) + 0.02 * Math.sin(t * 3)})`;
