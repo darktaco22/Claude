@@ -118,7 +118,7 @@ LINE = [('useless', 1, V(-5.2, -5.6)), ('useless', 2, V(-3.6, -5.9)), ('bonk', 0
 GIGA0 = V(-4.6, -3.6)
 EN = [('goat', 0, V(LX, 3.0)), ('goat', 1, V(-5.6, 4.2)), ('goat', 2, V(-4.4, 4.4)), ('whale', 0, V(LX, 5.8)), ('goat', 3, V(-5.7, 7.0)), ('goat', 4, V(-4.3, 7.2)), ('whale', 1, V(LX, 8.6))]
 BOSS = V(LX, 4.3)
-TOWER = sets.ENEMY_KING
+TOWER = sets.ENEMY_KING.to_2d()
 
 
 def pov_cam(P, yaw=0.0, roll=6.0, look_up=0.0, sway=1.0):
@@ -397,7 +397,7 @@ def main():
     sm = nt.nodes.new('CompositorNodeMath'); sm.operation = 'MULTIPLY_ADD'; sm.inputs[1].default_value = -0.55; sm.inputs[2].default_value = 1.0; nt.links.new(pk.outputs[0], sm.inputs[0])
     hs = nt.nodes.new('CompositorNodeHueSat'); nt.links.new(mx.outputs['Image'], hs.inputs['Image']); nt.links.new(sm.outputs[0], hs.inputs['Saturation']); nt.links.new(hs.outputs['Image'], ld.inputs['Image'])
     A = sets.arena(); fx_mats()
-    ruin, robjs = game.place(f'{game.G}/arena/battlestation_ruin.glb', TOWER, PI, 1.2 * game.WORLD, name='en_king_ruin'); sets.team(robjs, THEIRS)
+    ruin, robjs = game.place(f'{game.G}/arena/battlestation_ruin.glb', sets.ENEMY_KING, PI, 1.2 * game.WORLD, name='en_king_ruin'); sets.team(robjs, THEIRS)
     K = rigctl.Keys(); L = []; rng = random.Random(4)
     # cast: one unit per (kind, index), hidden whenever it is not in the shot
     C = {}; vis = {}; poses = {}
