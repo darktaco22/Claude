@@ -6,7 +6,7 @@ import numpy as np, soundfile as sf
 tl = json.load(open(sys.argv[1])); GA = sys.argv[2]; out = sys.argv[3]
 SR = 44100; END = tl['end'] + 3.0; N = int(END * SR); rng = np.random.default_rng(5)
 gen = os.path.join(os.path.dirname(os.path.abspath(out)), 'gen_war'); os.makedirs(gen, exist_ok=True)
-SH = {s['name']: s for s in tl['shots']}; POV = [(s['t0'], s['t1']) for s in tl['shots'] if s['pov'] >= 0.85]
+SH = {s['name']: s for s in tl['shots']}; POV = [(s['t0'], s['t1']) for s in tl['shots'] if s['pov'] >= 0.85]; POV = [(min(a for a, _ in POV), max(b for _, b in POV) + 2.6)]      # deaf until the brother's hand falls
 def in_pov(t): return any(a <= t < b for a, b in POV)
 def at(shot, u): s = SH[shot]; return s['t0'] + u / s['slow']
 def mf(m): return 440.0 * 2 ** ((m - 69) / 12)
@@ -37,9 +37,9 @@ def bar(t0, pat, vel): [put(drums, t0 + b * beat, drum(v * vel, 62 if v > 0.7 el
 t = 3.6
 while t < SH['blast']['t1'] - 0.2:
     k = min(1.0, (t - 3.6) / 8.0); bar(t, [(0, 1.0), (1, 0.5), (1.5, 0.5), (2, 0.9), (3, 0.5), (3.5, 0.6)], 0.45 + 0.55 * k); t += 4 * beat
-t = SH['rise']['t0'] + 0.6
+t = SH['rage']['t0'] + 2.0
 while t < SH['leap']['t0']:
-    bar(t, [(0, 1.0), (0.5, 0.5), (1, 0.8), (1.5, 0.5), (2, 1.0), (2.5, 0.5), (3, 0.8), (3.25, 0.6), (3.5, 0.7), (3.75, 0.6)], 0.7 + 0.3 * min(1, (t - 24.6) / 6)); t += 4 * beat
+    bar(t, [(0, 1.0), (0.5, 0.5), (1, 0.8), (1.5, 0.5), (2, 1.0), (2.5, 0.5), (3, 0.8), (3.25, 0.6), (3.5, 0.7), (3.75, 0.6)], 0.7 + 0.3 * min(1, (t - SH['rage']['t0']) / 7)); t += 4 * beat
 for tt in (at('strike', 0.07), at('tower', 0.42), at('tower', 0.75), SH['after']['t0'] + 0.1): put(drums, tt, drum(1.3, 50))
 write('drums', drums)
 
@@ -51,9 +51,11 @@ def chord(t0, t1, notes, g, hz=700):
         for d in (-0.14, 0.0, 0.12): s += 2 * ((mf(m) * (1 + d / 100) * tt) % 1) - 1
     pad[n0:n1] += lp(s, hz) * env * g
 D2, F2, A2, Bb1, C2, D3, F3, A3, Fs3 = 38, 41, 45, 34, 36, 50, 53, 57, 54
-chord(0.3, 3.9, [D2, A2], 0.35, 300); chord(3.6, 9.2, [D2, A2, D3, F3], 0.6); chord(9.0, 11.6, [Bb1, F2, D3], 0.7); chord(11.4, 17.6, [D2, A2, D3, F3, A3], 0.8)
-chord(17.4, 24.2, [D2], 0.3, 160); chord(24.0, 29.2, [Bb1, F2, D3, F3], 0.6); chord(29.0, 33.6, [C2, 43, 52, 55], 0.75); chord(33.4, 39.4, [D2, A2, D3, F3, A3, 62], 0.9, 1100)
-chord(39.2, 42.6, [Bb1, F2, D3, F3, 58], 0.9, 1100); chord(42.4, END, [D2, A2, D3, Fs3, A3, 62], 0.8, 1200)
+T = lambda n: SH[n]['t0']
+chord(0.3, T('order') + 0.3, [D2, A2], 0.35, 300); chord(T('order'), T('enemy') + 0.2, [D2, A2, D3, F3], 0.6); chord(T('enemy'), T('clash') + 0.2, [Bb1, F2, D3], 0.7)
+chord(T('clash'), T('pov_left') + 0.2, [D2, A2, D3, F3, A3], 0.8); chord(T('pov_left'), T('rage') + 0.6, [D2], 0.3, 160); chord(T('rage') + 0.3, T('run') + 0.2, [Bb1, F2, D3, F3], 0.7)
+chord(T('run'), T('leap') + 0.2, [C2, 43, 52, 55], 0.75); chord(T('leap'), T('tower') + 0.2, [D2, A2, D3, F3, A3, 62], 0.9, 1100)
+chord(T('tower'), T('after') + 0.2, [Bb1, F2, D3, F3, 58], 0.9, 1100); chord(T('after'), END, [D2, A2, D3, Fs3, A3, 62], 0.8, 1200)
 write('pad', pad)
 
 # --- the blasts (heard through the snow in first person), the ringing ear, the heartbeat
@@ -67,7 +69,7 @@ for a, b in POV + [(SH['blast']['t0'] + 0.5, SH['blast']['t1'])]: env = np.maxim
 ring = (np.sin(2 * np.pi * 3150 * tt) + 0.5 * np.sin(2 * np.pi * 5230 * tt)) * env
 t = POV[0][0] if POV else END
 while POV and t < POV[-1][1] + 0.6: put(hb, t, thump, 1.0); put(hb, t + 0.24, thump, 0.6); t += 0.95
-for a, b in [(0.4, 3.6)]:
+for a, b in [(0.4, SH['order']['t0']), (SH['brother']['t0'], SH['rage']['t0'] + 1.6)]:
     t = a
     while t < b: put(hb, t, thump, 0.8); put(hb, t + 0.24, thump, 0.5); t += 0.85
 write('ring', ring); write('heart', hb)
@@ -81,8 +83,8 @@ cues = [(G('drums'), 0, 0.9, 'aecho=0.8:0.6:90:0.25,'), (G('pad'), 0, 0.42, 'aec
         (X('punch_light_1'), at('clash', 0.56), 0.7, ''), (X('unit_die_1'), at('clash', 0.62), 0.5, ''),
         (X('ui_swoosh'), SH['blast']['t0'], 0.5, 'asetrate=22050,'), (X('unit_die_1'), at('blast', 0.3), 0.5, ''),
         (X('punch_heavy_1'), at('pov_left', 0.32), 0.7, 'lowpass=f=420,'), (X('unit_die_1'), at('pov_left', 0.5), 0.6, 'lowpass=f=420,'),
-        (X('whale_slam'), at('pov_right', 0.5), 0.9, 'lowpass=f=380,'), (X('unit_die_1'), at('pov_front', 0.25), 0.6, 'lowpass=f=420,'),
-        (X('ui_swoosh'), SH['rise']['t0'] + 1.2, 0.6, 'areverse,'), (X('coin_jingle_1'), SH['rise']['t0'] + 1.7, 0.5, ''),
+        (X('whale_slam'), at('pov_right', 0.5), 0.9, 'lowpass=f=380,'), 
+        (X('coin_jingle_1'), at('brother', 1.0), 0.45, 'aecho=0.8:0.8:300:0.4,'), (X('ui_swoosh'), at('rage', 0.9), 0.7, 'areverse,'), (X('punch_heavy_1'), at('rage', 1.25), 0.8, 'asetrate=30000,'), (X('coin_jingle_2'), at('rage', 1.3), 0.6, ''),
         (X('whale_slam'), at('slam', 0.55), 1.0, ''), (X('unit_die_1'), at('slam', 0.7), 0.5, ''),
         (X('charge_rush'), SH['run']['t0'], 0.7, ''), (X('coin_jingle_2'), SH['run']['t0'] + 0.3, 0.4, ''), (X('swing_2'), at('bridge', 0.2), 0.6, ''), (X('swing_1'), at('bridge', 0.6), 0.6, ''),
         (X('ui_swoosh'), SH['leap']['t0'] - 0.05, 0.7, 'asetrate=18000,'), (X('bark_useless'), SH['leap']['t0'] + 0.5, 0.7, 'asetrate=36000,aecho=0.8:0.8:300:0.4,'),
