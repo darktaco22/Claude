@@ -16,3 +16,10 @@ stops. That is why renders kept "stopping"; nothing crashed. Full evidence: `com
   the scene are dropped automatically.
 - Workers (other sessions) follow the same rules. Put "launch with run_in_background, timeout 7200000; on exit 3 run it
   again" in every worker prompt.
+
+## Meme Royale videos: read `commercial/HANDOFF.md` first
+
+It lists every finished video, the assets, the stadium/battle pipeline, the mistakes already made, and the usage rules.
+The short version of the usage rules: one video per conversation; render workers push silently (no check-ins, no "done"
+messages); no scheduled wake-ups in the orchestrator; a fresh small session waits for the parts with a shell loop and
+assembles the film; test one frame per shot before any full render.
