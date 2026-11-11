@@ -228,7 +228,7 @@ def film():
                    [act(*BRO, fb, lambda u: lerp(hd(P0 + V(0, 0.9) - fb), -PI, ease(ramp(u, 1.0, 1.5))) , [(0, 'idle', 1.0)], pose=lambda u: {'Head': (16 * sn(PI * ramp(u, 0.45, 0.85)), 0, 0)})],
                    [tracers(26, 1, 1.8), ('boom', 0.5, V(-2.0, 5.0, 0.4), 1.3), ('boom', 1.3, V(-7.0, 4.4, 0.4), 1.6)], slow=0.6, pov=0.7, name='pov_wait'))
     # 2. The order: the axe goes up.
-    SH.append(shot(3.0, 4.8, lambda k, u: dict(pos=V(-3.9 - 0.15 * k, -0.7 - 0.3 * k, 0.3), tgt=F0.to_3d() + V(0, 0, 0.98), fov=38, fstop=2.8, shake=0.006),
+    SH.append(shot(3.0, 4.8, lambda k, u: dict(pos=V(-4.0 - 0.15 * k, -1.72 - 0.12 * k, 0.3), tgt=F0.to_3d() + V(0, 0, 0.92), fov=50, fstop=2.8, shake=0.006),
                    [act(*BRO, F0, N, [(0, 'emote', 1.15)], pose=arm_up(0.5, 1.6))] + [act(k, i, p, N, [(-0.3 * j, 'ready', 1.2)], pose=crouch(12, j)) for j, (k, i, p) in enumerate(LINE)],
                    [tracers(14, 2, 1.8), ('boom', 0.9, V(-7.6, -6.5, 0.4), 1.2)], sub=(0.5, 1.6, 'FORWARD!'), name='order'))
     # 3. Over the top: the camera climbs out of the dirt behind them and finds the whole field.
@@ -271,7 +271,7 @@ def film():
     # 8. Riding the shell in: over the bridge, over the fight, down onto our second line.
     E0 = V(-2.6, 11.0, 2.2); B3 = B.to_3d() + V(0, 0, 0.3); UL = 1.3
     shell = lambda u: E0.lerp(B3, clamp(u / UL)) + V(0, 0, 6.0 * sn(PI * clamp(u / UL)))
-    SH.append(shot(15.6, 17.4, lambda k, u: dict(pos=shell(u - 0.09) + V(0.35, 0, 0.75), tgt=shell(u + 0.12) + V(0, 0, -0.5), fov=58, fstop=4.0, focus=3.0, shake=0.035),
+    SH.append(shot(15.6, 17.4, lambda k, u: dict(pos=shell(u - 0.13) + V(0.4, 0, 0.9), tgt=shell(u + 0.12) + V(0, 0, -0.6), fov=58, fstop=4.0, focus=3.0, shake=0.035),
                    [act(*BRO, V(LX, -3.25), N, [(0, 'attack2', 1.0), (0.8, 'attack1', 1.0)]), act('goat', 0, V(LX, -2.2), S_, [(0.1, 'attack1', 1.0), (0.9, 'attack2', 1.0)]),
                     act('goat', 1, V(-6.0, -2.3), S_, [(0, 'attack1', 0.9)]), act('goat', 2, V(-4.0, -2.3), S_, [(0.3, 'attack2', 1.0)]), act('floki', 1, V(-6.0, -3.3), N, [(0.1, 'attack1', 1.0)]),
                     act('slerf', 0, V(LX, -0.4), S_, [(0, 'walk', 1.0)]), act('goat', 3, V(-5.6, 1.6), S_, [(0, 'run', 1.0)]), act('goat', 4, V(-4.4, 2.8), S_, [(-0.2, 'run', 1.0)])] +
@@ -472,7 +472,7 @@ def build_fx(K, L, sh, frames, uof, rng):
                 g = 1 - math.exp(-a * 9)
                 for o, off, s in blobs:
                     key3(K, o, 'location', f, p + off * (0.5 + 1.2 * g) + Vector((0, 0, 0.6 * size * g + 0.8 * a))); key3(K, o, 'scale', f, [0.42 * size * s * (0.3 + 0.7 * g + 0.25 * a)] * 3)
-                    h = math.exp(-a * 2.6); key3(K, o, 'color', f, (1.0, 0.4, 0.1, 1.5 * h))
+                    h = math.exp(-a * 2.6); key3(K, o, 'color', f, (1.0, 0.4, 0.1, 1.2 * h))
                 for o, off, s, ph in smoke:
                     key3(K, o, 'location', f, p + off * (0.6 + 1.6 * g) + Vector((0.3 * a, 0.1 * a, 0.5 * size * g + 1.1 * a))); key3(K, o, 'scale', f, [0.42 * size * s * (0.3 + 0.8 * g + 0.4 * a)] * 3)
                     key3(K, o, 'color', f, (0.07, 0.065, 0.07, 1.05 * ramp(a, 0.04, 0.3) * max(0.0, 1 - a / 3.5)))
@@ -482,7 +482,7 @@ def build_fx(K, L, sh, frames, uof, rng):
             for o in trail: life(o)
             for f in frames:
                 w = uof(f); on = w <= ul
-                key3(K, head, 'location', f, fn(w)); key3(K, head, 'scale', f, [0.11 if on else 0] * 3); key3(K, head, 'color', f, (1, 0.5, 0.1, 1.4))
+                key3(K, head, 'location', f, fn(w)); key3(K, head, 'scale', f, [0.11 if on else 0] * 3); key3(K, head, 'color', f, (1, 0.5, 0.1, 1.0))
                 for j, o in enumerate(trail):
                     wj = w - 0.035 * (j + 1); key3(K, o, 'location', f, fn(max(0.0, wj)) + Vector((0, 0, 0.02 * j)))
                     key3(K, o, 'scale', f, [0.09 + 0.035 * j if (on and wj > 0) else 0] * 3); key3(K, o, 'color', f, (0.08, 0.07, 0.07, 1.1 - 0.05 * j))
