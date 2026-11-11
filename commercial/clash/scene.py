@@ -9,7 +9,7 @@ A = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
 def arg(k, d=None): return A[A.index(k) + 1] if k in A else d
 OUT = arg('--out', 'scene.blend')
 HERE = os.path.dirname(os.path.abspath(__file__)); M = os.path.join(HERE, '..', 'comeback', 'models'); TEX = os.path.join(HERE, '..', 'comeback', 'tex')
-FPS = 24; LAST = 845
+FPS = 24; LAST = 780
 F = lambda t: int(round(t * FPS)) + 1
 rnd = random.Random(7)
 
@@ -220,7 +220,7 @@ def score_timeline(team, changes):
             for f, v in on[1:]:
                 key(p, 'scale', f - 1 if v else f - 5); p.scale = (1, 1, 1) if v else (1, 0.0001, 0.0001); key(p, 'scale', f + 4 if v else f - 1)
 T_T1, T_T2, T_T3 = 24.9, 41.6, 47.3      # the three red towers fall
-score_timeline('b', [(1, 0), (F(25.4), 1)]); score_timeline('r', [(1, 0)])
+score_timeline('b', [(1, 0)]); score_timeline('r', [(1, 0)])
 
 # ================================================================ units
 def unit(uid, h, parent_col=None):
@@ -362,7 +362,8 @@ def kill_tower(k, t, seed, crew=(), fire=FIRE):
 
 # ================================================================ CLASH AT THE BRIDGE: the battle
 T_FIGHT, T_MEET, T_SLAM, T_CRASH, T_FIRE, T_TOWER, T_WIN = 15.0, 16.3, 23.6, 24.6, 25.4, 26.9, 29.9      # animation time (the film re-times it: cams.py)
-THUNDER = [2.6, 14.4, 23.6, 31.1]
+T_CALL, T_DROP, T_CH2 = 26.3, 26.6, 30.6      # the red king calls his reserves; they land; both lines go again
+THUNDER = [2.6, 14.4, 23.6, 26.5, 29.4, 31.25]
 def smooth(u):
     """The game's low-poly models: welded, smooth-shaded and subdivided at render time for the close-ups."""
     import bmesh
@@ -444,7 +445,7 @@ kp = Vector((R['ket']['pos'][0], R['ket']['pos'][1], 1.5)); pp = Vector((PZ['pos
 bolt(pp, kp, 17.25, 17.6); explode(kp, 17.6, 1.5, FIREGRN, 0, 51, SMOKEG, light=(0.3, 1.0, 0.3)); ko(R['ket'], 17.6, (-1.0, 0.6), up=10, dist=9, dur=1.3)
 ko(R['triplet'], 19.1, (1.0, 0.9), up=9, dist=10, dur=1.3); sparks(mid(B['toshi'], R['triplet']), 19.1, 20, 6)
 for i, t in enumerate((16.6, 17.4, 18.2)): sparks(mid(B['toshi'], R['triplet'], 1.9), t, 10, 20 + i, 5.0)
-fight(B['toshi'], B['toshi']['t_arr'], 19.4, 1.3, 1); clip(B['toshi'], 'win', F(19.4), F(T_CRASH + 0.35))
+fight(B['toshi'], B['toshi']['t_arr'], 19.4, 1.3, 1); clip(B['toshi'], 'win', F(19.4), F(T_TOWER + 2.2))
 WH, GG = B['whale'], R['giga']
 fight(GG, GG['t_arr'], T_SLAM, 1.0)
 fight(WH, WH['t_arr'], 17.7, 0.9); clip(WH, 'hit', F(17.7), F(18.5), 0.9); fight(WH, 18.5, 19.8, 0.9); clip(WH, 'hit', F(19.8), F(20.6), 0.9); clip(WH, 'ready', F(20.6), F(22.2))
@@ -453,10 +454,7 @@ for t, back in ((17.7, 0.7), (19.8, 0.8)):      # the champion's punches drive t
 bolt(pp, Vector((GG['pos'][0], GG['pos'][1], 2.4)), 19.95, 20.3); explode(Vector((GG['pos'][0], GG['pos'][1], 2.2)), 20.3, 1.2, FIREGRN, 0, 52, SMOKEG, light=(0.3, 1.0, 0.3))
 bpy.context.view_layer.update()
 aw = WH['clips']['attack1']; slam_len = (aw.frame_range[1] - aw.frame_range[0]) * 0.8 / 0.45; hit_frac = (UJ['whale']['clips']['attack1']['hit'] or 0.4) / UJ['whale']['clips']['attack1']['dur']
-f_sl = F(T_SLAM) - int(slam_len * hit_frac); clip(WH, 'attack1', f_sl, f_sl + int(slam_len), 0.45, 4); clip(WH, 'win', f_sl + int(slam_len), F(T_CRASH + 0.15))
-t_wt = run_to(WH, [(14.5, WH['root'].location.y), (14.5, -9.6)], T_CRASH + 0.15, 5.2, 'run', 1.2)
-sl2 = (aw.frame_range[1] - aw.frame_range[0]) * 0.8 / 0.7; f2 = F(T_TOWER) - int(sl2 * hit_frac); clip(WH, 'ready', F(t_wt), f2); clip(WH, 'attack1', f2, f2 + int(sl2), 0.7, 3); clip(WH, 'win', f2 + int(sl2), F(T_TOWER + 2.2))
-dust(Vector((14.5, -8.6, 0.3)), T_TOWER, 1.6, 71, 7); sparks(Vector((14.5, -8.2, 2.6)), T_TOWER, 30, 72, 9.0)
+f_sl = F(T_SLAM) - int(slam_len * hit_frac); clip(WH, 'attack1', f_sl, f_sl + int(slam_len), 0.45, 4); clip(WH, 'win', f_sl + int(slam_len), F(T_TOWER + 2.2))
 gy = GG['pos'][1]; sw2 = bpy.data.objects.new('shock2', None); COL.objects.link(sw2); sw2.location = (14.5, gy - 0.8, 0.25)
 bpy.ops.mesh.primitive_torus_add(major_radius=1.0, minor_radius=0.07, major_segments=64, location=(0, 0, 0)); tor = bpy.context.object; tor.data.materials.append(mat('shock2m', (0.4, 0.7, 1), 0.3, emit=(0.4, 0.7, 1.0), estr=30)); tor.parent = sw2
 for f, s in ((F(T_SLAM) - 1, 0.001), (F(T_SLAM), 1.0), (F(T_SLAM) + 16, 16.0), (F(T_SLAM) + 17, 0.001)): sw2.scale = (s, s, min(s, 1.0)); key(sw2, 'scale', f)
@@ -468,31 +466,37 @@ for i in range(n + 1):
 clip(GG, 'die', F(T_SLAM), F(T_CRASH) + 1, 0.8, 0); sx = r.scale.copy(); key(r, 'scale', F(T_CRASH)); r.scale = sx * 0.0001; key(r, 'scale', F(T_CRASH) + 1); const(r)
 CREW = {}
 for k in ('rL', 'rR'):
-    u = unit('chillguy', 1.87); place(u, (*TPOS[k], 3.86), 0.0); sched(u, [(0, 'idle', 1), (T_MEET, 'ready', 1), (T_CRASH, 'hit', 0.6), (T_CRASH + 1.2, 'lose', 1.5)] if k == 'rR' else [(0, 'idle', 1), (T_TOWER + 0.3, 'hit', 0.5), (T_TOWER + 1.6, 'lose', 1)]); CREW[k] = u
+    u = unit('chillguy', 1.87); place(u, (*TPOS[k], 3.86), 0.0); sched(u, [(0, 'idle', 1), (T_MEET, 'ready', 1), (T_CRASH, 'hit', 0.6), (T_CRASH + 1.2, 'lose', 1.5)] if k == 'rR' else [(0, 'idle', 1), (T_DROP + 0.5, 'win', 1)]); CREW[k] = u
 for k in ('bL', 'bR'):
-    u = unit('chillguy', 1.87); place(u, (*TPOS[k], 3.86), math.pi); sched(u, [(0, 'idle', 1), (T_MEET, 'ready', 1), (T_TOWER + 0.4, 'win', 1)])
-KB = unit('neet', 2.2); place(KB, (9, -29.5 + 0.55, 3.75), math.pi); sched(KB, [(0, 'sit', 1), (T_FIGHT, 'sityell', 1), (T_MEET + 1.5, 'sitcheer', 1), (T_SLAM, 'sitfistpump', 1), (T_CRASH + 0.4, 'sitcheer', 1), (T_TOWER, 'sitfistpump', 1), (T_TOWER + 2.5, 'sitclap', 1)])
-KR = unit('pudgy', 2.5); place(KR, (9, -3.05, 4.3), 0.0); sched(KR, [(0, 'idle', 1), (6.6, 'emote', 1.0), (9.8, 'win', 0.8), (T_MEET + 1.4, 'ready', 1), (T_CRASH + 0.1, 'hit', 0.45), (T_CRASH + 1.7, 'lose', 1.6), (T_TOWER + 0.1, 'hit', 0.45), (T_TOWER + 1.7, 'lose', 1.3)])
-TS = B['toshi']; t_tt = run_to(TS, [TS['pos'], (16.2, -14.2), (16.3, -9.9)], T_CRASH + 0.35, 5.6, 'run', 1.25); fight(TS, t_tt, T_TOWER + 0.1, 1.3); clip(TS, 'win', F(T_TOWER + 0.1), F(T_TOWER + 2.2))
+    u = unit('chillguy', 1.87); place(u, (*TPOS[k], 3.86), math.pi); sched(u, [(0, 'idle', 1), (T_MEET, 'ready', 1), (T_SLAM + 0.4, 'win', 1), (T_DROP + 0.6, 'ready', 1)])
+KB = unit('neet', 2.2); place(KB, (9, -29.5 + 0.55, 3.75), math.pi); sched(KB, [(0, 'sit', 1), (T_FIGHT, 'sityell', 1), (T_MEET + 1.5, 'sitcheer', 1), (T_SLAM, 'sitfistpump', 1), (T_CRASH + 0.4, 'sitcheer', 1), (T_DROP + 0.5, 'sitangry', 1), (T_CH2 - 0.2, 'sityell', 1)])
+KR = unit('pudgy', 2.5); place(KR, (9, -3.05, 4.3), 0.0); sched(KR, [(0, 'idle', 1), (6.6, 'emote', 1.0), (9.8, 'win', 0.8), (T_MEET + 1.4, 'ready', 1), (T_CRASH + 0.1, 'hit', 0.45), (T_CALL, 'emote', 1.0), (T_CALL + 3.0, 'win', 0.8)])
 # the crash: the tower shakes and coughs dust but holds
 e = TW['rR']; cx = TPOS['rR'][0]
 for i, dx in enumerate((0.0, 0.22, -0.2, 0.14, -0.1, 0.05, 0.0)): e.location.x = cx + dx; key(e, 'location', F(T_CRASH) + i * 2)
 e.location.x = cx; dust(Vector((14.5, -6.8, 3.6)), T_CRASH, 2.2, 31, 8); sparks(Vector((14.5, -7.2, 3.8)), T_CRASH, 26, 32, 8.0); explode(Vector((14.5, -7.4, 3.2)), T_CRASH, 1.3, FIRE, 14, 33, DUST)
-# the tower falls the way towers fall in the game: troops. The whale and the ninja cross the bridge and finish it.
-T_RUSH = T_CRASH + 0.15
-kill_tower('rR', T_TOWER, 61, [CREW['rR']])
-# the heroes regroup and pose
-for i, (uid, x, y) in enumerate((('floki', 5.2, -12.2), ('bonk', 3.6, -12.8), ('swordcat', 6.9, -12.6), ('whale', 9.6, -10.6), ('toshi', 12.3, -12.5), ('pepe', 14.0, -12.9))):
-    u = B[uid]; t0 = T_TOWER + 0.5 + 0.1 * i + (0.5 if uid == 'whale' else 0); sc.frame_set(F(t0)); p = u['root'].matrix_world.translation
-    via = [(p.x, p.y), (u['lane'], -14.2), (x, y)] if uid not in ('pepe', 'whale', 'toshi') else ([(p.x, p.y), (14.5, -18.2), (14.5, -14.2), (x, y)] if uid == 'pepe' else [(p.x, p.y), (x, y)])
-    ta = run_to(u, via, t0, 5.2 if uid != 'whale' else 4.4, 'run', 1.2); place(u, (x, y, 0), S_, F(ta) + 5); clip(u, 'ready', F(ta), F(T_WIN + 0.15 * i)); clip(u, 'win' if i % 2 else 'emote', F(T_WIN + 0.15 * i), LAST + 2)
+rnd.uniform(-1, 1); rnd.uniform(0.2, 1)      # (keeps the crowd's random sequence as it was when the first parts were rendered)
+# ---- no victory lap: the red king calls his reserves, the heroes hold the river, and it starts again
+ids2 = ['troll', 'alon', 'zcat', 'mitch', 'ket', 'cate', 'baton', 'wojak', 'triplet', 'thisisfine', 'jeanphil', 'lmao', 'useless']
+slots = [(1.6 + 2.4 * i, -9.3) for i in range(7)] + [(2.8 + 2.4 * i, -11.4) for i in range(6)]
+for i, (x, y) in enumerate(slots):
+    u = fighter(ids2[i], 2.5 + 0.08 * (i % 4), 'r'); td = T_DROP + 0.13 * i
+    drop(u, x, y, td, S_); clip(u, 'ready', F(td) - 5, F(T_CH2 + 0.03 * i)); dust(Vector((x, y, 0.3)), td, 0.7, 80 + i, 3)
+    bx = 3.5 if x < 9 else 14.5; ta = run_to(u, [(x, y), (bx + (x - bx) * 0.2, -14.9)], T_CH2 + 0.03 * i, 4.8, 'run', 1.2); clip(u, 'ready', F(ta), LAST + 2)
+HP = fighter('moodeng', 4.3, 'r'); drop(HP, 9.0, -13.0, T_DROP + 1.9, S_); clip(HP, 'ready', F(T_DROP + 1.9) - 5, F(T_CH2)); dust(Vector((9, -13.0, 0.3)), T_DROP + 1.9, 1.8, 99, 7)
+ta = run_to(HP, [(9.0, -13.0), (12.4, -14.8)], T_CH2, 4.2, 'run', 1.1); clip(HP, 'ready', F(ta), LAST + 2)
+for i, (uid, x) in enumerate((('bonk', 2.6), ('floki', 4.6), ('swordcat', 6.6), ('whale', 9.4), ('toshi', 12.2), ('pepe', 14.4))):
+    u = B[uid]; t0 = T_CRASH + 0.9 + 0.1 * i; sc.frame_set(F(t0)); p = u['root'].matrix_world.translation; y = -19.4 if uid != 'whale' else -20.0
+    ta = run_to(u, [(p.x, p.y), (x, y)], t0, 4.0, 'run', 1.1); place(u, (x, y, 0), N_, F(ta) + 6); clip(u, 'ready', F(ta), F(T_CH2 + 0.04 * i))
+    bx = 3.5 if x < 8 else 14.5; tgt = (bx + (x - bx) * 0.25, -17.3 if uid != 'pepe' else -18.6)
+    tb = run_to(u, [(x, y), tgt], T_CH2 + 0.04 * i, 4.9 if uid != 'whale' else 4.3, 'run', 1.2); clip(u, 'ready', F(tb), LAST + 2)
 
 # ================================================================ the crowd
 SRC = bpy.data.collections.new('crowd_src')        # not linked to the scene: only instanced
 CROWD_IDS = [u for u in UJ if u not in ('mensa', 'neet', 'bome')]
 def fan_sched(team, j):
-    if team == 'r': return [(0, 'idle', 1), (4.5, 'win', 0.9 + 0.2 * j), (T_MEET + 1.2, 'ready', 1), (T_SLAM + 0.3, 'hit', 0.5), (T_SLAM + 1.6, 'lose', 1.0 + 0.3 * j)]
-    return [(0, 'idle', 1), (9.0, 'win', 0.9 + 0.2 * j), (T_MEET, 'ready', 1.2), (17.6, 'win', 1.0 + 0.2 * j), (T_SLAM + 0.2, 'emote', 1.0), (T_SLAM + 3.2, 'win', 1.1 + 0.2 * j)]
+    if team == 'r': return [(0, 'idle', 1), (4.5, 'win', 0.9 + 0.2 * j), (T_MEET + 1.2, 'ready', 1), (T_SLAM + 0.3, 'hit', 0.5), (T_SLAM + 1.6, 'lose', 1.0 + 0.3 * j), (T_DROP + 0.8, 'win', 1.0 + 0.2 * j)]
+    return [(0, 'idle', 1), (9.0, 'win', 0.9 + 0.2 * j), (T_MEET, 'ready', 1.2), (17.6, 'win', 1.0 + 0.2 * j), (T_SLAM + 0.2, 'emote', 1.0), (T_SLAM + 3.2, 'win', 1.1 + 0.2 * j), (T_DROP + 0.6, 'hit', 0.5), (T_DROP + 1.9, 'ready', 1.1), (T_CH2, 'win', 1.1 + 0.2 * j)]
 SOURCES = {'r': [], 'b': []}
 for i, uid in enumerate(CROWD_IDS):
     for team in 'rb':
@@ -523,15 +527,6 @@ def crowd():
     print('CROWD', n)
 
 crowd()
-# confetti from the last tower on
-CF = [mat(f'conf{i}', c, 0.5, emit=c, estr=0.4) for i, c in enumerate([(1, 0.8, 0.1), (0.1, 0.4, 1), (1, 0.15, 0.2), (0.2, 1, 0.3), (1, 1, 1), (0.7, 0.2, 1)])]
-for i in range(520):
-    x = rnd.uniform(-16, 34); y = rnd.uniform(-48, 16); z0 = rnd.uniform(9, 30); o = plane('conf', 0.22, 0.12, (x, y, z0), (0, 0, 0), CF[i % 6])
-    t0 = T_WIN - 0.6 + rnd.uniform(0.2, 2.0); fall = rnd.uniform(2.2, 3.6)
-    o.scale = (0.001,) * 3; key(o, 'scale', F(t0) - 1); o.scale = (1, 1, 1); key(o, 'scale', F(t0)); const(o)
-    key(o, 'location', F(t0)); key(o, 'rotation_euler', F(t0)); dt = (LAST - F(t0)) / FPS
-    o.location = (x + rnd.uniform(-3, 3), y + rnd.uniform(-3, 3), max(0.1, z0 - fall * dt)); o.rotation_euler = (rnd.uniform(-40, 40), rnd.uniform(-40, 40), rnd.uniform(-10, 10))
-    key(o, 'location', LAST); key(o, 'rotation_euler', LAST); linear(o)
 
 # ================================================================ dusk light: a low sun behind the red end, team colours, lightning
 for o in ARENA:      # the court, wet: it mirrors the lights
@@ -589,12 +584,13 @@ SH(1.4, 21.0, 1, (17.5, -20.8, 3.1), (17.4, -20.4, 2.9), (14.5, -16.2, 2.4), (14
 SH(2.8, 22.4, 0.55, (12.6, -13.0, 0.7), (12.9, -13.3, 0.8), (14.5, -17.2, 3.0), (14.5, -17.0, 3.1), 21, 4, 0.5)   # the slam, from below, slow
 SH(1.4, 23.9, 1, (10.9, -1.6, 8.4), (10.7, -1.4, 8.6), (14.5, -10.0, 4.5), (14.5, -6.8, 3.2), 26, 4, 0.9)         # the champion arrives in his tower
 SH(1.2, 24.7, 1, (5.0, -8.6, 4.6), (5.2, -8.3, 4.65), (9, -3.05, 6.0), (9, -3.05, 6.0), 100, 2.8, 0.2)           # the red king, less amused
-SH(1.2, 25.0, 1, (15.7, -9.0, 0.8), (15.6, -8.9, 0.85), (14.5, -15.6, 2.6), (14.5, -11.4, 2.7), 28, 4, 0.5)           # the whale charges the tower, head on
-SH(1.2, 25.5, 1, (10.9, -1.6, 8.4), (10.8, -1.5, 8.5), (14.6, -12.6, 2.4), (14.6, -9.4, 2.6), 35, 4, 0.35)         # from the red king's tower: here they come
-SH(1.6, 26.7, 1, (10.4, -15.6, 2.2), (10.1, -14.9, 2.4), (14.5, -7.6, 3.4), (14.5, -7.4, 3.8), 28, 4, 0.8)           # the slam: the tower goes
-SH(2.0, 28.0, 1, (9, -25.5, 5.0), (9, -23.5, 4.2), (11.5, -9, 3.5), (10.0, -11, 3.0), 30, 4, 0.3)                 # smoke; the heroes regroup
-SH(3.4, 30.0, 1, (9.2, -18.2, 0.8), (9.2, -16.6, 1.0), (9.2, -11.8, 2.6), (9.2, -11.8, 2.9), 21, 4, 0.12, 25)     # the pose
-SH(2.5, 32.5, 1, (9, -21.0, 5.0), (9, -41.0, 21.0), (9, -12.0, 3.0), (9, -13.0, 3.0), 24, 8, 0.1)                 # up and away: the whole stadium
+SH(1.6, 26.3, 1, (5.2, -8.2, 4.6), (5.5, -7.8, 4.7), (9, -3.05, 5.9), (9, -3.05, 6.0), 70, 2.8, 0.15)             # the red king calls his reserves
+SH(2.6, 26.2, 1, (9.4, -24.6, 1.4), (9.4, -23.4, 1.7), (9, -10.5, 2.4), (9, -10.5, 2.6), 24, 4, 0.2)              # behind the blue line: they drop in, one after another
+SH(1.8, 27.6, 1, (2.0, -14.2, 0.9), (7.5, -14.2, 1.0), (4.0, -10.2, 1.8), (9.5, -10.2, 1.9), 28, 2.8, 0.1)        # the new red line, low dolly
+SH(1.8, 28.6, 1, (9.2, -16.4, 1.2), (9.2, -17.2, 1.4), (9.3, -19.8, 2.5), (9.3, -19.8, 2.7), 26, 3.2, 0.1, 32)    # six heroes hold the river
+SH(1.0, 29.6, 1, (0.9, -16.0, 2.2), (1.2, -16.0, 2.3), (9.5, -15.4, 2.0), (9.5, -15.4, 2.0), 19, 5.6, 0.1)        # across the river: six against fourteen
+SH(1.5, 30.6, 0.3, (14.6, -15.5, 0.6), (14.6, -15.4, 0.65), (13.6, -19.4, 2.3), (13.8, -18.6, 2.4), 24, 2.8, 0.4) # they go again: blue, head on, slow
+SH(1.6, 30.9, 0.3, (0.9, -16.0, 1.0), (1.1, -16.0, 1.1), (9.5, -16.0, 1.9), (9.5, -16.0, 1.9), 20, 4, 0.5)        # both lines, a breath before they meet; lightning; black
 print('FILM 3D ends at', _t[0], 'frames', F(_t[0]) - 1)
 json.dump(dict(fps=FPS, first=37, last=F(_t[0]) - 1, shots=SHOTS), open(os.path.join(HERE, 'edl.json'), 'w'), indent=0)
 for o in bpy.data.objects:
