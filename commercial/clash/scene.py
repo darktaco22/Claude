@@ -364,20 +364,20 @@ def kill_tower(k, t, seed, crew=(), fire=FIRE):
 T_FIGHT, T_MEET, T_SLAM, T_CRASH, T_FIRE, T_TOWER, T_WIN = 15.0, 16.3, 23.6, 24.6, 25.4, 26.9, 29.9      # animation time (the film re-times it: cams.py)
 T_CALL, T_DROP, T_CH2 = 26.3, 26.6, 30.6      # the red king calls his reserves; they land; both lines go again
 THUNDER = [2.6, 14.4, 23.6, 26.5, 29.4, 31.25]
-def smooth(u):
+def smooth(u, subd=True):
     """The game's low-poly models: welded, smooth-shaded and subdivided at render time for the close-ups."""
     import bmesh
     for o in u['objs']:
         if o.type != 'MESH' or o.name.startswith('prop_') or len(o.data.vertices) < 500: continue
         bm = bmesh.new(); bm.from_mesh(o.data); bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0002); bm.to_mesh(o.data); bm.free()
         for p in o.data.polygons: p.use_smooth = True
-        sd = o.modifiers.new('subd', 'SUBSURF'); sd.levels = 0; sd.render_levels = 1; sd.uv_smooth = 'PRESERVE_BOUNDARIES'
+        if subd: sd = o.modifiers.new('subd', 'SUBSURF'); sd.levels = 0; sd.render_levels = 1; sd.uv_smooth = 'PRESERVE_BOUNDARIES'
         for m in o.data.materials:
             bs = m.node_tree.nodes.get('Principled BSDF') if m and m.use_nodes else None
             if bs:
                 for l in list(bs.inputs['Metallic'].links): m.node_tree.links.remove(l)
                 bs.inputs['Metallic'].default_value = 0.0; bs.inputs['Roughness'].default_value = 0.55 if not bs.inputs['Roughness'].links else bs.inputs['Roughness'].default_value
-def fighter(uid, h, team): u = unit(uid, h); ring(u, team); smooth(u); return u
+def fighter(uid, h, team, subd=True): u = unit(uid, h); ring(u, team); smooth(u, subd); return u
 SPARK = mat('spark', (1, 0.8, 0.3), 0.4, emit=(1.0, 0.72, 0.25), estr=45)
 def sparks(c, t, n=16, seed=1, speed=7.0):
     r_ = random.Random(seed); f0 = F(t); c = Vector(c)
@@ -480,10 +480,10 @@ rnd.uniform(-1, 1); rnd.uniform(0.2, 1)      # (keeps the crowd's random sequenc
 ids2 = ['troll', 'alon', 'zcat', 'mitch', 'ket', 'cate', 'baton', 'wojak', 'triplet', 'thisisfine', 'jeanphil', 'lmao', 'useless']
 slots = [(1.6 + 2.4 * i, -9.3) for i in range(7)] + [(2.8 + 2.4 * i, -11.4) for i in range(6)]
 for i, (x, y) in enumerate(slots):
-    u = fighter(ids2[i], 2.5 + 0.08 * (i % 4), 'r'); td = T_DROP + 0.13 * i
+    u = fighter(ids2[i], 2.5 + 0.08 * (i % 4), 'r', False); td = T_DROP + 0.13 * i      # (the reserves: smooth-shaded only, to keep memory in bounds)
     drop(u, x, y, td, S_); clip(u, 'ready', F(td) - 5, F(T_CH2 + 0.03 * i)); dust(Vector((x, y, 0.3)), td, 0.7, 80 + i, 3)
     bx = 3.5 if x < 9 else 14.5; ta = run_to(u, [(x, y), (bx + (x - bx) * 0.2, -14.9)], T_CH2 + 0.03 * i, 4.8, 'run', 1.2); clip(u, 'ready', F(ta), LAST + 2)
-HP = fighter('moodeng', 4.3, 'r'); drop(HP, 9.0, -13.0, T_DROP + 1.9, S_); clip(HP, 'ready', F(T_DROP + 1.9) - 5, F(T_CH2)); dust(Vector((9, -13.0, 0.3)), T_DROP + 1.9, 1.8, 99, 7)
+HP = fighter('moodeng', 4.3, 'r', False); drop(HP, 9.0, -13.0, T_DROP + 1.9, S_); clip(HP, 'ready', F(T_DROP + 1.9) - 5, F(T_CH2)); dust(Vector((9, -13.0, 0.3)), T_DROP + 1.9, 1.8, 99, 7)
 ta = run_to(HP, [(9.0, -13.0), (12.4, -14.8)], T_CH2, 4.2, 'run', 1.1); clip(HP, 'ready', F(ta), LAST + 2)
 for i, (uid, x) in enumerate((('bonk', 2.6), ('floki', 4.6), ('swordcat', 6.6), ('whale', 9.4), ('toshi', 12.2), ('pepe', 14.4))):
     u = B[uid]; t0 = T_CRASH + 0.9 + 0.1 * i; sc.frame_set(F(t0)); p = u['root'].matrix_world.translation; y = -19.4 if uid != 'whale' else -20.0
