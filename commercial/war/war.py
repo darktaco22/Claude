@@ -128,7 +128,7 @@ def arena_dump():
     A = {}; G = game.G; gd = f'{G}/arenas/dump'; rng = random.Random(23)
     ground = sets.img_mat('a_ground', f'{gd}/ground.webp', repeat=1.0, normal=f'{gd}/ground_n.webp', tint=(0.8, 0.76, 0.74), rough=0.92)
     for s in (-1, 1): sets.plane('a_ground', (60, 34), (0, s * (1.3 + 17), 0), (0, 0, 0), ground, uv_scale=0.09)
-    sets.plane('a_river', (60, 2.6), (0, 0, -0.35), (0, 0, 0), sets.flat('a_sludge', (0.07, 0.12, 0.03), 0.2, emit=((0.3, 0.9, 0.1), 0.6)))
+    sets.plane('a_river', (60, 2.6), (0, 0, -0.35), (0, 0, 0), sets.flat('a_sludge', (0.07, 0.12, 0.03), 0.2, emit=((0.2, 0.55, 0.06), 0.12)))
     bank = sets.flat('a_bank', (0.16, 0.1, 0.08), 0.9)
     for s in (-1, 1): sets.box('a_bankwall', (-30, s * 1.3 - 0.06, -0.36), (30, s * 1.3 + 0.06, 0.0), bank)
     for x in (-sets.BRIDGE_X, sets.BRIDGE_X):
@@ -228,7 +228,7 @@ def film():
                    [act(*BRO, fb, lambda u: lerp(hd(P0 + V(0, 0.9) - fb), -PI, ease(ramp(u, 1.0, 1.5))) , [(0, 'idle', 1.0)], pose=lambda u: {'Head': (16 * sn(PI * ramp(u, 0.45, 0.85)), 0, 0)})],
                    [tracers(26, 1, 1.8), ('boom', 0.5, V(-2.0, 5.0, 0.4), 1.3), ('boom', 1.3, V(-7.0, 4.4, 0.4), 1.6)], slow=0.6, pov=0.7, name='pov_wait'))
     # 2. The order: the axe goes up.
-    SH.append(shot(3.0, 4.8, lambda k, u: dict(pos=V(-4.05 - 0.15 * k, -1.9 - 0.3 * k, 0.26), tgt=F0.to_3d() + V(0, 0, 1.15), fov=36, fstop=2.8, shake=0.006),
+    SH.append(shot(3.0, 4.8, lambda k, u: dict(pos=V(-3.9 - 0.15 * k, -0.7 - 0.3 * k, 0.3), tgt=F0.to_3d() + V(0, 0, 0.98), fov=38, fstop=2.8, shake=0.006),
                    [act(*BRO, F0, N, [(0, 'emote', 1.15)], pose=arm_up(0.5, 1.6))] + [act(k, i, p, N, [(-0.3 * j, 'ready', 1.2)], pose=crouch(12, j)) for j, (k, i, p) in enumerate(LINE)],
                    [tracers(14, 2, 1.8), ('boom', 0.9, V(-7.6, -6.5, 0.4), 1.2)], sub=(0.5, 1.6, 'FORWARD!'), name='order'))
     # 3. Over the top: the camera climbs out of the dirt behind them and finds the whole field.
@@ -236,7 +236,7 @@ def film():
     run = [act(k, i, go(p, p + V((LX - p.x) * 0.35, 6.0), 0.1 + 0.05 * (j % 4), 3.4), N, [(-0.2 * j, 'ready', 1.0), (0.08 + 0.05 * (j % 4), 'run', 1.3)]) for j, (k, i, p) in enumerate(everyone)]
     run.append(act(*BRO, go(F0, F0 + V(-0.3, 5.0), 0.05, 3.4), N, [(0, 'run', 1.25)]))
     run += [act(k, i, go(p + V(0, 4.5), p + V(0, -0.5), 0, 3.2), S_, [(-0.13 * j, 'run', 1.2)]) for j, (k, i, p) in enumerate(EN)]
-    SH.append(shot(4.8, 8.0, lambda k, u: dict(pos=V(LX + 0.5, -10.2, 0.4).lerp(V(LX + 2.6, -9.4, 6.4), ease(k)), tgt=V(LX, -6.2, 0.9).lerp(V(LX, 0.6, 0.2), ease(k)), fov=44, fstop=5.6, shake=0.02),
+    SH.append(shot(4.8, 8.0, lambda k, u: dict(pos=V(LX + 2.1, -10.6, 0.4).lerp(V(LX + 3.0, -9.6, 6.4), ease(k)), tgt=V(LX, -6.2, 0.9).lerp(V(LX, 0.6, 0.2), ease(k)), fov=44, fstop=5.6, shake=0.02),
                    run, [tracers(40, 3, 3.2), ('boom', 0.8, V(-6.9, -3.6, 0.3), 1.3), ('boom', 1.9, V(-3.0, -1.6, 0.3), 1.6), ('boom', 2.6, V(-6.6, 2.6, 0.3), 1.5)] +
                    [('burst', 0.5 + 0.45 * j, V(-5.6 + 1.3 * (j % 3) * 0.7, -4.6 + 0.9 * j), 18, 0.7, 0.03) for j in range(6)], clock='0:30', name='charge'))
     # 4. Underfoot: they go over the lens.
@@ -251,7 +251,7 @@ def film():
     # 6. From above, the way the game sees it: two lines close.
     top = [act(k, i, go(p + V(0, 0.4), V(p.x * 0.75 + LX * 0.25, -3.3 + 0.35 * (j % 3)), 0, 1.6), N, [(-0.2 * j, 'run', 1.3)]) for j, (k, i, p) in enumerate(LINE[:8] + [(*BRO, F0 + V(0, -1.2)), (*ME, V(-4.3, -5.9))])]
     top += [act(k, i, go(V(p.x, 0.8 + 0.5 * (j % 3)), V(LX + (p.x - LX) * 1.9, -2.2 + 0.3 * (j % 2)), 0, 1.6), S_, [(-0.13 * j, 'run', 1.2)]) for j, (k, i, p) in enumerate(EN[:5])]
-    SH.append(shot(11.0, 12.6, lambda k, u: dict(pos=V(LX + 0.2, -2.6, 14.0 - 2.0 * k), tgt=V(LX + 0.2, -2.6 + 0.01, 0), fov=40, fstop=8.0, roll=-10 + 14 * k, shake=0.01),
+    SH.append(shot(11.0, 12.6, lambda k, u: dict(pos=V(LX + 0.6 - 0.8 * k, -7.4 + 0.6 * k, 12.5 - 1.5 * k), tgt=V(LX + 0.2, -2.3, 0), fov=40, fstop=8.0, roll=-6 + 9 * k, shake=0.006),
                    top, [tracers(24, 32, 1.6), ('boom', 0.5, V(-7.6, -1.9, 0.3), 1.4), ('boom', 1.1, V(-2.2, -4.4, 0.3), 1.3)], clock='0:22', name='topdown'))
     # 7. The lines meet. Slow motion.
     SH.append(shot(12.6, 15.6, lambda k, u: dict(pos=V(-0.7 - 0.35 * k, -3.3 + 0.2 * k, 0.3), tgt=V(LX, -2.75, 0.95), fov=33, fstop=2.8, shake=0.012 + 0.05 * (0.44 < u < 0.6)),
@@ -271,7 +271,7 @@ def film():
     # 8. Riding the shell in: over the bridge, over the fight, down onto our second line.
     E0 = V(-2.6, 11.0, 2.2); B3 = B.to_3d() + V(0, 0, 0.3); UL = 1.3
     shell = lambda u: E0.lerp(B3, clamp(u / UL)) + V(0, 0, 6.0 * sn(PI * clamp(u / UL)))
-    SH.append(shot(15.6, 17.4, lambda k, u: dict(pos=shell(u - 0.07) + V(0.15, 0, 0.5), tgt=shell(u + 0.1) + V(0, 0, -0.35), fov=58, fstop=4.0, focus=3.0, shake=0.035),
+    SH.append(shot(15.6, 17.4, lambda k, u: dict(pos=shell(u - 0.09) + V(0.35, 0, 0.75), tgt=shell(u + 0.12) + V(0, 0, -0.5), fov=58, fstop=4.0, focus=3.0, shake=0.035),
                    [act(*BRO, V(LX, -3.25), N, [(0, 'attack2', 1.0), (0.8, 'attack1', 1.0)]), act('goat', 0, V(LX, -2.2), S_, [(0.1, 'attack1', 1.0), (0.9, 'attack2', 1.0)]),
                     act('goat', 1, V(-6.0, -2.3), S_, [(0, 'attack1', 0.9)]), act('goat', 2, V(-4.0, -2.3), S_, [(0.3, 'attack2', 1.0)]), act('floki', 1, V(-6.0, -3.3), N, [(0.1, 'attack1', 1.0)]),
                     act('slerf', 0, V(LX, -0.4), S_, [(0, 'walk', 1.0)]), act('goat', 3, V(-5.6, 1.6), S_, [(0, 'run', 1.0)]), act('goat', 4, V(-4.4, 2.8), S_, [(-0.2, 'run', 1.0)])] +
@@ -307,21 +307,25 @@ def film():
     def bro(u): tr = 3 * sn(u * 40) * (1 - gone(u)); return {'LeftArm': (8 * gone(u) + tr, 0, 80 * (1 - gone(u))), 'RightArm': (34, 0, -6), 'Head': (lerp(-20, 14, gone(u)), 0, 0),
                      'LeftUpLeg': (10, 0, 12), 'RightUpLeg': (-5, 0, -8), 'LeftLeg': (-22, 0, 0)}
     def bcam(k, u):
-        c = Q.to_3d() + V(1.25 - 0.12 * k, 2.05, 0.26); me = Q.to_3d() + V(0, 0.75, 0.42)
+        c = Q.to_3d() + V(1.7 - 0.12 * k, 2.3, 0.26); me = Q.to_3d() + V(0.25, 0.55, 0.8)
         return dict(pos=c, tgt=hand(u).lerp(me, 0.3 + 0.35 * ease(ramp(u, 1.05, 1.4))), fov=30, fstop=1.4, focus=lerp((c - hand(u)).length, (c - me).length, ease(ramp(u, 1.0, 1.35))), shake=0.004)
-    propped = lambda u: {**prone(u, 2.5, 1.0, 0.8), 'Head': (-34, 0, 0), 'Neck': (-12, 0, 0)}
-    SH.append(shot(23.4, 26.4, bcam, [act(*ME, Q, hd(V(0.5, 1)), [], rx=math.radians(62), pose=propped),
+    KZ = -0.2
+    def kneel(u, k=1.0, look=1.0):                 # on its knees (k=1) .. standing (k=0); head down to him (look)
+        tr = 1.6 * (sn(u * 57) + 0.6 * sn(u * 83 + 1)) * k
+        return {'LeftLeg': (-96 * k, 0, 0), 'RightLeg': (-96 * k, 0, 0), 'Spine': (14 * k * look + tr, 0, 0), 'Spine1': (10 * k * look, 0, 0), 'Head': (26 * look + tr, 0, 0),
+                'LeftArm': (62 - 8 * k, 0, 22 * k), 'RightArm': (66, 0, -8 * k)}
+    kn = Q + V(0.25, 0.55)
+    SH.append(shot(23.4, 26.4, bcam, [act(*ME, kn, hd(V(0.9, 0.35)), [], z=KZ, pose=lambda u: kneel(u)),
                    act(*BRO, Bf, hd(fd), [], rx=-PI / 2, z=0.04, pose=bro), act('toshi', 1, V(-5.0, -6.5), N, [], rx=-PI / 2, z=0.05, pose=limp(5))],
                    [tracers(10, 9, 1.5), ('boom', 0.5, V(-7.4, -3.0, 0.3), 1.2)], slow=0.5, pov=0.2, sub=(1.3, 2.9, '...GO.'), name='brother'))
     # 12. Rage. Its face; then it gets up.
-    up = lambda u: ease(ramp(u, 0.6, 1.35)); face = lambda u: Q.to_3d() + V(0.2 * (1 - up(u)), 0.5 * (1 - up(u)), 0.5 + 0.55 * up(u))
-    SH.append(shot(26.4, 29.0, lambda k, u: dict(pos=face(u) + V(0.18, 1.25 - 0.3 * ease(ramp(u, 0, 0.6)) + 0.9 * up(u), -0.12), tgt=face(u), fov=lerp(15, 30, up(u)), fstop=2.0,
-                                                 shake=0.004 + 0.03 * (1.2 < u < 1.42)),
-                   [act(*ME, Q, lambda u: lerp(hd(V(0.5, 1)), N, up(u)), [], rx=lambda u: math.radians(62) * (1 - up(u)),
-                        pose=lambda u: {**prone(u, 4.0 * (1 - up(u)) + 1.0, 1 - up(u), 0.8), 'Head': (-34 * (1 - up(u)), 0, 0), 'Spine': (20 * sn(PI * up(u)), 0, 0), 'Spine1': (16 * sn(PI * up(u)), 0, 0),
-                                        'RightArm': (lerp(-20, 55, up(u)) if up(u) > 0 else prone(u, 0, 1.0, 0.8)['RightArm'][0], 0, 0), 'LeftArm': (lerp(-20, 62, up(u)) if up(u) > 0 else prone(u, 0, 1.0, 0.8)['LeftArm'][0], 0, 0)}),
+    up = lambda u: ease(ramp(u, 0.6, 1.3)); face = lambda u: kn.to_3d() + V(0, 0, 0.78 + 0.26 * up(u))
+    SH.append(shot(26.4, 29.0, lambda k, u: dict(pos=face(u) + V(0.55 - 0.5 * up(u), 0.25 + 1.5 * up(u), -0.1) + V(0.9, 0.35, 0).normalized() * (1.15 - 0.25 * ease(ramp(u, 0, 0.6))) * (1 - up(u)),
+                                                 tgt=face(u), fov=lerp(16, 32, up(u)), fstop=2.0, shake=0.004 + 0.03 * (1.25 < u < 1.45)),
+                   [act(*ME, kn, lambda u: lerp(hd(V(0.9, 0.35)), N + 0.0001 - 2 * PI if hd(V(0.9, 0.35)) < 0 else N, up(u)), [], z=lambda u: KZ * (1 - up(u)),
+                        pose=lambda u: kneel(u, 1 - up(u), 1 - ease(ramp(u, 0.15, 0.5)))),
                     act(*BRO, Bf, hd(fd), [], rx=-PI / 2, z=0.04, pose=lambda u: bro(9.0))],
-                   [('aura', lambda u: face(u) + V(0.5, 0.9, 0.2), 260, 0.25), ('ring', 1.3, Q.to_3d() + V(0, 0, 0.2), 3.2), ('burst', 1.3, Q, 50, 1.6, 0.03), ('flash', 1.3, Q.to_3d() + V(0, 0.6, 0.8), 6000), tracers(8, 10, 1.6)],
+                   [('aura', lambda u: face(u) + V(0.7, 0.9, 0.2), 110, 0.25), ('ring', 1.3, kn.to_3d() + V(0, 0, 0.2), 3.2), ('burst', 1.3, kn, 50, 1.6, 0.03), ('flash', 1.3, kn.to_3d() + V(0, 0.9, 0.9), 1500), tracers(8, 10, 1.6)],
                    slow=0.6, clock='0:12', name='rage'))
     # 13. SLERF breaks what is left of the line.
     SH.append(shot(29.0, 31.2, lambda k, u: dict(pos=V(-4.5 + 0.2 * k, -6.9, 0.16), tgt=V(LX, -3.2, 1.3), fov=36, fstop=2.8, shake=0.01 + 0.08 * (0.55 < u < 0.8)),
@@ -336,25 +340,25 @@ def film():
                    [act(*ME, go(r0, r1, 0, 2.2), hd(r1 - r0), [(0, 'run', 1.5)], pose=lambda u: {'Spine': (10, 0, 0)}),
                     act('slerf', 0, V(-6.4, -5.2), hd(V(1, -0.6)), [(0, 'attack1', 1.0), (1.2, 'idle', 1.0)]), act('goat', 2, V(-3.4, -4.6), S_, [(0.9, 'attack1', 1.0)]),
                     act('swordcat', 4, V(-6.9, -6.4), N, [], rx=-PI / 2, pose=limp(2))],
-                   [('aura', lambda u: r0.lerp(r1, ramp(u, 0, 2.2)).to_3d() + V(0, 0.5, 0.7), 200, -1.0), ('boom', 0.45, V(-6.4, -7.0, 0.4), 1.7), ('boom', 1.25, V(-3.1, -5.6, 0.4), 1.9),
+                   [('aura', lambda u: r0.lerp(r1, ramp(u, 0, 2.2)).to_3d() + V(0, 0.5, 0.7), 90, -1.0), ('boom', 0.45, V(-6.4, -7.0, 0.4), 1.7), ('boom', 1.25, V(-3.1, -5.6, 0.4), 1.9),
                     ('burst', 0.45, V(-6.4, -7.0), 30, 1.6, 0.04), ('burst', 1.25, V(-3.1, -5.6), 30, 1.6, 0.04), ('flash', 1.25, V(-3.1, -5.6, 1.0), 16000), tracers(26, 12, 2.2)], clock='0:07', name='run'))
     b0, b1 = V(LX, -1.5), V(LX, 1.5)
     hp = lambda u: b0.lerp(b1, ramp(u, 0, 1.1)) + V(0.28 * sn(u * 7), 0)
     SH.append(shot(33.4, 35.6, lambda k, u: dict(pos=V(-1.5, -0.7 + 0.5 * k, 0.5), tgt=hp(u).to_3d() + V(0, 0.3, 0.6), fov=40, fstop=2.8, shake=0.02 + 0.07 * (0.36 < u < 0.6)),
                    [act(*ME, hp, N, [(0, 'run', 1.5)], pose=lambda u: {'Spine': (12, 0, 0)}),
                     act('goat', 1, V(-5.75, -0.2), hd(V(0.5, -1)), [(0.05, 'attack1', 1.0)]), act('goat', 2, V(-4.3, 0.95), hd(V(-0.5, -1)), [(0.45, 'attack2', 1.0)])],
-                   [('aura', lambda u: hp(u).to_3d() + V(0.5, 0.2, 0.7), 200, -1.0), ('boom', 0.36, V(-3.2, 0.2, 0.0), 2.0), ('burst', 0.36, V(-3.2, 0.2), 60, 2.6, 0.045), ('flash', 0.36, V(-3.2, 0.2, 0.8), 22000),
-                    ('ring', 0.36, V(-3.2, 0.2, -0.2), 2.6), tracers(18, 13, 1.1)], slow=0.5, clock='0:04', name='bridge'))
+                   [('aura', lambda u: hp(u).to_3d() + V(0.5, 0.2, 0.7), 90, -1.0), ('boom', 0.36, V(-7.7, 0.4, 0.0), 2.0), ('burst', 0.36, V(-7.7, 0.4), 60, 2.6, 0.045), ('flash', 0.36, V(-7.7, 0.4, 0.8), 22000),
+                    ('ring', 0.36, V(-7.7, 0.4, -0.2), 2.6), tracers(18, 13, 1.1)], slow=0.5, clock='0:04', name='bridge'))
     # 15. The leap: time all but stops, and the camera goes round it.
     j0, j1 = V(LX, 1.9), BOSS + V(0, -0.55); UH = 0.71
     jp = lambda u: j0.lerp(j1, ramp(u, 0, UH)); jz = lambda u: 1.75 * sn(PI * 0.78 * ramp(u, 0, UH))
     def orbit(k, u):
-        a = math.radians(205 + 125 * ease(k)); c = jp(u).to_3d() + V(0, 0, jz(u) + 0.55)
-        return dict(pos=c + V(math.cos(a) * 1.9, sn(a) * 1.9, -0.25 + 0.3 * k), tgt=c + V(0, 0.25, 0), fov=38, fstop=2.0, shake=0.004)
+        a = math.radians(215 - 150 * ease(k)); c = jp(u).to_3d() + V(0, 0, jz(u) + 0.55)
+        return dict(pos=c + V(math.cos(a) * 2.6, sn(a) * 2.6, -0.3 + 0.75 * k), tgt=c + V(0, 0.1, 0), fov=34, fstop=2.0, shake=0.004)
     SH.append(shot(35.6, 39.2, orbit, [act(*ME, jp, N, [], z=jz, rx=lambda u: math.radians(lerp(-14, 26, ramp(u, 0, UH))), pose=leap(UH + 0.02)),
                    act('goat', 0, BOSS, S_, [(-0.5, 'ready', 0.8)], pose=lambda u: {'Head': (-22 * ease(ramp(u, 0.2, 0.6)), 0, 0), 'Spine2': (-10 * ease(ramp(u, 0.2, 0.6)), 0, 0)}),
                    act('goat', 3, V(-6.4, 5.4), S_, [(0, 'idle', 1.0)]), act('goat', 4, V(-6.0, 6.6), S_, [(-1, 'idle', 1.0)])],
-                   [('aura', lambda u: jp(u).to_3d() + V(0.3, -0.5, jz(u) + 0.6), 240, -1.0), tracers(30, 14, 0.8), ('boom', 0.1, V(-8.6, 5.0, 0.4), 1.3), ('boom', 0.4, V(-0.8, 7.6, 0.4), 1.3)],
+                   [('aura', lambda u: jp(u).to_3d() + V(0.3, -0.5, jz(u) + 0.6), 110, -1.0), tracers(30, 14, 0.8), ('boom', 0.1, V(-8.6, 5.0, 0.4), 1.3), ('boom', 0.4, V(-0.8, 7.6, 0.4), 1.3)],
                    slow=0.2, clock='0:02', name='leap'))
     # 16. It lands.
     fallk = lambda u: ease(ramp(u, 0.1, 0.62))
@@ -375,7 +379,7 @@ def film():
                     ('flash', 0.42, T3 + V(0, -2.5, 2.5), 250000), ('burst', 0.42, TOWER + V(0, -1.2), 70, 3.4, 0.07), ('ring', 0.42, T3 + V(0, 0, 0.3), 9.0), ('swap', 0.45), tracers(10, 15, 1.6)],
                    slow=0.5, clock='0:00', name='tower'))
     # 18. After. The sword goes up against the burning sky.
-    SH.append(shot(44.2, 48.2, lambda k, u: dict(pos=V(-6.7 + 0.2 * k, 0.0, 0.4 + 1.1 * ease(k)), tgt=V(-1.8, 9.0, 1.7 + 0.3 * k), fov=40, fstop=4.0, focus=3.2, shake=0.004),
+    SH.append(shot(44.2, 48.2, lambda k, u: dict(pos=V(-5.9 + 0.2 * k, 1.9, 0.35 + 0.7 * ease(k)), tgt=V(-2.6, 9.0, 1.7 + 0.2 * k), fov=36, fstop=4.0, focus=2.2, shake=0.004),
                    [act(*ME, hero, hd(TOWER - hero), [(0, 'idle', 1.0)], pose=arm_up(1.5, 9.0)),
                     act('toshi', 2, go(V(-2.4, 1.0), V(-2.5, 3.2), 0, 2.0), N, [(0, 'walk', 1.0), (2.0, 'win', 1.0)]),
                     act('walter', 2, go(V(-3.4, 0.6), V(-3.3, 2.4), 0, 1.7), N, [(0, 'walk', 1.1), (1.7, 'win', 1.0)]),
@@ -392,7 +396,7 @@ def fx_mats():
         """A ragged blob: object colour = tint, object alpha = how much of it is left (it tears into holes as it dies)."""
         m = bpy.data.materials.new(name); m.use_nodes = True; nt = m.node_tree; b = nt.nodes['Principled BSDF']; Lk = nt.links.new
         oi = nt.nodes.new('ShaderNodeObjectInfo'); lw = nt.nodes.new('ShaderNodeLayerWeight'); lw.inputs['Blend'].default_value = 0.3
-        nz = nt.nodes.new('ShaderNodeTexNoise'); nz.inputs['Scale'].default_value = 1.7; nz.inputs['Detail'].default_value = 6; nz.inputs['Roughness'].default_value = 0.65
+        nz = nt.nodes.new('ShaderNodeTexNoise'); nz.inputs['Scale'].default_value = 2.6; nz.inputs['Detail'].default_value = 6; nz.inputs['Roughness'].default_value = 0.65
         tc = nt.nodes.new('ShaderNodeTexCoord'); mp = nt.nodes.new('ShaderNodeMapping'); Lk(tc.outputs['Object'], mp.inputs[0]); Lk(oi.outputs['Random'], mp.inputs['Location']); Lk(mp.outputs[0], nz.inputs['Vector'])
         def M(op, a, b_, c=None, cl=False):
             n = nt.nodes.new('ShaderNodeMath'); n.operation = op; n.use_clamp = cl
@@ -401,18 +405,18 @@ def fx_mats():
                 if isinstance(v, (int, float)): n.inputs[i].default_value = v
                 else: Lk(v, n.inputs[i])
             return n.outputs[0]
-        body = M('MULTIPLY_ADD', M('ADD', nz.outputs['Fac'], M('MULTIPLY_ADD', oi.outputs['Alpha'], 0.75, -0.95)), 5.0, 0.0, cl=True)      # noise against a threshold that the alpha moves
+        body = M('MULTIPLY_ADD', M('ADD', nz.outputs['Fac'], M('MULTIPLY_ADD', oi.outputs['Alpha'], 0.3, -0.75)), 8.0, 0.0, cl=True)      # noise against a threshold that the alpha moves
         edge = M('MULTIPLY_ADD', lw.outputs['Facing'], -2.2, 1.25, cl=True); al = M('MULTIPLY', body, edge, cl=True)
         b.inputs['Roughness'].default_value = 1.0
         if emit:
-            cr = nt.nodes.new('ShaderNodeValToRGB'); e = cr.color_ramp.elements; e[0].position = 0.25; e[0].color = (0.25, 0.01, 0.0, 1); e[1].position = 0.8; e[1].color = (1.0, 0.75, 0.3, 1)
-            mid = cr.color_ramp.elements.new(0.52); mid.color = (1.0, 0.22, 0.02, 1)
+            cr = nt.nodes.new('ShaderNodeValToRGB'); e = cr.color_ramp.elements; e[0].position = 0.35; e[0].color = (0.18, 0.01, 0.0, 1); e[1].position = 0.98; e[1].color = (1.0, 0.62, 0.16, 1)
+            mid = cr.color_ramp.elements.new(0.62); mid.color = (0.9, 0.16, 0.01, 1)
             Lk(M('MULTIPLY', M('ADD', nz.outputs['Fac'], 0.15), M('MINIMUM', oi.outputs['Alpha'], 1.3), cl=True), cr.inputs[0])
             Lk(cr.outputs[0], b.inputs['Emission Color']); Lk(cr.outputs[0], b.inputs['Base Color']); Lk(M('MULTIPLY', oi.outputs['Alpha'], emit), b.inputs['Emission Strength']); Lk(al, b.inputs['Alpha'])
         else:
             Lk(oi.outputs['Color'], b.inputs['Base Color']); Lk(M('MULTIPLY', al, 0.8), b.inputs['Alpha'])
         return m
-    MATS['fire'] = soft('fx_fire', 5.0); MATS['smoke'] = soft('fx_smoke', 0.0)
+    MATS['fire'] = soft('fx_fire', 2.2); MATS['smoke'] = soft('fx_smoke', 0.0)
     MATS['snow'] = sets.flat('fx_dust', (0.3, 0.2, 0.15), 0.9); MATS['dirt'] = sets.flat('fx_dirt', (0.07, 0.05, 0.045), 0.9)
     for nm, col in (('tr_ours', (0.5, 0.9, 1.0)), ('tr_theirs', (1.0, 0.3, 0.12)), ('ringm', (1.0, 0.85, 0.7))):
         MATS[nm] = sets.flat('fx_' + nm, col, 0.5, emit=(col, 30.0 if nm != 'ringm' else 3.0))
@@ -478,10 +482,10 @@ def build_fx(K, L, sh, frames, uof, rng):
             for o in trail: life(o)
             for f in frames:
                 w = uof(f); on = w <= ul
-                key3(K, head, 'location', f, fn(w)); key3(K, head, 'scale', f, [0.22 if on else 0] * 3); key3(K, head, 'color', f, (1, 0.5, 0.1, 1.4))
+                key3(K, head, 'location', f, fn(w)); key3(K, head, 'scale', f, [0.11 if on else 0] * 3); key3(K, head, 'color', f, (1, 0.5, 0.1, 1.4))
                 for j, o in enumerate(trail):
                     wj = w - 0.035 * (j + 1); key3(K, o, 'location', f, fn(max(0.0, wj)) + Vector((0, 0, 0.02 * j)))
-                    key3(K, o, 'scale', f, [0.16 + 0.05 * j if (on and wj > 0) else 0] * 3); key3(K, o, 'color', f, (0.08, 0.07, 0.07, 1.1 - 0.05 * j))
+                    key3(K, o, 'scale', f, [0.09 + 0.035 * j if (on and wj > 0) else 0] * 3); key3(K, o, 'color', f, (0.08, 0.07, 0.07, 1.1 - 0.05 * j))
         elif kind == 'aura':
             _, fn, en, u_on = e; lt = bpy.data.objects.new('aura', bpy.data.lights.new('aura', 'POINT')); bpy.context.scene.collection.objects.link(lt); L.append(lt)
             lt.data.color = (1.0, 0.62, 0.16); lt.data.shadow_soft_size = 0.25; lt.data.energy = 0; K.add(lt.data, 'energy', 0, f0 - 1, 0.0); K.add(lt.data, 'energy', 0, f1, 0.0)
@@ -530,7 +534,7 @@ def main():
     pk = nt.nodes.new('CompositorNodeValue'); pk.name = 'povk'; pk.outputs[0].default_value = 0.0
     bl = nt.nodes.new('CompositorNodeBlur'); bl.filter_type = 'GAUSS'; bl.size_x = bl.size_y = max(2, res // 70); nt.links.new(cb.outputs['Image'], bl.inputs['Image'])
     mx = nt.nodes.new('CompositorNodeMixRGB'); nt.links.new(pk.outputs[0], mx.inputs[0]); nt.links.new(cb.outputs['Image'], mx.inputs[1]); nt.links.new(bl.outputs['Image'], mx.inputs[2])
-    sm = nt.nodes.new('CompositorNodeMath'); sm.operation = 'MULTIPLY_ADD'; sm.inputs[1].default_value = -0.5; sm.inputs[2].default_value = 0.92; nt.links.new(pk.outputs[0], sm.inputs[0])
+    sm = nt.nodes.new('CompositorNodeMath'); sm.operation = 'MULTIPLY_ADD'; sm.inputs[1].default_value = -0.38; sm.inputs[2].default_value = 0.95; nt.links.new(pk.outputs[0], sm.inputs[0])
     hs = nt.nodes.new('CompositorNodeHueSat'); nt.links.new(mx.outputs['Image'], hs.inputs['Image']); nt.links.new(sm.outputs[0], hs.inputs['Saturation']); nt.links.new(hs.outputs['Image'], ld.inputs['Image'])
     A = arena_dump(); fx_mats(); robjs = A['towers']['en_king_ruin'][1]
     bg = sc.world.node_tree.nodes['Background']; bg.inputs[0].default_value = (0.10, 0.035, 0.04, 1); bg.inputs[1].default_value = 1.0
@@ -614,7 +618,7 @@ def main():
         for i in range(4): K2.add(cam, 'rotation_quaternion', i, f, q[i])
         K2.add(cam.data, 'lens', 0, f, 12.0 / math.tan(math.radians(c['fov']) / 2)); K2.add(cam.data, 'dof.focus_distance', 0, f, focus)
         K2.add(cam.data, 'dof.aperture_fstop', 0, f, c['fstop']); K2.add(cam.data, 'clip_start', 0, f, c.get('near', 0.05))
-        K2.add(nt, 'nodes["povk"].outputs[0].default_value', 0, f, povf[f]); K2.add(nt, 'nodes["mistk"].outputs[0].default_value', 0, f, 0.42)
+        K2.add(nt, 'nodes["povk"].outputs[0].default_value', 0, f, povf[f]); K2.add(nt, 'nodes["mistk"].outputs[0].default_value', 0, f, 0.3)
         dv = Vector((tgt.x - pos.x, tgt.y - pos.y, 0)); dv = dv.normalized() if dv.length > 0.1 else Vector((0, 1, 0)); sd = Vector((-dv.y, dv.x, 0))
         ft = pos + (tgt - pos).normalized() * min(focus, 6.0); rp = ft + dv * 3.2 + sd * 1.3; rp.z = ft.z + 2.6; rq = (ft - rp).to_track_quat('-Z', 'Y')
         for i in range(3): K2.add(rim, 'location', i, f, rp[i])
