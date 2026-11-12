@@ -10,8 +10,8 @@ sc.render.resolution_x, sc.render.resolution_y = 1280, 544; sc.view_settings.vie
 T = trader.Trader((0, 0), face=math.pi, cast=trader.CAST_DEFAULT)
 T.a.K.d = {}
 W = T.pose(1, TT, lambda t: (0.0, -0.03, 0.002), pitch=0.5, yaw=0.45); T.a.K.flush(); sc.frame_set(1)
-bpy.ops.mesh.primitive_cube_add(size=1); ph = bpy.context.object; ph.scale = (0.072, 0.150, 0.0082); ph.data.materials.append(bpy.data.materials.new('p')); ph.data.materials[0].diffuse_color = (0.02, 0.02, 0.03, 1)
-bpy.ops.mesh.primitive_plane_add(size=0.0655, location=(0, 0, 0.0042)); sc_ = bpy.context.object; sc_.scale = (1, 2.2, 1); m = bpy.data.materials.new('s'); m.use_nodes = True
+bpy.ops.mesh.primitive_cube_add(size=1); ph = bpy.context.object; ph.scale = (0.072, 0.150, 0.0082); bpy.ops.object.transform_apply(scale=True); ph.data.materials.append(bpy.data.materials.new('p')); ph.data.materials[0].diffuse_color = (0.02, 0.02, 0.03, 1)
+bpy.ops.mesh.primitive_plane_add(size=0.0655, location=(0, 0, 0.0042)); sc_ = bpy.context.object; sc_.scale = (1, 2.2, 1); bpy.ops.object.transform_apply(scale=True); m = bpy.data.materials.new('s'); m.use_nodes = True
 m.node_tree.nodes['Principled BSDF'].inputs['Emission Color'].default_value = (0.2, 1.0, 0.4, 1); m.node_tree.nodes['Principled BSDF'].inputs['Emission Strength'].default_value = 2.0; sc_.data.materials.append(m)
 sc_.parent = ph
 ph.matrix_world = W
