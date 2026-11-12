@@ -4,7 +4,7 @@
 # Exit 4 = frames still missing (it prints which). Needs only git, ffmpeg and python3.
 set -e
 W=${1:-$HOME/war_fin}; R=$(git rev-parse --show-toplevel); H=$R/commercial/war; mkdir -p $W/frames $W/parts; cd $R; git fetch -q origin
-OK="0001_0080 0081_0160 0161_0321 0322_0482 0483_0643 0644_0723 0724_0804 0644_0804 0805_0884 0885_0965 0805_0965 0966_1046 1047_1126 0966_1126 1127_1207 1208_1287 1127_1287 1288_1366 1367_1446 1288_1446"
+OK="0322_0362 0363_0402 0403_0442 0443_0482 0483_0523 0524_0564 0565_0605 0606_0643 0644_0683 0684_0723 0724_0764 0765_0804 0805_0844 0845_0884 0001_0080 0081_0160 0161_0321 0322_0482 0483_0643 0644_0723 0724_0804 0644_0804 0805_0884 0885_0965 0805_0965 0966_1046 1047_1126 0966_1126 1127_1207 1208_1287 1127_1287 1288_1366 1367_1446 1288_1446"
 for b in $(git branch -r | grep -E 'origin/claude/' | grep -v HEAD); do
   for r in $OK; do f=commercial/renders/wpart_$r.mp4
     if [ ! -s $W/parts/wpart_$r.mp4 ] && git cat-file -e $b:$f 2>/dev/null; then git show $b:$f > $W/parts/wpart_$r.mp4
