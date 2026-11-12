@@ -290,7 +290,7 @@ for i, o in enumerate(FRAGS):
     ins, dist = in_hole(o.location)
     if ins: bursty(o, T_CEIL + dist * 0.03, 500 + i, 2.0 + 3.5 * math.exp(-dist), vz=(9, 22) if dist < 0.3 else (-6.5, 2.5))
 # the house from outside: a shingled roof over the room (it breaks with the ceiling), outer walls, a yard and a street
-ROOFM = mat('roofm', (0.17, 0.075, 0.055), 0.85); ROOFD = mat('roofd', (0.07, 0.03, 0.025), 0.9); SIDING = mat('siding', (0.72, 0.69, 0.62), 0.8); LAWN = mat('lawn', (0.10, 0.27, 0.07), 0.95)
+ROOFM = mat('roofm', (0.10, 0.042, 0.032), 0.85); ROOFD = mat('roofd', (0.07, 0.03, 0.025), 0.9); SIDING = mat('siding', (0.72, 0.69, 0.62), 0.8); LAWN = mat('lawn', (0.10, 0.27, 0.07), 0.95)
 ASPH = mat('asph', (0.06, 0.06, 0.065), 0.9); HEDGE = mat('hedge', (0.04, 0.16, 0.05), 0.95); RZ = 2.86
 gx0 = round((CEN.x - ROOM.x) / 0.2) * 0.2 + ROOM.x; gy0 = round((CEN.y - ROOM.y) / 0.2) * 0.2 + ROOM.y; HX0, HX1, HY0, HY1 = ROOM.x - 6.5, ROOM.x + 6.5, ROOM.y - 5.0, ROOM.y + 6.0
 for (x0, x1, y0, y1) in ((HX0, gx0 - 1.6, HY0, HY1), (gx0 + 1.6, HX1, HY0, HY1), (gx0 - 1.6, gx0 + 1.6, HY0, gy0 - 1.6), (gx0 - 1.6, gx0 + 1.6, gy0 + 1.6, HY1)):
@@ -323,9 +323,9 @@ for i in range(18):
         a_ += rr.uniform(-0.45, 0.45); L = rr.uniform(0.18, 0.4); q = p + Vector((math.cos(a_) * L, math.sin(a_) * L, 0)); mid = (p + q) / 2
         o = box('crack', (L + 0.01, 0.022 * (1.2 - (mid - CEN).length / 3.0), 0.006), mid, CRKM, rot=(0, 0, a_)); ins, dist = in_hole(mid)
         show(o, F(T_CRK) + k_ // 2, F(T_CEIL + dist * 0.03) if ins else None); p = q; k_ += 1
-SKL = bpy.data.lights.new('skyshaft', 'SPOT'); SKL.spot_size = 0.75; SKL.spot_blend = 0.5; SKL.color = (0.9, 0.95, 1.0); SKL.shadow_soft_size = 0.4
-SKO = bpy.data.objects.new('skyshaft', SKL); COL.objects.link(SKO); SKO.location = CEN + Vector((0.4, -0.3, 5.0))
-for t, e in ((T_CEIL - 0.02, 0), (T_CEIL + 0.08, 6000), (T_FLASH, 6000)): SKL.energy = e; SKL.keyframe_insert('energy', frame=F(t))
+SKL = bpy.data.lights.new('skyshaft', 'SPOT'); SKL.spot_size = 1.7; SKL.spot_blend = 0.5; SKL.color = (0.9, 0.95, 1.0); SKL.shadow_soft_size = 0.4
+SKO = bpy.data.objects.new('skyshaft', SKL); COL.objects.link(SKO); SKO.location = CEN + Vector((0.0, 0.0, 0.0))
+for t, e in ((T_CEIL - 0.02, 0), (T_CEIL + 0.08, 900), (T_FLASH, 900)): SKL.energy = e; SKL.keyframe_insert('energy', frame=F(t))
 CL_ = bpy.data.lights.new('ceilflash', 'POINT'); CL_.color = (0.6, 1.0, 0.65); CLO = bpy.data.objects.new('ceilflash', CL_); COL.objects.link(CLO); CLO.location = CEN + Vector((0, 0, -0.4))
 for t, e in ((T_CEIL - 0.05, 0), (T_CEIL, 70), (T_CEIL + 0.3, 15), (T_CEIL + 1.0, 0)): CL_.energy = e; CL_.keyframe_insert('energy', frame=F(t))
 
