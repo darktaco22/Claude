@@ -30,5 +30,5 @@ done
 python3 finish.py $W/frames $W/fin > $W/finish.log 2>&1
 O=$HERE/../output/meme-royale-god-candle.mp4
 NF=$(ls $W/fin/c_*.png | wc -l)
-ffmpeg -v error -y -framerate 24 -i $W/fin/c_%04d.png -i $W/fin/mix.wav -c:v libx264 -preset slow -crf 16 -pix_fmt yuv420p -c:a aac -b:a 192k -shortest -movflags +faststart $O
+ffmpeg -v error -y -framerate 24 -i $W/fin/c_%04d.png -i $W/fin/mix.wav -c:v libx264 -preset slow -crf 21 -pix_fmt yuv420p -c:a aac -b:a 192k -shortest -movflags +faststart $O
 ls -la $O; echo ALL-DONE $NF frames

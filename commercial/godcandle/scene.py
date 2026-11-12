@@ -440,7 +440,9 @@ SH(1.2, T_IMP + 0.44, 0.3, 0.45, (16.8, -18.6, 0.6), (16.2, -18.9, 0.8), (9, -21
 SH(1.0, T_IMP + 0.78, 0.45, 0.45, (20, -32, 36), (17, -29, 26), (9, -21, 0), (9, -21, 1), 22, 5.6, 0.3)
 SH(1.0, T_IMP + 1.23, 0.5, 0.8, (22, -36, 6), (19, -35, 9), (9, -21, 6), (9, -21, 8), 35, 4.0, 0.3)
 # 8. the aftermath: a crane up and back
-SH(3.2, T_IMP + 1.8, 1.0, 1.0, (9, -30, 3), (9, -62, 32), (9, -21, 7), (9, -21, 9), 24, 4.0, 0.15, 32)
+SH(1.1, T_IMP + 1.8, 1.0, 1.0, (-4, -36, 7), (-2, -37, 10), (9, -21, 7), (9, -21, 8), 28, 4.0, 0.15)
+# the pull-back starts 1.1 s into its move: its first second sat inside the near tower
+SH(2.1, T_IMP + 2.9, 1.0, 1.0, (9, -30, 3), (9, -62, 32), (9, -21, 7), (9, -21, 9), 24, 4.0, 0.15, 32); SHOTS[-1].update(u0=1.1 / 3.2, seed=round(SHOTS[-1]['t0'] - 1.1, 4))
 N_FILM = int(round(_t[0] * FPS)); print('FILM ends at', _t[0], 'frames', N_FILM)
 json.dump(dict(fps=FPS, first=1, last=N_FILM, shots=SHOTS, t_swap=T_SWAP, t_ceil=T_CEIL, t_flash=T_FLASH, t_drop=T_DROP, t_imp=T_IMP), open(os.path.join(MYHERE, 'edl.json'), 'w'), indent=0)
 sc.frame_set(1)

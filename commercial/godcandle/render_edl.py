@@ -13,6 +13,7 @@ def setup(f):
     t = (f - 1) / FPS; s = next((s for s in E['shots'] if s['t0'] <= t < s['t1']), E['shots'][-1]); dur = s['t1'] - s['t0']
     u = (t - s['t0']) / dur; a = s['a0'] + (t - s['t0']) * (s['s0'] + (s['s1'] - s['s0']) * u * 0.5); af = a * FPS + 1
     sc.frame_set(int(af), subframe=af - int(af)); sp = s['s0'] + (s['s1'] - s['s0']) * u; sc.render.motion_blur_shutter = max(0.1, 0.4 * sp)
+    u = s.get('u0', 0) + (1 - s.get('u0', 0)) * u                # a shot may start part-way along its camera move
     cp = GC.matrix_world.translation.copy(); H = GC.scale.x * 13.2; ec = s.get('ec', 0)
     e = ease(u) if ec == 0 else (u * u if ec == 1 else (1 - (1 - u) ** 2 if ec == 2 else u))
     if s['orb']:
@@ -25,7 +26,7 @@ def setup(f):
     elif s['fl'] == 3: l = cp + l * H
     sh = s['shake']
     if sh:
-        n1 = noise.noise_vector(Vector((t * 2.3, s['t0'], 0.0))); n2 = noise.noise_vector(Vector((t * 9.0, s['t0'] + 7, 3.0)))
+        n1 = noise.noise_vector(Vector((t * 2.3, s.get('seed', s['t0']), 0.0))); n2 = noise.noise_vector(Vector((t * 9.0, s.get('seed', s['t0']) + 7, 3.0)))
         l = l + (n1 * 0.10 + n2 * 0.035) * sh * (p - l).length * 0.12; p = p + n1 * 0.04 * sh
     d = l - p; cam.location = p; cam.rotation_mode = 'QUATERNION'; q = d.to_track_quat('-Z', 'Y'); rl = s.get('roll')
     if rl: q = q @ Quaternion((0, 0, 1), rl[0] + (rl[1] - rl[0]) * e)
