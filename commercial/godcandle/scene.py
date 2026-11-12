@@ -371,13 +371,13 @@ def SH(dur, a0, s0, s1, p0, p1, l0, l1, lens, fstop=2.8, shake=0.0, lens1=None, 
     SHOTS.append(dict(t0=round(_t[0], 4), t1=round(_t[0] + dur, 4), a0=a0, s0=s0, s1=s1, p0=list(p0), p1=list(p1), l0=list(l0), l1=list(l1), lens=lens, lens1=lens1 or lens, fstop=fstop, shake=shake, fp=fp, fl=fl, orb=orb, ec=ec, roll=roll, fstop1=fstop1 or fstop, up1=up1)); _t[0] += dur
 # fp / fl: 0 = world, 1 = offset from the candle's foot (metres), 3 = offset in candle heights
 # 1. over his shoulder, pushing in on the phone while he taps BUY; the chart goes parabolic and fills the frame
-SH(T_SWAP, 0.0, 1, 1, ph(0, 0, 0) + Vector((0.55, -0.95, 0.50)), ph(0.12, 0.03, 0.34), ph(0, 0, 0), ph(0.012, 0.004, 0), 60, 4.0, 0.25, 70, ec=2, fstop1=16, up1=list(v_))
+SH(T_SWAP, 0.0, 1, 1, ph(0, 0, 0) + Vector((0.45, -0.75, 0.62)), ph(0.12, 0.03, 0.34), ph(0, 0, 0), ph(0.012, 0.004, 0), 68, 4.0, 0.25, 70, ec=2, fstop1=16, up1=list(v_))
 # 2. the candle leaves the screen (slow motion), close
 SH(1.3, T_SWAP, 0.35, 0.5, (0.12, -0.12, 0.06), (0.34, -0.30, 0.2), (0, 0, 0.05), (0, 0, 0.18), 24, 5.6, 0.2, fp=1, fl=1)
 # 3. from behind and below: it rises past him, lighting the room green
 SH(1.0, T_SWAP + 0.55, 0.5, 0.7, Rm(1.7, -1.9, 0.4), Rm(1.3, -1.5, 0.7), (0, 0, 0.6), (0, 0, 0.8), 22, 2.8, 0.4, fl=1)
 # 4. up through the ceiling
-SH(0.8, T_SWAP + 1.15, 0.6, 0.9, Rm(0.4, -0.5, 0.2), Rm(0.3, -0.6, 0.3), (0, 0, 1.0), (0, 0, 1.0), 16, 2.8, 0.5, fl=3)
+SH(0.8, T_SWAP + 1.15, 0.6, 0.9, Rm(0.8, -0.3, 0.2), Rm(0.7, -0.4, 0.3), (0, 0, 1.0), (0, 0, 1.0), 16, 2.8, 0.5, fl=3)
 # 5. the chase: out into the sky
 SH(0.95, T_SWAP + 1.75, 1.1, 1.1, (1.2, -2.0, -0.3), (0.9, -3.0, -0.6), (0, 0, 0.5), (0, 0, 0.5), 24, 4.0, 0.3, fp=3, fl=3)
 # 6. the fall, like a rocket coming back down: an onboard camera looking down from over its top, rolling; a long-lens chase; then the ground, among the fighters

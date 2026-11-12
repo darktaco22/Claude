@@ -23,7 +23,7 @@ cam = bpy.data.objects.new('cam', bpy.data.cameras.new('cam')); sc.collection.ob
 pw = W.translation; R = W.to_3x3(); n = R.col[2]; u = R.col[0]; v = R.col[1]
 def look(loc, tgt, up):
     z = (Vector(loc) - Vector(tgt)).normalized(); x = Vector(up).cross(z).normalized(); y = z.cross(x); M = Matrix((x, y, z)).transposed().to_4x4(); M.translation = loc; cam.matrix_world = M
-for name, loc, lens, up in (('ots', pw + Vector((0.55, -0.95, 0.50)), 60, (0, 0, 1)), ('phone', pw + n * 0.34 + u * 0.12 + v * 0.03, 40, v), ('side', pw + Vector((1.4, 0.0, 0.2)), 40, (0, 0, 1)), ('back', pw - n * 0.35 + v * 0.02, 35, v)):
+for name, loc, lens, up in (('ots', pw + Vector((0.45, -0.75, 0.62)), 60, (0, 0, 1)), ('phone', pw + n * 0.34 + u * 0.12 + v * 0.03, 40, v), ('left', pw - u * 0.32 + n * 0.14 - v * 0.03, 40, v), ('side', pw + Vector((1.3, 0.1, 0.3)), 40, (0, 0, 1))):
     cam.data.lens = lens; look(loc, pw, up)
     sc.render.filepath = f'{OUT}_{name}.png'; bpy.ops.render.render(write_still=True)
 print('TEST-DONE', pw)

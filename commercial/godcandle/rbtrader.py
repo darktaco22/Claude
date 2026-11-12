@@ -13,13 +13,14 @@ RB = os.path.expanduser(os.environ.get('ROCKETBOX', '/home/user/microsoft/micros
 AV = 'Male_Adult_18'
 def qrot(axis, ang): return Quaternion(Vector(axis).normalized(), ang)
 def clamp(x, a=0.0, b=1.0): return max(a, min(b, x))
-HOLD = dict(t=(0.05, 0.1, 0.1), i=(0.10, 0.10, 0.06), m=(0.10, 0.10, 0.06), r=(0.12, 0.12, 0.06), p=(0.14, 0.14, 0.08))
+THUMB_IN = 0.6
+HOLD = dict(t=(0.10, 0.35, 0.3), i=(0.10, 0.10, 0.06), m=(0.10, 0.10, 0.06), r=(0.12, 0.12, 0.06), p=(0.14, 0.14, 0.08))
 POINT = dict(t=(0.45, 0.45, 0.35), i=(0.04, 0.05, 0.03), m=(1.1, 1.25, 0.8), r=(1.2, 1.25, 0.8), p=(1.25, 1.25, 0.8))
 PW, PL, PD = 0.072, 0.150, 0.0082                     # the phone
 
 
 class RBTrader:
-    def __init__(self, seat_xy, face=math.pi, hip_z=0.50, lean_deg=16.0, pitch=0.45, yaw=0.45, subd=1):
+    def __init__(self, seat_xy, face=math.pi, hip_z=0.50, lean_deg=16.0, pitch=0.62, yaw=0.45, subd=1):
         before = set(bpy.data.objects)
         bpy.ops.import_scene.fbx(filepath=os.path.join(RB, 'Assets', 'Avatars', 'Adults', AV, 'Export', AV + '.fbx'))
         new = [o for o in bpy.data.objects if o not in before]
@@ -123,15 +124,17 @@ class RBTrader:
             self.limb(Q, s, 'Thigh', 'Calf', 'Foot', ank, Vector((sx[s] * 0.15, -0.4, 1.0)), self.T1, self.T2)
         head = self.fk(Q, 'Bip01 Head'); eyes = head @ (self.rest['Bip01 Head'].inverted() @ self.eyes_rest); self.eyes = eyes
         # the phone, up in front of his chest, tilted to his eyes and turned a little to his right (the camera's side: body -X)
-        tgt = eyes + Vector((0, -0.25, -0.27)); n = (eyes - tgt).normalized(); n = (Matrix.Rotation(self.yaw, 3, 'Z') @ n).normalized()
+        tgt = eyes + Vector((0, -0.22, -0.38)); n = (eyes - tgt).normalized(); n = (Matrix.Rotation(self.yaw, 3, 'Z') @ n).normalized()
         zup = Vector((0, 0, 1)); top = (zup - n * zup.dot(n)).normalized(); P = self.frame(tgt, top, n)                 # phone: +Y top, +Z screen, origin = centre of the back
         self.Pm = P
         # left palm behind it: the fingers run straight up the back of the phone (hidden by it), the heel of the hand under its lower end
         s = 'L'; ang = math.radians(90); t_p = Vector((self.idx[s] * math.cos(ang), math.sin(ang), 0)); z_p = Vector((0, 0, 1)); x_p = t_p.cross(z_p)
-        M = Matrix((x_p, t_p, z_p)).transposed().to_4x4(); M.translation = Vector((self.idx[s] * 0.004, 0.047, 0.010))      # the phone in the palm frame
+        M = Matrix((x_p, t_p, z_p)).transposed().to_4x4(); M.translation = Vector((-self.idx[s] * 0.004, 0.047, 0.010))      # the phone in the palm frame
         self.M_hold = M; palm = P @ M.inverted(); Hd = self.hand_for_palm(s, palm)
-        self.limb(Q, s, 'UpperArm', 'Forearm', 'Hand', Hd.translation, Vector((sx[s] * 0.35, 0.35, -1.0)), self.L1, self.L2, Hd.to_quaternion())
+        self.limb(Q, s, 'UpperArm', 'Forearm', 'Hand', Hd.translation, Vector((sx[s] * 0.30, 0.2, -1.0)), self.L1, self.L2, Hd.to_quaternion())
         self.fingers('L', HOLD, Q); self.fingers('R', POINT, Q)
+        # the holding thumb: swung in beside the index finger so it lies along the phone's edge, its tip curled onto the side
+        b0 = 'Bip01 L Finger0'; nrm = self.Fpalm['L'].to_3x3().col[2]; Q[b0] = self.local_q(b0, qrot(nrm, self.idx['L'] * THUMB_IN) @ qrot(self.curl_axis[b0], HOLD['t'][0]))
         # the tapping fingertip in the right palm's frame
         tipb = 'Bip01 R Finger12'; Qf = {k: v for k, v in Q.items() if ' R Finger' in k}; T_keep = self.T; self.T = Vector()
         tip = self.fk(Qf, tipb) @ (self.rest[tipb].inverted() @ self.tail_of[tipb]); self.T = T_keep; self.tip_pp = self.Fpalm['R'].inverted() @ tip
@@ -142,9 +145,9 @@ class RBTrader:
     def pose(self, f, t, tip_local):
         Q = dict(self.Q); P = self.Pm; R3 = P.to_3x3(); u, v, n = R3.col[0], R3.col[1], R3.col[2]
         l = tip_local(t); tip = P.translation + u * l[0] + v * l[1] + n * (l[2] + PD + 0.0005)
-        fdir = (-n * 0.55 + v * 0.70 - u * 0.30).normalized(); F = self.frame(Vector(), fdir, Vector((0.8, 0.0, -0.5))); F.translation = tip - F.to_3x3() @ self.tip_pp
+        fdir = (-n * 0.50 + v * 0.45 - u * 0.74).normalized(); F = self.frame(Vector(), fdir, Vector((0.8, 0.0, -0.5))); F.translation = tip - F.to_3x3() @ self.tip_pp
         Hd = self.hand_for_palm('R', F)
-        self.limb(Q, 'R', 'UpperArm', 'Forearm', 'Hand', Hd.translation, Vector((-0.45, 0.35, -1.0)), self.L1, self.L2, Hd.to_quaternion())
+        self.limb(Q, 'R', 'UpperArm', 'Forearm', 'Hand', Hd.translation, Vector((-0.40, 0.2, -1.0)), self.L1, self.L2, Hd.to_quaternion())
         P_ = self.arm.pose.bones
         for b in ('Bip01 R UpperArm', 'Bip01 R Forearm', 'Bip01 R Hand'):
             pb = P_[b]; q = Q[b]
