@@ -29,7 +29,7 @@ plane('ground2', 4000, 4000, (9, -16, -0.12), (0, 0, 0), GRASS)           # so t
 
 # ---------------------------------------------------------------- the timeline (animation seconds)
 GX, GY = 9.0, -21.0                                     # where it lands
-T_CHIP, T_PLACE, T_SWAP, T_LAUNCH, T_CEIL, T_FLASH = 1.2, 2.0, 3.3, 4.5, 4.65, 6.2
+T_SWAP, T_LAUNCH, T_CEIL, T_FLASH = 3.4, 4.5, 4.65, 6.2
 T_DROP = 6.25; T_IMP = T_DROP + 3.0
 ROOM = Vector((400.0, -16.0, 0.0))
 def Rm(x, y, z): return ROOM + Vector((x, y, z))
@@ -137,15 +137,17 @@ HR = bpy.data.objects.new('HR', None); COL.objects.link(HR); HR.rotation_mode = 
 child(box('fist', (0.052, 0.05, 0.06), (0, 0, 0), SKIN), (0, 0, 0.03), HR); child(box('index', (0.016, 0.016, 0.08), (0, 0, 0), SKIN), (0.006, 0.007, 0.085), HR); child(box('thumb', (0.015, 0.015, 0.04), (0, 0, 0), SKIN), (-0.03, 0.0, 0.05), HR)
 FORE_R = cyl('rfore', HOOD); FORE_R.rotation_mode = 'QUATERNION'
 A_LOC = Vector((-0.32, 0.55, -0.77)).normalized(); A_W = u_ * A_LOC.x + v_ * A_LOC.y + n_ * A_LOC.z
-TAPS = [(T_CHIP, upx(395), vpx(1700)), (T_PLACE, upx(540), vpx(1875))]
-PTS = [(0.0, 0.020, -0.075, 0.07), (0.7, 0.020, -0.07, 0.06), (T_CHIP - 0.06, TAPS[0][1], TAPS[0][2], 0.004), (T_CHIP, TAPS[0][1], TAPS[0][2], 0.0012), (T_CHIP + 0.09, TAPS[0][1], TAPS[0][2], 0.0012), (T_CHIP + 0.3, 0.0, -0.036, 0.03),
-       (T_PLACE - 0.18, TAPS[1][1], TAPS[1][2], 0.012), (T_PLACE - 0.04, TAPS[1][1], TAPS[1][2], 0.003), (T_PLACE, TAPS[1][1], TAPS[1][2], 0.0012), (T_PLACE + 0.1, TAPS[1][1], TAPS[1][2], 0.0012), (T_PLACE + 0.4, 0.01, -0.07, 0.05), (T_PLACE + 1.2, 0.04, -0.11, 0.16), (9.0, 0.04, -0.11, 0.16)]
+TAPS = [(t_, upx(x_), vpx(y_)) for t_, x_, y_ in UIJ['taps']]
+PTS = [(0.0, 0.020, -0.075, 0.07), (0.6, 0.020, -0.07, 0.06)]
+for (t_, x_, y_) in TAPS:                           # glide over, dip, press, lift
+    PTS += [(t_ - 0.3, x_, y_, 0.03), (t_ - 0.05, x_, y_, 0.004), (t_, x_, y_, 0.0012), (t_ + 0.1, x_, y_, 0.0012), (t_ + 0.3, x_, y_, 0.03)]
+PTS += [(TAPS[-1][0] + 0.6, 0.01, -0.07, 0.06), (TAPS[-1][0] + 1.6, 0.04, -0.11, 0.16), (9.0, 0.04, -0.11, 0.16)]
 def tip_loc(t):
     for (t0, x0, y0, z0), (t1, x1, y1, z1) in zip(PTS, PTS[1:]):
         if t0 <= t <= t1: e = sm((t - t0) / (t1 - t0)); return Vector((tick(x0, x1, e), tick(y0, y1, e), tick(z0, z1, e)))
     return Vector(PTS[-1][1:])
 def set_hand(fr):
-    t = tt(fr); l = tip_loc(t); l.x += math.sin(t * 3.1) * 0.0015 * (1 if t < T_CHIP else 0.2); tip = ph(l.x, l.y, l.z); W = tip - A_W * 0.125
+    t = tt(fr); l = tip_loc(t); l.x += math.sin(t * 3.1) * 0.0015 * (1 if t < 1.0 else 0.2); tip = ph(l.x, l.y, l.z); W = tip - A_W * 0.125
     HR.location = W; HR.rotation_quaternion = A_W.to_track_quat('Z', 'Y'); seg(FORE_R, E_R, W, 0.05)
 keyall(HR, ['location', 'rotation_quaternion'], lambda fr: (set_hand(fr)), F(0), F(T_FLASH))
 for fr in range(F(0), F(T_FLASH) + 1):
@@ -332,15 +334,15 @@ def SH(dur, a0, s0, s1, p0, p1, l0, l1, lens, fstop=2.8, shake=0.0, lens1=None, 
     SHOTS.append(dict(t0=round(_t[0], 4), t1=round(_t[0] + dur, 4), a0=a0, s0=s0, s1=s1, p0=list(p0), p1=list(p1), l0=list(l0), l1=list(l1), lens=lens, lens1=lens1 or lens, fstop=fstop, shake=shake, fp=fp, fl=fl, orb=orb, ec=ec)); _t[0] += dur
 # fp / fl: 0 = world, 1 = offset from the candle's foot (metres), 3 = offset in candle heights
 # 1. over his shoulder, pushing in on the phone while he taps BUY; the chart goes parabolic and fills the frame
-SH(3.3, 0.0, 1, 1, Rm(0.56, -2.15, 1.64), ph(0.02, 0.02, 0.30), Rm(-0.02, TY + 0.4, 1.05), ph(0.022, 0.02, 0), 30, 2.0, 0.3, 70)
+SH(T_SWAP, 0.0, 1, 1, Rm(0.56, -2.15, 1.64), ph(0.02, 0.02, 0.30), Rm(-0.02, TY + 0.4, 1.05), ph(0.022, 0.02, 0), 30, 2.0, 0.3, 70)
 # 2. the candle leaves the screen (slow motion), close
 SH(1.3, T_SWAP, 0.35, 0.5, (0.04, -0.13, 0.04), (0.1, -0.35, 0.14), (0, 0, 0.05), (0, 0, 0.12), 24, 2.0, 0.2, fp=1, fl=1)
 # 3. from behind and below: it rises past him, lighting the room green
-SH(1.0, 3.85, 0.5, 0.7, Rm(0.5, -2.4, 0.35), Rm(0.35, -2.0, 0.5), (0, 0, 0.6), (0, 0, 0.8), 20, 2.8, 0.4, fl=1)
+SH(1.0, T_SWAP + 0.55, 0.5, 0.7, Rm(0.5, -2.4, 0.35), Rm(0.35, -2.0, 0.5), (0, 0, 0.6), (0, 0, 0.8), 20, 2.8, 0.4, fl=1)
 # 4. up through the ceiling
-SH(0.8, 4.45, 0.6, 0.9, Rm(0.4, -0.5, 0.2), Rm(0.3, -0.6, 0.3), (0, 0, 1.0), (0, 0, 1.0), 16, 2.8, 0.5, fl=3)
+SH(0.8, T_SWAP + 1.15, 0.6, 0.9, Rm(0.4, -0.5, 0.2), Rm(0.3, -0.6, 0.3), (0, 0, 1.0), (0, 0, 1.0), 16, 2.8, 0.5, fl=3)
 # 5. the chase: out into the sky
-SH(0.95, 5.05, 1.2, 1.2, (1.2, -2.0, -0.3), (0.9, -3.0, -0.6), (0, 0, 0.5), (0, 0, 0.5), 24, 4.0, 0.3, fp=3, fl=3)
+SH(0.95, T_SWAP + 1.75, 1.1, 1.1, (1.2, -2.0, -0.3), (0.9, -3.0, -0.6), (0, 0, 0.5), (0, 0, 0.5), 24, 4.0, 0.3, fp=3, fl=3)
 # 6. the fall
 SH(1.1, T_DROP, 1.0, 1.0, (0, -9, 15), (0, -6.5, 11), (0, 0, -12), (0, 0, -14), 24, 4.0, 0.4, fp=1, fl=1)
 SH(0.9, T_DROP + 1.1, 1.0, 1.0, (12, -26, 0.6), (11.6, -25.5, 0.7), (0, 0, 3), (0, 0, 2), 14, 4.0, 0.3, 18, fp=0, fl=1)
