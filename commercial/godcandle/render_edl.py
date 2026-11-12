@@ -13,13 +13,16 @@ def setup(f):
     t = (f - 1) / FPS; s = next((s for s in E['shots'] if s['t0'] <= t < s['t1']), E['shots'][-1]); dur = s['t1'] - s['t0']
     u = (t - s['t0']) / dur; a = s['a0'] + (t - s['t0']) * (s['s0'] + (s['s1'] - s['s0']) * u * 0.5); af = a * FPS + 1
     sc.frame_set(int(af), subframe=af - int(af)); sp = s['s0'] + (s['s1'] - s['s0']) * u; sc.render.motion_blur_shutter = max(0.1, 0.4 * sp)
-    cp = GC.matrix_world.translation.copy(); e = ease(u)
+    cp = GC.matrix_world.translation.copy(); H = GC.scale.x * 13.2; ec = s.get('ec', 0)
+    e = ease(u) if ec == 0 else (u * u if ec == 1 else (1 - (1 - u) ** 2 if ec == 2 else u))
     if s['orb']:
         cx, cy, cz, r, g0, g1, h0, h1 = s['orb']; ang = g0 + (g1 - g0) * e; p = Vector((cx + r * math.sin(ang), cy - r * math.cos(ang), cz + h0 + (h1 - h0) * e))
     else: p = Vector(s['p0']).lerp(Vector(s['p1']), e)
     l = Vector(s['l0']).lerp(Vector(s['l1']), e)
-    if s['fp']: p = p + cp
-    if s['fl']: l = l + cp
+    if s['fp'] == 1: p = p + cp
+    elif s['fp'] == 3: p = cp + p * H
+    if s['fl'] == 1: l = l + cp
+    elif s['fl'] == 3: l = cp + l * H
     sh = s['shake']
     if sh:
         n1 = noise.noise_vector(Vector((t * 2.3, s['t0'], 0.0))); n2 = noise.noise_vector(Vector((t * 9.0, s['t0'] + 7, 3.0)))

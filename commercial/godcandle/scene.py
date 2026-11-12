@@ -1,10 +1,12 @@
-"""MEME ROYALE: "GOD CANDLE" - a pump.fun-style chart floats in the dusk sky over the arena; its last candle pumps, rips out of the
-chart, falls through the sky and slams into the court.  Built on the clash stadium (its arena, stands, units, crowd and FX code).
+"""MEME ROYALE: "GOD CANDLE".  A degen on his phone at 3 AM taps BUY on a pump.fun-style app; over his shoulder the chart goes parabolic, the camera
+dives into the screen, the last candle rips out of the phone, punches through the ceiling and rockets into the dusk sky, then falls and slams into
+the Meme Royale arena.  Built on the clash stadium (its arena, stands, units, crowd and FX code).
 
-blender -b --factory-startup -P scene.py -- --out scene.blend      (writes edl.json next to it; render with render_edl.py)
+  python3 ui.py UI_DIR ; python3 ui.py UI_DIR monitors           (the phone screen frames and the monitor pictures)
+  blender -b --factory-startup -P scene.py -- --out scene.blend --ui UI_DIR      (writes edl.json next to it; render with render_edl.py)
 24 fps, 1280x544 (2.35:1); finish.py grades, letterboxes and mixes the sound."""
-import bpy, math, json, os, sys, random, re
-from mathutils import Vector, Matrix
+import bpy, math, json, os, sys, random
+from mathutils import Vector, Matrix, Quaternion, Euler
 
 MYHERE = os.path.dirname(os.path.abspath(__file__)); CL = os.path.join(MYHERE, '..', 'clash', 'scene.py')
 src = open(CL).read().split('\n')
@@ -15,196 +17,241 @@ i_crowd = line('# ==============================================================
 i_crowdcall = line('crowd()')
 g = globals(); g['__file__'] = CL
 exec(compile('\n'.join(src[:i_battle]), CL, 'exec'), g)                 # helpers, arena, sky, stadium, units, FX (explode, dust ...)
-exec(compile('\n'.join(src[i_battle:i_ns]), CL, 'exec'), g)             # smooth(), fighter(), sparks(), dust(), the T_ constants
-HERE = MYHERE
+exec(compile('\n'.join(src[i_battle:i_ns]), CL, 'exec'), g)             # smooth(), fighter(), sparks(), dust()
+HERE = MYHERE; UI = arg('--ui', os.path.expanduser('~/gc_work/ui'))
 sc.render.resolution_x, sc.render.resolution_y = 1280, 544
-sc.cycles.samples = int(arg('--samples', '10')); LAST = 340; sc.frame_end = LAST
-
-# ---------------------------------------------------------------- the clash film's blimp and its cables are in the way of the fall
-for o in list(bpy.data.objects):
-    c = o.matrix_world.translation
-    if o.name.startswith(('blimp', 'fin')) or (o.name.startswith('Cylinder') and 5.0 < c.x < 13.0 and abs(c.y + 16) < 2.5 and 12.5 < c.z < 36):
-        bpy.data.objects.remove(o)
+sc.cycles.samples = int(arg('--samples', '10')); sc.frame_end = 330
 sc.world.node_tree.nodes['Background'].inputs['Strength'].default_value = 0.22
+for o in list(bpy.data.objects):                                         # the clash film's blimp and its cables are in the way of the fall
+    c = o.matrix_world.translation
+    if o.name.startswith(('blimp', 'fin')) or (o.name.startswith('Cylinder') and 5.0 < c.x < 13.0 and abs(c.y + 16) < 2.5 and 12.5 < c.z < 36): bpy.data.objects.remove(o)
+plane('ground2', 4000, 4000, (9, -16, -0.12), (0, 0, 0), GRASS)           # so the room is not floating in a void
 
 # ---------------------------------------------------------------- the timeline (animation seconds)
-GX, GY = 9.0, -21.0                                   # where it lands
-T_PUMP, T_BREAK, T_FULL, T_HOVER, T_DROP, T_IMP = 4.0, 4.5, 5.0, 4.8, 5.8, 7.9
-CH = Vector((-11.2, -17.0, 60.0))                     # the chart's centre; it faces -Y (we look at it from the blue end)
+GX, GY = 9.0, -21.0                                     # where it lands
+T_CHIP, T_PLACE, T_SWAP, T_LAUNCH, T_CEIL, T_FLASH = 1.2, 2.0, 3.3, 4.5, 4.65, 6.2
+T_DROP = 6.25; T_IMP = T_DROP + 3.0
+ROOM = Vector((400.0, -16.0, 0.0))
+def Rm(x, y, z): return ROOM + Vector((x, y, z))
 def tick(a, b, f): return a + (b - a) * f
 def sm(u): u = max(0.0, min(1.0, u)); return u * u * (3 - 2 * u)
-def track(o, path, t0, t1, fn, step=1.0, idx=-1):
-    """Key o.path every `step` frames from t0 to t1; fn(u) -> value."""
-    f0, f1 = F(t0), F(t1); n = max(1, int(round((f1 - f0) / step)))
-    for i in range(n + 1):
-        u = i / n; v = fn(u); fr = f0 + (f1 - f0) * u
-        if idx >= 0: getattr(o, path)[idx] = v
-        else: setattr(o, path, v)
-        o.keyframe_insert(path, frame=fr, index=idx)
-    if o.animation_data and o.animation_data.action:
-        for fc in o.animation_data.action.fcurves:
-            for k in fc.keyframe_points: k.interpolation = 'LINEAR'
+def seg(o, a, b, r=None):
+    d = Vector(b) - Vector(a); o.location = (Vector(a) + Vector(b)) / 2; o.rotation_mode = 'QUATERNION'; o.rotation_quaternion = d.to_track_quat('Z', 'Y')
+    o.scale = (r if r is not None else o.scale.x, r if r is not None else o.scale.y, d.length)
+def cyl(name, mt, parent=None):
+    bpy.ops.mesh.primitive_cylinder_add(radius=1.0, depth=1.0, vertices=16); o = bpy.context.object; o.name = name
+    for p in o.data.polygons: p.use_smooth = True
+    o.data.materials.append(mt)
+    if parent: o.parent = parent
+    return o
+def txt(body, size, loc, mt, align='LEFT'):
+    bpy.ops.object.text_add(location=loc, rotation=(math.pi / 2, 0, 0)); o = bpy.context.object; o.data.body = body; o.data.size = size; o.data.extrude = 0.02; o.data.align_x = align; o.data.materials.append(mt); return o
 def glow(name, col, strength, alpha):
     m = bpy.data.materials.new(name); m.use_nodes = True; nt = m.node_tree; nt.nodes.clear()
     o = nt.nodes.new('ShaderNodeOutputMaterial'); mx = nt.nodes.new('ShaderNodeMixShader'); tr = nt.nodes.new('ShaderNodeBsdfTransparent'); em = nt.nodes.new('ShaderNodeEmission')
     em.inputs['Color'].default_value = (*col, 1); em.inputs['Strength'].default_value = strength; mx.inputs['Fac'].default_value = alpha
     nt.links.new(tr.outputs[0], mx.inputs[1]); nt.links.new(em.outputs[0], mx.inputs[2]); nt.links.new(mx.outputs[0], o.inputs['Surface']); return m
-def pbox(name, mt, org, parent=None):
-    """A unit cube whose origin sits at `org`, in cube coordinates (-.5..+.5): (0,0,-.5) its foot, (-.5,0,0) its left end."""
-    bpy.ops.mesh.primitive_cube_add(size=1); o = bpy.context.object; o.name = name
-    o.data.transform(Matrix.Translation(-Vector(org)))
-    o.data.materials.append(mt)
-    if parent: o.parent = parent
-    return o
-def txt(body, size, loc, mt, align='LEFT', bold=False):
-    bpy.ops.object.text_add(location=loc, rotation=(math.pi / 2, 0, 0)); o = bpy.context.object; o.data.body = body; o.data.size = size; o.data.extrude = 0.04
-    o.data.align_x = align; o.data.materials.append(mt); return o
+def imgmat(name, path, strength=1.2, seq=0):
+    m = bpy.data.materials.new(name); m.use_nodes = True; nt = m.node_tree; nt.nodes.clear()
+    ti = nt.nodes.new('ShaderNodeTexImage'); ti.image = bpy.data.images.load(path); ti.interpolation = 'Cubic'; ti.extension = 'EXTEND'
+    if seq: ti.image.source = 'SEQUENCE'; iu = ti.image_user; iu.frame_duration = seq; iu.frame_start = 1; iu.frame_offset = 0; iu.use_auto_refresh = True; iu.use_cyclic = False
+    em = nt.nodes.new('ShaderNodeEmission'); em.inputs['Strength'].default_value = strength; o = nt.nodes.new('ShaderNodeOutputMaterial')
+    nt.links.new(ti.outputs['Color'], em.inputs['Color']); nt.links.new(em.outputs[0], o.inputs['Surface']); return m
+def keyall(o, paths, frames_fn, f0, f1, step=1.0):
+    """Key o's paths every `step` frames from f0 to f1: frames_fn(frame) sets the values."""
+    n = int(round((f1 - f0) / step))
+    for i in range(n + 1):
+        fr = f0 + i * step; frames_fn(fr)
+        for pth in paths: o.keyframe_insert(pth, frame=fr)
+    if o.animation_data and o.animation_data.action:
+        for fc in o.animation_data.action.fcurves:
+            for kp in fc.keyframe_points: kp.interpolation = 'LINEAR'
+def tt(fr): return (fr - 1) / FPS
 
 # ---------------------------------------------------------------- materials
-PG = mat('pump_green', (0.02, 0.9, 0.3), 0.35, emit=(0.05, 1.0, 0.35), estr=3.0); PR = mat('pump_red', (0.95, 0.12, 0.2), 0.35, emit=(1.0, 0.15, 0.22), estr=2.4)
-PANEL = mat('panel', (0.045, 0.05, 0.06), 0.18, metal=0.3); GRID = mat('grid', (0.3, 0.32, 0.36), 0.6, emit=(0.4, 0.42, 0.5), estr=0.5)
-FRAME = mat('frame', (0.1, 0.9, 0.3), 0.4, emit=(0.1, 1.0, 0.35), estr=2.2); TXT = mat('txt', (0.9, 0.95, 1.0), 0.5, emit=(0.8, 0.9, 1.0), estr=1.6); TXTG = mat('txtg', (0.2, 1.0, 0.4), 0.5, emit=(0.2, 1.0, 0.4), estr=2.5)
-WICK = mat('wick', (0.5, 1.0, 0.42), 0.3, emit=(0.5, 1.0, 0.42), estr=14)
+SKIN = mat('skin', (0.82, 0.57, 0.44), 0.55); HOOD = mat('hoodie', (0.10, 0.075, 0.17), 0.9); JEANS = mat('jeans', (0.04, 0.06, 0.13), 0.8); SHOE = mat('shoe', (0.8, 0.8, 0.82), 0.5)
+PHONE = mat('phonebody', (0.015, 0.015, 0.02), 0.25, metal=0.6); CARPET = mat('carpet', (0.035, 0.03, 0.05), 0.95); WALLM = mat('wallm', (0.07, 0.07, 0.1), 0.9); CEIL = mat('ceil', (0.55, 0.55, 0.58), 0.9)
+DESK = mat('desk', (0.05, 0.035, 0.03), 0.5); BLK = mat('blk', (0.01, 0.01, 0.012), 0.4); BEAN = mat('bean', (0.2, 0.05, 0.08), 0.9)
+LEDP = mat('ledp', (0.6, 0.2, 1.0), 0.3, emit=(0.65, 0.2, 1.0), estr=14); LEDC = mat('ledc', (0.2, 0.8, 1.0), 0.3, emit=(0.2, 0.8, 1.0), estr=9); NEONG = mat('neong', (0.2, 1.0, 0.4), 0.4, emit=(0.2, 1.0, 0.4), estr=12); NEONR = mat('neonr', (1.0, 0.15, 0.2), 0.4, emit=(1.0, 0.15, 0.2), estr=12)
+CITY = mat('city', (0.2, 0.3, 0.9), 0.5, emit=(0.25, 0.35, 1.0), estr=3.0); CANM = mat('can', (0.1, 0.9, 0.3), 0.3, metal=0.8); PIZZA = mat('pizza', (0.55, 0.38, 0.2), 0.8)
+GCM = None
 def candle_mat():
     m = bpy.data.materials.new('godcandle'); m.use_nodes = True; nt = m.node_tree; b = nt.nodes['Principled BSDF']; b.inputs['Roughness'].default_value = 0.3
     tc = nt.nodes.new('ShaderNodeTexCoord'); sp = nt.nodes.new('ShaderNodeSeparateXYZ'); nt.links.new(tc.outputs['Generated'], sp.inputs[0])
     rp = nt.nodes.new('ShaderNodeValToRGB'); E = rp.color_ramp.elements; E[0].position = 0.0; E[0].color = (0.02, 0.38, 0.07, 1); E[1].position = 1.0; E[1].color = (0.85, 1.0, 0.75, 1); e = E.new(0.55); e.color = (0.12, 0.95, 0.22, 1)
     nt.links.new(sp.outputs['Z'], rp.inputs['Fac']); nt.links.new(rp.outputs['Color'], b.inputs['Base Color']); nt.links.new(rp.outputs['Color'], b.inputs['Emission Color']); b.inputs['Emission Strength'].default_value = 3.2
     return m
-GCM = candle_mat(); SPARKG = mat('sparkg', (0.5, 1, 0.5), 0.4, emit=(0.4, 1.0, 0.45), estr=45); COINM = mat('coin', (1.0, 0.7, 0.15), 0.25, emit=(1.0, 0.6, 0.1), estr=0.6, metal=1.0)
+GCM = candle_mat(); WICK = mat('wick', (0.5, 1.0, 0.42), 0.3, emit=(0.5, 1.0, 0.42), estr=14)
+SPARKG = mat('sparkg', (0.5, 1, 0.5), 0.4, emit=(0.4, 1.0, 0.45), estr=45); COINM = mat('coin', (1.0, 0.7, 0.15), 0.25, emit=(1.0, 0.6, 0.1), estr=0.6, metal=1.0)
 CRACK = mat('crack', (0.2, 1.0, 0.35), 0.4, emit=(0.2, 1.0, 0.35), estr=9); CRACKD = mat('crackd', (0.02, 0.025, 0.02), 0.9)
 
-# ---------------------------------------------------------------- the chart (world = CH + local x, z)
-def Wp(x, z, y=0.0): return CH + Vector((x, y, z))
-CHART = []                                              # everything that shatters
-rr = random.Random(11)
-NC = 34; XS = [-24.0 + 1.3 * i for i in range(NC + 1)]; XG = XS[-1]
-p = 0.0; ser = []
-for i in range(NC):
-    d = rr.gauss(0.22, 1.0) if i % 3 else rr.gauss(-0.5, 0.8); o_, c_ = p, p + d; hi = max(o_, c_) + abs(rr.gauss(0, 0.5)); lo = min(o_, c_) - abs(rr.gauss(0, 0.5)); ser.append((o_, c_, hi, lo)); p = c_
-mn = min(s[3] for s in ser); mxv = max(s[2] for s in ser); k = 8.0 / (mxv - mn)
-ser = [tuple(-12.0 + (v - mn) * k for v in s) for s in ser]
-GB = ser[-1][1]                                         # the last close: the god candle starts there
-# panel: a pane of dark glass in cells, so it can shatter
-CELLS = []
-for ix in range(10):
-    for iz in range(6):
-        cx = -28 + 5.6 * (ix + 0.5); cz = -16 + 5.333 * (iz + 0.5)
-        b_ = box('cell', (5.5, 0.5, 5.23), Wp(cx, cz, 0.7), PANEL); CELLS.append(b_); CHART.append(b_)
-for (x, z, w, h) in ((0, 16.1, 56.4, 0.35), (0, -16.1, 56.4, 0.35), (-28.1, 0, 0.35, 32.4), (28.1, 0, 0.35, 32.4)):
-    CHART.append(box('frame', (w, 0.6, h), Wp(x, z, 0.4), FRAME))
-for zz in range(-12, 13, 4): CHART.append(box('hgrid', (54, 0.05, 0.06), Wp(0, zz, 0.42), GRID))
-for xx in range(-24, 25, 6): CHART.append(box('vgrid', (0.06, 0.05, 28), Wp(xx, 0, 0.42), GRID))
-CHART += [txt('$ROYALE / SOL', 1.9, Wp(-26.5, 12.4, -0.3), TXT), txt('MC  $69.4K', 1.5, Wp(-26.5, 9.8, -0.3), TXTG), txt('1m', 1.2, Wp(24.5, 12.6, -0.3), TXT)]
-for zz, lab in ((-8, '0.00042'), (-4, '0.00051'), (0, '0.00063'), (4, '0.00080'), (8, '0.00104')): CHART.append(txt(lab, 0.95, Wp(25.2, zz - 0.4, -0.3), TXT))
-CND = []
-for i, (o_, c_, hi, lo) in enumerate(ser):
-    up = c_ >= o_; mt = PG if up else PR; bot, top = min(o_, c_), max(o_, c_)
-    bd = box('cn', (0.8, 0.5, max(0.18, top - bot)), Wp(XS[i], (top + bot) / 2, 0.0), mt); wk = box('wk', (0.1, 0.1, hi - lo), Wp(XS[i], (hi + lo) / 2, 0.0), mt)
-    CND.append((bd, wk)); CHART += [bd, wk]
-    t_on = 0.15 + i * 0.1                                # the chart ticks in live
-    for o in (bd, wk): show(o, F(t_on))
-    for o in (bd, wk): o.hide_render = False
-# the last candle ticks up and down before it pumps
-LBD, LWK = CND[-1]
+# ---------------------------------------------------------------- the room: a degen's bedroom at 3 AM
+box('floor', (6.4, 6.4, 0.1), Rm(0, 0, -0.05), CARPET)
+for (x, y, w, d) in ((0, 3.1, 6.4, 0.2), (0, -3.1, 6.4, 0.2), (-3.1, 0, 0.2, 6.4), (3.1, 0, 0.2, 6.4)): box('wall', (w, d, 2.8), Rm(x, y, 1.35), WALLM)
+CEIL_CELLS = []
+for ix in range(8):
+    for iy in range(8): CEIL_CELLS.append(box('ceil', (0.78, 0.78, 0.1), Rm(-2.8 + 0.8 * ix, -2.8 + 0.8 * iy, 2.75), CEIL))
+plane('window', 1.7, 1.15, Rm(-2.99, 0.9, 1.55), (math.pi / 2, 0, math.pi / 2), CITY); box('winframe', (0.06, 1.8, 1.25), Rm(-3.02, 0.9, 1.55), BLK)
+box('desk', (3.2, 0.8, 0.06), Rm(0, 2.55, 0.76), DESK)
+for sx in (-1.5, 1.5):
+    box('deskleg', (0.06, 0.7, 0.76), Rm(sx, 2.55, 0.38), BLK)
+for k, x in enumerate((-0.78, 0.0, 0.78)):
+    box('stand', (0.06, 0.06, 0.25), Rm(x, 2.8, 0.9), BLK); box('bezel', (0.7, 0.04, 0.42), Rm(x, 2.74 - 0.01 * abs(k - 1), 1.2), BLK)
+    p_ = plane('mon', 0.66, 0.38, Rm(x, 2.715 - 0.01 * abs(k - 1), 1.2), (math.pi / 2, 0, math.pi), imgmat(f'mon{k}', os.path.join(UI, f'mon{k}.png'), 1.1))
+box('kbd', (0.5, 0.17, 0.02), Rm(0, 2.2, 0.8), LEDP); box('led1', (3.2, 0.03, 0.04), Rm(0, 3.0, 0.7), LEDP); box('led2', (0.04, 0.03, 1.5), Rm(-1.6, 3.0, 1.5), LEDC); box('led3', (0.04, 0.03, 1.5), Rm(1.6, 3.0, 1.5), LEDC)
+for i, x in enumerate((-1.2, -1.1, 1.15, 1.3)):
+    c = cyl('can', CANM); c.scale = (0.033, 0.033, 0.13); c.location = Rm(x, 2.4 + 0.05 * i, 0.85)
+box('pizza', (0.42, 0.42, 0.05), Rm(-1.5, -0.3, 0.025), PIZZA); box('pizza2', (0.42, 0.42, 0.05), Rm(-1.45, -0.28, 0.075), PIZZA, rot=(0, 0, 0.4))
+txt('LFG', 0.55, Rm(-1.9, 3.0, 2.05), NEONG); txt('NGMI', 0.4, Rm(1.1, 3.0, 2.1), NEONR)
+# the trader, from behind: a hooded chibi in the game's spirit
+TY = -1.2
+ico('bean', 0.5, Rm(0, TY, 0.25), BEAN, 2).scale = (1, 1, 0.55)
+box('torso', (0.46, 0.28, 0.56), Rm(0, TY, 0.84), HOOD); ico('shL', 0.1, Rm(-0.25, TY, 1.06), HOOD, 2); ico('shR', 0.1, Rm(0.25, TY, 1.06), HOOD, 2)
+ico('head', 0.15, Rm(0, TY, 1.29), SKIN, 2); hood = ico('hood', 0.185, Rm(0, TY - 0.03, 1.31), HOOD, 2); hood.scale = (1, 1.05, 1.0); ico('hoodbunch', 0.1, Rm(0, TY - 0.15, 1.2), HOOD, 2)
+S_R, S_L = Rm(0.25, TY, 1.04), Rm(-0.25, TY, 1.04); E_R, E_L = Rm(0.31, TY + 0.02, 0.78), Rm(-0.31, TY + 0.02, 0.78)
+for a, b_ in ((S_R, E_R), (S_L, E_L)): seg(cyl('uarm', HOOD), a, b_, 0.062)
+for sx in (-1, 1):
+    seg(cyl('thigh', JEANS), Rm(sx * 0.14, TY, 0.52), Rm(sx * 0.16, TY + 0.46, 0.55), 0.09); seg(cyl('shin', JEANS), Rm(sx * 0.16, TY + 0.47, 0.5), Rm(sx * 0.16, TY + 0.52, 0.09), 0.07)
+    box('shoe', (0.11, 0.24, 0.08), Rm(sx * 0.16, TY + 0.6, 0.05), SHOE)
+# the phone, in his hands: screen normal n toward him (up and back), u to the screen's right, v up the screen
+SW, SH_ = 0.068, 0.1473
+P_ = Rm(-0.02, TY + 0.40, 1.02); n_ = Vector((0, -0.92, 0.39)).normalized(); u_ = Vector((1, 0, 0)); v_ = n_.cross(u_).normalized(); u_ = v_.cross(n_).normalized()
+BASIS = Matrix(((u_.x, v_.x, n_.x), (u_.y, v_.y, n_.y), (u_.z, v_.z, n_.z)))
+def ph(x, y, z=0.0): return P_ + u_ * x + v_ * y + n_ * z
+PH = bpy.data.objects.new('phone', None); COL.objects.link(PH); PH.location = P_; PH.rotation_mode = 'QUATERNION'; PH.rotation_quaternion = BASIS.to_quaternion()
+def child(o, loc, parent=PH, rot=None):
+    o.parent = parent; o.location = loc
+    if rot: o.rotation_euler = rot
+    return o
+child(box('pbody', (0.075, 0.157, 0.0085), (0, 0, 0), PHONE), (0, 0, -0.0044))
+UIJ = json.load(open(os.path.join(UI, 'ui.json'))); NUI = len([f for f in os.listdir(UI) if f.startswith('u_')])
+scr = plane('screen', SW, SH_, (0, 0, 0), (0, 0, 0), imgmat('screen', os.path.join(UI, 'u_0001.png'), 1.5, NUI)); child(scr, (0, 0, 0.0004)); scr.visible_shadow = False
+def upx(x): return (x / UIJ['w'] - 0.5) * SW
+def vpx(y): return (0.5 - y / UIJ['h']) * SH_
+# left hand holds it from behind: a palm, four fingertips over the left edge, the sleeve back to the elbow
+child(box('lpalm', (0.07, 0.1, 0.022), (0, 0, 0), SKIN), (0.004, -0.012, -0.02))
+for k in range(4): child(box('lfing', (0.012, 0.02, 0.014), (0, 0, 0), SKIN), (-0.0385, 0.03 - k * 0.026, 0.001))
+W_L = ph(0.004, -0.045, -0.03); seg(cyl('lfore', HOOD), E_L, W_L, 0.05); box('lcuff', (0.07, 0.05, 0.07), W_L, SKIN)
+# right hand: a pointing fist.  HR sits at the wrist with +Z along the finger; the index tip is 0.125 along Z
+HR = bpy.data.objects.new('HR', None); COL.objects.link(HR); HR.rotation_mode = 'QUATERNION'
+child(box('fist', (0.052, 0.05, 0.06), (0, 0, 0), SKIN), (0, 0, 0.03), HR); child(box('index', (0.016, 0.016, 0.08), (0, 0, 0), SKIN), (0.006, 0.007, 0.085), HR); child(box('thumb', (0.015, 0.015, 0.04), (0, 0, 0), SKIN), (-0.03, 0.0, 0.05), HR)
+FORE_R = cyl('rfore', HOOD); FORE_R.rotation_mode = 'QUATERNION'
+A_LOC = Vector((-0.32, 0.55, -0.77)).normalized(); A_W = u_ * A_LOC.x + v_ * A_LOC.y + n_ * A_LOC.z
+TAPS = [(T_CHIP, upx(395), vpx(1700)), (T_PLACE, upx(540), vpx(1875))]
+PTS = [(0.0, 0.020, -0.075, 0.07), (0.7, 0.020, -0.07, 0.06), (T_CHIP - 0.06, TAPS[0][1], TAPS[0][2], 0.004), (T_CHIP, TAPS[0][1], TAPS[0][2], 0.0012), (T_CHIP + 0.09, TAPS[0][1], TAPS[0][2], 0.0012), (T_CHIP + 0.3, 0.0, -0.036, 0.03),
+       (T_PLACE - 0.18, TAPS[1][1], TAPS[1][2], 0.012), (T_PLACE - 0.04, TAPS[1][1], TAPS[1][2], 0.003), (T_PLACE, TAPS[1][1], TAPS[1][2], 0.0012), (T_PLACE + 0.1, TAPS[1][1], TAPS[1][2], 0.0012), (T_PLACE + 0.4, 0.01, -0.07, 0.05), (T_PLACE + 1.2, 0.04, -0.11, 0.16), (9.0, 0.04, -0.11, 0.16)]
+def tip_loc(t):
+    for (t0, x0, y0, z0), (t1, x1, y1, z1) in zip(PTS, PTS[1:]):
+        if t0 <= t <= t1: e = sm((t - t0) / (t1 - t0)); return Vector((tick(x0, x1, e), tick(y0, y1, e), tick(z0, z1, e)))
+    return Vector(PTS[-1][1:])
+def set_hand(fr):
+    t = tt(fr); l = tip_loc(t); l.x += math.sin(t * 3.1) * 0.0015 * (1 if t < T_CHIP else 0.2); tip = ph(l.x, l.y, l.z); W = tip - A_W * 0.125
+    HR.location = W; HR.rotation_quaternion = A_W.to_track_quat('Z', 'Y'); seg(FORE_R, E_R, W, 0.05)
+keyall(HR, ['location', 'rotation_quaternion'], lambda fr: (set_hand(fr)), F(0), F(T_FLASH))
+for fr in range(F(0), F(T_FLASH) + 1):
+    set_hand(fr); FORE_R.keyframe_insert('location', frame=fr); FORE_R.keyframe_insert('rotation_quaternion', frame=fr); FORE_R.keyframe_insert('scale', frame=fr)
+for o in (HR, FORE_R):
+    for fc in o.animation_data.action.fcurves:
+        for kp in fc.keyframe_points: kp.interpolation = 'LINEAR'
 
-# ---------------------------------------------------------------- THE GOD CANDLE
-GC = bpy.data.objects.new('GC', None); COL.objects.link(GC); GC.location = Wp(XG, GB)
-def cb(name, mt, org_z=True):
+# ---------------------------------------------------------------- THE GOD CANDLE: out of the screen, through the ceiling, into the sky, down into the arena
+HG = 13.2                                              # the game's candle: body 3.3 x 13.2 x 3.3
+GC = bpy.data.objects.new('GC', None); COL.objects.link(GC); GC.rotation_mode = 'QUATERNION'
+def cb(name, mt, foot=True):
     bpy.ops.mesh.primitive_cube_add(size=1); o = bpy.context.object; o.name = name
-    if org_z: o.data.transform(Matrix.Translation((0, 0, 0.5)))
+    if foot: o.data.transform(Matrix.Translation((0, 0, 0.5)))
     o.data.materials.append(mt); o.parent = GC; return o
 BODY = cb('gc_body', GCM); WICKO = cb('gc_wick', WICK, False)
-HC = 1.25; HG = 13.2; WG = 3.3; DG = 3.3
+B0 = ph(upx(UIJ['x']), vpx(UIJ['y_base']), 0.0006); H0 = (UIJ['y_base'] - UIJ['y_top']) / UIJ['h'] * SH_; S0 = H0 / HG
+Z0A = 96.0; A_UP = 2 * (Z0A - B0.z) / ((T_FLASH - T_LAUNCH) ** 2)
+SKEY = [(T_SWAP, S0), (3.9, 0.02), (4.6, 0.08), (5.2, 0.22), (5.7, 0.55), (T_FLASH, 1.0)]
+def S_of(t):
+    if t >= T_FLASH: return 1.0
+    for (t0, s0), (t1, s1) in zip(SKEY, SKEY[1:]):
+        if t0 <= t <= t1: return math.exp(tick(math.log(s0), math.log(s1), (t - t0) / (t1 - t0)))
+    return S0
 def gc_shape(t):
-    """(w, d, h) of the body, and the wick's (width, length, centre z)."""
-    u = (t - T_PUMP) / (T_FULL - T_PUMP); e = sm(u) ** 1.4
-    h = tick(HC, HG, e) if t >= T_PUMP else HC; w = tick(0.8, WG, sm(u)) if t >= T_PUMP else 0.8; d = tick(0.5, DG, sm((t - 4.25) / 0.7)) if t >= T_PUMP else 0.5
-    wl = h * 1.5 if t < T_PUMP else h * 1.5 + 5.0 * sm((t - T_PUMP) / 0.5) * (1 - 0.6 * sm((t - T_HOVER) / 0.8))
-    return (w, d, h), (0.1 + 0.3 * sm(u), wl)
-for fr in range(F(0.0), F(T_IMP + 3.0)):
-    t = (fr - 1) / FPS; (w, d, h), (ww, wl) = gc_shape(min(t, T_FULL))
-    BODY.scale = (w, d, h); BODY.keyframe_insert('scale', frame=fr)
-    WICKO.scale = (ww, ww, wl); WICKO.location = (0, 0, h / 2 + (wl - 1.5 * h) / 2 * 0.0); WICKO.keyframe_insert('scale', frame=fr); WICKO.keyframe_insert('location', frame=fr)
-for o in (BODY, WICKO):
-    for fc in o.animation_data.action.fcurves:
-        for kp in fc.keyframe_points: kp.interpolation = 'LINEAR'
-# its light: it gets brighter and brighter, and lights the whole stadium as it falls
-LAMP = bpy.data.lights.new('gcl', 'POINT'); LAMP.color = (0.35, 1.0, 0.4); LAMP.shadow_soft_size = 1.5; LO = bpy.data.objects.new('gcl', LAMP); COL.objects.link(LO); LO.parent = GC; LO.location = (0, 0, 7)
-for t, e in ((0, 0), (T_PUMP - 0.1, 0), (T_PUMP + 0.3, 20000), (T_FULL, 60000), (T_HOVER + 0.6, 120000), (T_DROP, 160000), (T_IMP - 0.6, 260000), (T_IMP, 400000), (T_IMP + 0.04, 3000000), (T_IMP + 0.35, 220000), (T_IMP + 2.5, 90000), (T_IMP + 6, 60000)):
-    LAMP.energy = e; LAMP.keyframe_insert('energy', frame=F(t))
-# motion: it hovers out of the chart (toward us), charges, drops, plants
-ZB0 = GC.location.z; HOVER = Vector((GX, GY, ZB0 + 3.0)); SINK = -0.35
-tf = T_IMP - T_DROP; gg = 2 * (HOVER.z - SINK) / (tf * tf)
-rg = random.Random(5); TILT = (0.045, -0.03)
-def gc_loc(t):
-    if t < T_HOVER: return Vector(GC.location) if False else Wp(XG, GB)
-    if t < T_DROP:
-        u = sm((t - T_HOVER) / (T_DROP - T_HOVER - 0.15)); p0 = Wp(XG, GB); p_ = p0.lerp(HOVER, u)
-        sh = max(0, (t - 5.2)) * 0.05; return p_ + Vector((math.sin(t * 61) * sh, math.cos(t * 53) * sh, math.sin(t * 47) * sh))
-    if t < T_IMP: dt = t - T_DROP; return Vector((GX, GY, HOVER.z - 0.5 * gg * dt * dt))
-    return Vector((GX, GY, SINK))
-def gc_rot(t):
-    if t < T_HOVER: return (0, 0, 0)
-    if t < T_DROP: u = sm((t - T_HOVER) / (T_DROP - T_HOVER)); return (-0.14 * math.sin(u * math.pi * 0.9), 0.0, u * 0.5)
-    if t < T_IMP: dt = t - T_DROP; return (TILT[0] * dt, TILT[1] * dt, 0.5 + 0.45 * dt)
-    return (TILT[0] * tf, TILT[1] * tf, 0.5 + 0.45 * tf)
+    if t < T_SWAP: return 0.0001, 0.0001, 0.0001
+    return tick(0.12, 0.25, sm((t - T_SWAP) / 0.7)) * HG, tick(0.03, 0.25, sm((t - T_SWAP) / 0.6)) * HG, HG
+rg = random.Random(5); TILT = (0.045, -0.03); tf = T_IMP - T_DROP; gg = 2 * (Z0A + 0.35) / (tf * tf)
+QP = BASIS.to_quaternion(); QW = Quaternion((1, 0, 0, 0))
+def gc_state(t):
+    """(location, quaternion, scale) of the candle at animation time t."""
+    if t < T_SWAP: return B0, QP, 0.0001
+    if t <= T_FLASH:
+        q = QP.slerp(QW, sm((t - T_SWAP) / 1.1)) if t < T_SWAP + 1.1 else QW
+        dz = 0.5 * A_UP * (t - T_LAUNCH) ** 2 if t > T_LAUNCH else 0.0
+        sh = 0.0 if t < T_LAUNCH else 0.0; return B0 + Vector((0, 0, dz)), q, S_of(t)
+    if t < T_DROP: return Vector((GX, GY, Z0A)), QW, 1.0
+    if t < T_IMP: dt = t - T_DROP; return Vector((GX, GY, Z0A - 0.5 * gg * dt * dt)), Euler((TILT[0] * dt, TILT[1] * dt, 0.5 + 0.45 * dt)).to_quaternion(), 1.0
+    return Vector((GX, GY, -0.35)), Euler((TILT[0] * tf, TILT[1] * tf, 0.5 + 0.45 * tf)).to_quaternion(), 1.0
+prevq = [None]
+def set_gc(fr):
+    t = tt(fr); l, q, s = gc_state(t)
+    if prevq[0] is not None and prevq[0].dot(q) < 0: q = -q
+    prevq[0] = q.copy(); GC.location = l; GC.rotation_quaternion = q; GC.scale = (s, s, s)
+    w, d, h = gc_shape(t); BODY.scale = (w, d, h); WICKO.scale = (0.5, 0.5, 1.5 * h); WICKO.location = (0, 0, h / 2)
 for fr2 in range(F(0) * 2, F(T_IMP + 3.0) * 2):
-    fr = fr2 / 2.0; t = (fr - 1) / FPS
-    GC.location = gc_loc(t); GC.rotation_euler = gc_rot(t); GC.keyframe_insert('location', frame=fr); GC.keyframe_insert('rotation_euler', frame=fr)
-for fc in GC.animation_data.action.fcurves:
-    for kp in fc.keyframe_points: kp.interpolation = 'LINEAR'
+    fr = fr2 / 2.0; set_gc(fr)
+    for pth in ('location', 'rotation_quaternion', 'scale'): GC.keyframe_insert(pth, frame=fr)
+    for o in (BODY, WICKO):
+        o.keyframe_insert('scale', frame=fr)
+    WICKO.keyframe_insert('location', frame=fr)
+for o in (GC, BODY, WICKO):
+    for fc in o.animation_data.action.fcurves:
+        for kp in fc.keyframe_points:
+            kp.interpolation = 'CONSTANT' if abs(kp.co[0] - F(T_FLASH)) < 0.01 and o is GC else 'LINEAR'
 # the impact: squash, then the shock rattles it
-SQ = [(T_IMP - 0.01, (1, 1, 1)), (T_IMP + 0.04, (1.14, 1.14, 0.9)), (T_IMP + 0.12, (0.97, 0.97, 1.03)), (T_IMP + 0.22, (1.03, 1.03, 0.98)), (T_IMP + 0.4, (1, 1, 1))]
-for t, s in SQ: GC.scale = s; GC.keyframe_insert('scale', frame=F(t))
-# the trail: green flame streaming off its top, and a long glow, while it falls
-TRAIL = []
+sq = Vector(GC.scale)
+for t, s in ((T_IMP - 0.01, (1, 1, 1)), (T_IMP + 0.04, (1.14, 1.14, 0.9)), (T_IMP + 0.12, (0.97, 0.97, 1.03)), (T_IMP + 0.22, (1.03, 1.03, 0.98)), (T_IMP + 0.4, (1, 1, 1))):
+    GC.scale = s; GC.keyframe_insert('scale', frame=F(t))
+# its light: dim in the phone, brighter and brighter, then it lights the whole stadium as it falls
+LAMP = bpy.data.lights.new('gcl', 'POINT'); LAMP.color = (0.35, 1.0, 0.4); LAMP.shadow_soft_size = 1.5; LO = bpy.data.objects.new('gcl', LAMP); COL.objects.link(LO); LO.parent = GC; LO.location = (0, 0, 7)
+for t, e in ((0, 0), (T_SWAP - 0.05, 0), (T_SWAP + 0.05, 30000), (3.9, 150000), (4.6, 400000), (T_CEIL + 0.2, 900000), (T_FLASH, 1200000), (T_DROP, 1200000), (T_IMP - 0.6, 260000), (T_IMP - 0.2, 400000), (T_IMP, 600000), (T_IMP + 0.04, 3000000), (T_IMP + 0.35, 220000), (T_IMP + 2.5, 90000), (T_IMP + 6, 60000)):
+    LAMP.energy = e; LAMP.keyframe_insert('energy', frame=F(t))
+for fc in LAMP.animation_data.action.fcurves:
+    for kp in fc.keyframe_points: kp.interpolation = 'LINEAR'
 BEAMM = glow('beam', (0.3, 1.0, 0.4), 6.0, 0.25); TRLM = glow('trl', (0.35, 1.0, 0.45), 7.0, 0.3)
-for i in range(9):
-    o = ico('trail', 1.0, (0, 0, HG + 2.0 + i * 2.6), FIREGRN, 2); o.parent = GC; o.visible_shadow = False
-    s = 2.1 - i * 0.2; o.scale = (s, s, s * 2.2); show(o, F(T_DROP - 0.1), F(T_IMP) - 1); TRAIL.append(o)
-bpy.ops.mesh.primitive_cone_add(vertices=24, radius1=2.3, radius2=0.2, depth=30, location=(0, 0, HG + 16)); tc = bpy.context.object; tc.data.materials.append(TRLM); tc.parent = GC; tc.visible_shadow = False
-show(tc, F(T_DROP - 0.1), F(T_IMP) - 1)
-# hover charge: crackling energy rings round it
-RINGM = glow('ring', (0.4, 1.0, 0.5), 20.0, 0.8)
-for i in range(3):
-    bpy.ops.mesh.primitive_torus_add(major_radius=1.0, minor_radius=0.05, major_segments=48, location=(0, 0, 0)); o = bpy.context.object; o.data.materials.append(RINGM); o.parent = GC; o.visible_shadow = False
-    for t0 in (T_PUMP + 0.5 + 0.35 * i, T_HOVER + 0.3 + 0.3 * i):
-        for fr2 in range(0, 22):
-            u = fr2 / 21.0; o.location = (0, 0, tick(0.3, HG, u * u)); s = tick(5.5, 2.0, u); o.scale = (s, s, s); o.keyframe_insert('location', frame=F(t0) + fr2); o.keyframe_insert('scale', frame=F(t0) + fr2)
-        o.scale = (0.001,) * 3; o.keyframe_insert('scale', frame=F(t0) + 22)
-    o.scale = (0.001,) * 3; o.keyframe_insert('scale', frame=1)
+for i in range(9):      # flames streaming off its top while it falls
+    o = ico('trail', 1.0, (0, 0, HG + 2.0 + i * 2.6), FIREGRN, 2); o.parent = GC; o.visible_shadow = False; s = 2.1 - i * 0.2; o.scale = (s, s, s * 2.2); show(o, F(T_DROP - 0.1), F(T_IMP) - 1)
+for i in range(9):      # and out of its foot while it climbs
+    o = ico('exhaust', 1.0, (0, 0, -2.0 - i * 2.4), FIREGRN, 2); o.parent = GC; o.visible_shadow = False; s = 2.0 - i * 0.18; o.scale = (s, s, s * 2.4); show(o, F(T_LAUNCH - 0.1), F(T_FLASH))
+bpy.ops.mesh.primitive_cone_add(vertices=24, radius1=2.3, radius2=0.2, depth=30, location=(0, 0, HG + 16)); tc = bpy.context.object; tc.data.materials.append(TRLM); tc.parent = GC; tc.visible_shadow = False; show(tc, F(T_DROP - 0.1), F(T_IMP) - 1)
 
-# ---------------------------------------------------------------- the pane shatters, the chart blows out of the way
-def burst_away(o, t, c, speed, seed, life=1.5, up=3.0):
-    r_ = random.Random(seed); f0 = F(t); p0 = o.matrix_world.translation.copy(); s0 = o.scale.copy(); d = p0 - c; d.y = 0; d = d.normalized() if d.length > 0.01 else Vector((1, 0, 0))
-    v = d * speed * r_.uniform(0.4, 1.3) + Vector((0, r_.uniform(-16, -3), r_.uniform(-1, up))); spin = Vector((r_.uniform(-6, 6), r_.uniform(-6, 6), r_.uniform(-6, 6)))
-    if o.animation_data: pass
-    o.location = p0; key(o, 'location', f0 - 1); o.rotation_euler = (0, 0, 0); key(o, 'rotation_euler', f0 - 1)
-    n = int(life * FPS)
+# ---------------------------------------------------------------- phone and room reactions
+def spark_burst(c, t, n, seed, size, speed, dirv, spread=1.0, life=0.6):
+    r_ = random.Random(seed); f0 = F(t)
+    for i in range(n):
+        v = (dirv + Vector((r_.uniform(-1, 1), r_.uniform(-1, 1), r_.uniform(-1, 1))) * spread).normalized() * speed * r_.uniform(0.4, 1.0)
+        o = box('spk', (size * 0.25, size * 0.25, size * 2.0), c, SPARKG); o.visible_shadow = False; o.rotation_euler = v.to_track_quat('Z', 'Y').to_euler()
+        o.scale = (0.001,) * 3; key(o, 'scale', f0 - 1); o.scale = (1, 1, 1); key(o, 'scale', f0)
+        for k_ in range(0, int(life * FPS) + 1, 2): tz = k_ / FPS; o.location = c + v * tz + Vector((0, 0, -0.5 * 9 * tz * tz)); key(o, 'location', f0 + k_)
+        o.scale = (0.001,) * 3; key(o, 'scale', f0 + int(life * FPS) + 1); const(o); linear(o)
+spark_burst(B0, T_SWAP, 60, 301, 0.006, 1.6, n_ + Vector((0, 0, 0.6)), 1.3, 0.7)
+spark_burst(B0 + Vector((0, 0, 0.05)), T_SWAP + 0.15, 40, 302, 0.01, 2.6, Vector((0, 0, 1)), 1.0, 0.8)
+PF = bpy.data.lights.new('phoneflash', 'POINT'); PF.color = (0.4, 1.0, 0.5); PFO = bpy.data.objects.new('phoneflash', PF); COL.objects.link(PFO); PFO.location = B0 + n_ * 0.1
+for t, e in ((T_SWAP - 0.05, 0), (T_SWAP, 400), (T_SWAP + 0.3, 40), (T_SWAP + 0.8, 0)): PF.energy = e; PF.keyframe_insert('energy', frame=F(t))
+CEN = Rm(B0.x - ROOM.x, B0.y - ROOM.y, 2.75)
+def bursty(o, t, seed, speed):
+    r_ = random.Random(seed); f0 = F(t); p0 = o.matrix_world.translation.copy(); d = Vector((p0.x - CEN.x, p0.y - CEN.y, 0)); d = d.normalized() if d.length > 0.01 else Vector((1, 0, 0))
+    v = d * speed * r_.uniform(0.5, 1.3) + Vector((r_.uniform(-1, 1), r_.uniform(-1, 1), r_.uniform(2, 9))); spin = Vector((r_.uniform(-7, 7), r_.uniform(-7, 7), r_.uniform(-7, 7)))
+    o.location = p0; key(o, 'location', f0 - 1); o.rotation_euler = (0, 0, 0); key(o, 'rotation_euler', f0 - 1); s0 = o.scale.copy(); n = int(2.2 * FPS)
     for k_ in range(0, n + 1, 2):
-        tt = k_ / FPS; o.location = p0 + v * tt + Vector((0, 0, -0.5 * 11 * tt * tt)); key(o, 'location', f0 + k_); o.rotation_euler = spin * tt; key(o, 'rotation_euler', f0 + k_)
-    o.scale = s0; key(o, 'scale', f0 + n - 2); o.scale = (0.0001,) * 3; key(o, 'scale', f0 + n)
+        tz = k_ / FPS; z = p0.z + v.z * tz - 0.5 * 9.8 * tz * tz; o.location = (p0.x + v.x * tz, p0.y + v.y * tz, max(z, 0.06)); key(o, 'location', f0 + k_); o.rotation_euler = spin * tz * (1 if z > 0.06 else 0.0); key(o, 'rotation_euler', f0 + k_)
     for fc in o.animation_data.action.fcurves:
         for kp in fc.keyframe_points: kp.interpolation = 'LINEAR'
-cg = Wp(XG, GB + 5)
-for i, o in enumerate(CHART):
-    dist = (o.matrix_world.translation - cg).length; burst_away(o, T_BREAK + dist * 0.011, cg, 9 + 14 * math.exp(-dist / 22), 100 + i, 1.3 + 0.4 * (i % 3))
-# a green flash at the break
-FL = bpy.data.lights.new('brk', 'POINT'); FL.color = (0.5, 1.0, 0.55); FO = bpy.data.objects.new('brk', FL); COL.objects.link(FO); FO.location = Wp(XG - 2, GB + 6, -4)
-for t, e in ((T_BREAK - 0.05, 0), (T_BREAK, 900000), (T_BREAK + 0.25, 60000), (T_BREAK + 0.8, 0)): FL.energy = e; FL.keyframe_insert('energy', frame=F(t))
-for i in range(36):
-    r_ = random.Random(400 + i); a = r_.uniform(0, 6.28); v = Vector((math.cos(a) * r_.uniform(6, 26), r_.uniform(-24, -3), math.sin(a) * r_.uniform(6, 26))); o = box('spk', (0.06, 0.06, 0.55), Wp(XG, GB + 6, -0.5), SPARKG); o.visible_shadow = False
-    o.rotation_euler = v.to_track_quat('Z', 'Y').to_euler(); o.scale = (0.001,) * 3; key(o, 'scale', F(T_BREAK) - 1); o.scale = (1, 1, 1); key(o, 'scale', F(T_BREAK))
-    p0 = Wp(XG, GB + 6, -0.5)
-    for k_ in range(0, 25, 2): tt = k_ / FPS; o.location = p0 + v * tt + Vector((0, 0, -0.5 * 10 * tt * tt)); key(o, 'location', F(T_BREAK) + k_)
-    o.scale = (0.001,) * 3; key(o, 'scale', F(T_BREAK) + 25); const(o); linear(o)
+for i, o in enumerate(CEIL_CELLS):
+    c = o.matrix_world.translation; dist = Vector((c.x - CEN.x, c.y - CEN.y, 0)).length
+    if dist < 1.6: bursty(o, T_CEIL + dist * 0.04, 500 + i, 3.5 + 3 * math.exp(-dist))
+for i in range(40):        # plaster chunks
+    r_ = random.Random(700 + i); o = box('chunk', (r_.uniform(0.05, 0.14),) * 3, CEN + Vector((r_.uniform(-0.5, 0.5), r_.uniform(-0.5, 0.5), 0)), CEIL); bursty(o, T_CEIL + 0.02, 800 + i, 5.0)
+dust(CEN + Vector((0, 0, -0.2)), T_CEIL, 1.4, 41, 9); dust(CEN + Vector((0, 0, 0.3)), T_CEIL + 0.1, 1.9, 42, 7)
+CL_ = bpy.data.lights.new('ceilflash', 'POINT'); CL_.color = (0.6, 1.0, 0.65); CLO = bpy.data.objects.new('ceilflash', CL_); COL.objects.link(CLO); CLO.location = CEN + Vector((0, 0, -0.4))
+for t, e in ((T_CEIL - 0.05, 0), (T_CEIL, 20000), (T_CEIL + 0.3, 2000), (T_CEIL + 1.0, 0)): CL_.energy = e; CL_.keyframe_insert('energy', frame=F(t))
 
-# ---------------------------------------------------------------- the beam on the ground, the cracks spreading, and the court's lights going green
-BEAM = None
+# ---------------------------------------------------------------- the beam on the ground, the cracks spreading
 bpy.ops.mesh.primitive_cylinder_add(vertices=32, radius=1.0, depth=80, location=(GX, GY, 40)); BEAM = bpy.context.object; BEAM.name = 'beam'; BEAM.data.materials.append(BEAMM); BEAM.visible_shadow = False
 for t, s in ((0, 0.0001), (T_DROP - 0.9, 0.0001), (T_DROP - 0.55, 3.3), (T_IMP - 0.01, 3.4), (T_IMP + 0.05, 4.4), (T_IMP + 0.5, 0.0001)): BEAM.scale = (s, s, 1); key(BEAM, 'scale', F(t))
-# ground glow disc
 bpy.ops.mesh.primitive_plane_add(size=2, location=(GX, GY, 0.03)); DISC = bpy.context.object; DISC.data.materials.append(bpy.data.materials.new('disc')); dm = DISC.data.materials[0]; dm.use_nodes = True; nt = dm.node_tree; nt.nodes.clear()
 tcn = nt.nodes.new('ShaderNodeTexCoord'); mp = nt.nodes.new('ShaderNodeMapping'); mp.inputs['Location'].default_value = (-0.5, -0.5, 0); gr = nt.nodes.new('ShaderNodeTexGradient'); gr.gradient_type = 'SPHERICAL'
 rp = nt.nodes.new('ShaderNodeValToRGB'); rp.color_ramp.elements[0].position = 0.5; rp.color_ramp.elements[1].position = 1.0; em = nt.nodes.new('ShaderNodeEmission'); em.inputs['Color'].default_value = (0.3, 1.0, 0.4, 1); em.inputs['Strength'].default_value = 10
@@ -212,27 +259,23 @@ trp = nt.nodes.new('ShaderNodeBsdfTransparent'); mx = nt.nodes.new('ShaderNodeMi
 nt.links.new(tcn.outputs['Generated'], mp.inputs['Vector']); nt.links.new(mp.outputs['Vector'], gr.inputs['Vector']); nt.links.new(gr.outputs['Fac'], rp.inputs['Fac']); nt.links.new(rp.outputs['Color'], mx.inputs['Fac'])
 nt.links.new(trp.outputs[0], mx.inputs[1]); nt.links.new(em.outputs[0], mx.inputs[2]); nt.links.new(mx.outputs[0], outn.inputs['Surface']); DISC.visible_shadow = False
 for t, s in ((0, 0.0001), (T_DROP - 0.9, 0.0001), (T_IMP - 0.01, 5.0), (T_IMP + 0.03, 15.0), (T_IMP + 3.0, 9.0), (T_IMP + 8.0, 7.0)): DISC.scale = (s, s, 1); key(DISC, 'scale', F(t))
-# radial cracks
-rc = random.Random(77); CRK = []
+rc = random.Random(77)
+def pbox(name, mt, org):
+    bpy.ops.mesh.primitive_cube_add(size=1); o = bpy.context.object; o.name = name; o.data.transform(Matrix.Translation(-Vector(org))); o.data.materials.append(mt); return o
 def crack(ang, L, w, at, depth=0):
     cx, cy = at; cr = pbox('crk', CRACK, (-0.5, 0, 0)); cd = pbox('crkd', CRACKD, (-0.5, 0, 0))
     for o, ww, zz in ((cd, w * 2.6, 0.012), (cr, w, 0.03)):
-        o.location = (cx, cy, zz); o.rotation_euler = (0, 0, ang); o.scale = (0.0001, ww, 0.04); key(o, 'scale', 1)
-        key(o, 'location', 1); key(o, 'rotation_euler', 1)
-        o.scale = (L * 0.22, ww, 0.04); key(o, 'scale', F(T_DROP - 0.55)); o.scale = (L * 0.4, ww, 0.04); key(o, 'scale', F(T_IMP - 0.02)); o.scale = (L, ww, 0.04); key(o, 'scale', F(T_IMP + 0.22))
-        o.scale = (L, ww, 0.04); key(o, 'scale', F(T_IMP + 10))
-    CRK.append((cr, cd))
+        o.location = (cx, cy, zz); o.rotation_euler = (0, 0, ang); o.scale = (0.0001, ww, 0.04); key(o, 'scale', 1); key(o, 'location', 1); key(o, 'rotation_euler', 1)
+        o.scale = (L * 0.22, ww, 0.04); key(o, 'scale', F(T_DROP - 0.55)); o.scale = (L * 0.4, ww, 0.04); key(o, 'scale', F(T_IMP - 0.02)); o.scale = (L, ww, 0.04); key(o, 'scale', F(T_IMP + 0.22)); key(o, 'scale', F(T_IMP + 10))
     if depth < 1:
         for j in range(2):
             u = rc.uniform(0.35, 0.8); b = ang + rc.choice((-1, 1)) * rc.uniform(0.45, 0.9)
             crack(b, L * rc.uniform(0.3, 0.5), w * 0.65, (cx + math.cos(ang) * L * u, cy + math.sin(ang) * L * u), depth + 1)
-for i in range(18):
-    crack(i / 18 * 6.283 + rc.uniform(-0.15, 0.15), rc.uniform(7, 16), rc.uniform(0.16, 0.34), (GX, GY))
-# green shock: rings along the ground, a dome, a pillar of green light
-SW = []
-for (rad, mt) in ((1.0, glow('sw1', (0.35, 1.0, 0.45), 30, 0.95)), (1.0, glow('sw2', (0.9, 1.0, 0.9), 30, 0.9))):
-    bpy.ops.mesh.primitive_torus_add(major_radius=1.0, minor_radius=0.09, major_segments=96, location=(GX, GY, 0.35)); o = bpy.context.object; o.data.materials.append(mt); o.visible_shadow = False; SW.append(o)
-for o, k_, ln in ((SW[0], 38.0, 26), (SW[1], 52.0, 18)):
+for i in range(18): crack(i / 18 * 6.283 + rc.uniform(-0.15, 0.15), rc.uniform(7, 16), rc.uniform(0.16, 0.34), (GX, GY))
+SW_ = []
+for mt in (glow('sw1', (0.35, 1.0, 0.45), 30, 0.95), glow('sw2', (0.9, 1.0, 0.9), 30, 0.9)):
+    bpy.ops.mesh.primitive_torus_add(major_radius=1.0, minor_radius=0.09, major_segments=96, location=(GX, GY, 0.35)); o = bpy.context.object; o.data.materials.append(mt); o.visible_shadow = False; SW_.append(o)
+for o, k_, ln in ((SW_[0], 38.0, 26), (SW_[1], 52.0, 18)):
     for f, s in ((F(T_IMP) - 1, 0.001), (F(T_IMP), 0.8), (F(T_IMP) + ln, k_), (F(T_IMP) + ln + 1, 0.001)): o.scale = (s, s, min(s, 1.5)); key(o, 'scale', f)
     linear(o)
 bpy.ops.mesh.primitive_uv_sphere_add(radius=1.0, segments=48, ring_count=24, location=(GX, GY, 0)); DOME = bpy.context.object; DOME.data.materials.append(glow('dome', (0.4, 1.0, 0.5), 8.0, 0.22)); DOME.visible_shadow = False
@@ -240,24 +283,23 @@ for f, s in ((F(T_IMP) - 1, 0.001), (F(T_IMP), 1.5), (F(T_IMP) + 8, 20.0), (F(T_
 linear(DOME)
 bpy.ops.mesh.primitive_cylinder_add(vertices=32, radius=1, depth=90, location=(GX, GY, 45)); PIL = bpy.context.object; PIL.data.materials.append(glow('pillar', (0.4, 1.0, 0.5), 14, 0.35)); PIL.visible_shadow = False
 for t, s in ((0, 0.0001), (T_IMP - 0.01, 0.0001), (T_IMP, 2.8), (T_IMP + 0.4, 2.2), (T_IMP + 1.5, 1.4), (T_IMP + 4, 0.9), (T_IMP + 8, 0.0001)): PIL.scale = (s, s, 1); key(PIL, 'scale', F(t))
-# debris, dust, sparks, coins
 SPARK = SPARKG
 explode(Vector((GX, GY, 1.6)), T_IMP, 7.5, FIREGRN, 120, 61, SMOKEG, light=(0.3, 1.0, 0.35))
 explode(Vector((GX, GY, 0.8)), T_IMP + 0.05, 5.0, FIRE, 40, 62, DUST, light=(1.0, 0.7, 0.3))
 for i in range(5): sparks(Vector((GX, GY, 1.0 + i)), T_IMP + 0.02 * i, 26, 70 + i, 14.0)
 dust(Vector((GX, GY, 0.4)), T_IMP, 4.5, 90, 12)
-for i in range(46):
+for i in range(46):      # gold coins thrown up by the slam
     r_ = random.Random(900 + i); a = r_.uniform(0, 6.28); sp_ = r_.uniform(3, 15); v = Vector((math.cos(a) * sp_, math.sin(a) * sp_, r_.uniform(14, 30))); bpy.ops.mesh.primitive_cylinder_add(radius=0.38, depth=0.09, vertices=18); o = bpy.context.object; o.data.materials.append(COINM)
     p0 = Vector((GX, GY, 1.0)); spin = Vector((r_.uniform(-14, 14), r_.uniform(-14, 14), 0)); f0 = F(T_IMP) + 1; o.scale = (0.001,) * 3; key(o, 'scale', f0 - 1); o.scale = (1, 1, 1); key(o, 'scale', f0)
     for k_ in range(0, 150, 2):
-        tt = k_ / FPS; z = p0.z + v.z * tt - 0.5 * 24 * tt * tt
+        tz = k_ / FPS; z = p0.z + v.z * tz - 0.5 * 24 * tz * tz
         if z < 0.1: break
-        o.location = p0 + Vector((v.x * tt, v.y * tt, 0)); o.location.z = z; key(o, 'location', f0 + k_); o.rotation_euler = (spin.x * tt, spin.y * tt, 0); key(o, 'rotation_euler', f0 + k_)
+        o.location = p0 + Vector((v.x * tz, v.y * tz, 0)); o.location.z = z; key(o, 'location', f0 + k_); o.rotation_euler = (spin.x * tz, spin.y * tz, 0); key(o, 'rotation_euler', f0 + k_)
     const(o); linear(o)
 
-# ---------------------------------------------------------------- the crowd and the fighters watching
+# ---------------------------------------------------------------- the crowd and the fighters watching the sky
 def_fan = '''def fan_sched(team, j):
-    return [(0, 'idle', 1), (3.2 + 0.4 * j, 'emote', 0.8 + 0.3 * j), (T_BREAK + 0.2, 'hit', 0.4), (T_DROP + 0.1, 'ready', 1.0), (T_IMP - 0.4, 'hit', 0.5), (T_IMP + 0.25, 'lose', 1.0 + 0.3 * j), (T_IMP + 1.4 + 0.5 * j, 'win', 1.0 + 0.3 * j)]
+    return [(0, 'idle', 1), (T_FLASH + 0.2 * j, 'ready', 1.0), (T_DROP + 1.0 + 0.5 * j, 'hit', 0.4), (T_IMP - 0.5, 'hit', 0.8), (T_IMP + 0.25, 'lose', 1.0 + 0.3 * j), (T_IMP + 1.4 + 0.5 * j, 'win', 1.0 + 0.3 * j)]
 '''
 cr_src = '\n'.join(src[i_crowd:i_crowdcall]); a0_ = cr_src.index('def fan_sched'); a1_ = cr_src.index('SOURCES = ')
 exec(compile(cr_src[:a0_] + def_fan + cr_src[a1_:], CL, 'exec'), g)
@@ -266,53 +308,53 @@ crowd()
 CREW = {}
 for i, (uid, h, team) in enumerate((('pepe', 2.6, 'b'), ('whale', 4.6, 'b'), ('bonk', 2.6, 'b'), ('floki', 3.0, 'b'), ('swordcat', 2.7, 'b'), ('toshi', 2.7, 'b'), ('giga', 3.4, 'r'), ('troll', 2.8, 'r'), ('zcat', 2.5, 'r'), ('ket', 2.5, 'r'))):
     ang = 0.35 + i * 0.62; r_ = (6.5 if i % 2 == 0 else 10.5) + (1.5 if uid == 'whale' else 0); x, y = GX + math.cos(ang) * r_, GY + math.sin(ang) * r_ * 0.8
-    u = fighter(uid, h, team); CREW[uid] = u; hd = heading(GX - x, GY - y)
-    place(u, (x, y, 0), hd)
-    sched(u, [(0, 'ready', 1.0), (T_BREAK, 'emote', 0.5), (T_HOVER + 0.4, 'hit', 0.45), (T_IMP - 0.5, 'hit', 0.8)])
-    d = Vector((x - GX, y - GY, 0)); fling(u, T_IMP + 0.04, (d.x, d.y), up=11 + 3 * (i % 3), dist=14 + (7 - min(r_, 7)) * 0.0 + 4 * (i % 2), dur=2.4)
+    u = fighter(uid, h, team); CREW[uid] = u; place(u, (x, y, 0), heading(GX - x, GY - y))
+    sched(u, [(0, 'ready', 1.0), (T_FLASH, 'emote', 0.5), (T_DROP + 1.4, 'hit', 0.45), (T_IMP - 0.5, 'hit', 0.8)])
+    d = Vector((x - GX, y - GY, 0)); fling(u, T_IMP + 0.04, (d.x, d.y), up=11 + 3 * (i % 3), dist=14 + 4 * (i % 2), dur=2.4)
 
-# ---------------------------------------------------------------- the light: dusk, the chart's own light, green under it all
-def keylight(name, loc, target, e, size=4.0, col=(1.0, 0.95, 0.85)):
+# ---------------------------------------------------------------- the light
+def keylight(name, loc, target, e, size=4.0, col=(1.0, 0.95, 0.85), spot=None):
     ld = bpy.data.lights.new(name, 'AREA'); ld.energy = e; ld.size = size; ld.color = col; o = bpy.data.objects.new(name, ld); COL.objects.link(o)
     o.location = loc; o.rotation_euler = (Vector(target) - Vector(loc)).to_track_quat('-Z', 'Y').to_euler(); return o
-sun = bpy.data.objects.new('sun', bpy.data.lights.new('sun', 'SUN')); COL.objects.link(sun); sun.data.energy = 1.0; sun.data.angle = math.radians(3); sun.data.color = (1.0, 0.6, 0.34)
-sun.rotation_euler = (math.radians(70), 0, math.radians(205))
-keylight('chartkey', (CH.x + 12, CH.y - 42, CH.z + 12), CH + Vector((8, 0, -6)), 60000, 26, (0.75, 0.85, 1.0)); keylight('chartrim', (CH.x - 40, CH.y + 18, CH.z + 20), CH, 30000, 18, (1.0, 0.5, 0.3))
+sun = bpy.data.objects.new('sun', bpy.data.lights.new('sun', 'SUN')); COL.objects.link(sun); sun.data.energy = 1.0; sun.data.angle = math.radians(3); sun.data.color = (1.0, 0.6, 0.34); sun.rotation_euler = (math.radians(70), 0, math.radians(205))
 keylight('red_wash', (9, 3, 16), (9, -9, 0), 9000, 14, (1.0, 0.25, 0.15)); keylight('blue_wash', (9, -35, 16), (9, -23, 0), 9000, 14, (0.2, 0.45, 1.0)); keylight('fill', (9, -40, 9), (9, -21, 2), 5000, 10, (0.7, 0.85, 1.0))
+keylight('phonefill', ph(0, 0, 0.18), ph(0, 0, 1.0), 6, 0.2, (0.8, 0.95, 1.0)); keylight('rimwin', Rm(-2.6, -1.4, 1.7), Rm(0, TY, 1.1), 90, 1.0, (0.35, 0.5, 1.0)); keylight('ledfront', Rm(0, 2.7, 1.3), Rm(0, TY, 1.0), 80, 2.0, (0.75, 0.25, 1.0))
+keylight('camfill', Rm(1.6, -2.7, 1.9), Rm(0, TY, 1.0), 30, 1.5, (1.0, 0.85, 0.7)); keylight('roomtop', Rm(0, 0, 2.5), Rm(0, 0, 0), 25, 2.5, (0.7, 0.75, 1.0))
+lamp = bpy.data.lights.new('lamp', 'POINT'); lamp.energy = 25; lamp.color = (1.0, 0.7, 0.4); lo_ = bpy.data.objects.new('lamp', lamp); COL.objects.link(lo_); lo_.location = Rm(-1.2, 2.3, 1.2)
 for o in bpy.data.objects:
     if o.type == 'LIGHT': o.visible_camera = False
 
 # ---------------------------------------------------------------- the edit
 cam = bpy.data.objects.new('cam', bpy.data.cameras.new('cam')); COL.objects.link(cam); sc.camera = cam
-cam.data.sensor_width = 36; cam.data.dof.use_dof = True; cam.data.clip_end = 3000
+cam.data.sensor_width = 36; cam.data.dof.use_dof = True; cam.data.clip_end = 3000; cam.data.clip_start = 0.01
 SHOTS = []; _t = [0.0]
-def SH(dur, a0, s0, s1, p0, p1, l0, l1, lens, fstop=2.8, shake=0.0, lens1=None, fp=0, fl=0, orb=None):
-    SHOTS.append(dict(t0=round(_t[0], 4), t1=round(_t[0] + dur, 4), a0=a0, s0=s0, s1=s1, p0=list(p0), p1=list(p1), l0=list(l0), l1=list(l1), lens=lens, lens1=lens1 or lens, fstop=fstop, shake=shake, fp=fp, fl=fl, orb=orb)); _t[0] += dur
-GBW = Wp(XG, GB)       # (9, -17, ~53): the candle's foot on the chart
-# 1. the chart, live: a slow dolly across the candles
-SH(2.4, 0.2, 1, 1, (-6, -33, 49), (1, -30, 52), (3, -17, 50), (11, -17, 52.5), 60, 2.0, 0.25, 85)
-SH(1.1, 2.6, 1, 1, (-6, -31, 37), (0, -29, 40), (0, -17, 56), (7, -17, 57), 22, 2.8, 0.2)                       # low, looking up at the whole chart
-# 2. the pump: it grows, rips through the glass
-SH(1.2, 3.7, 0.5, 0.3, (16, -25, 49), (14.5, -22, 51), (9, -17, 52), (9, -17, 56), 35, 2.0, 0.3)
-SH(1.4, 4.3, 0.25, 0.25, (9, -37, 45), (9, -28, 50), (9, -17, 55), (9, -17, 57), 20, 2.8, 0.7)
-SH(1.0, 4.65, 0.3, 0.5, (5, -3, 49), (9, -6, 52), (9, -17, 54), (9, -17, 55.5), 28, 2.8, 0.5)
-# 3. it hovers and charges: an orbit
-SH(1.6, 4.9, 0.5, 0.7, (0, 0, 0), (0, 0, 0), (9, -19, 55), (9, -21, 57), 28, 2.8, 0.2, orb=[9, -19, 55.5, 17, -0.9, 1.5, -2.0, 3.0])
-# 4. the fall
-SH(1.0, 5.8, 0.85, 0.85, (0, -9, 15), (0, -6.5, 11), (0, 0, -12), (0, 0, -14), 24, 4.0, 0.4, fp=1, fl=1)
-SH(0.8, 6.65, 0.8, 0.8, (12, -26, 0.6), (11.6, -25.5, 0.7), (0, 0, 3), (0, 0, 2), 14, 4.0, 0.3, 18, fp=0, fl=1)
-SH(0.6, 7.29, 0.8, 0.8, (17, -8, 2), (15, -7, 1), (0, 0, 0), (0, 0, 0), 32, 2.8, 0.4, fp=1, fl=1)
-SH(0.55, 7.77, 0.5, 0.2, (12.5, -23.5, 0.25), (12.3, -23.2, 0.3), (9, -21, 8), (9, -21, 2.5), 12, 5.6, 0.2)
-# 5. the slam, in slow motion
-SH(1.8, 7.96, 0.12, 0.3, (0, 0, 0), (0, 0, 0), (9, -21, 5), (9, -21, 6), 24, 4.0, 0.2, orb=[9, -21, 4.0, 14, 0.3, 2.8, -1.5, 2.5])
-SH(1.2, 8.34, 0.3, 0.45, (9, -36, 0.35), (9, -32, 0.45), (9, -21, 2), (9, -21, 3), 16, 5.6, 0.3)
-SH(1.0, 8.68, 0.45, 0.45, (9, -21.5, 40), (9.5, -21.5, 25), (9, -21, 0), (9, -21, 0), 20, 5.6, 0.3)
-SH(1.0, 9.13, 0.5, 0.8, (22, -36, 6), (19, -35, 9), (9, -21, 6), (9, -21, 8), 35, 4.0, 0.3)
-# 6. the aftermath: a crane up and back
-SH(3.2, 9.7, 1.0, 1.0, (9, -30, 3), (9, -62, 32), (9, -21, 7), (9, -21, 9), 24, 4.0, 0.15, 32)
-N_FILM = int(round(_t[0] * FPS))
-print('FILM ends at', _t[0], 'frames', N_FILM)
-json.dump(dict(fps=FPS, first=1, last=N_FILM, shots=SHOTS), open(os.path.join(MYHERE, 'edl.json'), 'w'), indent=0)
+def SH(dur, a0, s0, s1, p0, p1, l0, l1, lens, fstop=2.8, shake=0.0, lens1=None, fp=0, fl=0, orb=None, ec=0):
+    SHOTS.append(dict(t0=round(_t[0], 4), t1=round(_t[0] + dur, 4), a0=a0, s0=s0, s1=s1, p0=list(p0), p1=list(p1), l0=list(l0), l1=list(l1), lens=lens, lens1=lens1 or lens, fstop=fstop, shake=shake, fp=fp, fl=fl, orb=orb, ec=ec)); _t[0] += dur
+# fp / fl: 0 = world, 1 = offset from the candle's foot (metres), 3 = offset in candle heights
+# 1. over his shoulder, pushing in on the phone while he taps BUY; the chart goes parabolic and fills the frame
+SH(3.3, 0.0, 1, 1, Rm(0.56, -2.15, 1.64), ph(0.02, 0.02, 0.30), Rm(-0.02, TY + 0.4, 1.05), ph(0.022, 0.02, 0), 30, 2.0, 0.3, 70)
+# 2. the candle leaves the screen (slow motion), close
+SH(1.3, T_SWAP, 0.35, 0.5, (0.04, -0.13, 0.04), (0.1, -0.35, 0.14), (0, 0, 0.05), (0, 0, 0.12), 24, 2.0, 0.2, fp=1, fl=1)
+# 3. from behind and below: it rises past him, lighting the room green
+SH(1.0, 3.85, 0.5, 0.7, Rm(0.5, -2.4, 0.35), Rm(0.35, -2.0, 0.5), (0, 0, 0.6), (0, 0, 0.8), 20, 2.8, 0.4, fl=1)
+# 4. up through the ceiling
+SH(0.8, 4.45, 0.6, 0.9, Rm(0.4, -0.5, 0.2), Rm(0.3, -0.6, 0.3), (0, 0, 1.0), (0, 0, 1.0), 16, 2.8, 0.5, fl=3)
+# 5. the chase: out into the sky
+SH(0.95, 5.05, 1.2, 1.2, (1.2, -2.0, -0.3), (0.9, -3.0, -0.6), (0, 0, 0.5), (0, 0, 0.5), 24, 4.0, 0.3, fp=3, fl=3)
+# 6. the fall
+SH(1.1, T_DROP, 1.0, 1.0, (0, -9, 15), (0, -6.5, 11), (0, 0, -12), (0, 0, -14), 24, 4.0, 0.4, fp=1, fl=1)
+SH(0.9, T_DROP + 1.1, 1.0, 1.0, (12, -26, 0.6), (11.6, -25.5, 0.7), (0, 0, 3), (0, 0, 2), 14, 4.0, 0.3, 18, fp=0, fl=1)
+SH(0.7, T_DROP + 2.0, 1.0, 1.0, (17, -8, 2), (15, -7, 1), (0, 0, 0), (0, 0, 0), 32, 2.8, 0.4, fp=1, fl=1)
+SH(0.75, T_IMP - 0.25, 0.5, 0.25, (12.5, -23.5, 0.25), (12.3, -23.2, 0.3), (9, -21, 8), (9, -21, 2.5), 12, 5.6, 0.2)
+# 7. the slam, in slow motion
+SH(1.8, T_IMP + 0.06, 0.12, 0.3, (0, 0, 0), (0, 0, 0), (9, -21, 5), (9, -21, 6), 24, 4.0, 0.2, orb=[9, -21, 4.0, 14, 0.3, 2.8, -1.5, 2.5])
+SH(1.2, T_IMP + 0.44, 0.3, 0.45, (9, -36, 0.35), (9, -32, 0.45), (9, -21, 2), (9, -21, 3), 16, 5.6, 0.3)
+SH(1.0, T_IMP + 0.78, 0.45, 0.45, (9, -21.5, 40), (9.5, -21.5, 25), (9, -21, 0), (9, -21, 0), 20, 5.6, 0.3)
+SH(1.0, T_IMP + 1.23, 0.5, 0.8, (22, -36, 6), (19, -35, 9), (9, -21, 6), (9, -21, 8), 35, 4.0, 0.3)
+# 8. the aftermath: a crane up and back
+SH(3.2, T_IMP + 1.8, 1.0, 1.0, (9, -30, 3), (9, -62, 32), (9, -21, 7), (9, -21, 9), 24, 4.0, 0.15, 32)
+N_FILM = int(round(_t[0] * FPS)); print('FILM ends at', _t[0], 'frames', N_FILM)
+json.dump(dict(fps=FPS, first=1, last=N_FILM, shots=SHOTS, t_swap=T_SWAP, t_ceil=T_CEIL, t_flash=T_FLASH, t_drop=T_DROP, t_imp=T_IMP), open(os.path.join(MYHERE, 'edl.json'), 'w'), indent=0)
 sc.frame_set(1)
 bpy.ops.wm.save_as_mainfile(filepath=os.path.abspath(OUT), compress=False)
 print('SAVED', OUT)
