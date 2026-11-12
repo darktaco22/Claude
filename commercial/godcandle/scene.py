@@ -195,7 +195,7 @@ for t, s in ((T_IMP - 0.01, (1, 1, 1)), (T_IMP + 0.04, (1.14, 1.14, 0.9)), (T_IM
     GC.scale = s; GC.keyframe_insert('scale', frame=F(t))
 # its light: dim in the phone, brighter and brighter, then it lights the whole stadium as it falls
 LAMP = bpy.data.lights.new('gcl', 'POINT'); LAMP.color = (0.35, 1.0, 0.4); LAMP.shadow_soft_size = 1.5; LO = bpy.data.objects.new('gcl', LAMP); COL.objects.link(LO); LO.parent = GC; LO.location = (0, 0, 7)
-for t, e in ((0, 0), (T_SWAP - 0.05, 0), (T_SWAP + 0.05, 2), (T_SWAP + 0.5, 14), (T_SWAP + 1.0, 60), (T_CEIL - 0.1, 40), (T_CEIL + 0.25, 40), (T_CEIL + 0.7, 600), (T_FLASH, 300000), (T_DROP, 200000), (T_IMP - 0.6, 260000), (T_IMP - 0.2, 400000), (T_IMP, 600000), (T_IMP + 0.04, 3000000), (T_IMP + 0.35, 220000), (T_IMP + 2.5, 90000), (T_IMP + 6, 60000)):
+for t, e in ((0, 0), (T_SWAP - 0.05, 0), (T_SWAP + 0.05, 2), (T_SWAP + 0.5, 14), (T_SWAP + 1.0, 60), (T_CEIL - 0.1, 40), (T_CEIL + 0.25, 40), (T_CEIL + 0.7, 600), (T_FLASH, 300000), (T_DROP, 200000), (T_IMP - 0.6, 260000), (T_IMP - 0.2, 400000), (T_IMP, 600000), (T_IMP + 0.04, 1200000), (T_IMP + 0.35, 70000), (T_IMP + 2.5, 30000), (T_IMP + 6, 20000)):
     LAMP.energy = e; LAMP.keyframe_insert('energy', frame=F(t))
 for fc in LAMP.animation_data.action.fcurves:
     for kp in fc.keyframe_points: kp.interpolation = 'LINEAR'
@@ -375,7 +375,7 @@ SH(0.9, T_DROP + 1.95, 0.9, 0.9, (GX - 2.2, GY - 4.8, 0.5), (GX - 1.8, GY - 4.4,
 SH(1.0, T_IMP - 0.45, 0.6, 0.4, (GX + 3.8, GY + 3.3, 0.4), (GX + 3.5, GY + 3.1, 0.5), (0, 0, 6), (0, 0, 2.5), 13, 5.6, 0.3, fl=1)
 # 7. the slam, in slow motion
 SH(1.8, T_IMP + 0.06, 0.12, 0.3, (0, 0, 0), (0, 0, 0), (9, -21, 5), (9, -21, 6), 24, 4.0, 0.2, orb=[9, -21, 4.0, 17.5, 0.9, 3.0, -1.5, 2.5])
-SH(1.2, T_IMP + 0.44, 0.3, 0.45, (18.0, -17.9, 0.35), (17.2, -18.3, 0.45), (9, -21, 2), (9, -21, 3), 16, 5.6, 0.3)
+SH(1.2, T_IMP + 0.44, 0.3, 0.45, (16.8, -18.6, 0.6), (16.2, -18.9, 0.8), (9, -21, 2), (9, -21, 3), 16, 5.6, 0.3)
 SH(1.0, T_IMP + 0.78, 0.45, 0.45, (20, -32, 36), (17, -29, 26), (9, -21, 0), (9, -21, 1), 22, 5.6, 0.3)
 SH(1.0, T_IMP + 1.23, 0.5, 0.8, (22, -36, 6), (19, -35, 9), (9, -21, 6), (9, -21, 8), 35, 4.0, 0.3)
 # 8. the aftermath: a crane up and back
