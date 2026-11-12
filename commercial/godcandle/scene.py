@@ -273,13 +273,19 @@ rr = random.Random(77); RAD = [1.0 + rr.uniform(-0.22, 0.3) for _ in range(12)]
 def hole_r(a):
     x = (a % 6.2832) / 6.2832 * 12; i = int(x) % 12; f = x - int(x); return RAD[i] * (1 - sm(f)) + RAD[(i + 1) % 12] * sm(f)
 def in_hole(p): d = Vector((p.x - CEN.x, p.y - CEN.y, 0)); return d.length < hole_r(math.atan2(d.y, d.x)), d.length
+def fbox(name, size, loc, m):
+    """A box that keeps its own origin (so it can fly and spin)."""
+    bpy.ops.mesh.primitive_cube_add(size=1, location=loc); o = bpy.context.object; o.name = name; o.scale = size; o.data.materials.append(m)
+    for c_ in list(o.users_collection): c_.objects.unlink(o)
+    COL.objects.link(o); return o
+def centre(o): return sum((Vector(v) for v in o.bound_box), Vector()) / 8
 FRAGS = []
 for o in list(CEIL_CELLS):
-    c = o.location.copy()
+    c = centre(o)
     if Vector((c.x - CEN.x, c.y - CEN.y, 0)).length < 2.1:
         bpy.data.objects.remove(o)
         for ix in range(4):
-            for iy in range(4): FRAGS.append(box('frag', (0.2, 0.2, 0.1), Vector((c.x - 0.3 + 0.2 * ix, c.y - 0.3 + 0.2 * iy, c.z)), CEIL))
+            for iy in range(4): FRAGS.append(fbox('frag', (0.2, 0.2, 0.1), Vector((c.x - 0.3 + 0.2 * ix, c.y - 0.3 + 0.2 * iy, c.z)), CEIL))
 for i, o in enumerate(FRAGS):
     ins, dist = in_hole(o.location)
     if ins: bursty(o, T_CEIL + dist * 0.03, 500 + i, 2.0 + 3.5 * math.exp(-dist), vz=(9, 22) if dist < 0.3 else (-6.5, 2.5))
@@ -302,14 +308,14 @@ for hx in (-34, 34):
     box('nhouse', (13, 11, 2.9), Rm(hx, 0.5, 1.45), SIDING); box('nroof', (14, 12, 0.3), Rm(hx, 0.5, 3.0), mat('nroof%d' % hx, (0.1, 0.12, 0.16) if hx < 0 else (0.2, 0.13, 0.07), 0.85))
 RFR = []
 for ix in range(16):
-    for iy in range(16): RFR.append(box('rfrag', (0.2, 0.2, 0.1), (gx0 - 1.5 + 0.2 * ix, gy0 - 1.5 + 0.2 * iy, RZ), ROOFM))
+    for iy in range(16): RFR.append(fbox('rfrag', (0.2, 0.2, 0.1), (gx0 - 1.5 + 0.2 * ix, gy0 - 1.5 + 0.2 * iy, RZ), ROOFM))
 for i, o in enumerate(RFR):
     ins, dist = in_hole(o.location)
     if ins: bursty(o, T_CEIL + 0.01 + dist * 0.03, 2500 + i, 2.5 + 3.0 * math.exp(-dist), vz=(3, 15))
 for fr in range(F(T_CEIL), F(T_FLASH) + 1): TRD.react(fr, sm((tt(fr) - T_CEIL - 0.04) / 0.28))          # he throws his head back and gapes up through the hole
 for i in range(110):        # plaster chunks and splinters
     r_ = random.Random(700 + i); a_ = r_.uniform(0, 6.283); d_ = r_.uniform(0, 0.9); sz = r_.uniform(0.025, 0.11)
-    o = box('chunk', (sz, sz * r_.uniform(0.6, 2.2), sz * 0.6), CEN + Vector((math.cos(a_) * d_, math.sin(a_) * d_, -0.02)), CEIL); show(o, F(T_CEIL)); bursty(o, T_CEIL + d_ * 0.03, 800 + i, 4.0, vz=(-8, 4))
+    o = fbox('chunk', (sz, sz * r_.uniform(0.6, 2.2), sz * 0.6), CEN + Vector((math.cos(a_) * d_, math.sin(a_) * d_, -0.02)), CEIL); show(o, F(T_CEIL)); bursty(o, T_CEIL + d_ * 0.03, 800 + i, 4.0, vz=(-8, 4))
 CRKM = mat('crack', (0.004, 0.004, 0.006), 1.0); T_CRK = max(T_CEIL - 0.06, T_SWAP + 1.16)
 for i in range(18):
     a_ = i / 18 * 6.283 + rr.uniform(-0.15, 0.15); r0 = 0.06; p = CEN + Vector((math.cos(a_) * r0, math.sin(a_) * r0, -0.052)); rmax = rr.uniform(1.4, 2.7); k_ = 0
