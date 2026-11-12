@@ -30,7 +30,7 @@ def setup(f):
     d = l - p; cam.location = p; cam.rotation_mode = 'QUATERNION'; q = d.to_track_quat('-Z', 'Y'); rl = s.get('roll')
     if rl: q = q @ Quaternion((0, 0, 1), rl[0] + (rl[1] - rl[0]) * e)
     cam.rotation_quaternion = q
-    cam.data.lens = s['lens'] + (s['lens1'] - s['lens']) * e; cam.data.dof.focus_distance = max(0.5, d.length); cam.data.dof.aperture_fstop = s['fstop']
+    cam.data.lens = s['lens'] + (s['lens1'] - s['lens']) * e; cam.data.dof.focus_distance = max(0.5, d.length); cam.data.dof.aperture_fstop = s['fstop'] + (s.get('fstop1', s['fstop']) - s['fstop']) * e
 last = 0.0
 for i, f in enumerate(fl):
     if BUDGET and time.time() - T0 + 1.5 * last > BUDGET: print('BUDGET-STOP', len(fl) - i, 'frames left', flush=True); os._exit(3)

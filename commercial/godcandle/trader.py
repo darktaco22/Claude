@@ -21,6 +21,23 @@ def clamp(x, a=0.0, b=1.0): return max(a, min(b, x))
 def lerp(a, b, u): return a + (b - a) * u
 
 
+def phone_grip(a, s, W=0.072, L=0.150, D=0.0082, yoff=0.034, inset=0.0025):
+    """grips.phone, but with a tall slab standing on the screen (inset to the bezel): the wrapping fingers and the thumb stop at the edge
+    of the glass instead of lying across it."""
+    H = rigctl.Hand(a, s); top = Vector((a.idx_sign[s], 0, 0)); nrm = Vector((0, 0, 1)); side = top.cross(nrm)
+    def box(q, hx, hy, hz):
+        e = Vector((abs(q.dot(side)) - hx, abs(q.dot(top)) - hy, abs(q.dot(nrm)) - hz)); return Vector((max(e.x, 0), max(e.y, 0), max(e.z, 0))).length + min(max(e.x, e.y, e.z), 0.0)
+    def sdf_at(d):
+        c = Vector((0, yoff, d + D / 2)); c2 = c + nrm * (D / 2 + 0.04)
+        return lambda p: min(box(p - c, W / 2, L / 2, D / 2), box(p - c2, W / 2 - inset, L / 2 - inset, 0.04))
+    open_pts = H.posed(grips.curlQ(a, s, {f: (0.08, 0.0) for f in grips.FINGERS}))
+    d = 0.0
+    while any(box(p - Vector((0, yoff, d + D / 2)), W / 2, L / 2, D / 2) < 0.0008 for p, fk, _ in open_pts if fk not in ('finger1',)): d += 0.001
+    curls, worst = grips.solve_wrap(a, s, sdf_at(d), max_base=1.3, thumb_max=0.7)
+    y = top; z = nrm; x = y.cross(z); M = Matrix((x, y, z)).transposed().to_4x4(); M.translation = Vector((0, yoff, d))
+    return curls, M, worst
+
+
 class Trader:
     def __init__(self, seat_xy, face=math.pi, hip_z=0.50, lean_deg=16.0, cast=None):
         if cast: humans.CAST['trader'] = cast
@@ -30,7 +47,7 @@ class Trader:
         self.mw = Matrix.Translation((seat_xy[0], seat_xy[1], 0)) @ Matrix.Rotation(face, 4, 'Z')
         hipc = (a.hip['L'] + a.hip['R']) / 2
         self.root_loc = Vector((0, 0.035 - hipc.y, hip_z - hipc.z)); self.lean = math.radians(lean_deg)
-        c, M, w = grips.phone(a, 'L'); a.G = {'phone': (c, M)}; print('GRIP trader phone', {f: round(v * 1000, 1) for f, v in w.items()})
+        c, M, w = phone_grip(a, 'L'); a.G = {'phone': (c, M)}; print('GRIP trader phone', {f: round(v * 1000, 1) for f, v in w.items()})
         # the holding hand's pose is constant; the tapping hand's finger shape is 'point'
         self.tip_pp = self.tip_in_palm('R')
     # ------------------------------------------------------------------ pose parts
