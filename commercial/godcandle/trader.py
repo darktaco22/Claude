@@ -64,7 +64,7 @@ class Trader:
         if yaw: n = (Matrix.Rotation(yaw, 3, 'Z') @ n).normalized()          # turned a little toward the camera on his right (armature -X)
         upp = (zup - n * zup.dot(n)).normalized(); X = upp * a.idx_sign['L']; Y = n.cross(X)
         F = a.frame(Vector(), Y, n); F.translation = tgt - F.to_3x3() @ a.G['phone'][1].translation
-        return F
+        return F, F @ a.G['phone'][1]            # the holding palm's frame, and the phone itself
     def tip_in_palm(self, s='R'):
         """Where the index fingertip is in the palm frame for the pointing shape."""
         a = self.a; Q = {}; self.fingers(s, POINT, Q)
@@ -77,8 +77,7 @@ class Trader:
     def pose(self, f, t, tip_local, pitch=0.5, yaw=0.30):
         """Key the whole pose at frame f; tip_local(t) = (x, y, z) of the tapping fingertip in the PHONE's frame (metres).  Returns the phone's world matrix."""
         a = self.a; K = a.K; mw = self.mw; root_loc = self.root_loc; sx = {'L': 1, 'R': -1}
-        Q = self.body_Q(t, pitch); Pm = self.phone_matrix(Q, yaw)                       # phone, armature space
-        pal = Pm @ a.G['phone'][1].inverted()                                           # the holding palm frame
+        Q = self.body_Q(t, pitch); pal, Pm = self.phone_matrix(Q, yaw)                  # holding palm and phone, armature space
         hands = {'L': pal}; shapes = {'L': 'phone', 'R': POINT}
         # the tapping hand: fingertip at the target, finger leaning onto the screen from below-right
         u, v, n = Pm.to_3x3().col[0], Pm.to_3x3().col[1], Pm.to_3x3().col[2]
