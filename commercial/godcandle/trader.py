@@ -44,7 +44,7 @@ class Trader:
                 if bn in a.curl_axis: Q[bn] = a.local_q(bn, rigctl.qrot(a.curl_axis[bn], sh[key][j - 1]))
     def body_Q(self, t, pitch):
         a = self.a; Q = {}
-        lean = self.lean + math.sin(t * 2.0) * 0.012
+        lean = self.lean
         for b, w in (('spine05', .15), ('spine04', .2), ('spine03', .25), ('spine02', .2), ('spine01', .2)): Q[b] = a.local_q(b, rigctl.qrot((1, 0, 0), lean * w))
         for b, w in (('neck01', .3), ('neck02', .3), ('neck03', .2), ('head', .2)): Q[b] = a.local_q(b, rigctl.qrot((1, 0, 0), (pitch - lean * 0.9) * w))
         blink = 1.0 if (t + 0.8) % 3.9 < 0.12 else 0.0

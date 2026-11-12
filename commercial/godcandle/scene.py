@@ -103,40 +103,16 @@ for i, x in enumerate((-1.2, -1.1, 1.15, 1.3)):
     c = cyl('can', CANM); c.scale = (0.033, 0.033, 0.13); c.location = Rm(x, 2.4 + 0.05 * i, 0.85)
 box('pizza', (0.42, 0.42, 0.05), Rm(-1.5, -0.3, 0.025), PIZZA); box('pizza2', (0.42, 0.42, 0.05), Rm(-1.45, -0.28, 0.075), PIZZA, rot=(0, 0, 0.4))
 txt('LFG', 0.55, Rm(-1.9, 3.0, 2.05), NEONG); txt('NGMI', 0.4, Rm(1.1, 3.0, 2.1), NEONR)
-# the trader, from behind: a hooded chibi in the game's spirit
+# the trader: a realistic MakeHuman man (see trader.py), low on a beanbag, head down over his phone
+sys.path.insert(0, MYHERE)
+import trader as TR
 TY = -1.2
 ico('bean', 0.5, Rm(0, TY, 0.25), BEAN, 2).scale = (1, 1, 0.55)
-box('torso', (0.46, 0.28, 0.56), Rm(0, TY, 0.84), HOOD); ico('shL', 0.1, Rm(-0.25, TY, 1.06), HOOD, 2); ico('shR', 0.1, Rm(0.25, TY, 1.06), HOOD, 2)
-ico('head', 0.15, Rm(0, TY, 1.29), SKIN, 2); hood = ico('hood', 0.185, Rm(0, TY - 0.03, 1.31), HOOD, 2); hood.scale = (1, 1.05, 1.0); ico('hoodbunch', 0.1, Rm(0, TY - 0.15, 1.2), HOOD, 2)
-S_R, S_L = Rm(0.25, TY, 1.04), Rm(-0.25, TY, 1.04); E_R, E_L = Rm(0.31, TY + 0.02, 0.78), Rm(-0.31, TY + 0.02, 0.78)
-for a, b_ in ((S_R, E_R), (S_L, E_L)): seg(cyl('uarm', HOOD), a, b_, 0.062)
-for sx in (-1, 1):
-    seg(cyl('thigh', JEANS), Rm(sx * 0.14, TY, 0.52), Rm(sx * 0.16, TY + 0.46, 0.55), 0.09); seg(cyl('shin', JEANS), Rm(sx * 0.16, TY + 0.47, 0.5), Rm(sx * 0.16, TY + 0.52, 0.09), 0.07)
-    box('shoe', (0.11, 0.24, 0.08), Rm(sx * 0.16, TY + 0.6, 0.05), SHOE)
-# the phone, in his hands: screen normal n toward him (up and back), u to the screen's right, v up the screen
-SW, SH_ = 0.068, 0.1473
-P_ = Rm(-0.02, TY + 0.40, 1.02); n_ = Vector((0.1998, -0.8419, 0.37)).normalized(); u_ = Vector((1, 0, 0)); v_ = n_.cross(u_).normalized(); u_ = v_.cross(n_).normalized()
-BASIS = Matrix(((u_.x, v_.x, n_.x), (u_.y, v_.y, n_.y), (u_.z, v_.z, n_.z)))
-def ph(x, y, z=0.0): return P_ + u_ * x + v_ * y + n_ * z
-PH = bpy.data.objects.new('phone', None); COL.objects.link(PH); PH.location = P_; PH.rotation_mode = 'QUATERNION'; PH.rotation_quaternion = BASIS.to_quaternion()
-def child(o, loc, parent=PH, rot=None):
-    o.parent = parent; o.location = loc
-    if rot: o.rotation_euler = rot
-    return o
-child(box('pbody', (0.075, 0.157, 0.0085), (0, 0, 0), PHONE), (0, 0, -0.0044))
+TRD = TR.Trader((ROOM.x, ROOM.y + TY), face=math.pi)
+SW, SH_ = 0.066, 0.143
 UIJ = json.load(open(os.path.join(UI, 'ui.json'))); NUI = len([f for f in os.listdir(UI) if f.startswith('u_')])
-scr = plane('screen', SW, SH_, (0, 0, 0), (0, 0, 0), imgmat('screen', os.path.join(UI, 'u_0001.png'), 1.5, NUI)); child(scr, (0, 0, 0.0004)); scr.visible_shadow = False
 def upx(x): return (x / UIJ['w'] - 0.5) * SW
 def vpx(y): return (0.5 - y / UIJ['h']) * SH_
-# left hand holds it from behind: a palm, four fingertips over the left edge, the sleeve back to the elbow
-child(box('lpalm', (0.07, 0.1, 0.022), (0, 0, 0), SKIN), (0.004, -0.012, -0.02))
-for k in range(4): child(box('lfing', (0.012, 0.02, 0.014), (0, 0, 0), SKIN), (-0.0385, 0.03 - k * 0.026, 0.001))
-W_L = ph(0.004, -0.045, -0.03); seg(cyl('lfore', HOOD), E_L, W_L, 0.05); box('lcuff', (0.07, 0.05, 0.07), W_L, SKIN)
-# right hand: a pointing fist.  HR sits at the wrist with +Z along the finger; the index tip is 0.125 along Z
-HR = bpy.data.objects.new('HR', None); COL.objects.link(HR); HR.rotation_mode = 'QUATERNION'
-child(box('fist', (0.052, 0.05, 0.06), (0, 0, 0), SKIN), (0, 0, 0.03), HR); child(box('index', (0.016, 0.016, 0.08), (0, 0, 0), SKIN), (0.006, 0.007, 0.085), HR); child(box('thumb', (0.015, 0.015, 0.04), (0, 0, 0), SKIN), (-0.03, 0.0, 0.05), HR)
-FORE_R = cyl('rfore', HOOD); FORE_R.rotation_mode = 'QUATERNION'
-A_LOC = Vector((-0.32, 0.55, -0.77)).normalized(); A_W = u_ * A_LOC.x + v_ * A_LOC.y + n_ * A_LOC.z
 TAPS = [(t_, upx(x_), vpx(y_)) for t_, x_, y_ in UIJ['taps']]
 PTS = [(0.0, 0.020, -0.075, 0.07), (0.6, 0.020, -0.07, 0.06)]
 for (t_, x_, y_) in TAPS:                           # glide over, dip, press, lift
@@ -144,17 +120,24 @@ for (t_, x_, y_) in TAPS:                           # glide over, dip, press, li
 PTS += [(TAPS[-1][0] + 0.6, 0.01, -0.07, 0.06), (TAPS[-1][0] + 1.6, 0.04, -0.11, 0.16), (9.0, 0.04, -0.11, 0.16)]
 def tip_loc(t):
     for (t0, x0, y0, z0), (t1, x1, y1, z1) in zip(PTS, PTS[1:]):
-        if t0 <= t <= t1: e = sm((t - t0) / (t1 - t0)); return Vector((tick(x0, x1, e), tick(y0, y1, e), tick(z0, z1, e)))
-    return Vector(PTS[-1][1:])
-def set_hand(fr):
-    t = tt(fr); l = tip_loc(t); l.x += math.sin(t * 3.1) * 0.0015 * (1 if t < 1.0 else 0.2); tip = ph(l.x, l.y, l.z); W = tip - A_W * 0.125
-    HR.location = W; HR.rotation_quaternion = A_W.to_track_quat('Z', 'Y'); seg(FORE_R, E_R, W, 0.05)
-keyall(HR, ['location', 'rotation_quaternion'], lambda fr: (set_hand(fr)), F(0), F(T_FLASH))
+        if t0 <= t <= t1: e = sm((t - t0) / (t1 - t0)); return (tick(x0, x1, e), tick(y0, y1, e), tick(z0, z1, e))
+    return PTS[-1][1:]
+W0 = None
 for fr in range(F(0), F(T_FLASH) + 1):
-    set_hand(fr); FORE_R.keyframe_insert('location', frame=fr); FORE_R.keyframe_insert('rotation_quaternion', frame=fr); FORE_R.keyframe_insert('scale', frame=fr)
-for o in (HR, FORE_R):
-    for fc in o.animation_data.action.fcurves:
-        for kp in fc.keyframe_points: kp.interpolation = 'LINEAR'
+    Wf = TRD.pose(fr, tt(fr), tip_loc)
+    if W0 is None: W0 = Wf
+TRD.a.K.flush()
+# the phone hangs off his held hand: u = screen right, v = up the screen, n = out of the screen toward his eyes
+R3 = W0.to_3x3(); u_, v_, n_ = R3.col[0].copy(), R3.col[1].copy(), R3.col[2].copy(); P_ = W0.translation + n_ * 0.0045
+BASIS = Matrix(((u_.x, v_.x, n_.x), (u_.y, v_.y, n_.y), (u_.z, v_.z, n_.z)))
+def ph(x, y, z=0.0): return P_ + u_ * x + v_ * y + n_ * z
+PH = bpy.data.objects.new('phone', None); COL.objects.link(PH); PH.location = P_; PH.rotation_mode = 'QUATERNION'; PH.rotation_quaternion = BASIS.to_quaternion()
+def child(o, loc, parent=PH, rot=None):
+    o.parent = parent; o.location = loc
+    if rot: o.rotation_euler = rot
+    return o
+child(box('pbody', (0.072, 0.150, 0.0082), (0, 0, 0), PHONE), (0, 0, -0.0045))
+scr = plane('screen', SW, SH_, (0, 0, 0), (0, 0, 0), imgmat('screen', os.path.join(UI, 'u_0001.png'), 1.5, NUI)); child(scr, (0, 0, 0.0003)); scr.visible_shadow = False
 
 # ---------------------------------------------------------------- THE GOD CANDLE: out of the screen, through the ceiling, into the sky, down into the arena
 HG = 13.2                                              # the game's candle: body 3.3 x 13.2 x 3.3
@@ -345,7 +328,7 @@ def SH(dur, a0, s0, s1, p0, p1, l0, l1, lens, fstop=2.8, shake=0.0, lens1=None, 
     SHOTS.append(dict(t0=round(_t[0], 4), t1=round(_t[0] + dur, 4), a0=a0, s0=s0, s1=s1, p0=list(p0), p1=list(p1), l0=list(l0), l1=list(l1), lens=lens, lens1=lens1 or lens, fstop=fstop, shake=shake, fp=fp, fl=fl, orb=orb, ec=ec, roll=roll)); _t[0] += dur
 # fp / fl: 0 = world, 1 = offset from the candle's foot (metres), 3 = offset in candle heights
 # 1. over his shoulder, pushing in on the phone while he taps BUY; the chart goes parabolic and fills the frame
-SH(T_SWAP, 0.0, 1, 1, Rm(0.75, -2.0, 1.55), ph(0.10, 0.03, 0.30), Rm(-0.02, TY + 0.4, 1.05), ph(0.022, 0.02, 0), 60, 2.0, 0.3, 100, ec=2)
+SH(T_SWAP, 0.0, 1, 1, ph(0, 0, 0) + Vector((0.65, -1.15, 0.58)), ph(0.12, 0.03, 0.32), ph(0, 0, 0), ph(0.022, 0.02, 0), 55, 2.0, 0.25, 130, ec=2)
 # 2. the candle leaves the screen (slow motion), close
 SH(1.3, T_SWAP, 0.35, 0.5, (0.12, -0.12, 0.06), (0.34, -0.30, 0.2), (0, 0, 0.05), (0, 0, 0.18), 24, 2.0, 0.2, fp=1, fl=1)
 # 3. from behind and below: it rises past him, lighting the room green
