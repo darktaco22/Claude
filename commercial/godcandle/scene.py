@@ -26,6 +26,7 @@ env.image = bpy.data.images.load(os.path.join(TEX, 'sky.hdr'))          # a blue
 for o in list(bpy.data.objects):                                         # the clash film's blimp and its cables are in the way of the fall
     c = o.matrix_world.translation
     if o.name.startswith(('blimp', 'fin')) or (o.name.startswith('Cylinder') and 5.0 < c.x < 13.0 and abs(c.y + 16) < 2.5 and 12.5 < c.z < 36): bpy.data.objects.remove(o)
+bpy.data.objects['ground'].scale = (0.2, 0.2, 1)                     # the stadium's lawn: 120 m square; beyond it only haze and cloud
 HAZE = mat('haze', (0.72, 0.8, 0.92), 1.0, emit=(0.62, 0.74, 0.92), estr=0.7)
 plane('ground2', 6000, 6000, (9, -16, -0.12), (0, 0, 0), HAZE)            # beyond the stadium's lawn: sky-coloured haze, under a sea of cloud
 
@@ -194,7 +195,7 @@ for t, s in ((T_IMP - 0.01, (1, 1, 1)), (T_IMP + 0.04, (1.14, 1.14, 0.9)), (T_IM
     GC.scale = s; GC.keyframe_insert('scale', frame=F(t))
 # its light: dim in the phone, brighter and brighter, then it lights the whole stadium as it falls
 LAMP = bpy.data.lights.new('gcl', 'POINT'); LAMP.color = (0.35, 1.0, 0.4); LAMP.shadow_soft_size = 1.5; LO = bpy.data.objects.new('gcl', LAMP); COL.objects.link(LO); LO.parent = GC; LO.location = (0, 0, 7)
-for t, e in ((0, 0), (T_SWAP - 0.05, 0), (T_SWAP + 0.05, 2), (T_SWAP + 0.5, 14), (T_SWAP + 1.1, 90), (T_CEIL + 0.2, 110), (T_CEIL + 0.7, 1200), (T_FLASH, 300000), (T_DROP, 200000), (T_IMP - 0.6, 260000), (T_IMP - 0.2, 400000), (T_IMP, 600000), (T_IMP + 0.04, 3000000), (T_IMP + 0.35, 220000), (T_IMP + 2.5, 90000), (T_IMP + 6, 60000)):
+for t, e in ((0, 0), (T_SWAP - 0.05, 0), (T_SWAP + 0.05, 2), (T_SWAP + 0.5, 14), (T_SWAP + 1.0, 60), (T_CEIL - 0.1, 40), (T_CEIL + 0.25, 40), (T_CEIL + 0.7, 600), (T_FLASH, 300000), (T_DROP, 200000), (T_IMP - 0.6, 260000), (T_IMP - 0.2, 400000), (T_IMP, 600000), (T_IMP + 0.04, 3000000), (T_IMP + 0.35, 220000), (T_IMP + 2.5, 90000), (T_IMP + 6, 60000)):
     LAMP.energy = e; LAMP.keyframe_insert('energy', frame=F(t))
 for fc in LAMP.animation_data.action.fcurves:
     for kp in fc.keyframe_points: kp.interpolation = 'LINEAR'
@@ -234,23 +235,11 @@ def deck_mat(name, thr, off):
     nz = nt.nodes.new('ShaderNodeTexNoise'); nz.inputs['Scale'].default_value = 0.013; nz.inputs['Detail'].default_value = 8; nz.inputs['Roughness'].default_value = 0.62; nt.links.new(mp_.outputs['Vector'], nz.inputs['Vector'])
     a1 = nt.nodes.new('ShaderNodeMapRange'); a1.inputs['From Min'].default_value = thr; a1.inputs['From Max'].default_value = thr + 0.16; nt.links.new(nz.outputs['Fac'], a1.inputs['Value'])
     ln = nt.nodes.new('ShaderNodeVectorMath'); ln.operation = 'LENGTH'; nt.links.new(tc.outputs['Object'], ln.inputs[0])
-    rg = nt.nodes.new('ShaderNodeMapRange'); rg.inputs['From Min'].default_value = 74; rg.inputs['From Max'].default_value = 130; nt.links.new(ln.outputs['Value'], rg.inputs['Value'])
+    rg = nt.nodes.new('ShaderNodeMapRange'); rg.inputs['From Min'].default_value = 50; rg.inputs['From Max'].default_value = 76; nt.links.new(ln.outputs['Value'], rg.inputs['Value'])
     mu = nt.nodes.new('ShaderNodeMath'); mu.operation = 'MULTIPLY'; nt.links.new(a1.outputs['Result'], mu.inputs[0]); nt.links.new(rg.outputs['Result'], mu.inputs[1]); nt.links.new(mu.outputs[0], b.inputs['Alpha'])
     bp = nt.nodes.new('ShaderNodeBump'); bp.inputs['Strength'].default_value = 1.0; bp.inputs['Distance'].default_value = 6.0; nt.links.new(nz.outputs['Fac'], bp.inputs['Height']); nt.links.new(bp.outputs['Normal'], b.inputs['Normal']); return m
 for zz, thr, off in ((15.0, 0.36, 0.0), (27.0, 0.44, 400.0)):
     dk = plane('clouddeck', 5000, 5000, (GX, GY, zz), (0, 0, 0), deck_mat(f'deck{int(zz)}', thr, off)); dk.visible_shadow = False
-CLOUDS, _ = cloud_mat('cloudsea'); rcl = random.Random(31)
-puff = ico('puff', 1.0, (GX + 95, GY, 16), CLOUDS, 3); puff.visible_shadow = False; puff.scale = (22, 22, 8); ncl = 1
-rad = 92.0
-while rad < 150:
-    step = 26 + rad * 0.06; nring = max(8, int(2 * math.pi * rad / (step * 1.3)))
-    for k in range(nring):
-        ang = (k + rcl.random() * 0.8) / nring * 6.283; rr_ = rad + rcl.uniform(-0.4, 0.4) * step; x = GX + math.cos(ang) * rr_; y = GY + math.sin(ang) * rr_
-        for j in range(3):                                         # each cloud: a clump of three puffs
-            o = bpy.data.objects.new('puff', puff.data); COL.objects.link(o); o.visible_shadow = False; sc_ = step * rcl.uniform(0.5, 0.9)
-            o.location = (x + rcl.uniform(-0.5, 0.5) * step, y + rcl.uniform(-0.5, 0.5) * step, rcl.uniform(13, 24) + j * 3); o.scale = (sc_, sc_ * rcl.uniform(0.8, 1.2), sc_ * rcl.uniform(0.35, 0.55)); o.rotation_euler = (0, 0, rcl.uniform(0, 3)); ncl += 1
-    rad += step
-print('CLOUD PUFFS', ncl)
 
 # ---------------------------------------------------------------- phone and room reactions
 def spark_burst(c, t, n, seed, size, speed, dirv, spread=1.0, life=0.6):
@@ -279,9 +268,8 @@ for i, o in enumerate(CEIL_CELLS):
     if dist < 1.6: bursty(o, T_CEIL + dist * 0.04, 500 + i, 3.5 + 3 * math.exp(-dist))
 for i in range(40):        # plaster chunks
     r_ = random.Random(700 + i); o = box('chunk', (r_.uniform(0.05, 0.14),) * 3, CEN + Vector((r_.uniform(-0.5, 0.5), r_.uniform(-0.5, 0.5), 0)), CEIL); bursty(o, T_CEIL + 0.02, 800 + i, 5.0)
-dust(CEN + Vector((0, 0, -0.1)), T_CEIL, 0.55, 41, 7); dust(CEN + Vector((0, 0, 0.3)), T_CEIL + 0.1, 0.8, 42, 5)
 CL_ = bpy.data.lights.new('ceilflash', 'POINT'); CL_.color = (0.6, 1.0, 0.65); CLO = bpy.data.objects.new('ceilflash', CL_); COL.objects.link(CLO); CLO.location = CEN + Vector((0, 0, -0.4))
-for t, e in ((T_CEIL - 0.05, 0), (T_CEIL, 350), (T_CEIL + 0.3, 60), (T_CEIL + 1.0, 0)): CL_.energy = e; CL_.keyframe_insert('energy', frame=F(t))
+for t, e in ((T_CEIL - 0.05, 0), (T_CEIL, 70), (T_CEIL + 0.3, 15), (T_CEIL + 1.0, 0)): CL_.energy = e; CL_.keyframe_insert('energy', frame=F(t))
 
 # ---------------------------------------------------------------- the beam on the ground, the cracks spreading
 bpy.ops.mesh.primitive_cylinder_add(vertices=32, radius=1.0, depth=700, location=(GX, GY, 350)); BEAM = bpy.context.object; BEAM.name = 'beam'; BEAM.data.materials.append(BEAMM); BEAM.visible_shadow = False
@@ -312,16 +300,16 @@ for mt in (glow('sw1', (0.35, 1.0, 0.45), 30, 0.95), glow('sw2', (0.9, 1.0, 0.9)
 for o, k_, ln in ((SW_[0], 38.0, 26), (SW_[1], 52.0, 18)):
     for f, s in ((F(T_IMP) - 1, 0.001), (F(T_IMP), 0.8), (F(T_IMP) + ln, k_), (F(T_IMP) + ln + 1, 0.001)): o.scale = (s, s, min(s, 1.5)); key(o, 'scale', f)
     linear(o)
-bpy.ops.mesh.primitive_uv_sphere_add(radius=1.0, segments=48, ring_count=24, location=(GX, GY, 0)); DOME = bpy.context.object; DOME.data.materials.append(glow('dome', (0.4, 1.0, 0.5), 8.0, 0.22)); DOME.visible_shadow = False
-for f, s in ((F(T_IMP) - 1, 0.001), (F(T_IMP), 1.5), (F(T_IMP) + 8, 20.0), (F(T_IMP) + 18, 30.0), (F(T_IMP) + 19, 0.001)): DOME.scale = (s, s, s * 0.7); key(DOME, 'scale', f)
+bpy.ops.mesh.primitive_uv_sphere_add(radius=1.0, segments=48, ring_count=24, location=(GX, GY, 0)); DOME = bpy.context.object; DOME.data.materials.append(glow('dome', (0.4, 1.0, 0.5), 4.0, 0.10)); DOME.visible_shadow = False
+for f, s in ((F(T_IMP) - 1, 0.001), (F(T_IMP), 1.5), (F(T_IMP) + 8, 9.0), (F(T_IMP) + 18, 13.0), (F(T_IMP) + 19, 0.001)): DOME.scale = (s, s, s * 0.7); key(DOME, 'scale', f)
 linear(DOME)
 bpy.ops.mesh.primitive_cylinder_add(vertices=32, radius=1, depth=90, location=(GX, GY, 45)); PIL = bpy.context.object; PIL.data.materials.append(glow('pillar', (0.4, 1.0, 0.5), 9, 0.14)); PIL.visible_shadow = False
 for t, s in ((0, 0.0001), (T_IMP - 0.01, 0.0001), (T_IMP, 2.8), (T_IMP + 0.4, 2.2), (T_IMP + 1.5, 1.4), (T_IMP + 4, 0.9), (T_IMP + 8, 0.0001)): PIL.scale = (s, s, 1); key(PIL, 'scale', F(t))
 SPARK = SPARKG
-explode(Vector((GX, GY, 1.6)), T_IMP, 3.4, FIREGRN, 120, 61, SMOKEG, light=(0.3, 1.0, 0.35))
-explode(Vector((GX, GY, 0.8)), T_IMP + 0.05, 2.2, FIRE, 40, 62, DUST, light=(1.0, 0.7, 0.3))
+explode(Vector((GX, GY, 1.6)), T_IMP, 1.9, FIREGRN, 120, 61, SMOKEG, light=(0.3, 1.0, 0.35))
+explode(Vector((GX, GY, 0.8)), T_IMP + 0.05, 1.4, FIRE, 40, 62, DUST, light=(1.0, 0.7, 0.3))
 for i in range(5): sparks(Vector((GX, GY, 1.0 + i)), T_IMP + 0.02 * i, 26, 70 + i, 14.0)
-dust(Vector((GX, GY, 0.4)), T_IMP, 2.5, 90, 12)
+dust(Vector((GX, GY, 0.4)), T_IMP, 1.4, 90, 8)
 for i in range(46):      # gold coins thrown up by the slam
     r_ = random.Random(900 + i); a = r_.uniform(0, 6.28); sp_ = r_.uniform(3, 15); v = Vector((math.cos(a) * sp_, math.sin(a) * sp_, r_.uniform(14, 30))); bpy.ops.mesh.primitive_cylinder_add(radius=0.38, depth=0.09, vertices=18); o = bpy.context.object; o.data.materials.append(COINM)
     p0 = Vector((GX, GY, 1.0)); spin = Vector((r_.uniform(-14, 14), r_.uniform(-14, 14), 0)); f0 = F(T_IMP) + 1; o.scale = (0.001,) * 3; key(o, 'scale', f0 - 1); o.scale = (1, 1, 1); key(o, 'scale', f0)
@@ -384,7 +372,7 @@ SH(0.95, T_SWAP + 1.75, 1.1, 1.1, (1.2, -2.0, -0.3), (0.9, -3.0, -0.6), (0, 0, 0
 SH(1.2, T_DROP, 0.85, 0.85, (10.0, -14.0, 28.0), (7.5, -10.5, 23.0), (0, 0, -6), (0, 0, -10), 24, 5.6, 0.5, fp=1, fl=1, roll=(0.0, 0.5))
 SH(1.0, T_DROP + 1.05, 0.9, 0.9, (46, -56, 0), (38, -48, 0), (0, 0, 6), (0, 0, 6), 50, 4.0, 0.3, fp=1, fl=1, roll=(-0.12, 0.1))
 SH(0.9, T_DROP + 1.95, 0.9, 0.9, (GX - 2.2, GY - 4.8, 0.5), (GX - 1.8, GY - 4.4, 0.7), (0, 0, 6), (0, 0, 6), 14, 4.0, 0.3, fl=1)
-SH(1.0, T_IMP - 0.45, 0.6, 0.4, (GX + 2.6, GY + 5.6, 0.4), (GX + 2.3, GY + 5.4, 0.5), (0, 0, 6), (0, 0, 2.5), 13, 5.6, 0.3, fl=1)
+SH(1.0, T_IMP - 0.45, 0.6, 0.4, (GX + 3.8, GY + 3.3, 0.4), (GX + 3.5, GY + 3.1, 0.5), (0, 0, 6), (0, 0, 2.5), 13, 5.6, 0.3, fl=1)
 # 7. the slam, in slow motion
 SH(1.8, T_IMP + 0.06, 0.12, 0.3, (0, 0, 0), (0, 0, 0), (9, -21, 5), (9, -21, 6), 24, 4.0, 0.2, orb=[9, -21, 4.0, 17.5, 0.9, 3.0, -1.5, 2.5])
 SH(1.2, T_IMP + 0.44, 0.3, 0.45, (18.0, -17.9, 0.35), (17.2, -18.3, 0.45), (9, -21, 2), (9, -21, 3), 16, 5.6, 0.3)
