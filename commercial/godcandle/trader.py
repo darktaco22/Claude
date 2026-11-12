@@ -13,8 +13,8 @@ from mathutils import Vector, Matrix, Quaternion
 DEG = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'degens'); sys.path.insert(0, DEG)
 import humans, rigctl, grips
 
-TRADER = dict(phen=dict(gender=1.0, age=0.38, muscle=0.35, weight=0.42, height=0.55, proportions=0.55, race=dict(caucasian=0.75, asian=0.1, african=0.15)),
-              skin='young_caucasian_male', hair='short02', brows='eyebrow002', lashes='eyelashes01', clothes=['male_casualsuit06', 'shoes05'], tint={})
+CAST_DEFAULT = TRADER = dict(phen=dict(gender=1.0, age=0.36, muscle=0.35, weight=0.42, height=0.55, proportions=0.55, race=dict(caucasian=0.75, asian=0.1, african=0.15)),
+              skin='young_caucasian_male', hair='cortu_short_messy_hair', brows='eyebrow002', lashes='eyelashes01', clothes=['male_casualsuit02', 'shoes05'], tint={})
 POINT = dict(t=(0.45, 0.5, 0.4), i=(0.04, 0.05, 0.03), m=(1.1, 1.2, 0.8), r=(1.2, 1.2, 0.8), p=(1.25, 1.2, 0.8))
 HOLD_PHONE = 'phone'
 def clamp(x, a=0.0, b=1.0): return max(a, min(b, x))
