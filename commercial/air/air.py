@@ -8,7 +8,7 @@ import war
 from war import *                                    # V, ramp, ease, lerp, act, go, thrown, shot, tracers, poses, WUnit, MATS, obj, key3, K helpers ...
 from mathutils import Vector, Euler
 
-game.H.update(pepe=1.3, chillguy=1.45, troll=1.4, wojak=1.4)
+game.H.update(pepe=1.3, chillguy=1.45, troll=1.4, wojak=1.4, pnut=1.25)
 OUR_COL = (0.25, 0.85, 0.45)
 GIGA_FLIP = PI                                       # GIGA's model faces the other way from the rest of the cast
 
@@ -75,7 +75,7 @@ def plane_pose(fn, u, roll=0.0):
 
 
 # ------------------------------------------------------------------ the film
-ME = ('pepe', 0); WING = ('cate', 0); HEAVY = ('bonk', 0)
+ME = ('pnut', 0); WING = ('pnut', 1); HEAVY = ('pnut', 2)
 CH = ('chillguy', 0)
 OUR = [('chillguy', 1, V(-5.4, -6.4)), ('wojak', 0, V(-3.7, -6.1)), ('wojak', 1, V(-4.6, -5.4)), ('chillguy', 2, V(-6.2, -5.5)), ('wojak', 2, V(-3.1, -5.2)),
        ('chillguy', 3, V(-5.0, -7.4)), ('wojak', 3, V(-3.6, -7.2)), ('wojak', 4, V(-6.0, -7.9))]
@@ -92,14 +92,20 @@ def fly(p0, p1, u0, u1, bob=0.0, ph=0.0):
 def head_dir(h): return V(sn(h), -math.cos(h))                      # the direction a unit with heading h faces (hd(d) = atan2(d.x, -d.y))
 
 
+FLY_RX = math.radians(64)
+FLY = lambda u: {'LeftArm': (-10, 0, -62 + 6 * sn(u * 5)), 'RightArm': (-10, 0, 62 - 6 * sn(u * 5.4)), 'Spine2': (-14, 0, 0), 'Head': (-28, 0, 0)}
+
+
 def cockpit(kind, i, fn, dy=0.0, dz=-0.2, clips=(), pose=None, rx=0.0, roll=None):
     """A character sitting in a plane's cockpit: dy along the nose axis toward the tail, dz relative to the fuselage axis."""
+    dy, dz = 0.3, -0.45                                           # PNUT lies along his flight path, arms out, head forward
     def pos(u):
         h, _ = heading_of(fn, u); c = fn(u); n = head_dir(h); return V(c.x, c.y) - n * dy
     def z(u): return fn(u).z + dz
     def hh(u): return heading_of(fn, u)[0]
     def pr(u): return rx + heading_of(fn, u)[1] * -1.0 * 0.9
-    a = act(kind, i, pos, hh, clips, z=z, rx=lambda u: -heading_of(fn, u)[1] + rx, pose=pose)
+    ps = (lambda u: {**FLY(u), **pose(u)}) if pose else FLY
+    a = act(kind, i, pos, hh, clips, z=z, rx=lambda u: FLY_RX - heading_of(fn, u)[1] + rx, pose=ps)
     return a
 
 
@@ -139,7 +145,7 @@ def film():
     # 2. CHILLGUY looks up. Low angle, the sun behind him.
     SH.append(shot(3.2, 5.0, lambda k, u: dict(pos=V(-3.15, -8.8 + 0.1 * k, 0.28), tgt=V(-3.2, -10.2, 1.2 + 0.5 * k), fov=46, fstop=2.4, shake=0.004),
                    [act('chillguy', 0, V(-3.2, -10.2), N, [(0, 'idle', 1.0)], pose=lambda u: {'Head': (-38 * ease(ramp(u, 0.3, 0.9)), 0, 0), 'Spine2': (-8 * ease(ramp(u, 0.3, 0.9)), 0, 0)})],
-                   [tracers(14, 22, 1.8), ('boom', 0.9, V(-7.6, -6.5, 0.4), 1.2)], name='looks_up', sub=(0.7, 1.7, 'AIR SUPPORT.')))
+                   [tracers(14, 22, 1.8), ('boom', 0.9, V(-7.6, -6.5, 0.4), 1.2)], name='looks_up', sub=(0.7, 1.7, 'PNUT. INBOUND.')))
     # 3. The flyover: three planes pass over the line, low, toward the enemy. The line cheers.
     lead = fly(V(-3.0, -24.0, 5.2), V(-3.0, 6.0, 5.8), 0.0, 2.4, 0.15); lft = fly(V(-6.6, -27.0, 5.6), V(-6.6, 3.0, 6.1), 0.0, 2.4, 0.2, 1.0); rgt = fly(V(0.6, -26.0, 5.4), V(0.6, 4.0, 5.9), 0.0, 2.4, 0.2, 2.0)
     SH.append(shot(5.0, 7.6, lambda k, u: dict(pos=V(-4.0, -3.6, 0.3), tgt=V(-3.4, -9.0 + 5.0 * ease(k), 2.2 + 3.6 * ease(k)), fov=72, fstop=5.6, shake=0.012, roll=-3 + 6 * k),
@@ -149,7 +155,7 @@ def film():
                    slow=0.8, name='flyover'))
     # 4. The cockpit: the lead plane's pilot, scarf streaming.
     lead2 = fly(V(-3.0, -6.0, 5.4), V(-3.0, 26.0, 5.4), 0.0, 2.6, 0.12)
-    SH.append(shot(7.6, 9.8, lambda k, u: dict(pos=lead2(u) + V(-2.8 + 0.5 * k, 3.2 - 0.3 * k, 2.2 + 0.2 * k), tgt=lead2(u) + V(0, -0.05, 1.15), fov=26, fstop=2.0, focus=4.4, shake=0.007, roll=3 - 5 * k),
+    SH.append(shot(7.6, 9.8, lambda k, u: dict(pos=lead2(u) + V(-2.3 + 0.4 * k, 4.6 - 0.3 * k, 0.1 + 0.2 * k), tgt=lead2(u) + V(0, 0.35, 0.25), fov=36, fstop=2.6, focus=5.0, shake=0.007, roll=3 - 5 * k),
                    [cockpit(*ME, lead2, -0.05, 0.0, [(0, 'idle', 1.0)], pose=lambda u: {'Head': (-6, 20 * ease(ramp(u, 0.2, 0.9)) - 25 * ease(ramp(u, 1.3, 1.9)), 0)})],
                    [plane_fx('lead', lead2), ('boom', 1.1, V(-5.0, 11.0, 0.4), 1.3)], slow=0.8, name='cockpit'))
     # 5. Flak. The enemy opens up; Bonk swats shells off the big bomber's roof with his bat; Cate's engine is hit and starts to smoke.
@@ -186,7 +192,7 @@ def film():
                    [aa(14, 28, 0.0, 1.6, lambda u: V(-3.0, 8.0 + 8.0 * u, 7.0)), ('boom', 0.5, V(-1.6, 9.0, 6.0), 1.0), ('boom', 1.1, V(-6.4, 8.0, 6.0), 1.2), ('burst', 0.5, V(-4.0, 8.4), 20, 1.0, 0.03)], slow=0.55, name='giga'))
     # 9. CATE's plane takes the hit: fire in the engine; she holds the stick, then pulls the lever.
     h9 = lambda u: V(-1.8, 2.0 + 3.85 * u, 5.8 - 0.4 * u * u)
-    SH.append(shot(19.8, 22.8, lambda k, u: dict(pos=h9(u) + V(-2.8 + 0.5 * k, 3.2 - 0.3 * k, 2.2 + 0.2 * k), tgt=h9(u) + V(0, -0.05, 0.95), fov=28, fstop=2.2, focus=4.4, shake=0.012 + 0.07 * (0.15 < u < 0.5), roll=6 * sn(u * 3)),
+    SH.append(shot(19.8, 22.8, lambda k, u: dict(pos=h9(u) + V(-2.3 + 0.4 * k, 4.6 - 0.3 * k, 0.1 + 0.2 * k), tgt=h9(u) + V(0, 0.35, 0.25), fov=36, fstop=2.6, focus=5.0, shake=0.012 + 0.07 * (0.15 < u < 0.5), roll=6 * sn(u * 3)),
                    [cockpit(*WING, h9, -0.05, 0.0, [(0, 'idle', 1.0), (0.45, 'hit', 0.8), (1.1, 'idle', 1.0)], pose=lambda u: {'Head': (16 * sn(u * 11), 0, 0)})],
                    [plane_fx('right', h9, col=(0.55, 0.4, 0.2), smoke=(0.0, 0.5), fire=(0.35, 1.0)), ('boom', 0.35, h9(0.35) + V(0.0, 1.5, 0.3), 1.2), ('flash', 0.35, h9(0.35) + V(0, 1.6, 0.6), 9000),
                     ('burst', 0.35, V(-1.8, 3.0), 12, 1.0, 0.03), aa(10, 29, 0.0, 1.0, lambda u: h9(u))], slow=0.35, name='hit'))
@@ -199,8 +205,9 @@ def film():
     CP = cate_path
     c10 = lambda u: dv(u) + V(0, 0, 0.0) if u < jmp else CP(u - jmp)
     SH.append(shot(22.8, 26.0, lambda k, u: dict(pos=V(-11.0 + 1.0 * k, -2.0, 4.5 + 1.0 * k), tgt=dv(u).lerp(V(0, 9.5, 2.0), 0.35), fov=52, fstop=8.0, focus=14.0, shake=0.012 + 0.09 * (u > DT - 0.1)),
-                   [act(*WING, lambda u: V(c10(u).x, c10(u).y), lambda u: heading_of(dv, u)[0] if u < jmp else N, [(0, 'idle', 1.0)], z=lambda u: c10(u).z, rx=lambda u: -heading_of(dv, u)[1] if u < jmp else 0.0,
-                        pose=lambda u: {} if u < jmp else ARM_UP(u))],
+                   [act(*WING, lambda u: (V(c10(u).x, c10(u).y) - head_dir(heading_of(dv, u)[0]) * 0.3) if u < jmp else V(c10(u).x, c10(u).y), lambda u: heading_of(dv, u)[0] if u < jmp else N, [(0, 'idle', 1.0)],
+                        z=lambda u: c10(u).z - 0.45 if u < jmp else c10(u).z, rx=lambda u: FLY_RX - heading_of(dv, u)[1] if u < jmp else 0.0,
+                        pose=lambda u: FLY(u) if u < jmp else ARM_UP(u))],
                    [plane_fx('right', dv, col=(0.55, 0.4, 0.2), smoke=(0.0, 0.6), fire=(0.0, 1.1), dive=(DT, d1)), ('canopy', lambda u: c10(u), 1.0, jmp + 0.55),
                     ('boom', DT, d1 + V(0, 0.6, 0.4), 3.6), ('flash', DT, d1 + V(0, -1.0, 1.0), 220000), ('ring', DT, d1 + V(0, 0, 0.3), 9.0), ('burst', DT, V(0.0, 12.0), 70, 3.2, 0.07), ('swap', DT + 0.04),
                     ('boom', DT + 0.3, T3 + V(0.9, -0.6, 2.6), 3.2), tracers(8, 30, 2.4)], slow=0.5, name='dive'))
@@ -230,7 +237,7 @@ def air_mats():
     cr = wn.nodes.new('ShaderNodeValToRGB'); nl(sp.outputs['Z'], cr.inputs[0]); e = cr.color_ramp.elements
     e[0].position = 0.35; e[0].color = (0.50, 0.24, 0.26, 1); e[1].position = 0.95; e[1].color = (0.045, 0.03, 0.11, 1)
     mid = cr.color_ramp.elements.new(0.62); mid.color = (0.34, 0.15, 0.24, 1); nl(cr.outputs['Color'], bgn.inputs['Color'])
-    MATS['propdisc'] = m; MATS['bombmat'] = sets.flat('bomb_olive', (0.16, 0.18, 0.1), 0.45, metal=0.4); MATS['cloth'] = sets.flat('chute_cloth', (0.95, 0.55, 0.14), 0.7)
+    MATS['propdisc'] = m; MATS['bombmat'] = sets.flat('bomb_olive', (0.42, 0.24, 0.09), 0.5, metal=0.1); MATS['cloth'] = sets.flat('chute_cloth', (0.95, 0.55, 0.14), 0.7)
     bpy.ops.mesh.primitive_uv_sphere_add(segments=12, ring_count=8, radius=1.0); o = bpy.context.active_object
     for p in o.data.polygons: p.use_smooth = True
     MATS['bombmesh'] = o.data; bpy.data.objects.remove(o)
@@ -248,7 +255,7 @@ def build_fx_air(K, L, sh, frames, uof, rng):
     for e in mine:
         kind = e[0]
         if kind == 'plane':
-            _, key, fn, heavy, col, roll, scarf, drop, smoke, fire, dive = e; P = build_plane(f'{key}_{f0}', heavy, col); root = P['root']; life(root)
+            _, key, fn, heavy, col, roll, scarf, drop, smoke, fire, dive = e; root = bpy.data.objects.new(f'{key}_{f0}', None); bpy.context.scene.collection.objects.link(root); root.rotation_mode = 'XYZ'; P = dict(root=root, blades=[], scarf=None, bombs=[]); life(root)
             for f in frames:
                 u = uof(f)
                 pos = fn(u); h_, p_ = heading_of(fn, u)
