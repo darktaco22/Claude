@@ -30,7 +30,7 @@ plane('ground2', 4000, 4000, (9, -16, -0.12), (0, 0, 0), GRASS)           # so t
 # ---------------------------------------------------------------- the timeline (animation seconds)
 GX, GY = 9.0, -21.0                                     # where it lands
 T_SWAP, T_LAUNCH, T_CEIL, T_FLASH = 3.4, 4.5, 4.65, 6.2
-T_DROP = 6.25; T_IMP = T_DROP + 3.0
+T_DROP = 6.25; T_IMP = T_DROP + 3.2
 ROOM = Vector((400.0, -16.0, 0.0))
 def Rm(x, y, z): return ROOM + Vector((x, y, z))
 def tick(a, b, f): return a + (b - a) * f
@@ -115,7 +115,7 @@ for sx in (-1, 1):
     box('shoe', (0.11, 0.24, 0.08), Rm(sx * 0.16, TY + 0.6, 0.05), SHOE)
 # the phone, in his hands: screen normal n toward him (up and back), u to the screen's right, v up the screen
 SW, SH_ = 0.068, 0.1473
-P_ = Rm(-0.02, TY + 0.40, 1.02); n_ = Vector((0, -0.92, 0.39)).normalized(); u_ = Vector((1, 0, 0)); v_ = n_.cross(u_).normalized(); u_ = v_.cross(n_).normalized()
+P_ = Rm(-0.02, TY + 0.40, 1.02); n_ = Vector((0.1998, -0.8419, 0.37)).normalized(); u_ = Vector((1, 0, 0)); v_ = n_.cross(u_).normalized(); u_ = v_.cross(n_).normalized()
 BASIS = Matrix(((u_.x, v_.x, n_.x), (u_.y, v_.y, n_.y), (u_.z, v_.z, n_.z)))
 def ph(x, y, z=0.0): return P_ + u_ * x + v_ * y + n_ * z
 PH = bpy.data.objects.new('phone', None); COL.objects.link(PH); PH.location = P_; PH.rotation_mode = 'QUATERNION'; PH.rotation_quaternion = BASIS.to_quaternion()
@@ -165,7 +165,7 @@ def cb(name, mt, foot=True):
     o.data.materials.append(mt); o.parent = GC; return o
 BODY = cb('gc_body', GCM); WICKO = cb('gc_wick', WICK, False)
 B0 = ph(upx(UIJ['x']), vpx(UIJ['y_base']), 0.0006); H0 = (UIJ['y_base'] - UIJ['y_top']) / UIJ['h'] * SH_; S0 = H0 / HG
-Z0A = 96.0; A_UP = 2 * (Z0A - B0.z) / ((T_FLASH - T_LAUNCH) ** 2)
+Z0A = 300.0; A_UP = 2 * (Z0A - B0.z) / ((T_FLASH - T_LAUNCH) ** 2)
 SKEY = [(T_SWAP, S0), (3.9, 0.02), (4.6, 0.08), (5.2, 0.22), (5.7, 0.55), (T_FLASH, 1.0)]
 def S_of(t):
     if t >= T_FLASH: return 1.0
@@ -185,7 +185,7 @@ def gc_state(t):
         dz = 0.5 * A_UP * (t - T_LAUNCH) ** 2 if t > T_LAUNCH else 0.0
         sh = 0.0 if t < T_LAUNCH else 0.0; return B0 + Vector((0, 0, dz)), q, S_of(t)
     if t < T_DROP: return Vector((GX, GY, Z0A)), QW, 1.0
-    if t < T_IMP: dt = t - T_DROP; return Vector((GX, GY, Z0A - 0.5 * gg * dt * dt)), Euler((TILT[0] * dt, TILT[1] * dt, 0.5 + 0.45 * dt)).to_quaternion(), 1.0
+    if t < T_IMP: dt = t - T_DROP; return Vector((GX, GY, (Z0A + 0.35) * (1 - (dt / tf) ** 1.8) - 0.35)), Euler((TILT[0] * dt, TILT[1] * dt, 0.5 + 0.45 * dt)).to_quaternion(), 1.0
     return Vector((GX, GY, -0.35)), Euler((TILT[0] * tf, TILT[1] * tf, 0.5 + 0.45 * tf)).to_quaternion(), 1.0
 prevq = [None]
 def set_gc(fr):
@@ -220,6 +220,13 @@ for i in range(9):      # and out of its foot while it climbs
     o = ico('exhaust', 1.0, (0, 0, -2.0 - i * 2.4), FIREGRN, 2); o.parent = GC; o.visible_shadow = False; s = 2.0 - i * 0.18; o.scale = (s, s, s * 2.4); show(o, F(T_LAUNCH - 0.1), F(T_FLASH))
 bpy.ops.mesh.primitive_cone_add(vertices=24, radius1=2.3, radius2=0.2, depth=30, location=(0, 0, HG + 16)); tc = bpy.context.object; tc.data.materials.append(TRLM); tc.parent = GC; tc.visible_shadow = False; show(tc, F(T_DROP - 0.1), F(T_IMP) - 1)
 
+# re-entry: a white-hot shock cone ahead of its foot, flames sheathing its sides, streaming off behind it
+PLASMA = glow('plasma', (1.0, 0.92, 0.75), 12.0, 0.45); PLASMA2 = glow('plasma2', (1.0, 0.45, 0.1), 9.0, 0.32)
+for (r2, dep, zc, mt) in ((3.4, 11.0, -5.0, PLASMA), (4.8, 18.0, -8.5, PLASMA2)):
+    bpy.ops.mesh.primitive_cone_add(vertices=32, radius1=0.4, radius2=r2, depth=dep, location=(0, 0, zc)); o = bpy.context.object; o.data.materials.append(mt); o.parent = GC; o.visible_shadow = False; show(o, F(T_DROP - 0.1), F(T_IMP) - 1)
+for i in range(12):
+    ang = i / 12 * 6.283; o = ico('sheath', 1.0, (math.cos(ang) * 2.4, math.sin(ang) * 2.4, 3.0 + (i % 3) * 4.5), FIREG if i % 2 else FIREGRN, 2); o.parent = GC; o.visible_shadow = False; o.scale = (0.9, 0.9, 3.4); show(o, F(T_DROP - 0.1), F(T_IMP) - 1)
+
 # ---------------------------------------------------------------- phone and room reactions
 def spark_burst(c, t, n, seed, size, speed, dirv, spread=1.0, life=0.6):
     r_ = random.Random(seed); f0 = F(t)
@@ -252,7 +259,7 @@ CL_ = bpy.data.lights.new('ceilflash', 'POINT'); CL_.color = (0.6, 1.0, 0.65); C
 for t, e in ((T_CEIL - 0.05, 0), (T_CEIL, 20000), (T_CEIL + 0.3, 2000), (T_CEIL + 1.0, 0)): CL_.energy = e; CL_.keyframe_insert('energy', frame=F(t))
 
 # ---------------------------------------------------------------- the beam on the ground, the cracks spreading
-bpy.ops.mesh.primitive_cylinder_add(vertices=32, radius=1.0, depth=80, location=(GX, GY, 40)); BEAM = bpy.context.object; BEAM.name = 'beam'; BEAM.data.materials.append(BEAMM); BEAM.visible_shadow = False
+bpy.ops.mesh.primitive_cylinder_add(vertices=32, radius=1.0, depth=700, location=(GX, GY, 350)); BEAM = bpy.context.object; BEAM.name = 'beam'; BEAM.data.materials.append(BEAMM); BEAM.visible_shadow = False
 for t, s in ((0, 0.0001), (T_DROP - 0.9, 0.0001), (T_DROP - 0.55, 3.3), (T_IMP - 0.01, 3.4), (T_IMP + 0.05, 4.4), (T_IMP + 0.5, 0.0001)): BEAM.scale = (s, s, 1); key(BEAM, 'scale', F(t))
 bpy.ops.mesh.primitive_plane_add(size=2, location=(GX, GY, 0.03)); DISC = bpy.context.object; DISC.data.materials.append(bpy.data.materials.new('disc')); dm = DISC.data.materials[0]; dm.use_nodes = True; nt = dm.node_tree; nt.nodes.clear()
 tcn = nt.nodes.new('ShaderNodeTexCoord'); mp = nt.nodes.new('ShaderNodeMapping'); mp.inputs['Location'].default_value = (-0.5, -0.5, 0); gr = nt.nodes.new('ShaderNodeTexGradient'); gr.gradient_type = 'SPHERICAL'
@@ -307,12 +314,16 @@ cr_src = '\n'.join(src[i_crowd:i_crowdcall]); a0_ = cr_src.index('def fan_sched'
 exec(compile(cr_src[:a0_] + def_fan + cr_src[a1_:], CL, 'exec'), g)
 KEEP_OUT = []
 crowd()
-CREW = {}
-for i, (uid, h, team) in enumerate((('pepe', 2.6, 'b'), ('whale', 4.6, 'b'), ('bonk', 2.6, 'b'), ('floki', 3.0, 'b'), ('swordcat', 2.7, 'b'), ('toshi', 2.7, 'b'), ('giga', 3.4, 'r'), ('troll', 2.8, 'r'), ('zcat', 2.5, 'r'), ('ket', 2.5, 'r'))):
-    ang = 0.35 + i * 0.62; r_ = (6.5 if i % 2 == 0 else 10.5) + (1.5 if uid == 'whale' else 0); x, y = GX + math.cos(ang) * r_, GY + math.sin(ang) * r_ * 0.8
-    u = fighter(uid, h, team); CREW[uid] = u; place(u, (x, y, 0), heading(GX - x, GY - y))
-    sched(u, [(0, 'ready', 1.0), (T_FLASH, 'emote', 0.5), (T_DROP + 1.4, 'hit', 0.45), (T_IMP - 0.5, 'hit', 0.8)])
-    d = Vector((x - GX, y - GY, 0)); fling(u, T_IMP + 0.04, (d.x, d.y), up=11 + 3 * (i % 3), dist=14 + 4 * (i % 2), dur=2.4)
+CREW = {}; N_, S_ = heading(0, 1), heading(0, -1)
+def melee(ub, hb, ur, hr, x, gap, phase):
+    """A blue and a red fighter trading blows right where the candle will land; they look up as it comes, then it hits."""
+    for uid, h, team, y, hd in ((ub, hb, 'b', GY - gap, N_), (ur, hr, 'r', GY + gap, S_)):
+        u = fighter(uid, h, team); CREW[uid] = u; place(u, (x, y, 0), hd); fight(u, 0.3, T_DROP + 1.9, 1.1, phase)
+        clip(u, 'hit', F(T_DROP + 1.9), F(T_IMP - 0.35), 0.4, 3); clip(u, 'emote', F(T_IMP - 0.35), F(T_IMP + 0.04), 1.2, 3)
+        d = Vector((x - GX, y - GY, 0)); d = d if d.length > 0.1 else Vector((0, 1 if team == 'r' else -1, 0)); fling(u, T_IMP + 0.04, (d.x, d.y), up=11 + 3 * (phase % 3), dist=15 + 4 * (phase % 2), dur=2.6)
+melee('whale', 4.6, 'giga', 3.4, GX, 3.6, 0)
+melee('floki', 3.0, 'troll', 2.8, GX - 6.5, 1.3, 1); melee('bonk', 2.6, 'zcat', 2.5, GX + 6.5, 1.2, 2)
+melee('swordcat', 2.7, 'baton', 2.7, GX - 11.5, 1.2, 0); melee('toshi', 2.7, 'triplet', 2.7, GX + 11.5, 1.2, 1)
 
 # ---------------------------------------------------------------- the light
 def keylight(name, loc, target, e, size=4.0, col=(1.0, 0.95, 0.85), spot=None):
@@ -330,24 +341,24 @@ for o in bpy.data.objects:
 cam = bpy.data.objects.new('cam', bpy.data.cameras.new('cam')); COL.objects.link(cam); sc.camera = cam
 cam.data.sensor_width = 36; cam.data.dof.use_dof = True; cam.data.clip_end = 3000; cam.data.clip_start = 0.01
 SHOTS = []; _t = [0.0]
-def SH(dur, a0, s0, s1, p0, p1, l0, l1, lens, fstop=2.8, shake=0.0, lens1=None, fp=0, fl=0, orb=None, ec=0):
-    SHOTS.append(dict(t0=round(_t[0], 4), t1=round(_t[0] + dur, 4), a0=a0, s0=s0, s1=s1, p0=list(p0), p1=list(p1), l0=list(l0), l1=list(l1), lens=lens, lens1=lens1 or lens, fstop=fstop, shake=shake, fp=fp, fl=fl, orb=orb, ec=ec)); _t[0] += dur
+def SH(dur, a0, s0, s1, p0, p1, l0, l1, lens, fstop=2.8, shake=0.0, lens1=None, fp=0, fl=0, orb=None, ec=0, roll=None):
+    SHOTS.append(dict(t0=round(_t[0], 4), t1=round(_t[0] + dur, 4), a0=a0, s0=s0, s1=s1, p0=list(p0), p1=list(p1), l0=list(l0), l1=list(l1), lens=lens, lens1=lens1 or lens, fstop=fstop, shake=shake, fp=fp, fl=fl, orb=orb, ec=ec, roll=roll)); _t[0] += dur
 # fp / fl: 0 = world, 1 = offset from the candle's foot (metres), 3 = offset in candle heights
 # 1. over his shoulder, pushing in on the phone while he taps BUY; the chart goes parabolic and fills the frame
-SH(T_SWAP, 0.0, 1, 1, Rm(0.56, -2.15, 1.64), ph(0.02, 0.02, 0.30), Rm(-0.02, TY + 0.4, 1.05), ph(0.022, 0.02, 0), 30, 2.0, 0.3, 70)
+SH(T_SWAP, 0.0, 1, 1, Rm(0.75, -2.0, 1.55), ph(0.10, 0.03, 0.30), Rm(-0.02, TY + 0.4, 1.05), ph(0.022, 0.02, 0), 60, 2.0, 0.3, 100, ec=2)
 # 2. the candle leaves the screen (slow motion), close
-SH(1.3, T_SWAP, 0.35, 0.5, (0.04, -0.13, 0.04), (0.1, -0.35, 0.14), (0, 0, 0.05), (0, 0, 0.12), 24, 2.0, 0.2, fp=1, fl=1)
+SH(1.3, T_SWAP, 0.35, 0.5, (0.12, -0.12, 0.06), (0.34, -0.30, 0.2), (0, 0, 0.05), (0, 0, 0.18), 24, 2.0, 0.2, fp=1, fl=1)
 # 3. from behind and below: it rises past him, lighting the room green
-SH(1.0, T_SWAP + 0.55, 0.5, 0.7, Rm(0.5, -2.4, 0.35), Rm(0.35, -2.0, 0.5), (0, 0, 0.6), (0, 0, 0.8), 20, 2.8, 0.4, fl=1)
+SH(1.0, T_SWAP + 0.55, 0.5, 0.7, Rm(1.7, -1.9, 0.4), Rm(1.3, -1.5, 0.7), (0, 0, 0.6), (0, 0, 0.8), 22, 2.8, 0.4, fl=1)
 # 4. up through the ceiling
 SH(0.8, T_SWAP + 1.15, 0.6, 0.9, Rm(0.4, -0.5, 0.2), Rm(0.3, -0.6, 0.3), (0, 0, 1.0), (0, 0, 1.0), 16, 2.8, 0.5, fl=3)
 # 5. the chase: out into the sky
 SH(0.95, T_SWAP + 1.75, 1.1, 1.1, (1.2, -2.0, -0.3), (0.9, -3.0, -0.6), (0, 0, 0.5), (0, 0, 0.5), 24, 4.0, 0.3, fp=3, fl=3)
-# 6. the fall
-SH(1.1, T_DROP, 1.0, 1.0, (0, -9, 15), (0, -6.5, 11), (0, 0, -12), (0, 0, -14), 24, 4.0, 0.4, fp=1, fl=1)
-SH(0.9, T_DROP + 1.1, 1.0, 1.0, (12, -26, 0.6), (11.6, -25.5, 0.7), (0, 0, 3), (0, 0, 2), 14, 4.0, 0.3, 18, fp=0, fl=1)
-SH(0.7, T_DROP + 2.0, 1.0, 1.0, (17, -8, 2), (15, -7, 1), (0, 0, 0), (0, 0, 0), 32, 2.8, 0.4, fp=1, fl=1)
-SH(0.75, T_IMP - 0.25, 0.5, 0.25, (12.5, -23.5, 0.25), (12.3, -23.2, 0.3), (9, -21, 8), (9, -21, 2.5), 12, 5.6, 0.2)
+# 6. the fall, like a rocket coming back down: an onboard camera looking down from over its top, rolling; a long-lens chase; then the ground, among the fighters
+SH(1.2, T_DROP, 0.85, 0.85, (0.0, -7.0, 22.0), (0.0, -6.0, 18.0), (0, 0, -60), (0, 0, -60), 22, 4.0, 0.5, fp=1, fl=1, roll=(0.0, 0.7))
+SH(1.0, T_DROP + 1.05, 0.9, 0.9, (46, -56, 0), (38, -48, 0), (0, 0, 6), (0, 0, 6), 50, 4.0, 0.3, fp=1, fl=1, roll=(-0.12, 0.1))
+SH(0.9, T_DROP + 1.95, 0.9, 0.9, (GX + 5.0, GY - 11.0, 0.5), (GX + 4.2, GY - 10.0, 0.7), (0, 0, 6), (0, 0, 6), 14, 4.0, 0.3, fl=1)
+SH(1.0, T_IMP - 0.45, 0.6, 0.4, (GX + 3.8, GY - 7.5, 0.3), (GX + 3.4, GY - 7.0, 0.4), (0, 0, 6), (0, 0, 2), 12, 5.6, 0.3, fl=1)
 # 7. the slam, in slow motion
 SH(1.8, T_IMP + 0.06, 0.12, 0.3, (0, 0, 0), (0, 0, 0), (9, -21, 5), (9, -21, 6), 24, 4.0, 0.2, orb=[9, -21, 4.0, 14, 0.3, 2.8, -1.5, 2.5])
 SH(1.2, T_IMP + 0.44, 0.3, 0.45, (9, -36, 0.35), (9, -32, 0.45), (9, -21, 2), (9, -21, 3), 16, 5.6, 0.3)
