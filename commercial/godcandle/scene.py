@@ -158,6 +158,7 @@ def S_of(t):
     for (t0, s0), (t1, s1) in zip(SKEY, SKEY[1:]):
         if t0 <= t <= t1: return math.exp(tick(math.log(s0), math.log(s1), (t - t0) / (t1 - t0)))
     return S0
+T_CEIL = next(T_LAUNCH + k * 0.002 for k in range(600) if B0.z + 0.5 * A_UP * (k * 0.002) ** 2 + S_of(T_LAUNCH + k * 0.002) * HG >= 2.7); print('T_CEIL', T_CEIL)      # the moment its tip reaches the ceiling
 def gc_shape(t):
     if t < T_SWAP: return 0.0001, 0.0001, 0.0001
     return tick(0.12, 0.25, sm((t - T_SWAP) / 0.7)) * HG, tick(0.03, 0.25, sm((t - T_SWAP) / 0.6)) * HG, HG
@@ -255,19 +256,42 @@ spark_burst(B0 + Vector((0, 0, 0.05)), T_SWAP + 0.15, 40, 302, 0.01, 2.6, Vector
 PF = bpy.data.lights.new('phoneflash', 'POINT'); PF.color = (0.4, 1.0, 0.5); PFO = bpy.data.objects.new('phoneflash', PF); COL.objects.link(PFO); PFO.location = B0 + n_ * 0.1
 for t, e in ((T_SWAP - 0.05, 0), (T_SWAP, 400), (T_SWAP + 0.3, 40), (T_SWAP + 0.8, 0)): PF.energy = e * 0.05; PF.keyframe_insert('energy', frame=F(t))
 CEN = Rm(B0.x - ROOM.x, B0.y - ROOM.y, 2.75)
-def bursty(o, t, seed, speed):
-    r_ = random.Random(seed); f0 = F(t); p0 = o.matrix_world.translation.copy(); d = Vector((p0.x - CEN.x, p0.y - CEN.y, 0)); d = d.normalized() if d.length > 0.01 else Vector((1, 0, 0))
-    v = d * speed * r_.uniform(0.5, 1.3) + Vector((r_.uniform(-1, 1), r_.uniform(-1, 1), r_.uniform(2, 9))); spin = Vector((r_.uniform(-7, 7), r_.uniform(-7, 7), r_.uniform(-7, 7)))
+def bursty(o, t, seed, speed, vz=(2, 9)):
+    r_ = random.Random(seed); f0 = F(t); p0 = o.location.copy(); d = Vector((p0.x - CEN.x, p0.y - CEN.y, 0)); d = d.normalized() if d.length > 0.01 else Vector((1, 0, 0))
+    v = d * speed * r_.uniform(0.5, 1.3) + Vector((r_.uniform(-1, 1), r_.uniform(-1, 1), r_.uniform(*vz))); spin = Vector((r_.uniform(-7, 7), r_.uniform(-7, 7), r_.uniform(-7, 7)))
     o.location = p0; key(o, 'location', f0 - 1); o.rotation_euler = (0, 0, 0); key(o, 'rotation_euler', f0 - 1); s0 = o.scale.copy(); n = int(2.2 * FPS)
     for k_ in range(0, n + 1, 2):
         tz = k_ / FPS; z = p0.z + v.z * tz - 0.5 * 9.8 * tz * tz; o.location = (p0.x + v.x * tz, p0.y + v.y * tz, max(z, 0.06)); key(o, 'location', f0 + k_); o.rotation_euler = spin * tz * (1 if z > 0.06 else 0.0); key(o, 'rotation_euler', f0 + k_)
     for fc in o.animation_data.action.fcurves:
         for kp in fc.keyframe_points: kp.interpolation = 'LINEAR'
-for i, o in enumerate(CEIL_CELLS):
-    c = o.matrix_world.translation; dist = Vector((c.x - CEN.x, c.y - CEN.y, 0)).length
-    if dist < 1.6: bursty(o, T_CEIL + dist * 0.04, 500 + i, 3.5 + 3 * math.exp(-dist))
-for i in range(40):        # plaster chunks
-    r_ = random.Random(700 + i); o = box('chunk', (r_.uniform(0.05, 0.14),) * 3, CEN + Vector((r_.uniform(-0.5, 0.5), r_.uniform(-0.5, 0.5), 0)), CEIL); bursty(o, T_CEIL + 0.02, 800 + i, 5.0)
+# the ceiling BREAKS: the cells round the candle are plaster fragments; cracks race out, a jagged hole bursts open, daylight pours in
+rr = random.Random(77); RAD = [1.0 + rr.uniform(-0.22, 0.3) for _ in range(12)]
+def hole_r(a):
+    x = (a % 6.2832) / 6.2832 * 12; i = int(x) % 12; f = x - int(x); return RAD[i] * (1 - sm(f)) + RAD[(i + 1) % 12] * sm(f)
+def in_hole(p): d = Vector((p.x - CEN.x, p.y - CEN.y, 0)); return d.length < hole_r(math.atan2(d.y, d.x)), d.length
+FRAGS = []
+for o in list(CEIL_CELLS):
+    c = o.location.copy()
+    if Vector((c.x - CEN.x, c.y - CEN.y, 0)).length < 2.1:
+        bpy.data.objects.remove(o)
+        for ix in range(4):
+            for iy in range(4): FRAGS.append(box('frag', (0.2, 0.2, 0.1), Vector((c.x - 0.3 + 0.2 * ix, c.y - 0.3 + 0.2 * iy, c.z)), CEIL))
+for i, o in enumerate(FRAGS):
+    ins, dist = in_hole(o.location)
+    if ins: bursty(o, T_CEIL + dist * 0.03, 500 + i, 2.0 + 3.5 * math.exp(-dist), vz=(9, 22) if dist < 0.3 else (-6.5, 2.5))
+for i in range(110):        # plaster chunks and splinters
+    r_ = random.Random(700 + i); a_ = r_.uniform(0, 6.283); d_ = r_.uniform(0, 0.9); sz = r_.uniform(0.025, 0.11)
+    o = box('chunk', (sz, sz * r_.uniform(0.6, 2.2), sz * 0.6), CEN + Vector((math.cos(a_) * d_, math.sin(a_) * d_, -0.02)), CEIL); show(o, F(T_CEIL)); bursty(o, T_CEIL + d_ * 0.03, 800 + i, 4.0, vz=(-8, 4))
+CRKM = mat('crack', (0.004, 0.004, 0.006), 1.0); T_CRK = max(T_CEIL - 0.06, T_SWAP + 1.16)
+for i in range(18):
+    a_ = i / 18 * 6.283 + rr.uniform(-0.15, 0.15); r0 = 0.06; p = CEN + Vector((math.cos(a_) * r0, math.sin(a_) * r0, -0.052)); rmax = rr.uniform(1.4, 2.7); k_ = 0
+    while (p - CEN).length < rmax:
+        a_ += rr.uniform(-0.45, 0.45); L = rr.uniform(0.18, 0.4); q = p + Vector((math.cos(a_) * L, math.sin(a_) * L, 0)); mid = (p + q) / 2
+        o = box('crack', (L + 0.01, 0.022 * (1.2 - (mid - CEN).length / 3.0), 0.006), mid, CRKM, rot=(0, 0, a_)); ins, dist = in_hole(mid)
+        show(o, F(T_CRK) + k_ // 2, F(T_CEIL + dist * 0.03) if ins else None); p = q; k_ += 1
+SKL = bpy.data.lights.new('skyshaft', 'SPOT'); SKL.spot_size = 0.75; SKL.spot_blend = 0.5; SKL.color = (0.9, 0.95, 1.0); SKL.shadow_soft_size = 0.4
+SKO = bpy.data.objects.new('skyshaft', SKL); COL.objects.link(SKO); SKO.location = CEN + Vector((0.4, -0.3, 5.0))
+for t, e in ((T_CEIL - 0.02, 0), (T_CEIL + 0.08, 6000), (T_FLASH, 6000)): SKL.energy = e; SKL.keyframe_insert('energy', frame=F(t))
 CL_ = bpy.data.lights.new('ceilflash', 'POINT'); CL_.color = (0.6, 1.0, 0.65); CLO = bpy.data.objects.new('ceilflash', CL_); COL.objects.link(CLO); CLO.location = CEN + Vector((0, 0, -0.4))
 for t, e in ((T_CEIL - 0.05, 0), (T_CEIL, 70), (T_CEIL + 0.3, 15), (T_CEIL + 1.0, 0)): CL_.energy = e; CL_.keyframe_insert('energy', frame=F(t))
 
@@ -365,7 +389,7 @@ SH(1.3, T_SWAP, 0.35, 0.5, (0.12, -0.12, 0.06), (0.34, -0.30, 0.2), (0, 0, 0.05)
 # 3. from behind and below: it rises past him, lighting the room green
 SH(1.0, T_SWAP + 0.55, 0.5, 0.7, Rm(1.7, -1.9, 0.4), Rm(1.3, -1.5, 0.7), (0, 0, 0.6), (0, 0, 0.8), 22, 2.8, 0.4, fl=1)
 # 4. up through the ceiling
-SH(0.8, T_SWAP + 1.15, 0.6, 0.9, Rm(0.8, -0.3, 0.2), Rm(0.7, -0.4, 0.3), (0, 0, 1.0), (0, 0, 1.0), 16, 2.8, 0.5, fl=3)
+SH(1.4, T_CEIL - 0.06, 0.10, 0.45, Rm(1.9, 0.3, 0.25), Rm(1.7, 0.15, 0.4), (CEN.x, CEN.y, 2.3), (CEN.x, CEN.y, 2.6), 13, 8.0, 0.5)
 # 5. the chase: out into the sky
 SH(0.95, T_SWAP + 1.75, 1.1, 1.1, (1.2, -2.0, -0.3), (0.9, -3.0, -0.6), (0, 0, 0.5), (0, 0, 0.5), 24, 4.0, 0.3, fp=3, fl=3)
 # 6. the fall, like a rocket coming back down: an onboard camera looking down from over its top, rolling; a long-lens chase; then the ground, among the fighters
