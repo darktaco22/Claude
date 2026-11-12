@@ -115,7 +115,7 @@ while t < E('hit'): put(hb, t, thump, 0.8); put(hb, t + 0.24, thump, 0.5); t += 
 write('ring', ring); write('heart', hb)
 
 G = lambda n: f'{gen}/{n}.wav'; X = lambda n: f'{GA}/{n}.mp3'
-cues = [(G('drums'), 0, 0.9, 'aecho=0.8:0.6:90:0.25,'), (G('pad'), 0, 0.42, 'aecho=0.8:0.6:200:0.3,'), (G('engines'), 0, 0.55, ''), (G('blasts'), 0, 1.0, 'aecho=0.8:0.7:140|330:0.3|0.2,'),
+cues = [(G('drums'), 0, 0.9, 'aecho=0.8:0.6:90:0.25,'), (G('pad'), 0, 0.42, 'aecho=0.8:0.6:200:0.3,'), (G('engines'), 0, 0.16, ''), (G('blasts'), 0, 1.0, 'aecho=0.8:0.7:140|330:0.3|0.2,'),
         (G('blasts_muffled'), 0, 0.9, ''), (G('flak'), 0, 0.8, 'aecho=0.8:0.7:200:0.3,'), (G('whistles'), 0, 0.45, ''), (G('guns'), 0, 0.6, 'aecho=0.8:0.6:120:0.3,'), (G('ring'), 0, 0.10, ''), (G('heart'), 0, 0.7, ''),
         (X('amb_cold'), 0, 0.3, ''), (X('amb_cold'), 22.0, 0.3, ''),
         (X('battle_start'), T('looks_up') + 0.2, 0.5, ''), (X('charge_rush'), T('flyover'), 0.6, 'asetrate=30000,'), (X('ui_swoosh'), T('flyover') + 0.3, 0.6, 'asetrate=20000,'),
