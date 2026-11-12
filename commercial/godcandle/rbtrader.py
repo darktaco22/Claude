@@ -1,8 +1,8 @@
 """The trader: a real-looking man in a hoodie from Microsoft Rocketbox (github.com/microsoft/Microsoft-Rocketbox, MIT licence; avatar Male_Adult_18),
 posed by hand-written FK/IK on its 3ds Max Biped skeleton (no twist bones, so no constraints: every bone gets an explicit rotation).
 
-He sits low (a beanbag), hood up, head down over his phone.  The LEFT hand cradles the phone from BEHIND (fingers under its back, nothing across
-the glass); the RIGHT index finger taps it.  All the maths is in "body space": the avatar as imported (metres, facing -Y, his left = +X, Z up).
+He sits low (a beanbag), hood up, head down over his phone.  The RIGHT hand cradles the phone from BEHIND (fingers up its back, thumb along its edge, nothing
+across the glass; the hold is solved so the wrist is nearly straight and no part of the hand is inside the phone); the LEFT index finger taps it.  All the maths is in "body space": the avatar as imported (metres, facing -Y, his left = +X, Z up).
 
   T = RBTrader(seat_xy=(x, y), face=math.pi)        # face = world yaw; pi means he looks toward +Y
   W = T.pose(frame, t, tip_local)                   # keys the tapping arm; returns the phone's world matrix (origin = centre of its back, +Y top, +Z screen)
@@ -13,8 +13,8 @@ RB = os.path.expanduser(os.environ.get('ROCKETBOX', '/home/user/microsoft/micros
 AV = 'Male_Adult_18'
 def qrot(axis, ang): return Quaternion(Vector(axis).normalized(), ang)
 def clamp(x, a=0.0, b=1.0): return max(a, min(b, x))
-THUMB_IN = 0.6
-HOLD = dict(t=(0.10, 0.35, 0.3), i=(0.10, 0.10, 0.06), m=(0.10, 0.10, 0.06), r=(0.12, 0.12, 0.06), p=(0.14, 0.14, 0.08))
+THUMB_IN = 0.5
+HOLD = dict(t=(0.05, 0.15, 0.15), i=(0.10, 0.10, 0.06), m=(0.10, 0.10, 0.06), r=(0.12, 0.12, 0.06), p=(0.14, 0.14, 0.08))
 POINT = dict(t=(0.45, 0.45, 0.35), i=(0.04, 0.05, 0.03), m=(1.1, 1.25, 0.8), r=(1.2, 1.25, 0.8), p=(1.25, 1.25, 0.8))
 PW, PL, PD = 0.072, 0.150, 0.0082                     # the phone
 
@@ -109,12 +109,39 @@ class RBTrader:
         if R_end is not None:                                  # twist the forearm along its own axis toward the hand, so the wrist is not wrung
             rel = Rf.inverted() @ Re; axl = Vector((0, 1, 0)); v = Vector((rel.x, rel.y, rel.z)); tw = Quaternion((rel.w, *(axl * v.dot(axl))))
             if tw.magnitude > 1e-6: tw.normalize(); Rf = Rf @ Quaternion((1, 0, 0, 0)).slerp(tw, 0.7)
-        self.set_world_rot(Q, n_(lo), Rf); self.set_world_rot(Q, n_(end), Re); return Wp
+        self.set_world_rot(Q, n_(lo), Rf); self.set_world_rot(Q, n_(end), Re); self._fa = (Wp - E).normalized(); return Wp
     @staticmethod
     def frame(pos, y, z):
         y = Vector(y).normalized(); z = Vector(z); z = (z - y * z.dot(y)).normalized(); x = y.cross(z); M = Matrix((x, y, z)).transposed().to_4x4(); M.translation = pos; return M
     def hand_for_palm(self, s, palm_body): return palm_body @ self.palm[s].inverted()
     # ------------------------------------------------------------------ the pose that never changes: body, legs, head, the hand holding the phone
+    HS, TS = 'R', 'L'            # he holds the phone in his right hand (the phone is turned to his right, so that forearm lines up with it) and taps with his left
+    def _apply(self, Q):
+        P_ = self.arm.pose.bones
+        P_['Bip01 Pelvis'].location = (self.A0.to_3x3() @ self.arm.data.bones['Bip01 Pelvis'].matrix_local.to_3x3()).inverted() @ self.T
+        for b, q in Q.items(): P_[b].rotation_quaternion = q
+    def _hold(self, Q, eyes, fwd, down, off):
+        """Pose the holding arm for a phone `fwd` in front of and `down` below his eyes; returns (phone matrix, wrist bend in radians)."""
+        s = self.HS; sx = {'L': 1, 'R': -1}[s]
+        tgt = eyes + Vector((0, -fwd, -down)); n = (eyes - tgt).normalized(); n = (Matrix.Rotation(self.yaw, 3, 'Z') @ n).normalized()
+        zup = Vector((0, 0, 1)); top = (zup - n * zup.dot(n)).normalized(); P = self.frame(tgt, top, n)                 # phone: +Y top, +Z screen, origin = centre of the back
+        # the palm behind it: fingers straight up the back of the phone (hidden by it), the heel of the hand below its lower end, the thumb along its edge
+        t_p = Vector((0, 1, 0)); z_p = Vector((0, 0, 1)); x_p = t_p.cross(z_p); M = Matrix((x_p, t_p, z_p)).transposed().to_4x4(); M.translation = Vector((-self.idx[s] * (0.004 + off[0]), 0.047 + off[1], 0.010 + off[2]))
+        palm = P @ M.inverted(); Hd = self.hand_for_palm(s, palm)
+        self.limb(Q, s, 'UpperArm', 'Forearm', 'Hand', Hd.translation, Vector((sx * 0.30, 0.2, -1.0)), self.L1, self.L2, Hd.to_quaternion())
+        bend = self._fa.angle(palm.to_3x3().col[1]); reach = (Hd.translation - self.fk(Q, f'Bip01 {s} UpperArm').translation).length / (self.L1 + self.L2)
+        cx = getattr(self, 'curl_x', 0.0); shape = {k: ((v[0] + cx, v[1] + cx * 0.5, v[2]) if k != 't' else v) for k, v in HOLD.items()}
+        self.fingers(s, shape, Q); b0 = f'Bip01 {s} Finger0'; nrm = self.Fpalm[s].to_3x3().col[2]; Q[b0] = self.local_q(b0, qrot(nrm, self.idx[s] * getattr(self, 'thumb_a', THUMB_IN)) @ qrot(self.curl_axis[b0], HOLD['t'][0]))
+        return P, bend, reach
+    def _inside(self, Q, P, hand_v):
+        """How many skinned vertices of the holding hand (thumb, others) are inside the phone."""
+        self._apply(Q); bpy.context.view_layer.update(); ev = self.mesh.evaluated_get(bpy.context.evaluated_depsgraph_get()); me = ev.to_mesh(); Pi = (self.mw @ P).inverted() @ ev.matrix_world; th = fi = 0
+        for vi, is_thumb in hand_v:
+            p = Pi @ me.vertices[vi].co
+            if abs(p.x) < PW / 2 - 0.0003 and abs(p.y) < PL / 2 - 0.0003 and -0.0003 < p.z < PD - 0.0003:
+                if is_thumb: th += 1
+                else: fi += 1
+        ev.to_mesh_clear(); return th, fi
     def _static(self):
         Q = {}; sx = {'L': 1, 'R': -1}; H = self.head_of
         for b, w in (('Bip01 Spine1', 0.5), ('Bip01 Spine2', 0.5)): Q[b] = self.local_q(b, qrot((1, 0, 0), self.lean * w))
@@ -123,33 +150,48 @@ class RBTrader:
             hip = self.fk(Q, f'Bip01 {s} Thigh').translation; ank = Vector((hip.x + sx[s] * 0.07, hip.y - (self.T1 + 0.06), H[f'Bip01 {s} Foot'].z))
             self.limb(Q, s, 'Thigh', 'Calf', 'Foot', ank, Vector((sx[s] * 0.15, -0.4, 1.0)), self.T1, self.T2)
         head = self.fk(Q, 'Bip01 Head'); eyes = head @ (self.rest['Bip01 Head'].inverted() @ self.eyes_rest); self.eyes = eyes
-        # the phone, up in front of his chest, tilted to his eyes and turned a little to his right (the camera's side: body -X)
-        tgt = eyes + Vector((0, -0.22, -0.38)); n = (eyes - tgt).normalized(); n = (Matrix.Rotation(self.yaw, 3, 'Z') @ n).normalized()
-        zup = Vector((0, 0, 1)); top = (zup - n * zup.dot(n)).normalized(); P = self.frame(tgt, top, n)                 # phone: +Y top, +Z screen, origin = centre of the back
-        self.Pm = P
-        # left palm behind it: the fingers run straight up the back of the phone (hidden by it), the heel of the hand under its lower end
-        s = 'L'; ang = math.radians(90); t_p = Vector((self.idx[s] * math.cos(ang), math.sin(ang), 0)); z_p = Vector((0, 0, 1)); x_p = t_p.cross(z_p)
-        M = Matrix((x_p, t_p, z_p)).transposed().to_4x4(); M.translation = Vector((-self.idx[s] * 0.004, 0.047, 0.010))      # the phone in the palm frame
-        self.M_hold = M; palm = P @ M.inverted(); Hd = self.hand_for_palm(s, palm)
-        self.limb(Q, s, 'UpperArm', 'Forearm', 'Hand', Hd.translation, Vector((sx[s] * 0.30, 0.2, -1.0)), self.L1, self.L2, Hd.to_quaternion())
-        self.fingers('L', HOLD, Q); self.fingers('R', POINT, Q)
-        # the holding thumb: swung in beside the index finger so it lies along the phone's edge, its tip curled onto the side
-        b0 = 'Bip01 L Finger0'; nrm = self.Fpalm['L'].to_3x3().col[2]; Q[b0] = self.local_q(b0, qrot(nrm, self.idx['L'] * THUMB_IN) @ qrot(self.curl_axis[b0], HOLD['t'][0]))
-        # the tapping fingertip in the right palm's frame
-        tipb = 'Bip01 R Finger12'; Qf = {k: v for k, v in Q.items() if ' R Finger' in k}; T_keep = self.T; self.T = Vector()
-        tip = self.fk(Qf, tipb) @ (self.rest[tipb].inverted() @ self.tail_of[tipb]); self.T = T_keep; self.tip_pp = self.Fpalm['R'].inverted() @ tip
-        self.Q = Q; P_ = self.arm.pose.bones
-        loc = (self.A0.to_3x3() @ self.arm.data.bones['Bip01 Pelvis'].matrix_local.to_3x3()).inverted() @ self.T; P_['Bip01 Pelvis'].location = loc
-        for b, q in Q.items(): P_[b].rotation_quaternion = q
+        # where to hold it: the spot (in front of / below his eyes) that bends the wrist least
+        best = None
+        for fwd in (0.14, 0.18, 0.22, 0.26, 0.30):
+            for down in (0.30, 0.36, 0.42, 0.48):
+                P, bend, reach = self._hold(dict(Q), eyes, fwd, down, (0, 0, 0)); cost = bend + (4.0 * (reach - 0.93) if reach > 0.93 else 0.0) + (0.5 * (0.5 - reach) if reach < 0.5 else 0.0)
+                if best is None or cost < best[0]: best = (cost, fwd, down, bend)
+        _, fwd, down, bend = best
+        # push the phone off the hand until no part of the palm or fingers is inside it (the skinned mesh itself is tested)
+        vg = {g.index: g.name for g in self.mesh.vertex_groups}; hs = self.HS; hand_v = []
+        for v in self.mesh.data.vertices:
+            if not v.groups: continue
+            g = max(v.groups, key=lambda x: x.weight); nm = vg[g.group]
+            if nm.startswith(f'Bip01 {hs} Finger') or nm == f'Bip01 {hs} Hand': hand_v.append((v.index, 'Finger0' in nm))
+        off = [0.0, 0.0, 0.0]; self.thumb_a = THUMB_IN; self.curl_x = 0.0
+        for it in range(80):                                           # lift the phone off the palm; swing the thumb out from under it
+            Qc = dict(Q); P, bend, reach = self._hold(Qc, eyes, fwd, down, off); th, fi = self._inside(Qc, P, hand_v)
+            if not th and not fi: break
+            if fi: off[2] += 0.001
+            if th: self.thumb_a -= 0.05
+        for it2 in range(25):                                          # then curl the fingers up until they touch its back
+            self.curl_x += 0.03; Qc = dict(Q); P, bend, reach = self._hold(Qc, eyes, fwd, down, off); th, fi = self._inside(Qc, P, hand_v)
+            if th or fi: self.curl_x -= 0.03; break
+        print('HOLD fwd %.2f down %.2f  wrist bend %.0f deg  reach %.2f  lift %.1f mm  thumb %.2f  curl +%.2f' % (fwd, down, math.degrees(bend), reach, off[2] * 1000, self.thumb_a, self.curl_x))
+        Q2 = dict(Q); P, bend, reach = self._hold(Q2, eyes, fwd, down, off); Q = Q2; self.Pm = P
+        self.fingers(self.TS, POINT, Q)
+        # the tapping fingertip in that palm's frame
+        ts = self.TS; tipb = f'Bip01 {ts} Finger12'; Qf = {k: v for k, v in Q.items() if f' {ts} Finger' in k}; T_keep = self.T; self.T = Vector()
+        tip = self.fk(Qf, tipb) @ (self.rest[tipb].inverted() @ self.tail_of[tipb]); self.T = T_keep; self.tip_pp = self.Fpalm[ts].inverted() @ tip
+        self.Q = Q; self._apply(Q)
     # ------------------------------------------------------------------ per frame: the tapping arm
     def pose(self, f, t, tip_local):
-        Q = dict(self.Q); P = self.Pm; R3 = P.to_3x3(); u, v, n = R3.col[0], R3.col[1], R3.col[2]
+        Q = dict(self.Q); P = self.Pm; R3 = P.to_3x3(); u, v, n = R3.col[0], R3.col[1], R3.col[2]; s = self.TS; sx = {'L': 1, 'R': -1}[s]
         l = tip_local(t); tip = P.translation + u * l[0] + v * l[1] + n * (l[2] + PD + 0.0005)
-        fdir = (-n * 0.50 + v * 0.45 - u * 0.74).normalized(); F = self.frame(Vector(), fdir, Vector((0.8, 0.0, -0.5))); F.translation = tip - F.to_3x3() @ self.tip_pp
-        Hd = self.hand_for_palm('R', F)
-        self.limb(Q, 'R', 'UpperArm', 'Forearm', 'Hand', Hd.translation, Vector((-0.40, 0.2, -1.0)), self.L1, self.L2, Hd.to_quaternion())
+        # the finger continues the line of its own forearm (elbow hanging at his side) and dips onto the glass: the wrist stays straight
+        S = self.fk(Q, f'Bip01 {s} UpperArm').translation; elbow = S + Vector((sx * 0.05, 0.03, -self.L1 * 0.95)); fa = (tip - elbow).normalized()
+        for _ in range(5):                                             # settle: the finger direction follows the forearm the IK actually gives
+            fdir = (fa * 0.9 - n * 0.32).normalized(); F = self.frame(Vector(), fdir, Vector((-sx * 0.45, 0.0, -0.85))); F.translation = tip - F.to_3x3() @ self.tip_pp
+            Hd = self.hand_for_palm(s, F)
+            self.limb(Q, s, 'UpperArm', 'Forearm', 'Hand', Hd.translation, Vector((sx * 0.55, 0.15, -0.8)), self.L1, self.L2, Hd.to_quaternion()); fa = self._fa
+        if not hasattr(self, '_said'): self._said = 1; print('TAP wrist bend %.0f deg' % math.degrees(self._fa.angle(fdir)))
         P_ = self.arm.pose.bones
-        for b in ('Bip01 R UpperArm', 'Bip01 R Forearm', 'Bip01 R Hand'):
+        for b in (f'Bip01 {s} UpperArm', f'Bip01 {s} Forearm', f'Bip01 {s} Hand'):
             pb = P_[b]; q = Q[b]
             prev = getattr(self, '_prev', {}).get(b)
             if prev is not None and prev.dot(q) < 0: q = -q

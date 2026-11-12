@@ -116,10 +116,10 @@ UIJ = json.load(open(os.path.join(UI, 'ui.json'))); NUI = len([f for f in os.lis
 def upx(x): return (x / UIJ['w'] - 0.5) * SW
 def vpx(y): return (0.5 - y / UIJ['h']) * SH_
 TAPS = [(t_, upx(x_), vpx(y_)) for t_, x_, y_ in UIJ['taps']]
-PTS = [(0.0, 0.020, -0.075, 0.07), (0.6, 0.020, -0.07, 0.06)]
+PTS = [(0.0, -0.020, -0.075, 0.07), (0.6, -0.020, -0.07, 0.06)]        # the tapping hand is his LEFT: it rests and retreats on the far (-u) side
 for (t_, x_, y_) in TAPS:                           # glide over, dip, press, lift
     PTS += [(t_ - 0.3, x_, y_, 0.03), (t_ - 0.05, x_, y_, 0.004), (t_, x_, y_, 0.0012), (t_ + 0.1, x_, y_, 0.0012), (t_ + 0.3, x_, y_, 0.03)]
-PTS += [(TAPS[-1][0] + 0.45, 0.06, -0.14, 0.09), (TAPS[-1][0] + 0.9, 0.10, -0.20, 0.13), (9.0, 0.10, -0.20, 0.13)]
+PTS += [(TAPS[-1][0] + 0.45, -0.07, -0.10, 0.08), (TAPS[-1][0] + 0.9, -0.13, -0.14, 0.11), (9.0, -0.13, -0.14, 0.11)]
 def tip_loc(t):
     for (t0, x0, y0, z0), (t1, x1, y1, z1) in zip(PTS, PTS[1:]):
         if t0 <= t <= t1: e = sm((t - t0) / (t1 - t0)); return (tick(x0, x1, e), tick(y0, y1, e), tick(z0, z1, e))
