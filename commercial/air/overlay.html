@@ -1,0 +1,48 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face{font-family:Lilita;src:url(./lilita.woff2)}
+html,body{margin:0;background:transparent;overflow:hidden;width:540px;height:960px;font-family:Lilita,sans-serif}
+#clock{position:absolute;right:14px;top:16px;background:rgba(20,12,40,.82);border:3px solid #3b2a66;border-radius:14px;padding:4px 14px 6px;text-align:center;opacity:0}
+#clock small{display:block;font-size:13px;color:#cbbdf0;letter-spacing:1px}
+#clock b{display:block;font-size:34px;color:#fff;font-weight:400;line-height:1}
+#clock.red b{color:#ff4d6d}
+#tag{position:absolute;left:0;right:0;top:11%;text-align:center;font-size:52px;color:#fff;opacity:0;line-height:1.05;-webkit-text-stroke:8px #1a0d2e;paint-order:stroke fill}
+#card{position:absolute;inset:0;opacity:0;background:#0b0716;overflow:hidden}
+#art{position:absolute;inset:0;background:url(./g/bg_title_wide.webp) center/cover;filter:brightness(.5) saturate(1.1)}
+#logo{position:absolute;left:50%;top:26%;width:400px;transform:translate(-50%,-50%)}
+#tag2{position:absolute;left:0;right:0;top:47%;text-align:center;font-size:42px;color:#fff;-webkit-text-stroke:7px #000;paint-order:stroke fill;line-height:1.08}
+#cta{position:absolute;left:50%;top:62%;transform:translateX(-50%);background:#ffcf2e;color:#1a1030;font-size:34px;padding:10px 28px;border-radius:18px;box-shadow:0 6px 0 #9c6b00;white-space:nowrap}
+#url{position:absolute;left:0;right:0;top:73%;text-align:center;font-size:26px;color:#fff;-webkit-text-stroke:5px #000;paint-order:stroke fill}
+#sub{position:absolute;left:0;right:0;bottom:22%;text-align:center;font-size:44px;color:#fff;opacity:0;-webkit-text-stroke:5px #000;paint-order:stroke fill;letter-spacing:1px}
+#black{position:absolute;inset:0;background:#000;opacity:0}
+#white{position:absolute;inset:0;background:#fff;opacity:0}
+</style></head><body>
+<div id="clock"><small>TIME LEFT</small><b>0:30</b></div>
+<div id="tag">NO ONE<br>FLIES ALONE.</div>
+<div id="sub"></div>
+<div id="white"></div>
+<div id="card"><div id="art"></div><img id="logo" src="./g/logo.png"><div id="tag2">EVERY CARD FIGHTS.</div>
+<div id="cta">PLAY FREE</div><div id="url">memeroyale.imaginestudio.fun</div></div>
+<div id="black"></div>
+<script>
+const $ = id => document.getElementById(id), clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v)), out3 = t => 1 - Math.pow(1 - clamp(t), 3);
+const io = (t, a, b, f = 0.2) => clamp(Math.min((t - a) / f, (b - t) / f));
+(async () => {
+const TL = await (await fetch('./timeline.json')).json();
+window.renderAt = t => {
+  $('black').style.opacity = t < 0.9 ? 1 - t / 0.9 : 0;
+  const c = TL.clock.find(c => t >= c[0] && t < c[1]); $('clock').style.opacity = c ? 1 : 0;
+  if (c) { $('clock').querySelector('b').textContent = c[2]; $('clock').className = parseInt(c[2].slice(2)) <= 10 ? 'red' : ''; }
+  // the big hits bleach the frame for an instant
+  let w = 0; for (const e of TL.fx) if (e.kind === 'flash' && t >= e.t && t < e.t + 0.18) w = Math.max(w, 0.5 * (1 - (t - e.t) / 0.18));
+  $('white').style.opacity = w;
+  const sb = (TL.subs || []).find(x => t >= x[0] && t < x[1]); if (sb) { $('sub').textContent = sb[2]; $('sub').style.opacity = io(t, sb[0], sb[1], 0.15); } else $('sub').style.opacity = 0;
+  $('tag').style.opacity = io(t, TL.end - 2.4, TL.end + 0.1, 0.35);
+  const ec = TL.end; $('card').style.opacity = t >= ec ? clamp((t - ec) / 0.25) : 0;
+  $('logo').style.transform = `translate(-50%,-50%) scale(${0.6 + 0.4 * out3((t - ec) / 0.45) + 0.02 * Math.sin(t * 3)})`;
+  $('tag2').style.opacity = clamp((t - ec - 0.3) / 0.25); $('cta').style.opacity = clamp((t - ec - 0.8) / 0.25); $('url').style.opacity = clamp((t - ec - 1.0) / 0.25);
+};
+await document.fonts.ready; window.ready = true;
+})();
+</script></body></html>
