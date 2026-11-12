@@ -123,12 +123,12 @@ class RBTrader:
             self.limb(Q, s, 'Thigh', 'Calf', 'Foot', ank, Vector((sx[s] * 0.15, -0.4, 1.0)), self.T1, self.T2)
         head = self.fk(Q, 'Bip01 Head'); eyes = head @ (self.rest['Bip01 Head'].inverted() @ self.eyes_rest); self.eyes = eyes
         # the phone, up in front of his chest, tilted to his eyes and turned a little to his right (the camera's side: body -X)
-        tgt = eyes + Vector((0, -0.36, -0.22)); n = (eyes - tgt).normalized(); n = (Matrix.Rotation(self.yaw, 3, 'Z') @ n).normalized()
+        tgt = eyes + Vector((0, -0.29, -0.25)); n = (eyes - tgt).normalized(); n = (Matrix.Rotation(self.yaw, 3, 'Z') @ n).normalized()
         zup = Vector((0, 0, 1)); top = (zup - n * zup.dot(n)).normalized(); P = self.frame(tgt, top, n)                 # phone: +Y top, +Z screen, origin = centre of the back
         self.Pm = P
         # left palm behind it: fingers run diagonally up the back, so nothing shows across the glass
-        s = 'L'; ang = math.radians(38); t_p = Vector((self.idx[s] * math.cos(ang), math.sin(ang), 0)); z_p = Vector((0, 0, 1)); x_p = t_p.cross(z_p)
-        M = Matrix((x_p, t_p, z_p)).transposed().to_4x4(); M.translation = Vector((self.idx[s] * 0.012, 0.030, 0.010))      # the phone in the palm frame
+        s = 'L'; ang = math.radians(52); t_p = Vector((self.idx[s] * math.cos(ang), math.sin(ang), 0)); z_p = Vector((0, 0, 1)); x_p = t_p.cross(z_p)
+        M = Matrix((x_p, t_p, z_p)).transposed().to_4x4(); M.translation = Vector((self.idx[s] * 0.018, 0.022, 0.010))      # the phone in the palm frame
         self.M_hold = M; palm = P @ M.inverted(); Hd = self.hand_for_palm(s, palm)
         self.limb(Q, s, 'UpperArm', 'Forearm', 'Hand', Hd.translation, Vector((sx[s] * 0.35, 0.35, -1.0)), self.L1, self.L2, Hd.to_quaternion())
         self.fingers('L', HOLD, Q); self.fingers('R', POINT, Q)

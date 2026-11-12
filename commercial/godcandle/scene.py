@@ -105,14 +105,12 @@ for i, x in enumerate((-1.2, -1.1, 1.15, 1.3)):
     c = cyl('can', CANM); c.scale = (0.033, 0.033, 0.13); c.location = Rm(x, 2.4 + 0.05 * i, 0.85)
 box('pizza', (0.42, 0.42, 0.05), Rm(-1.5, -0.3, 0.025), PIZZA); box('pizza2', (0.42, 0.42, 0.05), Rm(-1.45, -0.28, 0.075), PIZZA, rot=(0, 0, 0.4))
 txt('LFG', 0.55, Rm(-1.9, 3.0, 2.05), NEONG); txt('NGMI', 0.4, Rm(1.1, 3.0, 2.1), NEONR)
-# the trader: a realistic MakeHuman man (see trader.py), low on a beanbag, head down over his phone
+# the trader: a real-looking man in a hoodie (Microsoft Rocketbox, MIT; see rbtrader.py), low on a beanbag, head down over his phone
 sys.path.insert(0, MYHERE)
-import trader as TR
+import rbtrader as TR
 TY = -1.2
 ico('bean', 0.5, Rm(0, TY, 0.25), BEAN, 2).scale = (1, 1, 0.55)
-for m_ in bpy.data.materials: m_.use_fake_user = True          # MPFB purges unused datablocks while it builds him
-for a_ in bpy.data.actions: a_.use_fake_user = True
-TRD = TR.Trader((ROOM.x, ROOM.y + TY), face=math.pi)
+TRD = TR.RBTrader((ROOM.x, ROOM.y + TY), face=math.pi)
 SW, SH_ = 0.066, 0.143
 UIJ = json.load(open(os.path.join(UI, 'ui.json'))); NUI = len([f for f in os.listdir(UI) if f.startswith('u_')])
 def upx(x): return (x / UIJ['w'] - 0.5) * SW
@@ -130,9 +128,9 @@ W0 = None
 for fr in range(F(0), F(T_FLASH) + 1):
     Wf = TRD.pose(fr, tt(fr), tip_loc)
     if W0 is None: W0 = Wf
-TRD.a.K.flush()
+TRD.finish()
 # the phone hangs off his held hand: u = screen right, v = up the screen, n = out of the screen toward his eyes
-R3 = W0.to_3x3(); u_, v_, n_ = R3.col[0].copy(), R3.col[1].copy(), R3.col[2].copy(); P_ = W0.translation + n_ * 0.0045
+R3 = W0.to_3x3(); u_, v_, n_ = R3.col[0].copy(), R3.col[1].copy(), R3.col[2].copy(); P_ = W0.translation + n_ * 0.0086          # W0's origin is the centre of the phone's back; P_ is the centre of the glass
 BASIS = Matrix(((u_.x, v_.x, n_.x), (u_.y, v_.y, n_.y), (u_.z, v_.z, n_.z)))
 def ph(x, y, z=0.0): return P_ + u_ * x + v_ * y + n_ * z
 PH = bpy.data.objects.new('phone', None); COL.objects.link(PH); PH.location = P_; PH.rotation_mode = 'QUATERNION'; PH.rotation_quaternion = BASIS.to_quaternion()
@@ -140,8 +138,8 @@ def child(o, loc, parent=PH, rot=None):
     o.parent = parent; o.location = loc
     if rot: o.rotation_euler = rot
     return o
-child(box('pbody', (0.072, 0.150, 0.0082), (0, 0, 0), PHONE), (0, 0, -0.0045))
-scr = plane('screen', SW, SH_, (0, 0, 0), (0, 0, 0), imgmat('screen', os.path.join(UI, 'u_0001.png'), 1.5, NUI)); child(scr, (0, 0, 0.0003)); scr.visible_shadow = False
+child(box('pbody', (0.072, 0.150, 0.0082), (0, 0, 0), PHONE), (0, 0, -0.0045))        # 0.4 mm under the glass plane
+scr = plane('screen', SW, SH_, (0, 0, 0), (0, 0, 0), imgmat('screen', os.path.join(UI, 'u_0001.png'), 1.5, NUI)); child(scr, (0, 0, 0.0)); scr.visible_shadow = False
 
 # ---------------------------------------------------------------- THE GOD CANDLE: out of the screen, through the ceiling, into the sky, down into the arena
 HG = 13.2                                              # the game's candle: body 3.3 x 13.2 x 3.3
