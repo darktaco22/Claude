@@ -26,6 +26,7 @@ class RBTrader:
         self.arm = arm = next(o for o in new if o.type == 'ARMATURE'); self.mesh = next(o for o in new if o.type == 'MESH')
         for o in new:
             if o.type == 'EMPTY': bpy.data.objects.remove(o)
+        for o in (arm, self.mesh): o.animation_data_clear()                  # the FBX carries a baked take: it would override every pose we set
         self._materials()
         if subd:
             sd = self.mesh.modifiers.new('subd', 'SUBSURF'); sd.levels = 0; sd.render_levels = subd; sd.uv_smooth = 'PRESERVE_BOUNDARIES'

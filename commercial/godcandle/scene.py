@@ -21,11 +21,13 @@ exec(compile('\n'.join(src[i_battle:i_ns]), CL, 'exec'), g)             # smooth
 HERE = MYHERE; UI = arg('--ui', os.path.expanduser('~/gc_work/ui'))
 sc.render.resolution_x, sc.render.resolution_y = 1280, 544
 sc.cycles.samples = int(arg('--samples', '10')); sc.frame_end = 330
-sc.world.node_tree.nodes['Background'].inputs['Strength'].default_value = 0.22
+sc.world.node_tree.nodes['Background'].inputs['Strength'].default_value = 1.0
+env.image = bpy.data.images.load(os.path.join(TEX, 'sky.hdr'))          # a blue daytime sky
 for o in list(bpy.data.objects):                                         # the clash film's blimp and its cables are in the way of the fall
     c = o.matrix_world.translation
     if o.name.startswith(('blimp', 'fin')) or (o.name.startswith('Cylinder') and 5.0 < c.x < 13.0 and abs(c.y + 16) < 2.5 and 12.5 < c.z < 36): bpy.data.objects.remove(o)
-plane('ground2', 4000, 4000, (9, -16, -0.12), (0, 0, 0), GRASS)           # so the room is not floating in a void
+HAZE = mat('haze', (0.72, 0.8, 0.92), 1.0, emit=(0.62, 0.74, 0.92), estr=0.7)
+plane('ground2', 6000, 6000, (9, -16, -0.12), (0, 0, 0), HAZE)            # beyond the stadium's lawn: sky-coloured haze, under a sea of cloud
 
 # ---------------------------------------------------------------- the timeline (animation seconds)
 GX, GY = 9.0, -21.0                                     # where it lands
@@ -212,11 +214,23 @@ o = ico('cap', 1.0, (0, 0, -0.5), PLASMA, 3); o.parent = GC; o.visible_shadow = 
 bpy.ops.mesh.primitive_cone_add(vertices=32, radius1=0.8, radius2=4.4, depth=20, location=(0, 0, 7.0)); o = bpy.context.object; o.data.materials.append(PLASMA2); o.parent = GC; o.visible_shadow = False; show(o, F(T_DROP - 0.1), F(T_IMP) - 1)
 for i in range(12):
     ang = i / 12 * 6.283; o = ico('sheath', 1.0, (math.cos(ang) * 2.3, math.sin(ang) * 2.3, 2.0 + (i % 3) * 4.5), FLAMEO if i % 2 else FLAME, 2); o.parent = GC; o.visible_shadow = False; o.scale = (0.7, 0.7, 3.0); show(o, F(T_DROP - 0.1), F(T_IMP) - 1)
-# clouds it falls past (and a sky for the arena)
-CLOUD = smoke_mat('cloud', (0.78, 0.72, 0.8), 0.55); rcl = random.Random(31)
+# clouds: high ones it falls past, and a sea of low cloud all round the stadium so no bare ground shows from above
+CLOUD = smoke_mat('cloud', (0.95, 0.95, 0.98), 0.8); CLOUDS = smoke_mat('cloudsea', (0.97, 0.97, 1.0), 1.25); rcl = random.Random(31)
 for i in range(18):
     ang = i / 18 * 6.283 + rcl.uniform(-0.15, 0.15); rad = rcl.uniform(70, 260); o = ico('cloud', 1.0, (GX + math.cos(ang) * rad, GY + math.sin(ang) * rad, rcl.uniform(95, 200)), CLOUD, 3); o.visible_shadow = False
     o.scale = (rcl.uniform(35, 70), rcl.uniform(35, 70), rcl.uniform(7, 13))
+puff = ico('puff', 1.0, (GX + 85, GY, 14), CLOUDS, 3); puff.visible_shadow = False; puff.scale = (30, 30, 9); ncl = 1
+rad = 82.0
+while rad < 900:
+    step = 20 + rad * 0.045; nring = max(8, int(2 * math.pi * rad / (step * 1.15)))
+    for layer in range(2 if rad < 400 else 1):
+        for k in range(nring):
+            ang = (k + rcl.random() * 0.8 + 0.5 * layer) / nring * 6.283; rr_ = rad + rcl.uniform(-0.4, 0.4) * step; x = GX + math.cos(ang) * rr_; y = GY + math.sin(ang) * rr_
+            if (Vector((x, y)) - Vector((ROOM.x, ROOM.y))).length < 55: continue                       # not through the trader's house
+            o = bpy.data.objects.new('puff', puff.data); COL.objects.link(o); o.visible_shadow = False; sc_ = step * rcl.uniform(1.1, 1.7)
+            o.location = (x, y, rcl.uniform(9, 16) + layer * rcl.uniform(6, 14) + rad * 0.01); o.scale = (sc_, sc_ * rcl.uniform(0.8, 1.2), sc_ * rcl.uniform(0.26, 0.4)); o.rotation_euler = (0, 0, rcl.uniform(0, 3)); ncl += 1
+    rad += step
+print('CLOUD PUFFS', ncl)
 
 # ---------------------------------------------------------------- phone and room reactions
 def spark_burst(c, t, n, seed, size, speed, dirv, spread=1.0, life=0.6):
@@ -320,7 +334,7 @@ melee('dope', 2.7, 'walter', 2.7, GX - 11.5, 1.2, 0); melee('pippin', 2.6, 'nyan
 def keylight(name, loc, target, e, size=4.0, col=(1.0, 0.95, 0.85), spot=None):
     ld = bpy.data.lights.new(name, 'AREA'); ld.energy = e; ld.size = size; ld.color = col; o = bpy.data.objects.new(name, ld); COL.objects.link(o)
     o.location = loc; o.rotation_euler = (Vector(target) - Vector(loc)).to_track_quat('-Z', 'Y').to_euler(); return o
-sun = bpy.data.objects.new('sun', bpy.data.lights.new('sun', 'SUN')); COL.objects.link(sun); sun.data.energy = 1.0; sun.data.angle = math.radians(3); sun.data.color = (1.0, 0.6, 0.34); sun.rotation_euler = (math.radians(70), 0, math.radians(205))
+sun = bpy.data.objects.new('sun', bpy.data.lights.new('sun', 'SUN')); COL.objects.link(sun); sun.data.energy = 3.2; sun.data.angle = math.radians(2); sun.data.color = (1.0, 0.96, 0.9); sun.rotation_euler = (math.radians(48), 0, math.radians(205))
 keylight('red_wash', (9, 3, 16), (9, -9, 0), 9000, 14, (1.0, 0.25, 0.15)); keylight('blue_wash', (9, -35, 16), (9, -23, 0), 9000, 14, (0.2, 0.45, 1.0)); keylight('fill', (9, -40, 9), (9, -21, 2), 5000, 10, (0.7, 0.85, 1.0))
 keylight('phonefill', ph(0, 0, 0.18), ph(0, 0, 1.0), 6, 0.2, (0.8, 0.95, 1.0)); keylight('rimwin', Rm(-2.6, -1.4, 1.7), Rm(0, TY, 1.1), 90, 1.0, (0.35, 0.5, 1.0)); keylight('ledfront', Rm(0, 2.7, 1.3), Rm(0, TY, 1.0), 80, 2.0, (0.75, 0.25, 1.0))
 keylight('camfill', Rm(1.6, -2.7, 1.9), Rm(0, TY, 1.0), 30, 1.5, (1.0, 0.85, 0.7)); keylight('roomtop', Rm(0, 0, 2.5), Rm(0, 0, 0), 25, 2.5, (0.7, 0.75, 1.0))

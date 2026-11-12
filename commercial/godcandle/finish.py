@@ -79,6 +79,12 @@ def frame(f):
     d = decay(t, T_EV['imp'], 1.1); k += 0.12 * d * d; ab += 22 * d * d; fl = max(fl, 1.0 * decay(t, T_EV['imp'] - 0.01, 0.35) ** 1.5); rb = 0.7 * d * d; col = np.array([0.75, 1.0, 0.8], np.float32) if d > 0.7 else col
     if k > 1: a = punch(a, k)
     a = radial_blur(a, rb); a = aberrate(a, ab)
+    eb = 0.0                                                     # soft edges while it falls (and a little after): the eye stays on the candle and the arena
+    if T_EV['flash'] > 0 and T_EV['flash'] <= t < T_EV['imp']: eb = 1.0
+    elif t >= T_EV['imp'] > 0: eb = 0.45
+    if eb > 0:
+        bl = np.asarray(Image.fromarray((np.clip(a, 0, 1) * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(7)), np.float32) / 255.0
+        mk = np.clip((RR - 0.22) * 1.25, 0, 1)[..., None] * eb; a = a * (1 - mk) + bl * mk
     a = grade(a, t, f)
     if fl > 0: a = a * (1 - min(1, fl)) + col * min(1, fl) * 1.25
     a = a * VIG
