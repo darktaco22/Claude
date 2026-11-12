@@ -197,6 +197,18 @@ class RBTrader:
             if prev is not None and prev.dot(q) < 0: q = -q
             self._prev = getattr(self, '_prev', {}); self._prev[b] = q.copy(); pb.rotation_quaternion = q; pb.keyframe_insert('rotation_quaternion', frame=f)
         return self.mw @ P
+    def react(self, f, e, look_up=-1.05):
+        """Shock, e = 0..1: head thrown back to stare straight up, jaw dropped, brows and upper lids raised.  Keyed at frame f."""
+        P_ = self.arm.pose.bones; B = self.arm.data.bones; A3 = self.A0.to_3x3()
+        ang = (self.pitch - self.lean * 0.4) * (1 - e) + look_up * e
+        for b, w in (('Bip01 Neck', 0.45), ('Bip01 Head', 0.55)):
+            pb = P_[b]; pb.rotation_mode = 'QUATERNION'; pb.rotation_quaternion = self.local_q(b, qrot((1, 0, 0), ang * w)); pb.keyframe_insert('rotation_quaternion', frame=f)
+        if 'Bip01 MJaw' in P_:
+            pb = P_['Bip01 MJaw']; pb.rotation_mode = 'QUATERNION'; pb.rotation_quaternion = self.local_q('Bip01 MJaw', qrot((1, 0, 0), 0.42 * e)); pb.keyframe_insert('rotation_quaternion', frame=f)
+        for b, dz in (('Bip01 LInnerEyebrow', 0.007), ('Bip01 RInnerEyebrow', 0.007), ('Bip01 LOuterEyebrow', 0.008), ('Bip01 ROuterEyebrow', 0.008), ('Bip01 MMiddleEyebrow', 0.006),
+                      ('Bip01 LEyeBlinkTop', 0.0025), ('Bip01 REyeBlinkTop', 0.0025), ('Bip01 MBottomLip', -0.004)):
+            if b in P_:
+                pb = P_[b]; pb.location = (A3 @ B[b].matrix_local.to_3x3()).inverted() @ Vector((0, 0, dz * e)); pb.keyframe_insert('location', frame=f)
     def finish(self):
         ad = self.arm.animation_data
         if ad and ad.action:

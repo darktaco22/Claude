@@ -259,9 +259,13 @@ CEN = Rm(B0.x - ROOM.x, B0.y - ROOM.y, 2.75)
 def bursty(o, t, seed, speed, vz=(2, 9)):
     r_ = random.Random(seed); f0 = F(t); p0 = o.location.copy(); d = Vector((p0.x - CEN.x, p0.y - CEN.y, 0)); d = d.normalized() if d.length > 0.01 else Vector((1, 0, 0))
     v = d * speed * r_.uniform(0.5, 1.3) + Vector((r_.uniform(-1, 1), r_.uniform(-1, 1), r_.uniform(*vz))); spin = Vector((r_.uniform(-7, 7), r_.uniform(-7, 7), r_.uniform(-7, 7)))
-    o.location = p0; key(o, 'location', f0 - 1); o.rotation_euler = (0, 0, 0); key(o, 'rotation_euler', f0 - 1); s0 = o.scale.copy(); n = int(2.2 * FPS)
+    o.location = p0; key(o, 'location', f0 - 1); o.rotation_euler = (0, 0, 0); key(o, 'rotation_euler', f0 - 1); n = int(2.2 * FPS); land = None; zp = p0.z
     for k_ in range(0, n + 1, 2):
-        tz = k_ / FPS; z = p0.z + v.z * tz - 0.5 * 9.8 * tz * tz; o.location = (p0.x + v.x * tz, p0.y + v.y * tz, max(z, 0.06)); key(o, 'location', f0 + k_); o.rotation_euler = spin * tz * (1 if z > 0.06 else 0.0); key(o, 'rotation_euler', f0 + k_)
+        tz = k_ / FPS; x = p0.x + v.x * tz; y = p0.y + v.y * tz; z = p0.z + v.z * tz - 0.5 * 9.8 * tz * tz
+        if land is None:
+            if z < 0.06: land = (x, y, 0.06, tz)
+            elif zp >= 3.0 > z and math.hypot(x - CEN.x, y - CEN.y) > 1.3: land = (x, y, 3.0, tz)          # came down on the roof
+        zp = z; pos = land[:3] if land else (x, y, z); o.location = pos; key(o, 'location', f0 + k_); o.rotation_euler = spin * (land[3] if land else tz); key(o, 'rotation_euler', f0 + k_)
     for fc in o.animation_data.action.fcurves:
         for kp in fc.keyframe_points: kp.interpolation = 'LINEAR'
 # the ceiling BREAKS: the cells round the candle are plaster fragments; cracks race out, a jagged hole bursts open, daylight pours in
@@ -279,6 +283,30 @@ for o in list(CEIL_CELLS):
 for i, o in enumerate(FRAGS):
     ins, dist = in_hole(o.location)
     if ins: bursty(o, T_CEIL + dist * 0.03, 500 + i, 2.0 + 3.5 * math.exp(-dist), vz=(9, 22) if dist < 0.3 else (-6.5, 2.5))
+# the house from outside: a shingled roof over the room (it breaks with the ceiling), outer walls, a yard and a street
+ROOFM = mat('roofm', (0.17, 0.075, 0.055), 0.85); ROOFD = mat('roofd', (0.07, 0.03, 0.025), 0.9); SIDING = mat('siding', (0.72, 0.69, 0.62), 0.8); LAWN = mat('lawn', (0.10, 0.27, 0.07), 0.95)
+ASPH = mat('asph', (0.06, 0.06, 0.065), 0.9); HEDGE = mat('hedge', (0.04, 0.16, 0.05), 0.95); RZ = 2.86
+gx0 = round((CEN.x - ROOM.x) / 0.2) * 0.2 + ROOM.x; gy0 = round((CEN.y - ROOM.y) / 0.2) * 0.2 + ROOM.y; HX0, HX1, HY0, HY1 = ROOM.x - 6.5, ROOM.x + 6.5, ROOM.y - 5.0, ROOM.y + 6.0
+for (x0, x1, y0, y1) in ((HX0, gx0 - 1.6, HY0, HY1), (gx0 + 1.6, HX1, HY0, HY1), (gx0 - 1.6, gx0 + 1.6, HY0, gy0 - 1.6), (gx0 - 1.6, gx0 + 1.6, gy0 + 1.6, HY1)):
+    box('roof', (x1 - x0, y1 - y0, 0.1), ((x0 + x1) / 2, (y0 + y1) / 2, RZ), ROOFM)
+yy = HY0 + 0.2
+while yy < HY1:                                   # shingle courses
+    for (x0, x1) in ((HX0, HX1),) if abs(yy - gy0) > 1.6 else ((HX0, gx0 - 1.6), (gx0 + 1.6, HX1)): box('course', (x1 - x0, 0.025, 0.012), ((x0 + x1) / 2, yy, RZ + 0.055), ROOFD)
+    yy += 0.4
+box('ridge', (13.4, 0.3, 0.1), (ROOM.x, HY1 - 0.15, RZ + 0.08), ROOFD); box('ridge', (13.4, 0.3, 0.1), (ROOM.x, HY0 + 0.15, RZ + 0.08), ROOFD)
+box('chimney', (0.9, 0.9, 1.3), (ROOM.x + 4.6, ROOM.y + 3.6, RZ + 0.6), mat('chim', (0.3, 0.12, 0.09), 0.9)); box('vent', (0.25, 0.25, 0.5), (ROOM.x - 4.2, ROOM.y - 2.6, RZ + 0.3), mat('vent', (0.5, 0.5, 0.52), 0.4, metal=0.8))
+for (x, y, w, d) in ((ROOM.x, HY0 + 0.3, 12.4, 0.2), (ROOM.x, HY1 - 0.3, 12.4, 0.2), (HX0 + 0.3, ROOM.y + 0.5, 0.2, 10.4), (HX1 - 0.3, ROOM.y + 0.5, 0.2, 10.4)): box('housewall', (w, d, 2.85), (x, y, 1.4), SIDING)
+box('lawn', (120, 120, 0.04), Rm(0, 0, -0.08), LAWN); box('street', (120, 7, 0.04), Rm(0, -22, -0.05), ASPH); box('drive', (3.6, 14, 0.04), Rm(-4.2, -12, -0.05), ASPH)
+for (x, y, w, d) in ((0, 14, 40, 1.0), (-20, -2, 1.0, 32), (20, -2, 1.0, 32)): box('hedge', (w, d, 1.2), Rm(x, y, 0.6), HEDGE)
+for hx in (-34, 34):
+    box('nhouse', (13, 11, 2.9), Rm(hx, 0.5, 1.45), SIDING); box('nroof', (14, 12, 0.3), Rm(hx, 0.5, 3.0), mat('nroof%d' % hx, (0.1, 0.12, 0.16) if hx < 0 else (0.2, 0.13, 0.07), 0.85))
+RFR = []
+for ix in range(16):
+    for iy in range(16): RFR.append(box('rfrag', (0.2, 0.2, 0.1), (gx0 - 1.5 + 0.2 * ix, gy0 - 1.5 + 0.2 * iy, RZ), ROOFM))
+for i, o in enumerate(RFR):
+    ins, dist = in_hole(o.location)
+    if ins: bursty(o, T_CEIL + 0.01 + dist * 0.03, 2500 + i, 2.5 + 3.0 * math.exp(-dist), vz=(3, 15))
+for fr in range(F(T_CEIL), F(T_FLASH) + 1): TRD.react(fr, sm((tt(fr) - T_CEIL - 0.04) / 0.28))          # he throws his head back and gapes up through the hole
 for i in range(110):        # plaster chunks and splinters
     r_ = random.Random(700 + i); a_ = r_.uniform(0, 6.283); d_ = r_.uniform(0, 0.9); sz = r_.uniform(0.025, 0.11)
     o = box('chunk', (sz, sz * r_.uniform(0.6, 2.2), sz * 0.6), CEN + Vector((math.cos(a_) * d_, math.sin(a_) * d_, -0.02)), CEIL); show(o, F(T_CEIL)); bursty(o, T_CEIL + d_ * 0.03, 800 + i, 4.0, vz=(-8, 4))
@@ -390,6 +418,9 @@ SH(1.3, T_SWAP, 0.35, 0.5, (0.12, -0.12, 0.06), (0.34, -0.30, 0.2), (0, 0, 0.05)
 SH(1.0, T_SWAP + 0.55, 0.5, 0.7, Rm(1.7, -1.9, 0.4), Rm(1.3, -1.5, 0.7), (0, 0, 0.6), (0, 0, 0.8), 22, 2.8, 0.4, fl=1)
 # 4. up through the ceiling
 SH(1.4, T_CEIL - 0.06, 0.10, 0.45, Rm(1.9, 0.3, 0.25), Rm(1.7, 0.15, 0.4), (CEN.x, CEN.y, 2.3), (CEN.x, CEN.y, 2.6), 13, 8.0, 0.5)
+# 4b. from over the roof: a crash zoom down through the hole onto his face, staring up at us
+EYW = TRD.mw @ TRD.eyes
+SH(1.7, T_CEIL + 0.45, 0.5, 0.6, (CEN.x + 0.4, CEN.y + 1.7, 14.0), (CEN.x + 0.15, CEN.y + 1.2, 9.5), (EYW.x, EYW.y, EYW.z), (EYW.x, EYW.y, EYW.z + 0.03), 22, 8.0, 0.15, 125, ec=2)
 # 5. the chase: out into the sky
 SH(0.95, T_SWAP + 1.75, 1.1, 1.1, (1.2, -2.0, -0.3), (0.9, -3.0, -0.6), (0, 0, 0.5), (0, 0, 0.5), 24, 4.0, 0.3, fp=3, fl=3)
 # 6. the fall, like a rocket coming back down: an onboard camera looking down from over its top, rolling; a long-lens chase; then the ground, among the fighters

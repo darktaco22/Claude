@@ -16,7 +16,7 @@ cd $HERE
 [ -f $W/ui/u_0001.png ] || { python3 ui.py $W/ui > $W/ui.log; python3 ui.py $W/ui monitors; }
 [ -f $W/room.blend ] || { rm -f $W/full_*.txt.done; $BL -b --factory-startup -P scene.py -- --out $W/room.blend --ui $W/ui --room > $W/build_room.log 2>&1; }
 [ -f $W/scene.blend ] || { rm -f $W/full_*.txt.done; $BL -b --factory-startup -P scene.py -- --out $W/scene.blend --ui $W/ui > $W/build.log 2>&1; }
-read N RL < <(python3 -c "import json;e=json.load(open('edl.json'));print(e['last'], round(e['shots'][4]['t1']*e['fps']))")      # the first five shots are in the room
+read N RL < <(python3 -c "import json;e=json.load(open('edl.json'));print(e['last'], round(e['shots'][5]['t1']*e['fps']))")      # the first six shots are in the room
 seq 1 $RL | tr '\n' ' ' > $W/full_room.txt; seq $((RL + 1)) $N | tr '\n' ' ' > $W/full_arena.txt
 for part in room arena; do
   B=$W/room.blend; [ $part = arena ] && B=$W/scene.blend; L=$W/full_$part.txt
