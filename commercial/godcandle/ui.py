@@ -71,6 +71,7 @@ def tap_ring(im, cx, cy, t0, tu):
     if not (t0 <= tu <= t0 + 0.35): return im
     u = (tu - t0) / 0.35; r = 20 + 70 * u; ov = Image.new('RGBA', im.size, (0, 0, 0, 0)); ImageDraw.Draw(ov).ellipse((cx - r, cy - r, cx + r, cy + r), outline=(255, 255, 255, int(160 * (1 - u))), width=6)
     return Image.alpha_composite(im.convert('RGBA'), ov).convert('RGB')
+CHART_SRC = BASEIMG.crop((0, int(Y(468)), int(X(790)), int(Y(1398))))
 def screen(tu):
     im = BASEIMG.copy(); d = ImageDraw.Draw(im); lo, hi = axis(tu); lc = last_candle(tu); mc = lc[1]
     # the price block
@@ -80,23 +81,24 @@ def screen(tu):
     d.rounded_rectangle((X(889) - fw, Y(298), X(889), Y(337)), 10, fill=(14, 46, 18)); d.text((X(889) - fw + 66, Y(318)), lab, font=rub(33, 600), fill=(110, 195, 120), anchor='lm')
     ax, ay = X(889) - fw + 34, Y(318); d.line((ax, ay + 12, ax, ay - 12), fill=(110, 195, 120), width=4); d.line((ax - 9, ay - 3, ax, ay - 12, ax + 9, ay - 3), fill=(110, 195, 120), width=4)
     # the chart: dotted grid, axis, candles, the live price tag
+    # the chart: the real Imagine Game Studio candles from the screenshot, squashed toward the baseline as the axis rescales; the live candle is drawn on top
     d.rectangle((0, Y(468), W, Y(1398)), fill=BG)
-    for gx in range(14, int(X(790)), 26):
-        for gy in range(int(Y(484)), int(Y(1396)), 26): d.rectangle((gx, gy, gx + 2, gy + 2), fill=DOT)
+    reg = CHART_SRC.copy(); ImageDraw.Draw(reg).rectangle((int(X(603)), 0, int(X(616)), reg.height), fill=BG)
+    S_ = PYB - PYT; oy = Y(468); aa = (HI0 - LO0) / (hi - lo); bb = (LO0 - lo) / (hi - lo) * S_
+    if abs(aa - 1) > 1e-4 or abs(bb) > 1e-3:
+        reg = reg.transform(reg.size, Image.AFFINE, (1, 0, 0, 0, 1 / aa, (PYB - oy) - (PYB - oy - bb) / aa), Image.BILINEAR, fillcolor=BG)
+    im.paste(reg, (0, int(oy))); d = ImageDraw.Draw(im)
     step = nice_step(hi - lo); v = math.ceil(lo / step) * step
+    d.rectangle((X(790), Y(468), W, Y(1398)), fill=BG)
     while v < hi:
         y = yof(v, lo, hi)
         if PYT - 4 <= y <= PYB + 4 and v > 0: d.text((X(902), y), fmt_axis(v), font=rub(32, 500), fill=AXIS, anchor='rm')
         v += step
-    fade = 1.0 - ease((tu - T_P0) / 0.3) if tu > T_P0 else 1.0
-    for i in range(NC):
-        o_, c_, h_, l_ = ser[i] if i < NC - 1 else lc[:4]; x = XL - (NC - 1 - i) * DX; wd = 4 if i < NC - 1 else lc[4]
-        if i == NC - 1 and wd > 30:
-            if tu < T_SWAP: grad_candle(im, x - wd / 2, x + wd / 2, yof(h_, lo, hi), yof(l_, lo, hi)); d = ImageDraw.Draw(im)
-            continue
+    o_, c_, h_, l_, wd = lc; x = XL
+    if wd > 30:
+        if tu < T_SWAP: grad_candle(im, x - wd / 2, x + wd / 2, yof(h_, lo, hi), yof(l_, lo, hi)); d = ImageDraw.Draw(im)
+    else:
         col = GRN if c_ >= o_ else RED; d.line((x, yof(h_, lo, hi), x, yof(l_, lo, hi)), fill=col, width=2); y0 = yof(max(o_, c_), lo, hi); y1 = yof(min(o_, c_), lo, hi); d.rectangle((x - wd / 2, y0, x + wd / 2, max(y1, y0 + 2)), fill=col)
-    if fade > 0.02 and tu < T_P0 + 0.3:
-        for (xd, yd, ring) in ((556, 689, None), (423, 1115, None), (516, 930, (250, 200, 30))): marker(d, X(xd), Y(yd), ring)
     ly = yof(mc, lo, hi)
     for x in range(0, int(X(780)), 11): d.line((x, ly, x + 4, ly), fill=GRN, width=2)
     d.rectangle((X(782), ly - Y(18), W - 4, ly + Y(18)), fill=GRN); d.text((X(845), ly), fmt_axis(mc), font=rub(32, 500), fill=(10, 30, 16), anchor='mm')
