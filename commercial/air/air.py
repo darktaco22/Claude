@@ -235,8 +235,8 @@ def air_mats():
     sc = bpy.context.scene; wn = sc.world.node_tree; bgn = wn.nodes['Background']; nl = wn.links.new
     tc = wn.nodes.new('ShaderNodeTexCoord'); sp = wn.nodes.new('ShaderNodeSeparateXYZ'); nl(tc.outputs['Object'], sp.inputs[0])
     cr = wn.nodes.new('ShaderNodeValToRGB'); nl(sp.outputs['Z'], cr.inputs[0]); e = cr.color_ramp.elements
-    e[0].position = 0.35; e[0].color = (0.50, 0.24, 0.26, 1); e[1].position = 0.95; e[1].color = (0.045, 0.03, 0.11, 1)
-    mid = cr.color_ramp.elements.new(0.62); mid.color = (0.34, 0.15, 0.24, 1); nl(cr.outputs['Color'], bgn.inputs['Color'])
+    e[0].position = 0.35; e[0].color = (0.03, 0.07, 0.16, 1); e[1].position = 0.95; e[1].color = (0.02, 0.02, 0.07, 1)
+    mid = cr.color_ramp.elements.new(0.62); mid.color = (0.02, 0.03, 0.10, 1); nl(cr.outputs['Color'], bgn.inputs['Color'])
     MATS['propdisc'] = m; MATS['bombmat'] = sets.flat('bomb_olive', (0.42, 0.24, 0.09), 0.5, metal=0.1); MATS['cloth'] = sets.flat('chute_cloth', (0.95, 0.55, 0.14), 0.7)
     bpy.ops.mesh.primitive_uv_sphere_add(segments=12, ring_count=8, radius=1.0); o = bpy.context.active_object
     for p in o.data.polygons: p.use_smooth = True
