@@ -22,6 +22,6 @@ for loc, e, col in (((0.6, -1.8, 2.2), 600, (1, 0.9, 0.8)), ((-1.5, 1.5, 1.8), 3
     o.rotation_euler = (Vector((0, 0, 1.0)) - Vector(loc)).to_track_quat('-Z', 'Y').to_euler()
 sc.world = bpy.data.worlds.new('w'); sc.world.use_nodes = True; sc.world.node_tree.nodes['Background'].inputs['Strength'].default_value = 0.15
 cam = bpy.data.objects.new('cam', bpy.data.cameras.new('cam')); sc.collection.objects.link(cam); sc.camera = cam
-pw = W.translation; cam.location = pw + Vector((0.42, -0.62, 0.30)); cam.data.lens = 60
+pw = W.translation; cam.location = pw + Vector((0.60, -1.15, 0.45)); cam.data.lens = 55
 cam.rotation_euler = (pw - cam.location).to_track_quat('-Z', 'Y').to_euler(); cam.data.dof.use_dof = False
 sc.render.filepath = OUT; bpy.ops.render.render(write_still=True); print('TEST-DONE', W.translation)
