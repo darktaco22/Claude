@@ -44,7 +44,16 @@ bend, hand fitted to the phone by testing skinned vertices), `rb_test.py` (still
 `finish.py` (grade, flashes, punches, edge blur on the fall, title, sound), `render_all.sh` (everything, resumable).
 `trader.py` / `trader_test.py` / `setup_humans.sh` are the earlier MakeHuman trader: unused now (the user wanted the GitHub human).
 
-## State when this was written
+## Update: ceiling break and rooftop shot (film is now 529 frames, 22.05 s, plus a 40-frame title hold)
+
+The user added: the ceiling literally breaks open as the candle flies up, then an aerial shot of the house roof looking down through the
+hole at the trader, who looks up shocked (comedy beat). Both are in `scene.py` (search `T_CEIL`, `bursty`, `fbox`, `rfrag`) and
+`rbtrader.py` (`react`). Shots: 1: 1-82, 2: 83-113, 3: 114-137, 4 ceiling: 138-170, 4b rooftop crash zoom: 171-211, 5 chase: 212-234,
+arena from 235. Room frames 1-234 are rendered and reviewed; `render_all.sh` splits room/arena at `shots[5]`.
+Trap: clash `box()` applies location, so `o.location` is (0,0,0); use `fbox`/`centre` for anything that must move or be distance-tested.
+Known nit: the hole edge is stair-stepped (0.2 m grid).
+
+## State when this was written (older; frame counts below predate the update above)
 
 - Trader pose fixed on the blank test set (`rb_test.py`): holds in the RIGHT hand, taps with the LEFT; wrist bends 18 and 21 degrees; no hand
   vertex inside the phone. Open nit: the holding thumb sticks out sideways rather than resting on the phone's edge (THUMB_IN / HOLD['t'] in
