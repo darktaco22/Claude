@@ -1,7 +1,7 @@
 // Renders overlay.html as transparent PNGs, one per frame (the film plus 3 s of end card): node overlays.js TIMELINE.json OUTDIR
 // Files under /g/ come from $GAME (the game's own card art, logo, title art).
 const {chromium} = require('playwright'); const http = require('http'); const fs = require('fs'); const path = require('path');
-const TLP = process.argv[2], OUT = process.argv[3]; const TL = JSON.parse(fs.readFileSync(TLP)); const NF = Math.round((TL.end + 3.0) * TL.fps);
+const TLP = process.argv[2], OUT = process.argv[3]; const TL = JSON.parse(fs.readFileSync(TLP)); const NF = Math.round((TL.end + 3.0) * TL.fps) + (TL.inserts || []).reduce((a, x) => a + x.n, 0);
 fs.mkdirSync(OUT, {recursive: true});
 const TYPES = {html: 'text/html', json: 'application/json', png: 'image/png', jpg: 'image/jpeg', webp: 'image/webp', woff2: 'font/woff2'};
 const srv = http.createServer((q, r) => { const u = decodeURIComponent(q.url.split('?')[0]);
