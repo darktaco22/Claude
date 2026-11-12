@@ -4,7 +4,7 @@ Every film frame shows the animation at the time its shot maps it to (speed ramp
 import bpy, os, sys, time, json, math
 from mathutils import Vector, Quaternion, Matrix, noise
 T0 = time.time(); BUDGET = float(os.environ.get('RENDER_BUDGET', '0') or 0)
-lst = sys.argv[sys.argv.index('--') + 1]; E = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'edl.json')))
+lst = sys.argv[sys.argv.index('--') + 1]; E = json.load(open(os.environ.get('EDL') or os.path.join(os.path.dirname(os.path.abspath(__file__)), 'edl.json')))
 fl = [int(x) for x in open(lst).read().split()]; done_file = lst + '.done'
 done = set(int(x) for x in open(done_file).read().split()) if os.path.exists(done_file) else set()
 fl = [f for f in fl if f not in done]; sc = bpy.context.scene; cam = sc.camera; FPS = E['fps']; sc.render.use_overwrite = True; GC = bpy.data.objects['GC']
