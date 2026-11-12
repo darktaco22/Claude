@@ -7,7 +7,7 @@
 set -e
 export RENDER_BUDGET=${RENDER_BUDGET:-6600}
 HERE=$(cd $(dirname $0) && pwd)
-export W=${W:-$HOME/air_work}; export PH=$W/ph DA_TEX=$W/tex GAME=$W/game
+export ARENA=cemetery; export W=${W:-$HOME/air_work}; export PH=$W/ph DA_TEX=$W/tex GAME=$W/game
 BL=/opt/blender/blender-4.2.3-linux-x64/blender
 cd $HERE/../degens; mkdir -p $W/frames
 [ -f $W/scene.blend ] || { rm -f $W/part_*.txt.done; $BL -b -P $HERE/air.py -- --out $W/scene.blend --res 1080 > $W/build.log 2>&1; }

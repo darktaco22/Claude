@@ -125,7 +125,7 @@ class WUnit:
 
 # ------------------------------------------------------------------ the arena: THE DUMP (the game's ground and backdrop, its towers and bridges)
 def arena_dump():
-    A = {}; G = game.G; gd = f'{G}/arenas/dump'; rng = random.Random(23)
+    A = {}; G = game.G; gd = f'{G}/arenas/' + os.environ.get('ARENA', 'dump'); rng = random.Random(23)
     ground = sets.img_mat('a_ground', f'{gd}/ground.webp', repeat=1.0, normal=f'{gd}/ground_n.webp', tint=(0.8, 0.76, 0.74), rough=0.92)
     for s in (-1, 1): sets.plane('a_ground', (60, 34), (0, s * (1.3 + 17), 0), (0, 0, 0), ground, uv_scale=0.09)
     sets.plane('a_river', (60, 2.6), (0, 0, -0.35), (0, 0, 0), sets.flat('a_sludge', (0.07, 0.12, 0.03), 0.2, emit=((0.2, 0.55, 0.06), 0.12)))
