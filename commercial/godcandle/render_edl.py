@@ -2,7 +2,7 @@
 Every film frame shows the animation at the time its shot maps it to (speed ramps s0 -> s1 give slow motion), from that shot's camera
 (fixed, a dolly, an orbit, or following the god candle).  Resumable (frames.txt.done), budgeted (RENDER_BUDGET s, exit 3)."""
 import bpy, os, sys, time, json, math
-from mathutils import Vector, Quaternion, noise
+from mathutils import Vector, Quaternion, Matrix, noise
 T0 = time.time(); BUDGET = float(os.environ.get('RENDER_BUDGET', '0') or 0)
 lst = sys.argv[sys.argv.index('--') + 1]; E = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'edl.json')))
 fl = [int(x) for x in open(lst).read().split()]; done_file = lst + '.done'
@@ -29,6 +29,8 @@ def setup(f):
         l = l + (n1 * 0.10 + n2 * 0.035) * sh * (p - l).length * 0.12; p = p + n1 * 0.04 * sh
     d = l - p; cam.location = p; cam.rotation_mode = 'QUATERNION'; q = d.to_track_quat('-Z', 'Y'); rl = s.get('roll')
     if rl: q = q @ Quaternion((0, 0, 1), rl[0] + (rl[1] - rl[0]) * e)
+    if s.get('up1'):                                             # ease the camera's up vector toward a given one (level with the phone at the end of the push-in)
+        up = Vector((0, 0, 1)).lerp(Vector(s['up1']), e).normalized(); zc = (-d).normalized(); xc = up.cross(zc).normalized(); yc = zc.cross(xc); q = Matrix((xc, yc, zc)).transposed().to_quaternion()
     cam.rotation_quaternion = q
     cam.data.lens = s['lens'] + (s['lens1'] - s['lens']) * e; cam.data.dof.focus_distance = max(0.5, d.length); cam.data.dof.aperture_fstop = s['fstop'] + (s.get('fstop1', s['fstop']) - s['fstop']) * e
 last = 0.0

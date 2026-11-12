@@ -13,7 +13,7 @@ RB = os.path.expanduser(os.environ.get('ROCKETBOX', '/home/user/microsoft/micros
 AV = 'Male_Adult_18'
 def qrot(axis, ang): return Quaternion(Vector(axis).normalized(), ang)
 def clamp(x, a=0.0, b=1.0): return max(a, min(b, x))
-HOLD = dict(t=(0.30, 0.25, 0.15), i=(0.12, 0.12, 0.08), m=(0.12, 0.12, 0.08), r=(0.14, 0.14, 0.08), p=(0.16, 0.16, 0.1))
+HOLD = dict(t=(0.05, 0.1, 0.1), i=(0.10, 0.10, 0.06), m=(0.10, 0.10, 0.06), r=(0.12, 0.12, 0.06), p=(0.14, 0.14, 0.08))
 POINT = dict(t=(0.45, 0.45, 0.35), i=(0.04, 0.05, 0.03), m=(1.1, 1.25, 0.8), r=(1.2, 1.25, 0.8), p=(1.25, 1.25, 0.8))
 PW, PL, PD = 0.072, 0.150, 0.0082                     # the phone
 
@@ -123,12 +123,12 @@ class RBTrader:
             self.limb(Q, s, 'Thigh', 'Calf', 'Foot', ank, Vector((sx[s] * 0.15, -0.4, 1.0)), self.T1, self.T2)
         head = self.fk(Q, 'Bip01 Head'); eyes = head @ (self.rest['Bip01 Head'].inverted() @ self.eyes_rest); self.eyes = eyes
         # the phone, up in front of his chest, tilted to his eyes and turned a little to his right (the camera's side: body -X)
-        tgt = eyes + Vector((0, -0.29, -0.25)); n = (eyes - tgt).normalized(); n = (Matrix.Rotation(self.yaw, 3, 'Z') @ n).normalized()
+        tgt = eyes + Vector((0, -0.25, -0.27)); n = (eyes - tgt).normalized(); n = (Matrix.Rotation(self.yaw, 3, 'Z') @ n).normalized()
         zup = Vector((0, 0, 1)); top = (zup - n * zup.dot(n)).normalized(); P = self.frame(tgt, top, n)                 # phone: +Y top, +Z screen, origin = centre of the back
         self.Pm = P
-        # left palm behind it: fingers run diagonally up the back, so nothing shows across the glass
-        s = 'L'; ang = math.radians(52); t_p = Vector((self.idx[s] * math.cos(ang), math.sin(ang), 0)); z_p = Vector((0, 0, 1)); x_p = t_p.cross(z_p)
-        M = Matrix((x_p, t_p, z_p)).transposed().to_4x4(); M.translation = Vector((self.idx[s] * 0.018, 0.022, 0.010))      # the phone in the palm frame
+        # left palm behind it: the fingers run straight up the back of the phone (hidden by it), the heel of the hand under its lower end
+        s = 'L'; ang = math.radians(90); t_p = Vector((self.idx[s] * math.cos(ang), math.sin(ang), 0)); z_p = Vector((0, 0, 1)); x_p = t_p.cross(z_p)
+        M = Matrix((x_p, t_p, z_p)).transposed().to_4x4(); M.translation = Vector((self.idx[s] * 0.004, 0.047, 0.010))      # the phone in the palm frame
         self.M_hold = M; palm = P @ M.inverted(); Hd = self.hand_for_palm(s, palm)
         self.limb(Q, s, 'UpperArm', 'Forearm', 'Hand', Hd.translation, Vector((sx[s] * 0.35, 0.35, -1.0)), self.L1, self.L2, Hd.to_quaternion())
         self.fingers('L', HOLD, Q); self.fingers('R', POINT, Q)
