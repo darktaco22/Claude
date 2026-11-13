@@ -71,11 +71,14 @@ drums = np.zeros(N); beat = 0.5
 def bar(t0, pat, vel): [put(drums, t0 + b * beat, drum(v * vel, 62 if v > 0.7 else 78)) for b, v in pat]
 t = T('looks_up') + 0.4
 while t < T('hit') - 0.2:
-    k = min(1.0, (t - T('looks_up')) / 8.0); bar(t, [(0, 1.0), (1, 0.5), (1.5, 0.5), (2, 0.9), (3, 0.5), (3.5, 0.6)], 0.4 + 0.6 * k); t += 4 * beat
+    k = min(1.0, (t - T('looks_up')) / (T('charge_wide') - T('looks_up'))); bar(t, [(0, 1.0), (1, 0.5), (1.5, 0.5), (2, 0.9), (3, 0.5), (3.5, 0.6)], 0.4 + 0.6 * k); t += 4 * beat
 t = T('dive') - 0.5
 while t < T('chute') - 0.3:
     bar(t, [(0, 1.0), (0.5, 0.5), (1, 0.8), (1.5, 0.5), (2, 1.0), (2.5, 0.5), (3, 0.8), (3.25, 0.6), (3.5, 0.7), (3.75, 0.6)], 0.9); t += 4 * beat
-for tt in (at('dive', 1.35), at('dive', 1.7), T('home') + 0.1): put(drums, tt, drum(1.3, 50))
+t = T('charge_wide')                                                  # full battle drums through the charge, the duels, the giants and the air support
+while t < E('aerial_support') - 0.2:
+    bar(t, [(0, 1.0), (0.5, 0.6), (1, 0.9), (1.5, 0.6), (2, 1.0), (2.5, 0.6), (3, 0.9), (3.25, 0.7), (3.5, 0.8), (3.75, 0.7)], 0.95); t += 4 * beat
+for tt in (at('dive', 1.35), at('dive', 1.7), T('home') + 0.1, at('titan', 1.6), at('titan', 2.6), at('slam', 0.85)): put(drums, tt, drum(1.3, 50))
 write('drums', drums)
 
 # --- a low brass pad
@@ -86,8 +89,8 @@ def chord(t0, t1, notes, g, hz=700):
         for d in (-0.14, 0.0, 0.12): s += 2 * ((mf(m) * (1 + d / 100) * tt) % 1) - 1
     pad[n0:n1] += lp(s, hz) * env * g
 D2, F2, A2, Bb1, C2, D3, F3, A3, Fs3 = 38, 41, 45, 34, 36, 50, 53, 57, 54
-chord(0.3, T('looks_up') + 0.5, [D2, A2], 0.35, 300); chord(T('looks_up'), T('flak') + 0.2, [D2, A2, D3, F3], 0.6); chord(T('flak'), T('bombrun') + 0.2, [Bb1, F2, D3], 0.7)
-chord(T('bombrun'), T('giga') + 0.2, [D2, A2, D3, F3, A3], 0.8); chord(T('giga'), T('dive'), [Bb1, F2, D3, F3], 0.7); chord(T('dive'), T('chute') + 0.2, [C2, 43, 52, 55, 62], 0.9, 1100)
+chord(0.3, T('looks_up') + 0.5, [D2, A2], 0.35, 300); chord(0.2, T('pinned'), [D2, A2, D3], 0.3, 500); chord(T('looks_up'), T('flak') + 0.2, [D2, A2, D3, F3], 0.6); chord(T('flak'), T('bombrun') + 0.2, [Bb1, F2, D3], 0.7); chord(T('wing_pass'), T('flak') + 0.2, [D2, A2, D3, F3], 0.7)
+chord(T('bombrun'), T('giga') + 0.2, [D2, A2, D3, F3, A3], 0.8); chord(T('giga'), T('titan'), [Bb1, F2, D3, F3], 0.8); chord(T('titan'), T('hit') + 0.2, [D2, A2, D3, F3, A3, 62], 0.95, 1000); chord(T('dive'), T('chute') + 0.2, [C2, 43, 52, 55, 62], 0.9, 1100)
 chord(T('chute'), T('home') + 0.2, [D2, A2, D3, Fs3], 0.6, 600); chord(T('home'), END, [D2, A2, D3, Fs3, A3, 62], 0.85, 1200)
 write('pad', pad)
 
@@ -97,12 +100,14 @@ for e in tl['fx']:
     if e['kind'] == 'boom':
         sh = next((s for s in tl['shots'] if s['t0'] <= e['t'] < s['t1']), None); nm = sh['name'] if sh else ''
         if nm == 'pinned': put(exm, e['t'], blast(e['size']))
-        elif nm in ('flak', 'giga', 'hit') and e['size'] < 1.5: put(fl, e['t'], blast(e['size'] * 0.7), 0.8)
+        elif nm in ('flak', 'giga', 'hit', 'barrel_roll', 'charge_wide', 'duel') and e['size'] < 1.5: put(fl, e['t'], blast(e['size'] * 0.7), 0.8)
         else: put(ex, e['t'], blast(e['size']))
-        if nm in ('bombrun', 'lane', 'dive') and e['size'] >= 1.9:
+        if nm in ('bombrun', 'lane', 'dive', 'wing_pass', 'carpet', 'aerial_support') and e['size'] >= 1.9:
             d = 0.62 / sh['slow']; put(wh, e['t'] - d, whistle(d), 0.9)
 for tt in np.arange(T('flak') + 0.1, E('flak'), 0.2): put(gun, tt, pom(), 0.7 * (0.6 + 0.4 * rng.random()))
 for tt in np.arange(T('giga'), E('giga'), 0.26): put(gun, tt, pom(), 0.6)
+for nm_ in ('barrel_roll', 'charge_wide', 'aerial_support'):
+    for tt in np.arange(T(nm_) + 0.1, E(nm_), 0.22): put(gun, tt, pom(), 0.55 * (0.6 + 0.4 * rng.random()))
 write('blasts', ex); write('blasts_muffled', lp(exm, 220)); write('flak', fl); write('whistles', wh); write('guns', gun)
 POV = [(0.0, E('pinned') + 0.4)]; tt = np.arange(N) / SR
 env = np.zeros(N)
@@ -117,7 +122,12 @@ write('ring', ring); write('heart', hb)
 G = lambda n: f'{gen}/{n}.wav'; X = lambda n: f'{GA}/{n}.mp3'
 cues = [(G('drums'), 0, 0.9, 'aecho=0.8:0.6:90:0.25,'), (G('pad'), 0, 0.42, 'aecho=0.8:0.6:200:0.3,'), (G('engines'), 0, 0.16, ''), (G('blasts'), 0, 1.0, 'aecho=0.8:0.7:140|330:0.3|0.2,'),
         (G('blasts_muffled'), 0, 0.9, ''), (G('flak'), 0, 0.8, 'aecho=0.8:0.7:200:0.3,'), (G('whistles'), 0, 0.45, ''), (G('guns'), 0, 0.6, 'aecho=0.8:0.6:120:0.3,'), (G('ring'), 0, 0.10, ''), (G('heart'), 0, 0.7, ''),
-        (X('amb_cold'), 0, 0.3, ''), (X('amb_cold'), 22.0, 0.3, ''),
+        (X('amb_cold'), 0, 0.3, ''), (X('amb_cold'), 22.0, 0.3, ''), (X('amb_cold'), 44.0, 0.3, ''), (X('amb_cold'), 66.0, 0.3, ''),
+        (X('charge_rush'), T('charge_wide'), 0.7, 'asetrate=28000,'), (X('battle_start'), T('charge_wide') + 0.1, 0.6, ''), (X('swing_1'), at('muster', 0.6), 0.5, 'asetrate=30000,'), (X('swing_2'), at('muster', 1.0), 0.5, ''), (X('swing_1'), at('muster', 1.4), 0.5, ''),
+        (X('swing_2'), at('duel', 0.25), 0.7, ''), (X('punch_heavy_1'), at('duel', 0.9), 0.9, ''), (X('swing_1'), at('duel', 1.2), 0.7, ''), (X('unit_die_1'), at('duel', 1.5), 0.6, ''), (X('punch_light_1'), at('duel', 0.5), 0.6, ''),
+        (X('swing_2'), at('slam', 0.3), 0.8, 'asetrate=22050,'), (X('punch_heavy_1'), at('slam', 0.85), 1.0, ''), (X('unit_die_1'), at('slam', 1.1), 0.5, 'asetrate=30000,'),
+        (X('whale_slam'), at('titan', 1.6), 1.0, ''), (X('punch_heavy_1'), at('titan', 1.6), 0.9, ''), (X('whale_slam'), at('titan', 2.6), 0.9, 'asetrate=36000,'), (X('bark_useless'), at('titan', 1.0), 0.5, 'asetrate=18000,'), (X('unit_die_1'), at('carpet', 0.6), 0.5, ''), (X('unit_die_1'), at('carpet', 1.0), 0.5, 'asetrate=30000,'), (X('unit_die_1'), at('carpet', 1.4), 0.5, ''),
+        (X('ui_swoosh'), T('wing_pass') + 0.1, 0.7, 'asetrate=20000,'), (X('ui_swoosh'), T('barrel_roll') + 0.2, 0.6, 'asetrate=24000,'), (X('ui_swoosh'), T('aerial_support') + 0.1, 0.6, 'asetrate=18000,'),
         (X('battle_start'), T('looks_up') + 0.2, 0.5, ''), (X('charge_rush'), T('flyover'), 0.6, 'asetrate=30000,'), (X('ui_swoosh'), T('flyover') + 0.3, 0.6, 'asetrate=20000,'),
         (X('swing_1'), at('flyover', 1.0), 0.6, 'asetrate=30000,'), (X('swing_2'), at('flak', 0.5), 0.6, ''), (X('swing_1'), at('flak', 1.4), 0.6, 'asetrate=30000,'),
         (X('whale_slam'), at('giga', 0.5), 0.9, ''), (X('bark_useless'), at('giga', 0.4), 0.6, 'asetrate=22050,'), (X('unit_die_1'), at('bombrun', 1.0), 0.5, ''), (X('unit_die_1'), at('bombrun', 1.3), 0.5, 'asetrate=30000,'),

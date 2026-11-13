@@ -150,6 +150,9 @@ THEIRK = ['troll', 'goat', 'troll', 'slerf', 'troll', 'giga']
 KEEPOUT = [(p.x, p.y) for _, _, p in OUR] + [(p.x, p.y) for _, _, p in TROLLS] + [(LX, 6.2), (-3.2, -8.0), (-3.2, -10.2), (-4.0, -9.4)]
 
 
+KEEPOUT += [(-5.2, 2.4), (-2.8, 2.4), (-4.6, 2.6), (-4.6, 3.8), (-3.6, 4.2), (-3.6, 9.4), (-3.6, 5.0)] + [(-9.4 + 1.55 * j, -4.6) for j in range(9)]
+
+
 def crowd(seed, zones, dur=3.4):
     """zones: (x0, x1, y0, y1, n, mode) with mode duel | march | cheer | guard. Returns acts, each with a (kind, index) of its own (indices from 20 up, reused shot to shot)."""
     r = random.Random(seed); out = []; cnt = {}
@@ -180,6 +183,9 @@ def crowd(seed, zones, dur=3.4):
             elif mode == 'march':                                              # a few of theirs charging our line
                 kt = key(r.choice(THEIRK)); y1 = p[1] - r.uniform(5.0, 8.0); th = S_ + (GIGA_FLIP if kt[0] == 'giga' else 0.0)
                 out.append(act(kt[0], kt[1], go(V(p[0], p[1]), V(p[0] + r.uniform(-1.2, 1.2), y1), 0, dur), th, [(-ph, 'run', 1.15)]))
+            elif mode == 'advance':                                            # ours charging the river
+                ko = key(r.choice(OURK)); y1 = p[1] + r.uniform(5.0, 8.0)
+                out.append(act(ko[0], ko[1], go(V(p[0], p[1]), V(p[0] + r.uniform(-1.0, 1.0), y1), 0, dur), N + (GIGA_FLIP if ko[0] == 'giga' else 0.0), [(-ph, 'run', 1.15)]))
             elif mode == 'cheer':
                 ko = key(r.choice(OURK)); out.append(act(ko[0], ko[1], V(p[0], p[1]), N + r.uniform(-0.35, 0.35), [(-ph, 'idle', 1.0), (0.3 + ph, 'win', 1.0)], pose=(lambda u, s=ph * 7: cheer(s)(u) if u > 0.3 + s / 7 else {})))
             else:                                                              # guard: ours holding the line, ready
@@ -200,7 +206,83 @@ CROWD = {
     'dive': [(-9, 4, 0, 13, 6, 'duel'), (-9, 4, -14, -4, 5, 'guard')],
     'chute': [(-10, 4, 2, 13, 6, 'duel'), (-10, 4, -12, 0, 4, 'cheer')],
     'home': [(-10, 4, -3, 8, 6, 'cheer'), (-10, 4, 10, 16, 3, 'duel')],
+    'crane_dawn': [(-10, 4, -15, -8, 10, 'guard'), (-10, 4, 6, 15, 10, 'guard'), (-10, 4, -3, 3, 4, 'duel')],
+    'wing_pass': [(-10, -7, -10, 10, 5, 'duel'), (-2, 4, -10, 10, 5, 'duel')],
+    'barrel_roll': [(-10, 4, -6, 8, 5, 'duel'), (-10, 4, 10, 18, 5, 'march')],
+    'charge_wide': [(-10, 4, -10, -3, 9, 'advance'), (-10, 4, 5, 13, 9, 'march'), (-10, 4, -2, 3, 7, 'duel')],
+    'duel': [(-10, -7.5, 0, 9, 3, 'duel'), (-2.5, 3, 0, 9, 3, 'duel')],
+    'slam': [(-10, -7.5, -2, 9, 3, 'duel'), (-1.5, 4, -2, 12, 5, 'duel')],
+    'titan': [(-10, -7.5, 0, 14, 3, 'duel'), (0.5, 4, 0, 14, 3, 'duel'), (-10, 4, -10, -3, 5, 'advance')],
+    'aerial_support': [(-10, 3, -4, 5, 5, 'duel'), (-10, 3, 12, 18, 4, 'march')],
 }
+
+
+ORDER = ['crane_dawn', 'pinned', 'looks_up', 'flyover', 'muster', 'cockpit', 'wing_pass', 'flak', 'barrel_roll', 'bombrun', 'carpet', 'lane', 'giga',
+         'charge_wide', 'duel', 'slam', 'titan', 'aerial_support', 'hit', 'dive', 'chute', 'home']
+
+
+def new_shots():
+    """The second half of the film: ten new set pieces between the original shots. Durations are multiples of 0.1 s so every shot is a whole number of frames."""
+    NS = {}
+    # a slow crane up over both armies in the moonlight
+    NS['crane_dawn'] = shot(0, 3.6, lambda k, u: dict(pos=V(-15.0 + 2.5 * ease(k), -19.0 + 1.5 * k, 1.1 + 8.0 * ease(k)), tgt=V(-3.0, 1.0, 1.4 + 0.5 * k), fov=52, fstop=5.6, focus=22.0, shake=0.002),
+                            [], [tracers(10, 31, 2.6), ('boom', 1.1, V(-6.5, 6.0, 0.4), 1.4), ('boom', 2.2, V(-1.5, 3.0, 0.4), 1.2)], name='crane_dawn')
+    # the line, dollying past: every kind of fighter we have, readying
+    kinds = ['swordcat', 'floki', 'toshi', 'walter', 'pepe', 'bonk', 'cate', 'chillguy', 'wojak']; xs = [-9.4 + 1.55 * j for j in range(9)]
+    line = [act(kd, 30, V(xs[j], -4.6 + 0.35 * sn(j * 2.3)), N, [(-0.3 * j, 'ready', 1.0), (0.5 + 0.2 * j, 'attack1', 0.7), (1.6 + 0.1 * j, 'ready', 1.0)], pose=crouch(16, j)) for j, kd in enumerate(kinds)]
+    NS['muster'] = shot(0, 2.8, lambda k, u: dict(pos=V(lerp(5.2, -10.6, ease(k)), -8.6, 1.1), tgt=V(lerp(5.2, -10.6, ease(k)) - 1.2, -4.2, 1.25), fov=40, fstop=2.8, focus=4.6, shake=0.002), line, [tracers(8, 32, 1.8)], name='muster')
+    # a PNUT skims the ground; acorns walk through the trolls ahead of him
+    fw = fly(V(-4.6, -26.0, 2.1), V(-4.6, 16.0, 2.3), 0.0, 2.6, 0.1, 0.5)
+    BM3 = []; TH3 = []
+    for j, u0 in enumerate((0.9, 1.2, 1.5, 1.8)):
+        dst = V(-4.6 + 1.1 * sn(j * 2.0), fw(u0).y + 8.0, 0.0); BM3 += bomb_fx(u0, fw(u0) + V(0, 0, -0.5), dst, 0.55, 2.0)
+        TH3.append(thrown('troll', 41 + j, V(dst.x, dst.y), V(dst.x + sn(j * 3.1) * 2.2, dst.y + 2.4), u0 + 0.55, 0.6, 1.8, 1.1 + 0.2 * j, pre='run', seed=j + 1, h=S_, pre_from=V(dst.x, dst.y + 3.0)))
+    NS['wing_pass'] = shot(0, 2.6, lambda k, u: dict(pos=fw(u) + V(2.0, -4.2, 1.3 - 0.4 * k), tgt=fw(u) + V(0, 3.0, -0.2), fov=64, fstop=6.0, focus=7.0, shake=0.004),
+                           [cockpit('pnut', 0, fw, 0.0, 0.0, [(0, 'idle', 1.0)])] + TH3, [plane_fx('lead', fw, drop=(0.9, 1.2, 1.5, 1.8))] + BM3 + [tracers(8, 33, 1.6)], slow=0.8, name='wing_pass')
+    # weaving through the flak
+    wv = lambda u: V(-3.0 + 2.4 * sn(u * 3.4), -8.0 + 11.5 * u, 5.4 + 0.8 * sn(u * 4.3))
+    NS['barrel_roll'] = shot(0, 2.4, lambda k, u: dict(pos=wv(u) + V(5.2 - 1.2 * k, -0.8, 0.4), tgt=wv(u) + V(0, 0.9, -0.2), fov=46, fstop=3.6, focus=5.6, shake=0.004),
+                             [cockpit('pnut', 0, wv, 0.0, 0.0, [(0, 'idle', 1.0)])],
+                             [plane_fx('lead', wv), aa(26, 77, 0.0, 1.8, lambda u: wv(u + 0.4), (-4.5, 4.5)), flak(0.3, wv(0.6) + V(2.2, 2.0, 1.6), 1.1), flak(0.9, wv(1.2) + V(-2.0, 2.2, -1.0), 1.0), flak(1.4, wv(1.6) + V(1.8, 1.5, 1.2), 1.2)],
+                             slow=0.7, name='barrel_roll')
+    # a stick of acorns marches toward the camera under a long lens
+    CM = []; TH5 = []; RUN5 = []
+    for j in range(6):
+        y0 = 10.5 - 1.9 * j; x0 = -5.0 + 0.9 * sn(j * 1.7); u0 = 0.05 + 0.24 * j
+        CM += bomb_fx(u0, V(x0, y0 + 1.0, 9.5), V(x0, y0, 0.0), 0.5, 2.2)
+        TH5.append(thrown('troll', 50 + j, V(x0, y0), V(x0 + sn(j * 2.6) * 2.4, y0 - 2.4), u0 + 0.5, 0.6, 1.9, 1.0 + 0.2 * j, pre='run', seed=j + 2, h=S_, pre_from=V(x0, y0 + 3.5)))
+    for j in range(4): RUN5.append(act('troll', 60 + j, go(V(-6.5 + 1.6 * j, 15.0 + 1.2 * j), V(-6.5 + 1.6 * j, 5.0 + 1.2 * j), 0, 1.65), S_, [(-0.1 * j, 'run', 1.25)]))
+    NS['carpet'] = shot(0, 3.0, lambda k, u: dict(pos=V(-5.0, -14.0, 0.9), tgt=V(-4.8, 10.0, 1.6 + 0.3 * k), fov=24, fstop=4.0, focus=22.0, shake=0.003), TH5 + RUN5, CM + [tracers(10, 34, 2.0)], slow=0.55, name='carpet')
+    # both armies collide: an aerial track along the river
+    NS['charge_wide'] = shot(0, 3.4, lambda k, u: dict(pos=V(lerp(-14.0, -0.5, ease(k)), -7.0, 5.8), tgt=V(lerp(-14.0, -0.5, ease(k)) + 5.0, 2.0, 1.0), fov=58, fstop=5.6, focus=14.0, shake=0.003), [],
+                             [tracers(14, 35, 2.4), ('boom', 0.9, V(-5.0, 1.0, 0.4), 1.3), ('boom', 1.7, V(-2.0, 2.0, 0.4), 1.4), ('boom', 2.4, V(-8.0, 3.0, 0.4), 1.2)], name='charge_wide')
+    # FLOKI against the goat, orbiting, slow
+    C = V(-5.2, 2.4)
+    NS['duel'] = shot(0, 2.6, lambda k, u: dict(pos=V(C.x + 3.4 * math.cos(3.1 + 1.5 * k), C.y + 3.4 * sn(3.1 + 1.5 * k), 1.2 - 0.3 * k), tgt=V(C.x, C.y, 1.0), fov=38, fstop=2.8, focus=3.4, shake=0.002),
+                      [act('floki', 30, V(C.x, C.y - 0.55), N, [(0, 'ready', 1.0), (0.2, 'attack1', 0.8), (1.1, 'attack2', 0.8)]),
+                       act('goat', 30, V(C.x, C.y + 0.55), S_, [(0, 'ready', 1.0), (0.2, 'attack1', 0.7), (0.9, 'hit', 1.0), (1.5, 'die', 1.0)]),
+                       act('toshi', 30, V(C.x + 2.4, C.y - 0.3), N, [(0, 'ready', 1.0), (0.4, 'attack2', 0.8), (1.3, 'attack1', 0.8)]), act('troll', 70, V(C.x + 2.4, C.y + 0.7), S_, [(0, 'ready', 1.0), (0.4, 'attack1', 0.8), (1.2, 'die', 1.0)])],
+                      [('flash', 0.9, V(C.x, C.y, 1.2), 4000), ('burst', 0.9, C, 16, 0.8, 0.03), ('boom', 0.95, V(C.x, C.y + 0.4, 0.6), 0.8), ('burst', 1.3, V(C.x + 2.4, C.y + 0.4), 12, 0.7, 0.03)], slow=0.5, name='duel')
+    # BONK's bat: a troll flies
+    NS['slam'] = shot(0, 2.4, lambda k, u: dict(pos=V(-9.0 + 1.0 * k, 3.0, 0.7), tgt=V(-4.6, 3.0, 1.3).lerp(V(-3.8, 8.0, 2.6), ease(ramp(u, 0.8, 1.8))), fov=44, fstop=3.2, focus=4.6, shake=0.003),
+                      [act('bonk', 30, V(-4.6, 2.6), N, [(0, 'ready', 1.0), (0.25, 'attack3', 0.8), (1.4, 'ready', 1.0)]),
+                       thrown('troll', 71, V(-4.6, 3.8), V(-3.6, 11.0), 0.85, 0.8, 3.0, 1.4, pre='idle', seed=3, h=S_)],
+                      [('flash', 0.85, V(-4.6, 3.4, 1.3), 6000), ('burst', 0.85, V(-4.6, 3.4), 20, 1.0, 0.04), ('ring', 0.85, V(-4.6, 3.4, 0.2), 3.0), ('boom', 0.9, V(-4.6, 3.4, 0.4), 1.2)], slow=0.45, name='slam')
+    # GIGA against the giant SLERF
+    M = V(-3.6, 6.8)
+    NS['titan'] = shot(0, 3.8, lambda k, u: dict(pos=V(M.x + (7.5 - k) * math.cos(2.5 + 1.4 * ease(k)), M.y + (7.5 - k) * sn(2.5 + 1.4 * ease(k)), 0.5 + 0.9 * k), tgt=V(M.x, M.y, 2.0), fov=42, fstop=3.6, focus=7.0, shake=0.003),
+                       [act('giga', 30, V(-3.6, 4.2), N + GIGA_FLIP, [(0, 'ready', 1.0), (1.0, 'attack1', 0.8), (2.2, 'attack2', 0.8)]),
+                        act('slerf', 30, V(-3.6, 9.4), S_, [(0, 'ready', 1.0), (1.3, 'attack1', 0.7), (2.4, 'hit', 1.0), (2.9, 'ready', 1.0)])],
+                       [('ring', 1.6, V(-3.6, 6.9, 0.2), 5.0), ('boom', 1.6, V(-3.6, 6.8, 1.6), 2.4), ('burst', 1.6, V(-3.6, 6.9), 30, 2.0, 0.05), ('flash', 1.6, V(-3.6, 6.8, 2.0), 30000), ('ring', 2.6, V(-3.6, 7.5, 0.2), 4.0), ('boom', 2.6, V(-3.6, 7.5, 1.4), 1.9)],
+                       slow=0.6, name='titan')
+    # two PNUTs bomb the giant
+    f1 = fly(V(-8.0, -4.0, 8.5), V(-2.0, 16.0, 3.4), 0.0, 2.4, 0.1, 0.5); f2 = fly(V(0.0, -6.0, 9.5), V(-5.0, 15.0, 4.2), 0.0, 2.4, 0.1, 1.5)
+    AB = bomb_fx(0.6, f1(0.6) + V(0, 0, -0.5), V(-4.2, 9.0, 0.0), 0.55, 2.6) + bomb_fx(0.9, f2(0.9) + V(0, 0, -0.5), V(-2.8, 9.8, 0.0), 0.55, 2.4) + bomb_fx(1.25, f1(1.25) + V(0, 0, -0.5), V(-3.6, 10.5, 0.0), 0.55, 2.8)
+    NS['aerial_support'] = shot(0, 2.6, lambda k, u: dict(pos=V(-12.0, 2.0 + 3.0 * k, 4.2), tgt=V(-3.6, 9.2, 2.0), fov=50, fstop=4.0, focus=14.0, shake=0.003),
+                                [cockpit('pnut', 0, f1, 0.0, 0.0, [(0, 'idle', 1.0)]), cockpit('pnut', 1, f2, 0.0, 0.0, [(0, 'idle', 1.0)]),
+                                 act('slerf', 30, V(-3.6, 9.4), S_, [(0, 'ready', 1.0), (0.8, 'hit', 0.8), (1.6, 'ready', 1.0)]), act('giga', 30, V(-3.6, 5.0), N + GIGA_FLIP, [(0, 'ready', 1.0), (0.8, 'attack1', 0.8)])],
+                                [plane_fx('lead', f1), plane_fx('right', f2)] + AB + [tracers(8, 36, 1.8)], slow=0.8, name='aerial_support')
+    return NS
 
 
 def film():
@@ -291,10 +373,14 @@ def film():
                    [cockpit(*ME, a12, -0.05, 0.0, [(0, 'idle', 1.0)], pose=lambda u: {'LeftArm': (-120 + 20 * sn(u * 6), 0, 20)}), cockpit(*HEAVY, b12, 0.1, 0.35, [(0, 'idle', 1.0), (1.0, 'win', 1.0)])] +
                    [act('chillguy', 0, V(-4.4, 0.4), N, [(0, 'idle', 1.0), (0.4, 'win', 1.0)]), act('wojak', 0, V(-3.0, 0.9), N, [(0, 'idle', 1.1), (0.2, 'win', 1.0)]), act('wojak', 1, V(-5.4, 1.3), N, [(0, 'idle', 1.0), (0.6, 'win', 1.0)])],
                    [plane_fx('lead', a12), plane_fx('left', b12, True, (0.3, 0.36, 0.25)), ('fire', T3 + V(0, -0.8, 1.6), 2.4), ('fire', T3 + V(1.0, -0.4, 2.8), 1.8), ('fire', V(-6.4, 5.2, 0.2), 1.0)], name='home'))
-    for sh in SH:
+    NS = new_shots()
+    for sh in SH + list(NS.values()):
         zs = CROWD.get(sh['name'])
         if zs: sh['actors'] += crowd(sum(ord(c) * (i + 3) for i, c in enumerate(sh['name'])), zs, dur=(sh['t1'] - sh['t0']) * sh['slow'] + 0.6)
-    return SH
+    byname = {sh['name']: sh for sh in SH + list(NS.values())}; out = []; t = 0.0
+    for n in ORDER:                                                       # the final running order; every shot keeps its own duration (a whole number of frames)
+        sh = byname[n]; d = round(sh['t1'] - sh['t0'], 4); sh['t0'] = round(t, 4); sh['t1'] = round(t + d, 4); t += d; out.append(sh)
+    return out
 
 
 # ------------------------------------------------------------------ extra effects (planes, bombs, anti-aircraft fire, the parachute)
