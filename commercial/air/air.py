@@ -134,6 +134,75 @@ def cheer(seed): return lambda u: {'LeftArm': (-150 + 25 * sn(u * 9 + seed), 0, 
 def look_up(deg=-30, u0=0.0, d=0.6): return lambda u: {'Head': (deg * ease(ramp(u, u0, u0 + d)), 0, 0), 'Spine2': (deg * 0.3 * ease(ramp(u, u0, u0 + d)), 0, 0)}
 
 
+_shot_war = shot
+
+
+def shot(t0, t1, cam, *rest, **kw):
+    """Every camera move is steadier than the first cut: handheld shake and roll cut to about a third."""
+    def cam2(k, u):
+        d = dict(cam(k, u)); d['shake'] = d.get('shake', 0.0) * 0.3; d['roll'] = d.get('roll', 0.0) * 0.45; return d
+    return _shot_war(t0, t1, cam2, *rest, **kw)
+
+
+# ------------------------------------------------------------------ the battlefield: troops spread over the whole field, each busy with something
+OURK = ['swordcat', 'floki', 'toshi', 'walter', 'pepe', 'bonk', 'cate', 'chillguy', 'wojak']
+THEIRK = ['troll', 'goat', 'troll', 'slerf', 'troll', 'giga']
+KEEPOUT = [(p.x, p.y) for _, _, p in OUR] + [(p.x, p.y) for _, _, p in TROLLS] + [(LX, 6.2), (-3.2, -8.0), (-3.2, -10.2), (-4.0, -9.4)]
+
+
+def crowd(seed, zones, dur=3.4):
+    """zones: (x0, x1, y0, y1, n, mode) with mode duel | march | cheer | guard. Returns acts, each with a (kind, index) of its own (indices from 20 up, reused shot to shot)."""
+    r = random.Random(seed); out = []; cnt = {}
+    def key(kind):
+        cnt[kind] = cnt.get(kind, 20 - 1) + 1; return (kind, cnt[kind])
+    def free(x0, x1, y0, y1, taken):
+        for _ in range(60):
+            p = (r.uniform(x0, x1), r.uniform(y0, y1))
+            if all(math.hypot(p[0] - q[0], p[1] - q[1]) > 1.5 for q in KEEPOUT + taken): return p
+        return None
+    taken = []
+    for (x0, x1, y0, y1, n, mode) in zones:
+        for j in range(n):
+            p = free(x0, x1, y0, y1, taken)
+            if p is None: continue
+            taken.append(p); ph = r.uniform(0, 1.2)
+            if mode == 'duel':                                                # one of ours and one of theirs, locked together
+                ko, kt = key(r.choice(OURK)), key(r.choice(THEIRK)); a_ = V(p[0], p[1]); b_ = V(p[0] + r.uniform(-0.25, 0.25), p[1] + 1.05)
+                def seqs(first, kind, ph=ph, wob=r.uniform(0.7, 1.0)):
+                    t = -ph; L_ = []; k = first
+                    while t < dur + 1: L_.append((t, 'attack1' if (k % 2 or kind == 'slerf') else 'attack2', wob)); t += 0.95 / wob; k += 1
+                    return L_
+                die_t = r.uniform(1.0, dur - 0.5) if r.random() < 0.45 else None
+                ca = seqs(0, ko[0]); cb = seqs(1, kt[0])
+                if die_t is not None: cb = [c for c in cb if c[0] < die_t] + [(die_t, 'die', 1.0)]; ca = [c for c in ca if c[0] < die_t + 0.6] + [(die_t + 0.6, 'ready', 1.0)]
+                gh = N if ko[0] != 'giga' else N + GIGA_FLIP; th = S_ + (GIGA_FLIP if kt[0] == 'giga' else 0.0)
+                out.append(act(ko[0], ko[1], a_, gh, ca)); out.append(act(kt[0], kt[1], b_, th, cb))
+            elif mode == 'march':                                              # a few of theirs charging our line
+                kt = key(r.choice(THEIRK)); y1 = p[1] - r.uniform(5.0, 8.0); th = S_ + (GIGA_FLIP if kt[0] == 'giga' else 0.0)
+                out.append(act(kt[0], kt[1], go(V(p[0], p[1]), V(p[0] + r.uniform(-1.2, 1.2), y1), 0, dur), th, [(-ph, 'run', 1.15)]))
+            elif mode == 'cheer':
+                ko = key(r.choice(OURK)); out.append(act(ko[0], ko[1], V(p[0], p[1]), N + r.uniform(-0.35, 0.35), [(-ph, 'idle', 1.0), (0.3 + ph, 'win', 1.0)], pose=(lambda u, s=ph * 7: cheer(s)(u) if u > 0.3 + s / 7 else {})))
+            else:                                                              # guard: ours holding the line, ready
+                ko = key(r.choice(OURK)); out.append(act(ko[0], ko[1], V(p[0], p[1]), N + r.uniform(-0.3, 0.3), [(-ph, 'ready', 1.0)], pose=crouch(14, ph * 5)))
+    return out
+
+
+# per shot: where the fighting is (x0, x1, y0, y1, count, mode); every camera keeps its own foreground clear
+CROWD = {
+    'pinned': [(-9, 3, 0.5, 5.5, 3, 'duel'), (-9, 3, 7.0, 13.0, 5, 'march')],
+    'looks_up': [(0.5, 5, -4, 4, 2, 'duel')],
+    'flyover': [(-10, 4, -3.0, 3.0, 4, 'duel'), (-10, 4, 6, 13, 6, 'march'), (-10, 4, -16, -9, 6, 'guard')],
+    'flak': [(-10, 4, -6, 5, 5, 'duel'), (-10, 4, 8, 15, 6, 'march'), (-10, 4, -16, -11, 4, 'guard')],
+    'bombrun': [(-10, 4, -4, 6, 4, 'duel'), (-10, 4, 9, 18, 6, 'march'), (-10, 4, -16, -10, 6, 'guard')],
+    'lane': [(-9, -4.5, 5, 12, 3, 'duel'), (1.5, 5, 5, 12, 3, 'duel')],
+    'giga': [(-9, -5, 9, 15, 3, 'duel'), (0, 4, 8, 15, 3, 'duel'), (-9, 4, -3, 2, 3, 'guard')],
+    'hit': [(1.5, 7, -3, 9, 5, 'duel')],
+    'dive': [(-9, 4, 0, 13, 6, 'duel'), (-9, 4, -14, -4, 5, 'guard')],
+    'chute': [(-10, 4, 2, 13, 6, 'duel'), (-10, 4, -12, 0, 4, 'cheer')],
+    'home': [(-10, 4, -3, 8, 6, 'cheer'), (-10, 4, 10, 16, 3, 'duel')],
+}
+
+
 def film():
     SH = []
     FIELD = [act(k, i, p, N, [(-0.4 * j, 'ready' if j % 2 else 'idle', 1.0)], pose=crouch(20, j)) for j, (k, i, p) in enumerate(OUR)]
@@ -222,6 +291,9 @@ def film():
                    [cockpit(*ME, a12, -0.05, 0.0, [(0, 'idle', 1.0)], pose=lambda u: {'LeftArm': (-120 + 20 * sn(u * 6), 0, 20)}), cockpit(*HEAVY, b12, 0.1, 0.35, [(0, 'idle', 1.0), (1.0, 'win', 1.0)])] +
                    [act('chillguy', 0, V(-4.4, 0.4), N, [(0, 'idle', 1.0), (0.4, 'win', 1.0)]), act('wojak', 0, V(-3.0, 0.9), N, [(0, 'idle', 1.1), (0.2, 'win', 1.0)]), act('wojak', 1, V(-5.4, 1.3), N, [(0, 'idle', 1.0), (0.6, 'win', 1.0)])],
                    [plane_fx('lead', a12), plane_fx('left', b12, True, (0.3, 0.36, 0.25)), ('fire', T3 + V(0, -0.8, 1.6), 2.4), ('fire', T3 + V(1.0, -0.4, 2.8), 1.8), ('fire', V(-6.4, 5.2, 0.2), 1.0)], name='home'))
+    for sh in SH:
+        zs = CROWD.get(sh['name'])
+        if zs: sh['actors'] += crowd(sum(ord(c) * (i + 3) for i, c in enumerate(sh['name'])), zs, dur=(sh['t1'] - sh['t0']) * sh['slow'] + 0.6)
     return SH
 
 
@@ -235,12 +307,19 @@ def air_mats():
     sc = bpy.context.scene; wn = sc.world.node_tree; bgn = wn.nodes['Background']; nl = wn.links.new
     tc = wn.nodes.new('ShaderNodeTexCoord'); sp = wn.nodes.new('ShaderNodeSeparateXYZ'); nl(tc.outputs['Object'], sp.inputs[0])
     cr = wn.nodes.new('ShaderNodeValToRGB'); nl(sp.outputs['Z'], cr.inputs[0]); e = cr.color_ramp.elements
-    e[0].position = 0.35; e[0].color = (0.05, 0.11, 0.24, 1); e[1].position = 0.95; e[1].color = (0.02, 0.02, 0.07, 1)
-    mid = cr.color_ramp.elements.new(0.62); mid.color = (0.03, 0.05, 0.16, 1); nl(cr.outputs['Color'], bgn.inputs['Color'])
+    e[0].position = 0.35; e[0].color = (0.07, 0.13, 0.22, 1); e[1].position = 0.95; e[1].color = (0.02, 0.02, 0.07, 1)
+    mid = cr.color_ramp.elements.new(0.62); mid.color = (0.025, 0.045, 0.12, 1); nl(cr.outputs['Color'], bgn.inputs['Color'])
     vr = wn.nodes.new('ShaderNodeTexVoronoi'); vr.feature = 'F1'; vr.inputs['Scale'].default_value = 140.0; nl(tc.outputs['Object'], vr.inputs['Vector'])
     sr = wn.nodes.new('ShaderNodeValToRGB'); nl(vr.outputs['Distance'], sr.inputs[0]); se = sr.color_ramp.elements; se[0].position = 0.0; se[0].color = (9, 9, 11, 1); se[1].position = 0.05; se[1].color = (0, 0, 0, 1)
-    mx = wn.nodes.new('ShaderNodeMix'); mx.data_type = 'RGBA'; mx.blend_type = 'ADD'; mx.inputs[0].default_value = 1.0
-    nl(cr.outputs['Color'], mx.inputs[6]); nl(sr.outputs['Color'], mx.inputs[7]); nl(mx.outputs[2], bgn.inputs['Color'])
+    def addmix(a_, b_):
+        m_ = wn.nodes.new('ShaderNodeMix'); m_.data_type = 'RGBA'; m_.blend_type = 'ADD'; m_.inputs[0].default_value = 1.0; nl(a_, m_.inputs[6]); nl(b_, m_.inputs[7]); return m_.outputs[2]
+    nm = wn.nodes.new('ShaderNodeVectorMath'); nm.operation = 'NORMALIZE'; nl(tc.outputs['Object'], nm.inputs[0])
+    dt = wn.nodes.new('ShaderNodeVectorMath'); dt.operation = 'DOT_PRODUCT'; dt.inputs[1].default_value = (-0.08, 0.906, 0.41); nl(nm.outputs[0], dt.inputs[0])
+    mr = wn.nodes.new('ShaderNodeValToRGB'); nl(dt.outputs['Value'], mr.inputs[0]); me_ = mr.color_ramp.elements; me_[0].position = 0.9987; me_[0].color = (0, 0, 0, 1); me_[1].position = 0.9991; me_[1].color = (8.5, 9.5, 10.5, 1)
+    hr = wn.nodes.new('ShaderNodeValToRGB'); nl(dt.outputs['Value'], hr.inputs[0]); he_ = hr.color_ramp.elements; he_[0].position = 0.88; he_[0].color = (0, 0, 0, 1); he_[1].position = 0.9986; he_[1].color = (0.20, 0.32, 0.5, 1)
+    cn = wn.nodes.new('ShaderNodeTexNoise'); cn.inputs['Scale'].default_value = 2.2; cn.inputs['Detail'].default_value = 7; nl(tc.outputs['Object'], cn.inputs['Vector'])
+    cc = wn.nodes.new('ShaderNodeValToRGB'); nl(cn.outputs['Fac'], cc.inputs[0]); ce = cc.color_ramp.elements; ce[0].position = 0.45; ce[0].color = (0, 0, 0, 1); ce[1].position = 0.72; ce[1].color = (0.05, 0.075, 0.14, 1)
+    sky = addmix(addmix(addmix(cr.outputs['Color'], cc.outputs['Color']), sr.outputs['Color']), hr.outputs['Color']); nl(addmix(sky, mr.outputs['Color']), bgn.inputs['Color'])
     MATS['propdisc'] = m; MATS['bombmat'] = sets.flat('bomb_olive', (0.42, 0.24, 0.09), 0.5, metal=0.1); MATS['cloth'] = sets.flat('chute_cloth', (0.95, 0.55, 0.14), 0.7)
     bpy.ops.mesh.primitive_uv_sphere_add(segments=12, ring_count=8, radius=1.0); o = bpy.context.active_object
     for p in o.data.polygons: p.use_smooth = True
@@ -278,19 +357,41 @@ def build_fx_air(K, L, sh, frames, uof, rng):
                     s = P['scarf']; key3(K, s, 'location', f, (0.0, 0.9 + 0.06 * sn(u * 40), 0.9)); K.add(s, 'rotation_euler', 2, f, 0.18 * sn(u * 31 + 1)); K.add(s, 'rotation_euler', 0, f, 0.1 * sn(u * 23))
                 for j, b in enumerate(P['bombs']): K.add(b, 'hide_render', 0, f, bool(j < len(drop) and u >= drop[j]))
             if smoke or fire:
-                us, ue = (smoke or fire)[0], 99.0; trail = [obj('ball', 'smoke') for _ in range(18)]; head = [obj('ball', 'fire') for _ in range(4)]
-                for o in trail + head: life(o)
+                us = (smoke or fire)[0]; uf = fire[0] if fire else 1e9; ue = dive[0] if dive else 1e9
+                def body(u, which):
+                    """Where the flames leave PNUT: the torso, the tail and the shoulder (he lies along his path with his head forward)."""
+                    h_, p_ = heading_of(fn, u); n3 = head_dir(h_).to_3d(); c = fn(u)
+                    return (c + n3 * (0.35 + (0.35 if which == 2 else 0.0)) + V(0, 0, -0.1)) if which != 1 else (c - n3 * 0.45 + V(0, 0, 0.35))
+                NF, NS, NE = 34, 22, 26
+                fl = [obj('ball', 'fire') for _ in range(NF)]; sm = [obj('ball', 'smoke') for _ in range(NS)]; em = [obj('ball', 'fire') for _ in range(NE)]
+                for o in fl + sm + em: life(o)
+                lt = bpy.data.objects.new(f'pfire_light_{key}_{f0}', bpy.data.lights.new(f'pfl_{key}_{f0}', 'POINT')); bpy.context.scene.collection.objects.link(lt); lt.data.color = (1.0, 0.5, 0.16); lt.data.shadow_soft_size = 0.5; lt.data.energy = 0.0
+                K.add(lt.data, 'energy', 0, f0 - 1, 0.0); K.add(lt.data, 'energy', 0, f1, 0.0)
+                pr = random.Random(hash(key) % 1000 if False else sum(map(ord, key)) + 5)
+                par = [(pr.uniform(0, 1), pr.randrange(3), V(pr.uniform(-0.25, 0.25), pr.uniform(-0.2, 0.2), pr.uniform(0.0, 0.2)), pr.uniform(0.7, 1.3)) for _ in range(NF + NS + NE)]
                 for f in frames:
-                    u = uof(f)
-                    for j, o in enumerate(trail):
-                        uj = u - 0.06 * (j + 1)
-                        if smoke and uj > us:
-                            key3(K, o, 'location', f, fn(uj) + V(0.0, 0.0, 0.05 * j) + V(rng.uniform(-0.04, 0.04), 0, 0)); key3(K, o, 'scale', f, [0.1 + 0.04 * j] * 3); key3(K, o, 'color', f, (0.06, 0.055, 0.06, max(0.0, 0.5 - 0.025 * j)))
-                        else: key3(K, o, 'scale', f, (0, 0, 0))
-                    for j, o in enumerate(head):
-                        if fire and u > fire[0]:
-                            key3(K, o, 'location', f, fn(u) - head_dir(heading_of(fn, u)[0]).to_3d() * (0.5 + 0.4 * j) + V(0.0, 0.0, 0.1 + 0.2 * sn(u * 20 + j))); key3(K, o, 'scale', f, [(0.24 - 0.04 * j) * (0.8 + 0.2 * sn(u * 25 + j))] * 3); key3(K, o, 'color', f, (1.0, 0.4, 0.1, 1.1))
-                        else: key3(K, o, 'scale', f, (0, 0, 0))
+                    u = uof(f); on = ue > u and u > us
+                    big = 0.0 if not on else min(1.0, (u - us) / 0.35)
+                    if on and u > uf: big = 1.0 + min(1.0, (u - uf) / 0.5)
+                    c0 = fn(u)
+                    for j, o in enumerate(fl):                                                   # flame tongues: born on the body, left behind on the path, lick upward
+                        off, wh, jit, sz = par[j]; life_ = 0.42; a = ((u / life_) + off) % 1.0; tb = u - a * life_
+                        if not on or tb < max(us, uf) - 0.05 or big < 0.01: key3(K, o, 'scale', f, (0, 0, 0)); continue
+                        p = body(tb, wh) + jit + V(0, 0, 0.9 * a * a * big) - head_dir(heading_of(fn, u)[0]).to_3d() * 0.0
+                        s_ = sz * (0.5 + 0.45 * big) * (1.0 - a) ** 0.55 * (0.8 + 0.2 * sn(u * 31 + j * 2.1)) * 0.62
+                        key3(K, o, 'location', f, p); key3(K, o, 'scale', f, (s_, s_, s_ * 1.8)); key3(K, o, 'color', f, (1.0, 0.45 - 0.25 * a, 0.08, 1.5 * (1.0 - a) ** 0.8))
+                    for j, o in enumerate(sm):                                                  # black smoke, thick, rising and drifting back
+                        off, wh, jit, sz = par[NF + j]; life_ = 1.5; a = ((u / life_) + off) % 1.0; tb = u - a * life_
+                        if not on or tb < us or big < 0.01: key3(K, o, 'scale', f, (0, 0, 0)); continue
+                        p = body(tb, wh) + jit * 2 + V(0.25 * sn(j), 0.0, 1.2 * a * big + 0.2)
+                        s_ = (0.2 + 0.8 * a) * sz * (0.55 + 0.5 * big)
+                        key3(K, o, 'location', f, p); key3(K, o, 'scale', f, (s_, s_, s_)); key3(K, o, 'color', f, (0.045, 0.04, 0.05, 0.55 * sn(PI * a) + 0.05))
+                    for j, o in enumerate(em):                                                  # sparks thrown off, falling in a curve
+                        off, wh, jit, sz = par[NF + NS + j]; life_ = 0.9; a = ((u / life_) + off) % 1.0; tb = u - a * life_; t_ = a * life_
+                        if not on or tb < uf or big < 0.01 or not fire: key3(K, o, 'scale', f, (0, 0, 0)); continue
+                        v = V(pr.uniform(-1, 1) * 0.0 + sn(j * 7.3) * 1.3, sn(j * 3.1) * 1.3, 1.1 + 0.8 * sn(j * 5.7)); p = body(tb, wh) + v * t_ + V(0, 0, -2.2 * t_ * t_)
+                        key3(K, o, 'location', f, p); key3(K, o, 'scale', f, [0.035 + 0.02 * sz] * 3); key3(K, o, 'color', f, (1.0, 0.7, 0.25, 2.0 * (1.0 - a)))
+                    lt.location = body(u, 0); lt.keyframe_insert('location', frame=f); K.add(lt.data, 'energy', 0, f, 0.0 if not on else (900 + 500 * sn(u * 23)) * (0.3 + 0.7 * min(1.0, big)))
         elif kind == 'bomb':
             _, u0, src, dst, fall = e; o = obj('bombmesh', 'bombmat', shadow=True); life(o)
             for f in frames:
@@ -316,6 +417,20 @@ def build_fx_air(K, L, sh, frames, uof, rng):
                     key3(K, o, 'location', f, mid); o.rotation_euler = d.normalized().to_track_quat('Z', 'Y').to_euler(); key3(K, o, 'scale', f, (0.4, 0.4, d.length) if op > 0.5 else (0, 0, 0))
 
 
+sys.path[:0] = [os.path.dirname(os.path.abspath(__file__))]
+import env as _env
+war.SUNK = (2.6, (0.55, 0.68, 1.0), 66, 185)       # the moon, behind the enemy lines and a little to the left
+war.FILLK = (700, (0.35, 0.5, 0.95))
+_arena_war = war.arena_dump
+
+
+def arena_night():
+    A = _arena_war()
+    bpy.data.objects['backdrop'].hide_render = True; bpy.data.objects['backdrop'].hide_viewport = True
+    _env.build_env(A); return A
+
+
+war.arena_dump = arena_night
 war.build_fx = build_fx_air; war.fx_mats = air_mats; war.film = film
 
 

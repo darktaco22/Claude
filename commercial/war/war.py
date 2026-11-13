@@ -21,6 +21,8 @@ def V(*a): return Vector(a)
 def hd(d): return math.atan2(d.x, -d.y)            # heading that faces direction d
 def call(v, u): return v(u) if callable(v) else v
 sn = math.sin
+SUNK = (4.2, (1.0, 0.5, 0.26), 79, 152)          # sun: strength, colour, elevation, azimuth (DAWN PATROL overrides these for a moonlit night)
+FILLK = (520, (0.55, 0.45, 0.85))
 N, S_ = PI, 0.0                                     # headings: north (the enemy), south
 LOOP = {'run', 'walk', 'idle', 'ready'}
 LX = -5.0                                           # the lane: the left bridge
@@ -603,8 +605,8 @@ def main():
         o.location = loc; sc.collection.objects.link(o)
         if tgt: o.rotation_euler = (Vector(tgt) - Vector(loc)).to_track_quat('-Z', 'Y').to_euler()
         L.append(o); return o
-    sun = light('sun', 'SUN', (0, 0, 10), 4.2, (1.0, 0.5, 0.26)); sun.rotation_euler = Euler((math.radians(79), 0, math.radians(152))); sun.data.angle = 0.05     # low, behind their lines
-    light('sky_fill', 'AREA', (0, -26, 14), 520, (0.55, 0.45, 0.85), 20, (0, 0, 0))
+    sun = light('sun', 'SUN', (0, 0, 10), SUNK[0], SUNK[1]); sun.rotation_euler = Euler((math.radians(SUNK[2]), 0, math.radians(SUNK[3]))); sun.data.angle = 0.05     # low, behind their lines
+    light('sky_fill', 'AREA', (0, -26, 14), FILLK[0], FILLK[1], 20, (0, 0, 0))
     rim = light('rim', 'SPOT', (0, 0, 5), 900, (1.0, 0.62, 0.36), 0.25); rim.data.spot_size = math.radians(46); rim.data.spot_blend = 0.6; rim.rotation_mode = 'QUATERNION'
     emb = [light(f'ember{i}', 'POINT', (p.x, p.y, 0.9), 420, (1.0, 0.42, 0.12), 0.35) for i, p in enumerate(A['ruins'])]
     light('king_glow', 'POINT', (0, -12.3, 1.6), 260, OURS, 0.5); light('en_glow', 'POINT', (0, 12.3, 1.6), 260, THEIRS, 0.5)
