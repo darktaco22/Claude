@@ -28,16 +28,17 @@ def _glow(name, col, strength):
 
 
 def _mist(name, col, strength, alpha):
-    """A soft ground-mist sheet: emissive teal, opaque only where a big noise says so."""
+    """A soft ground-mist sheet: emissive, opaque only where a big noise says so, fading to nothing before the sheet's edge."""
     m = bpy.data.materials.new(name); m.use_nodes = True; nt = m.node_tree; L = nt.links.new
     for n in list(nt.nodes):
         if n.type != 'OUTPUT_MATERIAL': nt.nodes.remove(n)
     out = nt.nodes['Material Output']
-    tc = nt.nodes.new('ShaderNodeTexCoord'); nz = nt.nodes.new('ShaderNodeTexNoise'); nz.inputs['Scale'].default_value = 1.1; nz.inputs['Detail'].default_value = 5; L(tc.outputs['Object'], nz.inputs['Vector'])
-    cr = nt.nodes.new('ShaderNodeValToRGB'); cr.color_ramp.elements[0].position = 0.42; cr.color_ramp.elements[1].position = 0.72; L(nz.outputs['Fac'], cr.inputs[0])
-    gr = nt.nodes.new('ShaderNodeTexGradient'); gr.gradient_type = 'SPHERICAL'; L(tc.outputs['Object'], gr.inputs['Vector'])
-    ramp2 = nt.nodes.new('ShaderNodeValToRGB'); ramp2.color_ramp.elements[0].position = 0.0; ramp2.color_ramp.elements[0].color = (1, 1, 1, 1); ramp2.color_ramp.elements[1].position = 0.95; ramp2.color_ramp.elements[1].color = (0, 0, 0, 1); L(gr.outputs['Fac'], ramp2.inputs[0])
-    mul = nt.nodes.new('ShaderNodeMath'); mul.operation = 'MULTIPLY'; L(cr.outputs['Color'], mul.inputs[0]); L(ramp2.outputs['Color'], mul.inputs[1])
+    tc = nt.nodes.new('ShaderNodeTexCoord'); nz = nt.nodes.new('ShaderNodeTexNoise'); nz.inputs['Scale'].default_value = 3.0; nz.inputs['Detail'].default_value = 5; L(tc.outputs['Object'], nz.inputs['Vector'])
+    cr = nt.nodes.new('ShaderNodeValToRGB'); cr.color_ramp.elements[0].position = 0.40; cr.color_ramp.elements[1].position = 0.75; L(nz.outputs['Fac'], cr.inputs[0])
+    mp = nt.nodes.new('ShaderNodeMapping'); mp.inputs['Scale'].default_value = (2.0, 2.0, 2.0); L(tc.outputs['Object'], mp.inputs[0])
+    gr = nt.nodes.new('ShaderNodeTexGradient'); gr.gradient_type = 'SPHERICAL'; L(mp.outputs[0], gr.inputs['Vector'])
+    pw = nt.nodes.new('ShaderNodeMath'); pw.operation = 'POWER'; pw.inputs[1].default_value = 1.6; L(gr.outputs['Fac'], pw.inputs[0])
+    mul = nt.nodes.new('ShaderNodeMath'); mul.operation = 'MULTIPLY'; L(cr.outputs['Color'], mul.inputs[0]); L(pw.outputs[0], mul.inputs[1])
     sc = nt.nodes.new('ShaderNodeMath'); sc.operation = 'MULTIPLY'; sc.inputs[1].default_value = alpha; L(mul.outputs[0], sc.inputs[0])
     em = nt.nodes.new('ShaderNodeEmission'); em.inputs['Color'].default_value = (*col, 1); em.inputs['Strength'].default_value = strength
     tr = nt.nodes.new('ShaderNodeBsdfTransparent'); mx = nt.nodes.new('ShaderNodeMixShader'); L(sc.outputs[0], mx.inputs[0]); L(tr.outputs[0], mx.inputs[1]); L(em.outputs[0], mx.inputs[2]); L(mx.outputs[0], out.inputs['Surface'])
@@ -78,14 +79,14 @@ def _tomb(rng, x, y, M):
 def _tree(rng, x, y, M, big=1.0):
     h = rng.uniform(5.5, 8.5) * big; root = bpy.data.objects.new('tree', None); bpy.context.scene.collection.objects.link(root); root.location = (x, y, 0); root.rotation_euler = (0, 0, rng.uniform(0, 6.28))
     def add(o): o.parent = root; return o
-    lean = rng.uniform(-0.18, 0.18); add(_prim('cone', (math.sin(lean) * h * 0.5, 0, h * 0.5), (0.95 * big, 0.95 * big, h), (0, lean, 0), M['bark'], v=12, r2=0.26))
+    lean = rng.uniform(-0.18, 0.18); add(_prim('cone', (math.sin(lean) * h * 0.5, 0, h * 0.5), (1.5 * big, 1.5 * big, h), (0, lean, 0), M['bark'], v=12, r2=0.26))
     for i in range(rng.randint(6, 10)):                                                         # gnarled branches that fork once
         z0 = rng.uniform(0.45, 0.95) * h; a = rng.uniform(0, 6.28); sp = rng.uniform(0.7, 1.25); ln = rng.uniform(2.0, 4.6) * big
         bx, by = math.cos(a) * 0.15, math.sin(a) * 0.15; d = Vector((math.cos(a) * math.sin(sp), math.sin(a) * math.sin(sp), math.cos(sp)))
         mid = Vector((bx, by, z0)) + d * ln * 0.5; rot = d.to_track_quat('Z', 'Y').to_euler()
-        add(_prim('cone', tuple(mid), (0.28 * big, 0.28 * big, ln), tuple(rot), M['bark'], v=7, r2=0.2))
+        add(_prim('cone', tuple(mid), (0.42 * big, 0.42 * big, ln), tuple(rot), M['bark'], v=7, r2=0.2))
         tip = Vector((bx, by, z0)) + d * ln; a2 = a + rng.uniform(-0.9, 0.9); sp2 = sp + rng.uniform(-0.2, 0.5); d2 = Vector((math.cos(a2) * math.sin(sp2), math.sin(a2) * math.sin(sp2), math.cos(sp2))); l2 = ln * rng.uniform(0.4, 0.7)
-        add(_prim('cone', tuple(tip + d2 * l2 * 0.5), (0.14 * big, 0.14 * big, l2), tuple(d2.to_track_quat('Z', 'Y').to_euler()), M['bark'], v=6, r2=0.2))
+        add(_prim('cone', tuple(tip + d2 * l2 * 0.5), (0.22 * big, 0.22 * big, l2), tuple(d2.to_track_quat('Z', 'Y').to_euler()), M['bark'], v=6, r2=0.2))
     return root
 
 
@@ -95,11 +96,11 @@ def build_env(A=None, seed=11):
              moss=_mat('e_moss', (0.1, 0.22, 0.12), 0.95, bump=0.8, scale=14, tint2=(0.04, 0.1, 0.06)), bark=_mat('e_bark', (0.07, 0.055, 0.07), 0.95, bump=1.0, scale=9, tint2=(0.02, 0.015, 0.03)),
              iron=_mat('e_iron', (0.04, 0.04, 0.05), 0.55, metal=0.8, bump=0.1, scale=3), hill=_mat('e_hill', (0.025, 0.035, 0.075), 0.95, emit=0.6, bump=0.2, scale=2, tint2=(0.02, 0.025, 0.06)),
              lamp=_glow('e_lamp', (1.0, 0.62, 0.25), 22.0), teal=_glow('e_teal', (0.25, 1.0, 0.85), 14.0), door=_glow('e_door', (0.25, 1.0, 0.8), 9.0),
-             pump=_glow('e_pump', (1.0, 0.42, 0.08), 4.0), wood=_mat('e_wood', (0.16, 0.1, 0.08), 0.8, bump=0.6, scale=12), mist=_mist('e_mist', (0.28, 0.85, 0.8), 0.9, 0.55), cloud=_mist('e_cloud', (0.35, 0.4, 0.75), 0.25, 0.9))
+             pump=_glow('e_pump', (1.0, 0.42, 0.08), 4.0), wood=_mat('e_wood', (0.16, 0.1, 0.08), 0.8, bump=0.6, scale=12), mist=_mist('e_mist', (0.22, 0.6, 0.62), 0.5, 0.5))
     # 1. hills on the horizon, dark against the sky (the sky itself is the world: gradient, stars, moon)
     for i in range(34):
         a = rng.uniform(0, 2 * PI); r = rng.uniform(46, 70); w = rng.uniform(14, 30); hh = rng.uniform(2.5, 8.0)
-        _prim('sphere', (math.cos(a) * r, 4 + math.sin(a) * r, -1.0), (w, w * rng.uniform(0.8, 1.3), hh * 2), mat=M['hill'], v=16, rc=8)
+        _prim('sphere', (math.cos(a) * r, 4 + math.sin(a) * r, -1.0), (w, w * rng.uniform(0.8, 1.3), hh * 2), mat=M['hill'], v=40, rc=20)
     for i in range(40):                                                                          # far dead trees on the hills: silhouettes
         a = rng.uniform(0, 2 * PI); r = rng.uniform(34, 58)
         t = _tree(rng, math.cos(a) * r, 4 + math.sin(a) * r, M, rng.uniform(1.3, 2.3)); t.location.z = rng.uniform(0.0, 1.5)
@@ -152,13 +153,7 @@ def build_env(A=None, seed=11):
         if -8.5 < x < 6.0 and -22 < y < 22: continue
         s = rng.uniform(0.35, 0.7); _prim('sphere', (x, y, s * 0.4), (s * 1.2, s * 1.2, s), mat=M['pump'], v=14, rc=8)
     # 7. ground mist, thickest at the edges, teal under the moon
-    for i in range(34):
-        x = rng.uniform(-18, 18); y = rng.uniform(-30, 34); s = rng.uniform(9, 17); z = rng.uniform(0.12, 0.9)
+    for i in range(18):
+        x = rng.uniform(-18, 18); y = rng.uniform(-30, 34); s = rng.uniform(10, 18); z = rng.uniform(0.15, 0.7)
         _prim('plane', (x, y, z), (s, s, 1), (0, 0, rng.uniform(0, 6.28)), M['mist'])
-    for i in range(16):                                                                          # thin haze higher up between the camera and the far hills
-        x = rng.uniform(-22, 22); y = rng.uniform(14, 48); s = rng.uniform(16, 28); z = rng.uniform(3.0, 9.0)
-        _prim('plane', (x, y, z), (s, s, 1), (0, 0, rng.uniform(0, 6.28)), M['mist'])
-    # 8. low clouds drifting across the moon (huge soft sheets, high up)
-    for i in range(9):
-        _prim('plane', (rng.uniform(-30, 30), rng.uniform(25, 70), rng.uniform(16, 30)), (rng.uniform(30, 50), rng.uniform(14, 22), 1), (rng.uniform(-0.25, 0.25), rng.uniform(-0.25, 0.25), rng.uniform(0, 6.28)), M['cloud'])
     return M

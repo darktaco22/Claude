@@ -320,6 +320,8 @@ def air_mats():
     cn = wn.nodes.new('ShaderNodeTexNoise'); cn.inputs['Scale'].default_value = 2.2; cn.inputs['Detail'].default_value = 7; nl(tc.outputs['Object'], cn.inputs['Vector'])
     cc = wn.nodes.new('ShaderNodeValToRGB'); nl(cn.outputs['Fac'], cc.inputs[0]); ce = cc.color_ramp.elements; ce[0].position = 0.45; ce[0].color = (0, 0, 0, 1); ce[1].position = 0.72; ce[1].color = (0.05, 0.075, 0.14, 1)
     sky = addmix(addmix(addmix(cr.outputs['Color'], cc.outputs['Color']), sr.outputs['Color']), hr.outputs['Color']); nl(addmix(sky, mr.outputs['Color']), bgn.inputs['Color'])
+    vo = wn.nodes.new('ShaderNodeVolumePrincipled'); vo.inputs['Density'].default_value = 0.012; vo.inputs['Color'].default_value = (0.45, 0.65, 1.0, 1); vo.inputs['Anisotropy'].default_value = 0.35
+    nl(vo.outputs['Volume'], wn.nodes['World Output'].inputs['Volume'])
     MATS['propdisc'] = m; MATS['bombmat'] = sets.flat('bomb_olive', (0.42, 0.24, 0.09), 0.5, metal=0.1); MATS['cloth'] = sets.flat('chute_cloth', (0.95, 0.55, 0.14), 0.7)
     bpy.ops.mesh.primitive_uv_sphere_add(segments=12, ring_count=8, radius=1.0); o = bpy.context.active_object
     for p in o.data.polygons: p.use_smooth = True
@@ -378,8 +380,8 @@ def build_fx_air(K, L, sh, frames, uof, rng):
                         off, wh, jit, sz = par[j]; life_ = 0.42; a = ((u / life_) + off) % 1.0; tb = u - a * life_
                         if not on or tb < max(us, uf) - 0.05 or big < 0.01: key3(K, o, 'scale', f, (0, 0, 0)); continue
                         p = body(tb, wh) + jit + V(0, 0, 0.9 * a * a * big) - head_dir(heading_of(fn, u)[0]).to_3d() * 0.0
-                        s_ = sz * (0.5 + 0.45 * big) * (1.0 - a) ** 0.55 * (0.8 + 0.2 * sn(u * 31 + j * 2.1)) * 0.62
-                        key3(K, o, 'location', f, p); key3(K, o, 'scale', f, (s_, s_, s_ * 1.8)); key3(K, o, 'color', f, (1.0, 0.45 - 0.25 * a, 0.08, 1.5 * (1.0 - a) ** 0.8))
+                        s_ = sz * (0.5 + 0.45 * big) * (1.0 - a) ** 0.55 * (0.8 + 0.2 * sn(u * 31 + j * 2.1)) * 0.5
+                        key3(K, o, 'location', f, p); key3(K, o, 'scale', f, (s_ * 0.8, s_ * 0.8, s_ * 2.6)); key3(K, o, 'color', f, (1.0, 0.34 - 0.2 * a, 0.03, 0.95 * (1.0 - a) ** 0.8))
                     for j, o in enumerate(sm):                                                  # black smoke, thick, rising and drifting back
                         off, wh, jit, sz = par[NF + j]; life_ = 1.5; a = ((u / life_) + off) % 1.0; tb = u - a * life_
                         if not on or tb < us or big < 0.01: key3(K, o, 'scale', f, (0, 0, 0)); continue
@@ -431,6 +433,17 @@ def arena_night():
 
 
 war.arena_dump = arena_night
+_finish_war = war.UD.finish
+
+
+def finish_night(sc):
+    _finish_war(sc)
+    for n in sc.node_tree.nodes:
+        if n.type == 'MIX_RGB' and tuple(round(c, 2) for c in n.inputs[2].default_value[:3]) == (0.3, 0.5, 0.82): n.inputs[2].default_value = (0.02, 0.05, 0.1, 1)       # the aerial haze: deep night blue, not a grey wash
+        if n.type == 'COLORBALANCE': n.lift = (0.98, 1.0, 1.05); n.gain = (0.97, 1.0, 1.05)
+
+
+war.UD.finish = finish_night
 war.build_fx = build_fx_air; war.fx_mats = air_mats; war.film = film
 
 
