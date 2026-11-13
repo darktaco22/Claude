@@ -89,3 +89,8 @@ Known nit: the hole edge is stair-stepped (0.2 m grid).
 
 `render_all.sh` installs Blender (`../noobpro/setup.sh`), clones the one Rocketbox avatar (sparse, into `/home/user/microsoft/microsoft-rocketbox`),
 regenerates the UI frames and builds both scenes. FBX import needs no add-on (`--factory-startup` is fine).
+
+## Space / phone-throw / extra fall angles (latest)
+- Trader throws the phone at T_SWAP; candle rises from the landed phone. Space segment (climb, float, tumble, fall) is built at SP=(40000,0,0) with its own World 'space'. New fall angles: ride-along, ground look-up, tower cam.
+- Film is 716 frames (~29.8 s + hold). Partial re-render: `reuse_frames.py OLD_EDL OLD_FRAMES NEW_FRAMES KEEP_FIRST` writes todo lists; `render_todo.sh` renders them, runs finish.py and encodes (crf 21, ~27 MB). Run as a tracked background job; exit 3 = relaunch.
+- Could not watch the YouTube references (bot check); angles are based on descriptions/thumbnails.
