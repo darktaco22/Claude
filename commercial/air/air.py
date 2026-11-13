@@ -230,7 +230,7 @@ def new_shots():
     # the line, dollying past: every kind of fighter we have, readying
     kinds = ['swordcat', 'floki', 'toshi', 'walter', 'pepe', 'bonk', 'cate', 'chillguy', 'wojak']; xs = [-9.4 + 1.55 * j for j in range(9)]
     line = [act(kd, 30, V(xs[j], -4.6 + 0.35 * sn(j * 2.3)), N, [(-0.3 * j, 'ready', 1.0), (0.5 + 0.2 * j, 'attack1', 0.7), (1.6 + 0.1 * j, 'ready', 1.0)], pose=crouch(16, j)) for j, kd in enumerate(kinds)]
-    NS['muster'] = shot(0, 2.8, lambda k, u: dict(pos=V(lerp(5.2, -10.6, ease(k)), -8.6, 1.1), tgt=V(lerp(5.2, -10.6, ease(k)) - 1.2, -4.2, 1.25), fov=40, fstop=2.8, focus=4.6, shake=0.002), line, [tracers(8, 32, 1.8)], name='muster')
+    NS['muster'] = shot(0, 2.8, lambda k, u: dict(pos=V(lerp(2.6, -5.6, ease(k)), -9.4, 1.15), tgt=V(lerp(2.6, -5.6, ease(k)) - 0.8, -4.0, 1.3), fov=46, fstop=2.8, focus=4.6, shake=0.002), line, [tracers(8, 32, 1.8)], name='muster')
     # a PNUT skims the ground; acorns walk through the trolls ahead of him
     fw = fly(V(-4.6, -26.0, 2.1), V(-4.6, 16.0, 2.3), 0.0, 2.6, 0.1, 0.5)
     fwl = fly(V(-7.4, -28.0, 2.7), V(-7.4, 14.0, 3.0), 0.0, 2.6, 0.12, 1.5); fwr = fly(V(-1.8, -29.0, 2.9), V(-1.8, 13.0, 3.2), 0.0, 2.6, 0.12, 2.5)
@@ -238,11 +238,11 @@ def new_shots():
     for j, u0 in enumerate((0.9, 1.2, 1.5, 1.8)):
         dst = V(-4.6 + 1.1 * sn(j * 2.0), fw(u0).y + 8.0, 0.0); BM3 += bomb_fx(u0, fw(u0) + V(0, 0, -0.5), dst, 0.55, 2.0)
         TH3.append(thrown('troll', 41 + j, V(dst.x, dst.y), V(dst.x + sn(j * 3.1) * 2.2, dst.y + 2.4), u0 + 0.55, 0.6, 1.8, 1.1 + 0.2 * j, pre='run', seed=j + 1, h=S_, pre_from=V(dst.x, dst.y + 3.0)))
-    NS['wing_pass'] = shot(0, 2.6, lambda k, u: dict(pos=fw(u) + V(2.0, -4.2, 1.3 - 0.4 * k), tgt=fw(u) + V(0, 3.0, -0.2), fov=64, fstop=6.0, focus=7.0, shake=0.004),
+    NS['wing_pass'] = shot(0, 2.6, lambda k, u: dict(pos=fw(u) + V(2.6, -7.0, 2.3 - 0.6 * k), tgt=fw(u) + V(-0.3, 3.0, -0.2), fov=68, fstop=6.0, focus=7.0, shake=0.004),
                            [cockpit('pnut', 0, fw, 0.0, 0.0, [(0, 'idle', 1.0)]), cockpit('nyancat', 0, fwl, 0.0, 0.0, [(0, 'idle', 1.0)]), cockpit('nyancat', 1, fwr, 0.0, 0.0, [(0, 'idle', 1.0)])] + TH3, [plane_fx('lead', fw, drop=(0.9, 1.2, 1.5, 1.8)), ('rainbow', fwl, 1.0), ('rainbow', fwr, 1.0)] + BM3 + [tracers(8, 33, 1.6)], slow=0.8, name='wing_pass')
     # weaving through the flak
     wv = lambda u: V(-3.0 + 2.4 * sn(u * 3.4), -8.0 + 11.5 * u, 5.4 + 0.8 * sn(u * 4.3))
-    NS['barrel_roll'] = shot(0, 2.4, lambda k, u: dict(pos=wv(u) + V(5.2 - 1.2 * k, -0.8, 0.4), tgt=wv(u) + V(0, 0.9, -0.2), fov=46, fstop=3.6, focus=5.6, shake=0.004),
+    NS['barrel_roll'] = shot(0, 2.4, lambda k, u: dict(pos=wv(u) + V(6.6 - 1.2 * k, -1.2, 0.6), tgt=wv(u) + V(0, 0.9, -0.2), fov=48, fstop=3.6, focus=5.6, shake=0.004),
                              [cockpit('pnut', 0, wv, 0.0, 0.0, [(0, 'idle', 1.0)])],
                              [plane_fx('lead', wv), aa(26, 77, 0.0, 1.8, lambda u: wv(u + 0.4), (-4.5, 4.5)), flak(0.3, wv(0.6) + V(2.2, 2.0, 1.6), 1.1), flak(0.9, wv(1.2) + V(-2.0, 2.2, -1.0), 1.0), flak(1.4, wv(1.6) + V(1.8, 1.5, 1.2), 1.2)],
                              slow=0.7, name='barrel_roll')
@@ -253,7 +253,7 @@ def new_shots():
         CM += bomb_fx(u0, V(x0, y0 + 1.0, 9.5), V(x0, y0, 0.0), 0.5, 2.2)
         TH5.append(thrown('troll', 50 + j, V(x0, y0), V(x0 + sn(j * 2.6) * 2.4, y0 - 2.4), u0 + 0.5, 0.6, 1.9, 1.0 + 0.2 * j, pre='run', seed=j + 2, h=S_, pre_from=V(x0, y0 + 3.5)))
     for j in range(4): RUN5.append(act('troll', 60 + j, go(V(-6.5 + 1.6 * j, 15.0 + 1.2 * j), V(-6.5 + 1.6 * j, 5.0 + 1.2 * j), 0, 1.65), S_, [(-0.1 * j, 'run', 1.25)]))
-    NS['carpet'] = shot(0, 3.0, lambda k, u: dict(pos=V(-5.0, -14.0, 0.9), tgt=V(-4.8, 10.0, 1.6 + 0.3 * k), fov=24, fstop=4.0, focus=22.0, shake=0.003), TH5 + RUN5, CM + [tracers(10, 34, 2.0)], slow=0.55, name='carpet')
+    NS['carpet'] = shot(0, 3.0, lambda k, u: dict(pos=V(-8.4, -11.0, 1.0), tgt=V(-4.8, 10.0, 1.6 + 0.3 * k), fov=26, fstop=4.0, focus=22.0, shake=0.003), TH5 + RUN5, CM + [tracers(10, 34, 2.0)], slow=0.55, name='carpet')
     # both armies collide: an aerial track along the river
     NS['charge_wide'] = shot(0, 3.4, lambda k, u: dict(pos=V(lerp(-14.0, -0.5, ease(k)), -7.0, 5.8), tgt=V(lerp(-14.0, -0.5, ease(k)) + 5.0, 2.0, 1.0), fov=58, fstop=5.6, focus=14.0, shake=0.003), [],
                              [tracers(14, 35, 2.4), ('boom', 0.9, V(-5.0, 1.0, 0.4), 1.3), ('boom', 1.7, V(-2.0, 2.0, 0.4), 1.4), ('boom', 2.4, V(-8.0, 3.0, 0.4), 1.2)], name='charge_wide')
@@ -271,7 +271,7 @@ def new_shots():
                       [('flash', 0.85, V(-4.6, 3.4, 1.3), 6000), ('burst', 0.85, V(-4.6, 3.4), 20, 1.0, 0.04), ('ring', 0.85, V(-4.6, 3.4, 0.2), 3.0), ('boom', 0.9, V(-4.6, 3.4, 0.4), 1.2)], slow=0.45, name='slam')
     # GIGA against the giant SLERF
     M = V(-3.6, 6.8)
-    NS['titan'] = shot(0, 3.8, lambda k, u: dict(pos=V(M.x + (7.5 - k) * math.cos(2.5 + 1.4 * ease(k)), M.y + (7.5 - k) * sn(2.5 + 1.4 * ease(k)), 0.5 + 0.9 * k), tgt=V(M.x, M.y, 2.0), fov=42, fstop=3.6, focus=7.0, shake=0.003),
+    NS['titan'] = shot(0, 3.8, lambda k, u: dict(pos=V(M.x + (7.8 - k) * math.cos(4.15 + 1.25 * ease(k)), M.y + (7.8 - k) * sn(4.15 + 1.25 * ease(k)), 0.5 + 0.9 * k), tgt=V(M.x, M.y, 2.0), fov=42, fstop=3.6, focus=7.0, shake=0.003),
                        [act('giga', 30, V(-3.6, 4.2), N + GIGA_FLIP, [(0, 'ready', 1.0), (1.0, 'attack1', 0.8), (2.2, 'attack2', 0.8)]),
                         act('slerf', 30, V(-3.6, 9.4), S_, [(0, 'ready', 1.0), (1.3, 'attack1', 0.7), (2.4, 'hit', 1.0), (2.9, 'ready', 1.0)])],
                        [('ring', 1.6, V(-3.6, 6.9, 0.2), 5.0), ('boom', 1.6, V(-3.6, 6.8, 1.6), 2.4), ('burst', 1.6, V(-3.6, 6.9), 30, 2.0, 0.05), ('flash', 1.6, V(-3.6, 6.8, 2.0), 30000), ('ring', 2.6, V(-3.6, 7.5, 0.2), 4.0), ('boom', 2.6, V(-3.6, 7.5, 1.4), 1.9)],
