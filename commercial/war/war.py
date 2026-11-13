@@ -23,6 +23,7 @@ def call(v, u): return v(u) if callable(v) else v
 sn = math.sin
 SUNK = (4.2, (1.0, 0.5, 0.26), 79, 152)          # sun: strength, colour, elevation, azimuth (DAWN PATROL overrides these for a moonlit night)
 FILLK = (520, (0.55, 0.45, 0.85))
+HAZEK = (0.5, 0.26, 0.16, 1)                       # colour of the aerial haze / dust (DAWN PATROL: deep night blue)
 N, S_ = PI, 0.0                                     # headings: north (the enemy), south
 LOOP = {'run', 'walk', 'idle', 'ready'}
 LX = -5.0                                           # the lane: the left bridge
@@ -540,7 +541,7 @@ def main():
     hs = nt.nodes.new('CompositorNodeHueSat'); nt.links.new(mx.outputs['Image'], hs.inputs['Image']); nt.links.new(sm.outputs[0], hs.inputs['Saturation']); nt.links.new(hs.outputs['Image'], ld.inputs['Image'])
     A = arena_dump(); fx_mats(); robjs = A['towers']['en_king_ruin'][1]
     bg = sc.world.node_tree.nodes['Background']; bg.inputs[0].default_value = (0.10, 0.035, 0.04, 1); bg.inputs[1].default_value = 1.0
-    next(n for n in nt.nodes if n.bl_idname == 'CompositorNodeMixRGB' and n.inputs[2].default_value[2] > 0.8 and not n.inputs[2].links).inputs[2].default_value = (0.5, 0.26, 0.16, 1)   # dust in the low sun
+    next(n for n in nt.nodes if n.bl_idname == 'CompositorNodeMixRGB' and n.inputs[2].default_value[2] > 0.8 and not n.inputs[2].links).inputs[2].default_value = HAZEK   # dust in the low sun
     K = rigctl.Keys(); L = []; rng = random.Random(4)
     # cast: one unit per (kind, index), hidden whenever it is not in the shot
     C = {}; vis = {}; poses = {}

@@ -315,12 +315,12 @@ def air_mats():
         m_ = wn.nodes.new('ShaderNodeMix'); m_.data_type = 'RGBA'; m_.blend_type = 'ADD'; m_.inputs[0].default_value = 1.0; nl(a_, m_.inputs[6]); nl(b_, m_.inputs[7]); return m_.outputs[2]
     nm = wn.nodes.new('ShaderNodeVectorMath'); nm.operation = 'NORMALIZE'; nl(tc.outputs['Object'], nm.inputs[0])
     dt = wn.nodes.new('ShaderNodeVectorMath'); dt.operation = 'DOT_PRODUCT'; dt.inputs[1].default_value = (-0.08, 0.906, 0.41); nl(nm.outputs[0], dt.inputs[0])
-    mr = wn.nodes.new('ShaderNodeValToRGB'); nl(dt.outputs['Value'], mr.inputs[0]); me_ = mr.color_ramp.elements; me_[0].position = 0.9987; me_[0].color = (0, 0, 0, 1); me_[1].position = 0.9991; me_[1].color = (8.5, 9.5, 10.5, 1)
-    hr = wn.nodes.new('ShaderNodeValToRGB'); nl(dt.outputs['Value'], hr.inputs[0]); he_ = hr.color_ramp.elements; he_[0].position = 0.88; he_[0].color = (0, 0, 0, 1); he_[1].position = 0.9986; he_[1].color = (0.20, 0.32, 0.5, 1)
+    mr = wn.nodes.new('ShaderNodeValToRGB'); nl(dt.outputs['Value'], mr.inputs[0]); me_ = mr.color_ramp.elements; me_[0].position = 0.9987; me_[0].color = (0, 0, 0, 1); me_[1].position = 0.9991; me_[1].color = (0, 0, 0, 1)
+    hr = wn.nodes.new('ShaderNodeValToRGB'); nl(dt.outputs['Value'], hr.inputs[0]); he_ = hr.color_ramp.elements; he_[0].position = 0.88; he_[0].color = (0, 0, 0, 1); he_[1].position = 0.9986; he_[1].color = (0.0, 0.0, 0.0, 1)
     cn = wn.nodes.new('ShaderNodeTexNoise'); cn.inputs['Scale'].default_value = 2.2; cn.inputs['Detail'].default_value = 7; nl(tc.outputs['Object'], cn.inputs['Vector'])
     cc = wn.nodes.new('ShaderNodeValToRGB'); nl(cn.outputs['Fac'], cc.inputs[0]); ce = cc.color_ramp.elements; ce[0].position = 0.45; ce[0].color = (0, 0, 0, 1); ce[1].position = 0.72; ce[1].color = (0.05, 0.075, 0.14, 1)
     sky = addmix(addmix(addmix(cr.outputs['Color'], cc.outputs['Color']), sr.outputs['Color']), hr.outputs['Color']); nl(addmix(sky, mr.outputs['Color']), bgn.inputs['Color'])
-    vo = wn.nodes.new('ShaderNodeVolumePrincipled'); vo.inputs['Density'].default_value = 0.012; vo.inputs['Color'].default_value = (0.45, 0.65, 1.0, 1); vo.inputs['Anisotropy'].default_value = 0.35
+    vo = wn.nodes.new('ShaderNodeVolumePrincipled'); vo.inputs['Density'].default_value = 0.0035; vo.inputs['Color'].default_value = (0.45, 0.65, 1.0, 1); vo.inputs['Anisotropy'].default_value = 0.35
     nl(vo.outputs['Volume'], wn.nodes['World Output'].inputs['Volume'])
     MATS['propdisc'] = m; MATS['bombmat'] = sets.flat('bomb_olive', (0.42, 0.24, 0.09), 0.5, metal=0.1); MATS['cloth'] = sets.flat('chute_cloth', (0.95, 0.55, 0.14), 0.7)
     bpy.ops.mesh.primitive_uv_sphere_add(segments=12, ring_count=8, radius=1.0); o = bpy.context.active_object
@@ -423,12 +423,15 @@ sys.path[:0] = [os.path.dirname(os.path.abspath(__file__))]
 import env as _env
 war.SUNK = (2.6, (0.55, 0.68, 1.0), 66, 185)       # the moon, behind the enemy lines and a little to the left
 war.FILLK = (700, (0.35, 0.5, 0.95))
+war.HAZEK = (0.02, 0.05, 0.1, 1)                  # the aerial haze: deep night blue, not a grey wash
 _arena_war = war.arena_dump
 
 
 def arena_night():
     A = _arena_war()
-    bpy.data.objects['backdrop'].hide_render = True; bpy.data.objects['backdrop'].hide_viewport = True
+    bd = bpy.data.objects['backdrop']; bd.scale = (1.6, 1.6, 1.0)                              # the game's painted horizon, pushed far back and dimmed: a distant layer, not the whole set
+    for n in bd.data.materials[0].node_tree.nodes:
+        if n.type == 'BSDF_PRINCIPLED': n.inputs['Emission Strength'].default_value = 0.55
     _env.build_env(A); return A
 
 
@@ -439,7 +442,6 @@ _finish_war = war.UD.finish
 def finish_night(sc):
     _finish_war(sc)
     for n in sc.node_tree.nodes:
-        if n.type == 'MIX_RGB' and tuple(round(c, 2) for c in n.inputs[2].default_value[:3]) == (0.3, 0.5, 0.82): n.inputs[2].default_value = (0.02, 0.05, 0.1, 1)       # the aerial haze: deep night blue, not a grey wash
         if n.type == 'COLORBALANCE': n.lift = (0.98, 1.0, 1.05); n.gain = (0.97, 1.0, 1.05)
 
 

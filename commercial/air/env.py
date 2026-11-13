@@ -97,13 +97,6 @@ def build_env(A=None, seed=11):
              iron=_mat('e_iron', (0.04, 0.04, 0.05), 0.55, metal=0.8, bump=0.1, scale=3), hill=_mat('e_hill', (0.025, 0.035, 0.075), 0.95, emit=0.6, bump=0.2, scale=2, tint2=(0.02, 0.025, 0.06)),
              lamp=_glow('e_lamp', (1.0, 0.62, 0.25), 22.0), teal=_glow('e_teal', (0.25, 1.0, 0.85), 14.0), door=_glow('e_door', (0.25, 1.0, 0.8), 9.0),
              pump=_glow('e_pump', (1.0, 0.42, 0.08), 4.0), wood=_mat('e_wood', (0.16, 0.1, 0.08), 0.8, bump=0.6, scale=12), mist=_mist('e_mist', (0.22, 0.6, 0.62), 0.5, 0.5))
-    # 1. hills on the horizon, dark against the sky (the sky itself is the world: gradient, stars, moon)
-    for i in range(34):
-        a = rng.uniform(0, 2 * PI); r = rng.uniform(46, 70); w = rng.uniform(14, 30); hh = rng.uniform(2.5, 8.0)
-        _prim('sphere', (math.cos(a) * r, 4 + math.sin(a) * r, -1.0), (w, w * rng.uniform(0.8, 1.3), hh * 2), mat=M['hill'], v=40, rc=20)
-    for i in range(40):                                                                          # far dead trees on the hills: silhouettes
-        a = rng.uniform(0, 2 * PI); r = rng.uniform(34, 58)
-        t = _tree(rng, math.cos(a) * r, 4 + math.sin(a) * r, M, rng.uniform(1.3, 2.3)); t.location.z = rng.uniform(0.0, 1.5)
     # 2. tombstones: dense outside the playfield corridor, a few at its edges
     n = 0
     while n < 150:
@@ -119,20 +112,6 @@ def build_env(A=None, seed=11):
     for i in range(22):
         side = rng.choice((-1, 1)); x = (-12.5 if side < 0 else 9.5) + side * rng.uniform(0, 7); y = rng.uniform(-24, 30)
         _tree(rng, x, y, M, rng.uniform(0.9, 1.35))
-    # 4. the mausoleum behind their tower, and a smaller crypt behind ours
-    def crypt(cx, cy, sc, flip):
-        root = bpy.data.objects.new('crypt', None); sc_ = bpy.context.scene; sc_.collection.objects.link(root); root.location = (cx, cy, 0); root.scale = (sc, sc, sc); root.rotation_euler = (0, 0, PI if flip else 0)
-        def add(o): o.parent = root; return o
-        add(_prim('cube', (0, 0, 2.2), (9.0, 6.0, 4.4), mat=M['stone'])); add(_prim('cube', (0, 0, 0.3), (10.2, 7.2, 0.6), mat=M['stone2']))
-        for sx in (-1, 1):
-            add(_prim('cyl', (sx * 3.2, -3.1, 2.4), (0.9, 0.9, 4.8), mat=M['stone'], v=18)); add(_prim('cube', (sx * 3.2, -3.1, 4.95), (1.3, 1.3, 0.3), mat=M['stone2']))
-        pr = _prim('cube', (0, -3.0, 5.6), (9.6, 0.5, 0.5), mat=M['stone2']); add(pr)
-        roof = _prim('cone', (0, 0, 6.6), (10.8, 5.6, 4.0), (0, 0, PI / 4), M['stone2'], v=4, r2=0.001); add(roof); roof.scale = (7.6, 7.6, 3.6)
-        add(_prim('cube', (0, -3.05, 1.7), (3.0, 0.3, 3.4), mat=M['door'])); add(_prim('cyl', (0, -3.05, 3.4), (3.0, 3.0, 0.3), (PI / 2, 0, 0), M['door'], v=22))
-        for k in range(5): add(_prim('cube', (0, -2.7 - 0.28 * k, 0.12 + 0.12 * (4 - k)), (4.2 + 0.7 * k, 0.4, 0.25), mat=M['stone2']))
-        return root
-    crypt(-1.5, 33.0, 2.4, True); crypt(2.5, -36.0, 1.8, False)
-    lg = bpy.data.lights.new('crypt_glow', 'POINT'); lg.energy = 9000; lg.color = (0.3, 1.0, 0.82); lg.shadow_soft_size = 2.0; lo = bpy.data.objects.new('crypt_glow', lg); sc.collection.objects.link(lo); lo.location = (-1.5, 22.0, 3.0)
     # 5. iron fences along the corridor, with stone posts and lanterns
     for side, x in ((-1, -9.7), (1, 6.9)):
         y = -30.0
@@ -152,8 +131,4 @@ def build_env(A=None, seed=11):
         x = rng.choice((-1, 1)) * rng.uniform(8.0, 14.0) + (-1.5 if True else 0); y = rng.uniform(-24, 28)
         if -8.5 < x < 6.0 and -22 < y < 22: continue
         s = rng.uniform(0.35, 0.7); _prim('sphere', (x, y, s * 0.4), (s * 1.2, s * 1.2, s), mat=M['pump'], v=14, rc=8)
-    # 7. ground mist, thickest at the edges, teal under the moon
-    for i in range(18):
-        x = rng.uniform(-18, 18); y = rng.uniform(-30, 34); s = rng.uniform(10, 18); z = rng.uniform(0.15, 0.7)
-        _prim('plane', (x, y, z), (s, s, 1), (0, 0, rng.uniform(0, 6.28)), M['mist'])
     return M
