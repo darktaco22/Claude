@@ -8,7 +8,7 @@ import war
 from war import *                                    # V, ramp, ease, lerp, act, go, thrown, shot, tracers, poses, WUnit, MATS, obj, key3, K helpers ...
 from mathutils import Vector, Euler
 
-game.H.update(pepe=1.3, chillguy=1.45, troll=1.4, wojak=1.4, pnut=1.9)
+game.H.update(pepe=1.3, chillguy=1.45, troll=1.4, wojak=1.4, pnut=1.9, nyancat=1.7, bome=1.8)
 OUR_COL = (0.25, 0.85, 0.45)
 GIGA_FLIP = PI                                       # GIGA's model faces the other way from the rest of the cast
 
@@ -233,12 +233,13 @@ def new_shots():
     NS['muster'] = shot(0, 2.8, lambda k, u: dict(pos=V(lerp(5.2, -10.6, ease(k)), -8.6, 1.1), tgt=V(lerp(5.2, -10.6, ease(k)) - 1.2, -4.2, 1.25), fov=40, fstop=2.8, focus=4.6, shake=0.002), line, [tracers(8, 32, 1.8)], name='muster')
     # a PNUT skims the ground; acorns walk through the trolls ahead of him
     fw = fly(V(-4.6, -26.0, 2.1), V(-4.6, 16.0, 2.3), 0.0, 2.6, 0.1, 0.5)
+    fwl = fly(V(-7.4, -28.0, 2.7), V(-7.4, 14.0, 3.0), 0.0, 2.6, 0.12, 1.5); fwr = fly(V(-1.8, -29.0, 2.9), V(-1.8, 13.0, 3.2), 0.0, 2.6, 0.12, 2.5)
     BM3 = []; TH3 = []
     for j, u0 in enumerate((0.9, 1.2, 1.5, 1.8)):
         dst = V(-4.6 + 1.1 * sn(j * 2.0), fw(u0).y + 8.0, 0.0); BM3 += bomb_fx(u0, fw(u0) + V(0, 0, -0.5), dst, 0.55, 2.0)
         TH3.append(thrown('troll', 41 + j, V(dst.x, dst.y), V(dst.x + sn(j * 3.1) * 2.2, dst.y + 2.4), u0 + 0.55, 0.6, 1.8, 1.1 + 0.2 * j, pre='run', seed=j + 1, h=S_, pre_from=V(dst.x, dst.y + 3.0)))
     NS['wing_pass'] = shot(0, 2.6, lambda k, u: dict(pos=fw(u) + V(2.0, -4.2, 1.3 - 0.4 * k), tgt=fw(u) + V(0, 3.0, -0.2), fov=64, fstop=6.0, focus=7.0, shake=0.004),
-                           [cockpit('pnut', 0, fw, 0.0, 0.0, [(0, 'idle', 1.0)])] + TH3, [plane_fx('lead', fw, drop=(0.9, 1.2, 1.5, 1.8))] + BM3 + [tracers(8, 33, 1.6)], slow=0.8, name='wing_pass')
+                           [cockpit('pnut', 0, fw, 0.0, 0.0, [(0, 'idle', 1.0)]), cockpit('nyancat', 0, fwl, 0.0, 0.0, [(0, 'idle', 1.0)]), cockpit('nyancat', 1, fwr, 0.0, 0.0, [(0, 'idle', 1.0)])] + TH3, [plane_fx('lead', fw, drop=(0.9, 1.2, 1.5, 1.8)), ('rainbow', fwl, 1.0), ('rainbow', fwr, 1.0)] + BM3 + [tracers(8, 33, 1.6)], slow=0.8, name='wing_pass')
     # weaving through the flak
     wv = lambda u: V(-3.0 + 2.4 * sn(u * 3.4), -8.0 + 11.5 * u, 5.4 + 0.8 * sn(u * 4.3))
     NS['barrel_roll'] = shot(0, 2.4, lambda k, u: dict(pos=wv(u) + V(5.2 - 1.2 * k, -0.8, 0.4), tgt=wv(u) + V(0, 0.9, -0.2), fov=46, fstop=3.6, focus=5.6, shake=0.004),
@@ -277,11 +278,12 @@ def new_shots():
                        slow=0.6, name='titan')
     # two PNUTs bomb the giant
     f1 = fly(V(-8.0, -4.0, 8.5), V(-2.0, 16.0, 3.4), 0.0, 2.4, 0.1, 0.5); f2 = fly(V(0.0, -6.0, 9.5), V(-5.0, 15.0, 4.2), 0.0, 2.4, 0.1, 1.5)
+    fbm = lambda u: V(-9.5 + 3.4 * u, 1.5 + 6.0 * u, 5.6 + 0.35 * sn(u * 3.0))
     AB = bomb_fx(0.6, f1(0.6) + V(0, 0, -0.5), V(-4.2, 9.0, 0.0), 0.55, 2.6) + bomb_fx(0.9, f2(0.9) + V(0, 0, -0.5), V(-2.8, 9.8, 0.0), 0.55, 2.4) + bomb_fx(1.25, f1(1.25) + V(0, 0, -0.5), V(-3.6, 10.5, 0.0), 0.55, 2.8)
     NS['aerial_support'] = shot(0, 2.6, lambda k, u: dict(pos=V(-12.0, 2.0 + 3.0 * k, 4.2), tgt=V(-3.6, 9.2, 2.0), fov=50, fstop=4.0, focus=14.0, shake=0.003),
-                                [cockpit('pnut', 0, f1, 0.0, 0.0, [(0, 'idle', 1.0)]), cockpit('pnut', 1, f2, 0.0, 0.0, [(0, 'idle', 1.0)]),
+                                [cockpit('pnut', 0, f1, 0.0, 0.0, [(0, 'idle', 1.0)]), cockpit('nyancat', 2, f2, 0.0, 0.0, [(0, 'idle', 1.0)]), cockpit('bome', 0, fbm, 0.0, 0.0, [(0, 'idle', 1.0)]),
                                  act('slerf', 30, V(-3.6, 9.4), S_, [(0, 'ready', 1.0), (0.8, 'hit', 0.8), (1.6, 'ready', 1.0)]), act('giga', 30, V(-3.6, 5.0), N + GIGA_FLIP, [(0, 'ready', 1.0), (0.8, 'attack1', 0.8)])],
-                                [plane_fx('lead', f1), plane_fx('right', f2)] + AB + [tracers(8, 36, 1.8)], slow=0.8, name='aerial_support')
+                                [plane_fx('lead', f1), plane_fx('right', f2), plane_fx('left', fbm), ('rainbow', f2, 1.0)] + AB + [tracers(8, 36, 1.8)], slow=0.8, name='aerial_support')
     return NS
 
 
@@ -408,6 +410,8 @@ def air_mats():
     sky = addmix(addmix(addmix(cr.outputs['Color'], cc.outputs['Color']), sr.outputs['Color']), hr.outputs['Color']); nl(addmix(sky, mr.outputs['Color']), bgn.inputs['Color'])
     vo = wn.nodes.new('ShaderNodeVolumePrincipled'); vo.inputs['Density'].default_value = 0.0035; vo.inputs['Color'].default_value = (0.45, 0.65, 1.0, 1); vo.inputs['Anisotropy'].default_value = 0.35
     nl(vo.outputs['Volume'], wn.nodes['World Output'].inputs['Volume'])
+    for i_, c_ in enumerate(((1.0, 0.08, 0.08), (1.0, 0.45, 0.05), (1.0, 0.9, 0.1), (0.2, 0.9, 0.2), (0.1, 0.5, 1.0), (0.55, 0.2, 0.95))):
+        MATS[f'rb{i_}'] = sets.flat(f'rb{i_}', c_, 0.5, emit=(c_, 7.0))
     MATS['propdisc'] = m; MATS['bombmat'] = sets.flat('bomb_olive', (0.42, 0.24, 0.09), 0.5, metal=0.1); MATS['cloth'] = sets.flat('chute_cloth', (0.95, 0.55, 0.14), 0.7)
     bpy.ops.mesh.primitive_uv_sphere_add(segments=12, ring_count=8, radius=1.0); o = bpy.context.active_object
     for p in o.data.polygons: p.use_smooth = True
@@ -419,7 +423,7 @@ def air_mats():
 
 def build_fx_air(K, L, sh, frames, uof, rng):
     f0, f1 = frames[0], frames[-1] + 1
-    mine = [e for e in sh['fx'] if e[0] in ('plane', 'bomb', 'aa', 'canopy')]
+    mine = [e for e in sh['fx'] if e[0] in ('plane', 'bomb', 'aa', 'canopy', 'rainbow')]
     sh2 = dict(sh); sh2['fx'] = [e for e in sh['fx'] if e not in mine]
     _build_fx_war(K, L, sh2, frames, uof, rng)
     def life(o): key3(K, o, 'scale', f0 - 1, (0, 0, 0)); key3(K, o, 'scale', f1, (0, 0, 0))
@@ -480,6 +484,18 @@ def build_fx_air(K, L, sh, frames, uof, rng):
                         v = V(pr.uniform(-1, 1) * 0.0 + sn(j * 7.3) * 1.3, sn(j * 3.1) * 1.3, 1.1 + 0.8 * sn(j * 5.7)); p = body(tb, wh) + v * t_ + V(0, 0, -2.2 * t_ * t_)
                         key3(K, o, 'location', f, p); key3(K, o, 'scale', f, [0.035 + 0.02 * sz] * 3); key3(K, o, 'color', f, (1.0, 0.7, 0.25, 2.0 * (1.0 - a)))
                     lt.location = body(u, 0); lt.keyframe_insert('location', frame=f); K.add(lt.data, 'energy', 0, f, 0.0 if not on else (900 + 500 * sn(u * 23)) * (0.3 + 0.7 * min(1.0, big)))
+        elif kind == 'rainbow':                                                          # NYAN CAT's trail: six glowing lanes laid down behind him and left hanging in the air
+            _, fn, ulen = e; NR = 24
+            lanes = [[obj('ball', f'rb{i}') for _ in range(NR)] for i in range(6)]
+            for ln in lanes:
+                for o in ln: life(o)
+            for f in frames:
+                u = uof(f); h_, p_ = heading_of(fn, u); n3 = head_dir(h_).to_3d()
+                for i, ln in enumerate(lanes):
+                    for j, o in enumerate(ln):
+                        uj = u - 0.05 * j; s_ = 0.2 * (1.0 - j / (NR + 6.0))
+                        if uj < -0.5: key3(K, o, 'scale', f, (0, 0, 0)); continue
+                        key3(K, o, 'location', f, fn(uj) - n3 * 0.35 + V(0.0, 0.0, 0.34 + (2.5 - i) * 0.17)); key3(K, o, 'scale', f, (s_, s_, s_))
         elif kind == 'bomb':
             _, u0, src, dst, fall = e; o = obj('bombmesh', 'bombmat', shadow=True); life(o)
             for f in frames:
