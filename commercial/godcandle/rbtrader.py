@@ -178,7 +178,7 @@ class RBTrader:
         # the tapping fingertip in that palm's frame
         ts = self.TS; tipb = f'Bip01 {ts} Finger12'; Qf = {k: v for k, v in Q.items() if f' {ts} Finger' in k}; T_keep = self.T; self.T = Vector()
         tip = self.fk(Qf, tipb) @ (self.rest[tipb].inverted() @ self.tail_of[tipb]); self.T = T_keep; self.tip_pp = self.Fpalm[ts].inverted() @ tip
-        self.Q = Q; self._apply(Q)
+        self.Q = Q; self._apply(Q); self.Rh0 = self.fk(Q, f'Bip01 {self.HS} Hand')           # where the holding hand starts (body space)
     # ------------------------------------------------------------------ per frame: the tapping arm
     def pose(self, f, t, tip_local):
         Q = dict(self.Q); P = self.Pm; R3 = P.to_3x3(); u, v, n = R3.col[0], R3.col[1], R3.col[2]; s = self.TS; sx = {'L': 1, 'R': -1}[s]
@@ -196,7 +196,31 @@ class RBTrader:
             prev = getattr(self, '_prev', {}).get(b)
             if prev is not None and prev.dot(q) < 0: q = -q
             self._prev = getattr(self, '_prev', {}); self._prev[b] = q.copy(); pb.rotation_quaternion = q; pb.keyframe_insert('rotation_quaternion', frame=f)
+        self._last_left = (Hd.translation.copy(), Hd.to_quaternion())
         return self.mw @ P
+    def _key_bones(self, Q, names, f):
+        P_ = self.arm.pose.bones; self._prev = getattr(self, '_prev', {})
+        for b in names:
+            if b not in Q: continue
+            q = Q[b]; prev = self._prev.get(b)
+            if prev is not None and prev.dot(q) < 0: q = -q
+            self._prev[b] = q.copy(); pb = P_[b]; pb.rotation_mode = 'QUATERNION'; pb.rotation_quaternion = q; pb.keyframe_insert('rotation_quaternion', frame=f)
+    def key_right(self, f, disp_body, e_open=0.0, shock=0.0):
+        """The phone hand: held where it always was, plus `disp_body` (body space) for the throw; the fingers open by e_open; `shock` (0..1) pulls the hand back and up beside his shoulder."""
+        s = self.HS; sx = {'L': 1, 'R': -1}[s]; Q = dict(self.Q); sh = self.fk(Q, f'Bip01 {s} UpperArm').translation
+        tgt = self.Rh0.translation + disp_body + Vector((sx * 0.10, 0.12, 0.16)) * shock
+        self.limb(Q, s, 'UpperArm', 'Forearm', 'Hand', tgt, Vector((sx * 0.30, 0.2, -1.0)), self.L1, self.L2, self.Rh0.to_quaternion())
+        OPEN = dict(t=(0.05, 0.1, 0.1), i=(0.06, 0.06, 0.04), m=(0.08, 0.08, 0.05), r=(0.12, 0.12, 0.06), p=(0.16, 0.16, 0.1))
+        shape = {k: tuple(h * (1 - e_open) + o * e_open for h, o in zip(HOLD[k], OPEN[k])) for k in HOLD}; keep = Q.get(f'Bip01 {s} Finger0')
+        self.fingers(s, shape, Q)
+        if keep is not None: Q[f'Bip01 {s} Finger0'] = keep
+        self._key_bones(Q, [f'Bip01 {s} UpperArm', f'Bip01 {s} Forearm', f'Bip01 {s} Hand'] + [b for b in Q if f'Bip01 {s} Finger' in b], f)
+    def shock_left(self, f, e):
+        """The tapping hand leaves the screen and flies out to the side in alarm (e = 0..1 from where it last was)."""
+        s = self.TS; sx = {'L': 1, 'R': -1}[s]; Q = dict(self.Q); S = self.fk(Q, f'Bip01 {s} UpperArm').translation
+        t0, q0 = self._last_left; t1 = S + Vector((sx * 0.30, -0.16, -0.02)); tgt = t0.lerp(t1, e)
+        self.limb(Q, s, 'UpperArm', 'Forearm', 'Hand', tgt, Vector((sx * 0.55, 0.15, -0.8)), self.L1, self.L2, q0)
+        self._key_bones(Q, [f'Bip01 {s} UpperArm', f'Bip01 {s} Forearm', f'Bip01 {s} Hand'], f)
     def react(self, f, e, look_up=-1.05):
         """Shock, e = 0..1: head thrown back to stare straight up, jaw dropped, brows and upper lids raised.  Keyed at frame f."""
         P_ = self.arm.pose.bones; B = self.arm.data.bones; A3 = self.A0.to_3x3()

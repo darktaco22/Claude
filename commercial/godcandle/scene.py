@@ -33,11 +33,11 @@ plane('ground2', 6000, 6000, (9, -16, -0.12), (0, 0, 0), HAZE)            # beyo
 # ---------------------------------------------------------------- the timeline (animation seconds)
 GX, GY = 9.0, -21.0                                     # where it lands
 T_SWAP, T_LAUNCH, T_CEIL, T_FLASH = 3.4, 4.5, 4.65, 6.2
-T_SP0 = 6.25; UA, UB = 1.083, 1.983; T_SPACE = 2.9                  # the candle is up in SPACE from T_SP0: it climbs for UA s, floats until UB, then falls
+T_SP0 = 6.25; UA, UB = 1.083, 1.983; T_SPACE = 3.3                  # the candle is up in SPACE from T_SP0: it climbs for UA s, floats until UB, then falls
 T_DROP = T_SP0 + T_SPACE; T_IMP = T_DROP + 3.2                      # ... and drops back to the arena at T_DROP (everything after is the old film, shifted)
 T_FIRE = T_SP0 + UB + 0.15                                          # its flames and plasma light up as it starts to fall
 SP = Vector((40000.0, 0.0, 0.0)); R_E = 12000.0; H_A = 1800.0       # the space set stands far from the arena: Earth's top is at SP, the candle floats H_A above it
-D0 = 900.0; G_S = 3700.0
+D0 = 900.0; G_S = 1800.0
 ROOM = Vector((400.0, -16.0, 0.0))
 def Rm(x, y, z): return ROOM + Vector((x, y, z))
 def tick(a, b, f): return a + (b - a) * f
@@ -129,11 +129,7 @@ def tip_loc(t):
     for (t0, x0, y0, z0), (t1, x1, y1, z1) in zip(PTS, PTS[1:]):
         if t0 <= t <= t1: e = sm((t - t0) / (t1 - t0)); return (tick(x0, x1, e), tick(y0, y1, e), tick(z0, z1, e))
     return PTS[-1][1:]
-W0 = None
-for fr in range(F(0), F(T_FLASH) + 1):
-    Wf = TRD.pose(fr, tt(fr), tip_loc)
-    if W0 is None: W0 = Wf
-TRD.finish()
+W0 = TRD.pose(F(0), tt(F(0)), tip_loc)                # the held phone at the first frame (the loop that poses him comes after the phone exists)
 # the phone hangs off his held hand: u = screen right, v = up the screen, n = out of the screen toward his eyes
 R3 = W0.to_3x3(); u_, v_, n_ = R3.col[0].copy(), R3.col[1].copy(), R3.col[2].copy(); P_ = W0.translation + n_ * 0.0086          # W0's origin is the centre of the phone's back; P_ is the centre of the glass
 BASIS = Matrix(((u_.x, v_.x, n_.x), (u_.y, v_.y, n_.y), (u_.z, v_.z, n_.z)))
@@ -145,6 +141,38 @@ def child(o, loc, parent=PH, rot=None):
     return o
 child(box('pbody', (0.072, 0.150, 0.0082), (0, 0, 0), PHONE), (0, 0, -0.0045))        # 0.4 mm under the glass plane
 scr = plane('screen', SW, SH_, (0, 0, 0), (0, 0, 0), imgmat('screen', os.path.join(UI, 'u_0001.png'), 1.5, NUI)); child(scr, (0, 0, 0.0)); scr.visible_shadow = False
+# he sees the candle coming out of the screen and flings the phone away (so the candle rises clear of his body): wind-up, flick, a flip through the air, and it lands face up
+T_TH0, T_TH1, T_REL, T_FLY = T_SWAP + 0.10, T_SWAP + 0.20, T_SWAP + 0.30, 0.34; T_LAND = T_REL + T_FLY
+LAND = Vector((P_.x + 0.95, P_.y + 0.85, 0.0086)); dirT = Vector((LAND.x - P_.x, LAND.y - P_.y, 0)).normalized()
+Dw = dirT * -0.10 + Vector((0, 0, 0.04)); Df = dirT * 0.20 + Vector((0, 0, 0.07))
+def hand_disp(t):
+    if t < T_TH0: return Vector()
+    if t < T_TH1: return Dw * sm((t - T_TH0) / (T_TH1 - T_TH0))
+    if t < T_REL: u = (t - T_TH1) / (T_REL - T_TH1); return Dw.lerp(Df, u * u)
+    return Df + dirT * 0.06 * sm((t - T_REL) / 0.25)
+Q0 = BASIS.to_quaternion(); Q1 = Quaternion((0, 0, 1), 0.35); SPIN = Vector((-dirT.y, dirT.x, 0))
+def phone_state(t):
+    if t <= T_REL: return P_ + hand_disp(t), Q0
+    if t < T_LAND:
+        tau = (t - T_REL) / T_FLY; pos = (P_ + hand_disp(T_REL)).lerp(LAND, tau) + Vector((0, 0, 4 * 0.55 * tau * (1 - tau)))
+        return pos, Quaternion(SPIN, 2 * math.pi * tau) @ Q0.slerp(Q1, sm(tau))
+    sg = (t - T_LAND) / 0.2; hop = 0.05 * math.sin(math.pi * sg) * (1 - sg) if 0 < sg < 1 else 0.0
+    return LAND + Vector((0, 0, hop)), Q1
+pq_ = None
+for fr in range(F(T_TH0) - 1, F(T_LAND + 0.25) + 1):
+    l_, q_ = phone_state(tt(fr))
+    if pq_ is not None and pq_.dot(q_) < 0: q_ = -q_
+    pq_ = q_.copy(); PH.location = l_; PH.rotation_quaternion = q_; PH.keyframe_insert('location', frame=fr); PH.keyframe_insert('rotation_quaternion', frame=fr)
+for fc in PH.animation_data.action.fcurves:
+    for kp in fc.keyframe_points: kp.interpolation = 'LINEAR'
+PH.location = P_; PH.rotation_quaternion = Q0
+Rbw = TRD.mw.to_3x3().inverted()
+for fr in range(F(0), F(T_FLASH) + 1):
+    t = tt(fr)
+    if t < T_TH1: TRD.pose(fr, t, tip_loc)                       # still tapping, a beat after the candle appears
+    else: TRD.shock_left(fr, sm((t - T_TH1) / 0.25))             # the tapping hand flies out in alarm
+    TRD.key_right(fr, Rbw @ hand_disp(t), sm((t - T_REL) / 0.08), sm((t - T_REL - 0.2) / 0.4))
+TRD.finish()
 
 # ---------------------------------------------------------------- THE GOD CANDLE: out of the screen, through the ceiling, into the sky, down into the arena
 HG = 13.2                                              # the game's candle: body 3.3 x 13.2 x 3.3
@@ -154,7 +182,7 @@ def cb(name, mt, foot=True):
     if foot: o.data.transform(Matrix.Translation((0, 0, 0.5)))
     o.data.materials.append(mt); o.parent = GC; return o
 BODY = cb('gc_body', GCM); WICKO = cb('gc_wick', WICK, False); BODY.visible_shadow = False; WICKO.visible_shadow = False
-B0 = ph(upx(UIJ['x']), vpx(UIJ['y_base']), 0.0006); H0 = (UIJ['y_base'] - UIJ['y_top']) / UIJ['h'] * SH_; S0 = H0 / HG
+OFF = Vector((upx(UIJ['x']), vpx(UIJ['y_base']), 0.0006)); B0H = ph(*OFF); B0 = LAND + Q1 @ OFF; DELTA = Vector((B0.x - B0H.x, B0.y - B0H.y, 0.0)); H0 = (UIJ['y_base'] - UIJ['y_top']) / UIJ['h'] * SH_; S0 = H0 / HG
 Z0A = 300.0; A_UP = 2 * (Z0A - B0.z) / ((T_FLASH - T_LAUNCH) ** 2)
 SKEY = [(T_SWAP, S0), (3.9, 0.02), (4.6, 0.08), (5.2, 0.22), (5.7, 0.55), (T_FLASH, 1.0)]
 def S_of(t):
@@ -180,11 +208,12 @@ def space_state(t):
     return Vector((SP.x, SP.y, h)), Euler((amp * math.cos(ph_), amp * math.sin(ph_), yaw)).to_quaternion(), 1.0
 def gc_state(t):
     """(location, quaternion, scale) of the candle at animation time t."""
-    if t < T_SWAP: return B0, QP, 0.0001
+    if t < T_SWAP: return B0H, QP, 0.0001
     if t <= T_FLASH:
-        q = QP.slerp(QW, sm((t - T_SWAP) / 1.1)) if t < T_SWAP + 1.1 else QW
+        pl_, pq0 = phone_state(t); bpos = pl_ + pq0 @ OFF            # the candle stands on the screen of the phone, wherever the phone is
+        q = pq0.slerp(QW, sm((t - T_SWAP) / 1.1)) if t < T_SWAP + 1.1 else QW
         dz = 0.5 * A_UP * (t - T_LAUNCH) ** 2 if t > T_LAUNCH else 0.0
-        sh = 0.0 if t < T_LAUNCH else 0.0; return B0 + Vector((0, 0, dz)), q, S_of(t)
+        sh = 0.0 if t < T_LAUNCH else 0.0; return bpos + Vector((0, 0, dz)), q, S_of(t)
     if t < T_SP0: return Vector((GX, GY, Z0A)), QW, 1.0
     if t < T_DROP: return space_state(t)
     if t < T_IMP: dt = t - T_DROP; return Vector((GX, GY, (Z0A + 0.35) * (1 - (dt / tf) ** 1.8) - 0.35)), Euler((TILT[0] * dt, TILT[1] * dt, 0.5 + 0.45 * dt)).to_quaternion(), 1.0
@@ -340,9 +369,9 @@ def spark_burst(c, t, n, seed, size, speed, dirv, spread=1.0, life=0.6):
         o.scale = (0.001,) * 3; key(o, 'scale', f0 - 1); o.scale = (1, 1, 1); key(o, 'scale', f0)
         for k_ in range(0, int(life * FPS) + 1, 2): tz = k_ / FPS; o.location = c + v * tz + Vector((0, 0, -0.5 * 9 * tz * tz)); key(o, 'location', f0 + k_)
         o.scale = (0.001,) * 3; key(o, 'scale', f0 + int(life * FPS) + 1); const(o); linear(o)
-spark_burst(B0, T_SWAP, 60, 301, 0.006, 1.6, n_ + Vector((0, 0, 0.6)), 1.3, 0.7)
-spark_burst(B0 + Vector((0, 0, 0.05)), T_SWAP + 0.15, 40, 302, 0.01, 2.6, Vector((0, 0, 1)), 1.0, 0.8)
-PF = bpy.data.lights.new('phoneflash', 'POINT'); PF.color = (0.4, 1.0, 0.5); PFO = bpy.data.objects.new('phoneflash', PF); COL.objects.link(PFO); PFO.location = B0 + n_ * 0.1
+spark_burst(B0H, T_SWAP, 60, 301, 0.006, 1.6, n_ + Vector((0, 0, 0.6)), 1.3, 0.7)
+spark_burst(B0H + Vector((0, 0, 0.05)), T_SWAP + 0.15, 40, 302, 0.01, 2.6, Vector((0, 0, 1)), 1.0, 0.8)
+PF = bpy.data.lights.new('phoneflash', 'POINT'); PF.color = (0.4, 1.0, 0.5); PFO = bpy.data.objects.new('phoneflash', PF); COL.objects.link(PFO); PFO.location = B0H + n_ * 0.1
 for t, e in ((T_SWAP - 0.05, 0), (T_SWAP, 400), (T_SWAP + 0.3, 40), (T_SWAP + 0.8, 0)): PF.energy = e * 0.05; PF.keyframe_insert('energy', frame=F(t))
 CEN = Rm(B0.x - ROOM.x, B0.y - ROOM.y, 2.75)
 def bursty(o, t, seed, speed, vz=(2, 9)):
@@ -401,7 +430,9 @@ for ix in range(16):
 for i, o in enumerate(RFR):
     ins, dist = in_hole(o.location)
     if ins: bursty(o, T_CEIL + 0.01 + dist * 0.03, 2500 + i, 2.5 + 3.0 * math.exp(-dist), vz=(3, 15))
-for fr in range(F(T_CEIL), F(T_FLASH) + 1): TRD.react(fr, sm((tt(fr) - T_CEIL - 0.04) / 0.28))          # he throws his head back and gapes up through the hole
+def react_e(t): return 0.0 if t < T_SWAP + 0.05 else (0.35 * sm((t - T_SWAP - 0.05) / 0.2) if t < T_CEIL + 0.04 else 0.35 + 0.65 * sm((t - T_CEIL - 0.04) / 0.28))
+for fr in range(F(T_SWAP + 0.05), F(T_FLASH) + 1): TRD.react(fr, react_e(tt(fr)))        # brows up and jaw dropping as he sees it, then head thrown back to stare up through the hole
+TRD.finish()
 for i in range(110):        # plaster chunks and splinters
     r_ = random.Random(700 + i); a_ = r_.uniform(0, 6.283); d_ = r_.uniform(0, 0.9); sz = r_.uniform(0.025, 0.11)
     o = fbox('chunk', (sz, sz * r_.uniform(0.6, 2.2), sz * 0.6), CEN + Vector((math.cos(a_) * d_, math.sin(a_) * d_, -0.02)), CEIL); show(o, F(T_CEIL)); bursty(o, T_CEIL + d_ * 0.03, 800 + i, 4.0, vz=(-8, 4))
@@ -512,10 +543,11 @@ SH(1.3, T_SWAP, 0.35, 0.5, (0.12, -0.12, 0.06), (0.34, -0.30, 0.2), (0, 0, 0.05)
 # 3. from behind and below: it rises past him, lighting the room green
 SH(1.0, T_SWAP + 0.55, 0.5, 0.7, Rm(1.7, -1.9, 0.4), Rm(1.3, -1.5, 0.7), (0, 0, 0.6), (0, 0, 0.8), 22, 2.8, 0.4, fl=1)
 # 4. up through the ceiling
-SH(1.4, T_CEIL - 0.06, 0.10, 0.45, Rm(1.9, 0.3, 0.25), Rm(1.7, 0.15, 0.4), (CEN.x, CEN.y, 2.3), (CEN.x, CEN.y, 2.6), 13, 8.0, 0.5)
+SH(1.4, T_CEIL - 0.06, 0.10, 0.45, Rm(1.9, 0.3, 0.25) + DELTA, Rm(1.7, 0.15, 0.4) + DELTA, (CEN.x, CEN.y, 2.3), (CEN.x, CEN.y, 2.6), 13, 8.0, 0.5)
 # 4b. from over the roof: a crash zoom down through the hole onto his face, staring up at us
 EYW = TRD.mw @ TRD.eyes
-SH(1.7, T_CEIL + 0.45, 0.5, 0.6, (CEN.x + 0.4, CEN.y + 1.7, 14.0), (CEN.x + 0.15, CEN.y + 1.2, 9.5), (EYW.x, EYW.y, EYW.z), (EYW.x, EYW.y, EYW.z + 0.03), 22, 8.0, 0.15, 125, ec=2)
+VE = Vector((CEN.x - EYW.x, CEN.y - EYW.y, 0.0))            # he sits beside the hole now: the camera stands on the far side so its line to his eyes passes through it
+SH(1.7, T_CEIL + 0.45, 0.5, 0.6, (CEN.x + 5.8 * VE.x, CEN.y + 5.8 * VE.y, 14.0), (CEN.x + 3.4 * VE.x, CEN.y + 3.4 * VE.y, 9.5), (EYW.x, EYW.y, EYW.z), (EYW.x, EYW.y, EYW.z + 0.03), 22, 8.0, 0.15, 125, ec=2)
 # 5. the chase: out into the sky
 SH(0.95, T_SWAP + 1.75, 1.1, 1.1, (1.2, -2.0, -0.3), (0.9, -3.0, -0.6), (0, 0, 0.5), (0, 0, 0.5), 24, 4.0, 0.3, fp=3, fl=3)
 # 6. the fall, like a rocket coming back down: an onboard camera looking down from over its top, rolling; a long-lens chase; then the ground, among the fighters
@@ -523,10 +555,15 @@ SH(0.95, T_SWAP + 1.75, 1.1, 1.1, (1.2, -2.0, -0.3), (0.9, -3.0, -0.6), (0, 0, 0
 SPx, SPy = SP.x, SP.y
 SH(1.0, T_SP0 + 0.083, 1.0, 1.0, (50, -42, 20), (40, -48, 14), (0, 0, -1), (0, 0, 1), 20, 5.6, 0.3, fp=1, fl=1, roll=(0.22, 0.12), sp=True)
 SH(1.5, T_SP0 + UA, 0.6, 0.6, (0, 0, 0), (0, 0, 0), (SPx, SPy, H_A + 3), (SPx, SPy, H_A + 3), 17, 4.0, 0.12, orb=[SPx, SPy, H_A + 6, 38, 2.0, 3.4, 4, 6], roll=(0.18, -0.12), sp=True)
-SH(1.0, T_SP0 + UB, 0.5, 1.3, (95, -66, 14), (90, -72, 6), (0, 0, 6), (0, 0, 3), 24, 5.6, 0.25, fp=1, fl=1, roll=(-0.1, 0.1), sp=True)
+SH(0.8, T_SP0 + UB, 0.4, 0.72, (95, -66, 14), (90, -72, 6), (0, 0, 6), (0, 0, 3), 24, 5.6, 0.25, fp=1, fl=1, roll=(-0.1, 0.1), sp=True)          # the side view: it tips over and starts to drop, flames catching
+SH(1.0, T_SP0 + UB + 0.448, 0.35, 0.55, (SPx + 55, SPy - 40, 1000), (SPx + 50, SPy - 44, 995), (0, 0, 6), (0, 0, 6), 20, 5.6, 0.3, fl=1, sp=True)    # from below: it plunges at the camera, flaming, and grows
+SH(0.8, T_SP0 + UB + 0.85, 0.45, 0.717, (10, 0, -6), (8, 0, -8), (0, 0, -400), (0, 0, -300), 16, 5.6, 0.3, fp=1, fl=1, sp=True)                     # the tail cam: the Earth rushing up under it
 SH(1.2, T_DROP, 0.85, 0.85, (10.0, -14.0, 28.0), (7.5, -10.5, 23.0), (0, 0, -6), (0, 0, -10), 24, 5.6, 0.5, fp=1, fl=1, roll=(0.0, 0.5))
+SH(0.9, T_DROP + 0.35, 1.0, 1.0, (38, -24, 4), (30, -22, 6), (0, 0, 3), (0, 0, 6), 24, 5.6, 0.3, fp=1, fl=1, roll=(0.08, -0.05))      # ride-along: level with it, the ground rising behind
 SH(1.0, T_DROP + 1.05, 0.9, 0.9, (46, -56, 0), (38, -48, 0), (0, 0, 6), (0, 0, 6), 50, 4.0, 0.3, fp=1, fl=1, roll=(-0.12, 0.1))
+SH(0.9, T_DROP + 1.75, 1.0, 1.0, (GX + 8, GY - 8, 0.3), (GX + 7, GY - 8.5, 0.4), (0, 0, 8), (0, 0, 8), 30, 4.0, 0.3, fl=1)             # from the ground, looking up at it coming down
 SH(0.9, T_DROP + 1.95, 0.9, 0.9, (GX - 2.2, GY - 4.8, 0.5), (GX - 1.8, GY - 4.4, 0.7), (0, 0, 6), (0, 0, 6), 14, 4.0, 0.3, fl=1)
+SH(0.9, T_DROP + 2.15, 1.0, 1.0, (14.5, -25.5, 9.8), (14.5, -25.5, 9.8), (0, 0, 6), (0, 0, 4), 24, 4.0, 0.2, fl=1)                   # the tower cam: it comes down beside the tower
 SH(1.0, T_IMP - 0.45, 0.6, 0.4, (GX + 3.8, GY + 3.3, 0.4), (GX + 3.5, GY + 3.1, 0.5), (0, 0, 6), (0, 0, 2.5), 13, 5.6, 0.3, fl=1)
 # 7. the slam, in slow motion
 SH(1.8, T_IMP + 0.06, 0.12, 0.3, (0, 0, 0), (0, 0, 0), (9, -21, 4), (9, -21, 5), 24, 4.0, 0.2, orb=[9, -21, 4.0, 19, 0.9, 3.0, 4.0, 7.5])      # above the fighters the blast throws
