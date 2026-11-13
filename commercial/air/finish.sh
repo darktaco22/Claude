@@ -5,7 +5,7 @@
 set -e
 W=${1:-$HOME/air_fin}; R=$(git rev-parse --show-toplevel); H=$R/commercial/air; mkdir -p $W/frames $W/parts; cd $R; git fetch -q origin
 NF=$(python3 -c "import json;print(round(json.load(open('$H/timeline.json'))['end']*30))")
-for b in $(git branch -r | grep -E 'origin/claude/(air-w[0-9]+|last-line-final)$' | grep -v HEAD); do
+for b in $(git branch -r | grep -E 'origin/claude/(air-[a-z]*[0-9]+|last-line-final)$' | grep -v HEAD); do
   for f in $(git ls-tree --name-only $b commercial/renders/ 2>/dev/null | grep -E 'ppart_[0-9]{4}_[0-9]{4}\.mp4$'); do
     r=$(basename $f .mp4); r=${r#ppart_}
     if [ ! -s $W/parts/ppart_$r.mp4 ]; then git show $b:$f > $W/parts/ppart_$r.mp4
