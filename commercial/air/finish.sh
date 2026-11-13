@@ -1,15 +1,15 @@
 #!/bin/bash
-# finish.sh [WORK]: collects every pushed DAWN PATROL part (commercial/renders/qpart_AAAA_BBBB.mp4) from the worker branches, checks that
+# finish.sh [WORK]: collects every pushed DAWN PATROL part (commercial/renders/rpart_AAAA_BBBB.mp4) from the worker branches, checks that
 # all frames of timeline.json are there and, if they are, assembles the film (frames + overlay.webm + mix.m4a) into
 # commercial/output/meme-royale-dawn-patrol.mp4. Exit 4 = frames still missing (it prints which). Needs only git, ffmpeg and python3.
 set -e
 W=${1:-$HOME/air_fin}; R=$(git rev-parse --show-toplevel); H=$R/commercial/air; mkdir -p $W/frames $W/parts; cd $R; git fetch -q origin
 NF=$(python3 -c "import json;print(round(json.load(open('$H/timeline.json'))['end']*30))")
-for b in $(git branch -r | grep -E 'origin/claude/(air-q[0-9]+|last-line-final)$' | grep -v HEAD); do
-  for f in $(git ls-tree --name-only $b commercial/renders/ 2>/dev/null | grep -E 'qpart_[0-9]{4}_[0-9]{4}\.mp4$'); do
-    r=$(basename $f .mp4); r=${r#qpart_}
-    if [ ! -s $W/parts/qpart_$r.mp4 ]; then git show $b:$f > $W/parts/qpart_$r.mp4
-      ffmpeg -v error -y -i $W/parts/qpart_$r.mp4 -start_number $((10#${r:0:4})) $W/frames/f_%04d.png; echo "got qpart_$r from $b"; fi
+for b in $(git branch -r | grep -E 'origin/claude/(air-r[0-9]+|last-line-final)$' | grep -v HEAD); do
+  for f in $(git ls-tree --name-only $b commercial/renders/ 2>/dev/null | grep -E 'rpart_[0-9]{4}_[0-9]{4}\.mp4$'); do
+    r=$(basename $f .mp4); r=${r#rpart_}
+    if [ ! -s $W/parts/rpart_$r.mp4 ]; then git show $b:$f > $W/parts/rpart_$r.mp4
+      ffmpeg -v error -y -i $W/parts/rpart_$r.mp4 -start_number $((10#${r:0:4})) $W/frames/f_%04d.png; echo "got rpart_$r from $b"; fi
   done
 done
 M=$(python3 -c "
