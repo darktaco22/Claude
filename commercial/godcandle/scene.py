@@ -33,7 +33,11 @@ plane('ground2', 6000, 6000, (9, -16, -0.12), (0, 0, 0), HAZE)            # beyo
 # ---------------------------------------------------------------- the timeline (animation seconds)
 GX, GY = 9.0, -21.0                                     # where it lands
 T_SWAP, T_LAUNCH, T_CEIL, T_FLASH = 3.4, 4.5, 4.65, 6.2
-T_DROP = 6.25; T_IMP = T_DROP + 3.2
+T_SP0 = 6.25; UA, UB = 1.083, 1.983; T_SPACE = 2.9                  # the candle is up in SPACE from T_SP0: it climbs for UA s, floats until UB, then falls
+T_DROP = T_SP0 + T_SPACE; T_IMP = T_DROP + 3.2                      # ... and drops back to the arena at T_DROP (everything after is the old film, shifted)
+T_FIRE = T_SP0 + UB + 0.15                                          # its flames and plasma light up as it starts to fall
+SP = Vector((40000.0, 0.0, 0.0)); R_E = 12000.0; H_A = 1800.0       # the space set stands far from the arena: Earth's top is at SP, the candle floats H_A above it
+D0 = 900.0; G_S = 3700.0
 ROOM = Vector((400.0, -16.0, 0.0))
 def Rm(x, y, z): return ROOM + Vector((x, y, z))
 def tick(a, b, f): return a + (b - a) * f
@@ -164,6 +168,16 @@ def gc_shape(t):
     return tick(0.12, 0.25, sm((t - T_SWAP) / 0.7)) * HG, tick(0.03, 0.25, sm((t - T_SWAP) / 0.6)) * HG, HG
 rg = random.Random(5); TILT = (0.045, -0.03); tf = T_IMP - T_DROP; gg = 2 * (Z0A + 0.35) / (tf * tf)
 QP = BASIS.to_quaternion(); QW = Quaternion((1, 0, 0, 0))
+def space_state(t):
+    """In space: climbs (slowing) to its apex, floats and tumbles gently, then drops away."""
+    u = t - T_SP0
+    if u < UA: h = H_A - D0 * (1 - u / UA) ** 2
+    elif u < UB: h = H_A + 3.0 * (u - UA)
+    else: v = u - UB; h = H_A + 3.0 * (UB - UA) - 0.5 * G_S * v * v
+    amp = 0.0
+    if UA <= u < UB: amp = 0.32 * sm((u - UA) / 0.4) * (1 - sm((u - UA - 0.5) / 0.4))
+    ph_ = 1.5 * (u - UA) + 0.6; yaw = 0.5 + 0.35 * u + 0.5 * sm((u - UA) / 0.9)
+    return Vector((SP.x, SP.y, h)), Euler((amp * math.cos(ph_), amp * math.sin(ph_), yaw)).to_quaternion(), 1.0
 def gc_state(t):
     """(location, quaternion, scale) of the candle at animation time t."""
     if t < T_SWAP: return B0, QP, 0.0001
@@ -171,7 +185,8 @@ def gc_state(t):
         q = QP.slerp(QW, sm((t - T_SWAP) / 1.1)) if t < T_SWAP + 1.1 else QW
         dz = 0.5 * A_UP * (t - T_LAUNCH) ** 2 if t > T_LAUNCH else 0.0
         sh = 0.0 if t < T_LAUNCH else 0.0; return B0 + Vector((0, 0, dz)), q, S_of(t)
-    if t < T_DROP: return Vector((GX, GY, Z0A)), QW, 1.0
+    if t < T_SP0: return Vector((GX, GY, Z0A)), QW, 1.0
+    if t < T_DROP: return space_state(t)
     if t < T_IMP: dt = t - T_DROP; return Vector((GX, GY, (Z0A + 0.35) * (1 - (dt / tf) ** 1.8) - 0.35)), Euler((TILT[0] * dt, TILT[1] * dt, 0.5 + 0.45 * dt)).to_quaternion(), 1.0
     return Vector((GX, GY, -0.35)), Euler((TILT[0] * tf, TILT[1] * tf, 0.5 + 0.45 * tf)).to_quaternion(), 1.0
 prevq = [None]
@@ -190,6 +205,11 @@ for o in (GC, BODY, WICKO):
     for fc in o.animation_data.action.fcurves:
         for kp in fc.keyframe_points:
             kp.interpolation = 'CONSTANT' if abs(kp.co[0] - F(T_FLASH)) < 0.01 and o is GC else 'LINEAR'
+for J in (T_SP0, T_DROP):                                      # the candle jumps to space and back: hold the last key before each jump
+    kb = max((kp for fc in GC.animation_data.action.fcurves for kp in fc.keyframe_points if tt(kp.co[0]) < J - 1e-6), key=lambda kp: kp.co[0])
+    for fc in GC.animation_data.action.fcurves:
+        for kp in fc.keyframe_points:
+            if abs(kp.co[0] - kb.co[0]) < 1e-6: kp.interpolation = 'CONSTANT'
 # the impact: squash, then the shock rattles it
 sq = Vector(GC.scale)
 for t, s in ((T_IMP - 0.01, (1, 1, 1)), (T_IMP + 0.04, (1.14, 1.14, 0.9)), (T_IMP + 0.12, (0.97, 0.97, 1.03)), (T_IMP + 0.22, (1.03, 1.03, 0.98)), (T_IMP + 0.4, (1, 1, 1))):
@@ -203,17 +223,17 @@ for fc in LAMP.animation_data.action.fcurves:
 FLAME = fire_mat('flame_g', (0.04, 0.55, 0.1), (0.3, 1.0, 0.4), (0.9, 1.0, 0.8), 16); FLAMEO = fire_mat('flame_o', (0.6, 0.2, 0.02), (1.0, 0.6, 0.15), (1.0, 0.95, 0.7), 16)
 BEAMM = glow('beam', (0.3, 1.0, 0.4), 6.0, 0.12); TRLM = glow('trl', (0.35, 1.0, 0.45), 7.0, 0.3)
 for i in range(9):      # flames streaming off its top while it falls
-    o = ico('trail', 1.0, (0, 0, HG + 2.0 + i * 2.6), FLAME, 2); o.parent = GC; o.visible_shadow = False; s = 2.1 - i * 0.2; o.scale = (s, s, s * 2.2); show(o, F(T_DROP - 0.1), F(T_IMP) - 1)
+    o = ico('trail', 1.0, (0, 0, HG + 2.0 + i * 2.6), FLAME, 2); o.parent = GC; o.visible_shadow = False; s = 2.1 - i * 0.2; o.scale = (s, s, s * 2.2); show(o, F(T_FIRE), F(T_IMP) - 1)
 for i in range(9):      # and out of its foot while it climbs
-    o = ico('exhaust', 1.0, (0, 0, -2.0 - i * 2.4), FLAME, 2); o.parent = GC; o.visible_shadow = False; s = 2.0 - i * 0.18; o.scale = (s, s, s * 2.4); show(o, F(T_LAUNCH - 0.1), F(T_FLASH))
-bpy.ops.mesh.primitive_cone_add(vertices=24, radius1=2.3, radius2=0.2, depth=30, location=(0, 0, HG + 16)); tc = bpy.context.object; tc.data.materials.append(TRLM); tc.parent = GC; tc.visible_shadow = False; show(tc, F(T_DROP - 0.1), F(T_IMP) - 1)
+    o = ico('exhaust', 1.0, (0, 0, -2.0 - i * 2.4), FLAME, 2); o.parent = GC; o.visible_shadow = False; s = 2.0 - i * 0.18; o.scale = (s, s, s * 2.4); show(o, F(T_LAUNCH - 0.1), F(T_SP0 + UA))
+bpy.ops.mesh.primitive_cone_add(vertices=24, radius1=2.3, radius2=0.2, depth=30, location=(0, 0, HG + 16)); tc = bpy.context.object; tc.data.materials.append(TRLM); tc.parent = GC; tc.visible_shadow = False; show(tc, F(T_FIRE), F(T_IMP) - 1)
 
 # re-entry: a white-hot cap ahead of its foot, a thin plasma envelope widening back past the body, flames along its sides
 PLASMA = glow('plasma', (1.0, 0.95, 0.8), 14.0, 0.5); PLASMA2 = glow('plasma2', (1.0, 0.5, 0.12), 8.0, 0.13)
-o = ico('cap', 1.0, (0, 0, -0.5), PLASMA, 3); o.parent = GC; o.visible_shadow = False; o.scale = (2.5, 2.5, 1.0); show(o, F(T_DROP - 0.1), F(T_IMP) - 1)
-bpy.ops.mesh.primitive_cone_add(vertices=32, radius1=0.8, radius2=4.4, depth=20, location=(0, 0, 7.0)); o = bpy.context.object; o.data.materials.append(PLASMA2); o.parent = GC; o.visible_shadow = False; show(o, F(T_DROP - 0.1), F(T_IMP) - 1)
+o = ico('cap', 1.0, (0, 0, -0.5), PLASMA, 3); o.parent = GC; o.visible_shadow = False; o.scale = (2.5, 2.5, 1.0); show(o, F(T_FIRE), F(T_IMP) - 1)
+bpy.ops.mesh.primitive_cone_add(vertices=32, radius1=0.8, radius2=4.4, depth=20, location=(0, 0, 7.0)); o = bpy.context.object; o.data.materials.append(PLASMA2); o.parent = GC; o.visible_shadow = False; show(o, F(T_FIRE), F(T_IMP) - 1)
 for i in range(12):
-    ang = i / 12 * 6.283; o = ico('sheath', 1.0, (math.cos(ang) * 2.3, math.sin(ang) * 2.3, 2.0 + (i % 3) * 4.5), FLAMEO if i % 2 else FLAME, 2); o.parent = GC; o.visible_shadow = False; o.scale = (0.7, 0.7, 3.0); show(o, F(T_DROP - 0.1), F(T_IMP) - 1)
+    ang = i / 12 * 6.283; o = ico('sheath', 1.0, (math.cos(ang) * 2.3, math.sin(ang) * 2.3, 2.0 + (i % 3) * 4.5), FLAMEO if i % 2 else FLAME, 2); o.parent = GC; o.visible_shadow = False; o.scale = (0.7, 0.7, 3.0); show(o, F(T_FIRE), F(T_IMP) - 1)
 # clouds: a soft cloud deck all round the stadium (a hole over it), with ragged puffs along the rim, so no bare ground shows from above
 def cloud_mat(name, dens=1.0):
     m = bpy.data.materials.new(name); m.use_nodes = True; nt = m.node_tree; b = nt.nodes['Principled BSDF']; b.inputs['Base Color'].default_value = (1, 1, 1, 1); b.inputs['Roughness'].default_value = 1.0
@@ -241,6 +261,75 @@ def deck_mat(name, thr, off):
     bp = nt.nodes.new('ShaderNodeBump'); bp.inputs['Strength'].default_value = 1.0; bp.inputs['Distance'].default_value = 6.0; nt.links.new(nz.outputs['Fac'], bp.inputs['Height']); nt.links.new(bp.outputs['Normal'], b.inputs['Normal']); return m
 for zz, thr, off in ((15.0, 0.36, 0.0), (27.0, 0.44, 400.0)):
     dk = plane('clouddeck', 5000, 5000, (GX, GY, zz), (0, 0, 0), deck_mat(f'deck{int(zz)}', thr, off)); dk.visible_shadow = False
+
+# ---------------------------------------------------------------- SPACE: a small Earth with a thin blue limb, stars, the sun; far from the arena, shown only while the candle is up there
+import bmesh
+def SPK(o): show(o, F(T_SP0), F(T_DROP) - 1)
+def _lw(nt, blend=0.5): n = nt.nodes.new('ShaderNodeLayerWeight'); n.inputs['Blend'].default_value = blend; return n
+def _math(nt, op, a_, b_=None, cl=False):
+    n_ = nt.nodes.new('ShaderNodeMath'); n_.operation = op; n_.use_clamp = cl
+    for i_, v_ in enumerate((a_, b_)):
+        if v_ is None: continue
+        if isinstance(v_, (int, float)): n_.inputs[i_].default_value = v_
+        else: nt.links.new(v_, n_.inputs[i_])
+    return n_.outputs[0]
+def earth_material():
+    m = bpy.data.materials.new('earth'); m.use_nodes = True; nt = m.node_tree; b = nt.nodes['Principled BSDF']
+    tc = nt.nodes.new('ShaderNodeTexCoord'); nz = nt.nodes.new('ShaderNodeTexNoise'); nz.inputs['Scale'].default_value = 0.00020; nz.inputs['Detail'].default_value = 11; nz.inputs['Roughness'].default_value = 0.6
+    nt.links.new(tc.outputs['Object'], nz.inputs['Vector'])
+    rp = nt.nodes.new('ShaderNodeValToRGB'); ce = rp.color_ramp.elements
+    stops = [(0.0, (0.01, 0.04, 0.20)), (0.42, (0.02, 0.10, 0.36)), (0.495, (0.06, 0.28, 0.46)), (0.505, (0.32, 0.36, 0.2)), (0.56, (0.10, 0.25, 0.07)), (0.66, (0.30, 0.30, 0.14)), (0.78, (0.50, 0.42, 0.30)), (1.0, (0.9, 0.9, 0.95))]
+    ce[0].position, ce[0].color = stops[0][0], (*stops[0][1], 1); ce[1].position, ce[1].color = stops[-1][0], (*stops[-1][1], 1)
+    for pos, c in stops[1:-1]: e_ = ce.new(pos); e_.color = (*c, 1)
+    nt.links.new(nz.outputs['Fac'], rp.inputs['Fac']); nt.links.new(rp.outputs['Color'], b.inputs['Base Color'])
+    land = _math(nt, 'MULTIPLY', _math(nt, 'SUBTRACT', nz.outputs['Fac'], 0.5), 90.0, True)
+    nt.links.new(_math(nt, 'ADD', 0.10, _math(nt, 'MULTIPLY', land, 0.55)), b.inputs['Roughness'])
+    lw = _lw(nt, 0.5); haze = _math(nt, 'MULTIPLY', _math(nt, 'POWER', lw.outputs['Facing'], 4.5), 0.9)
+    b.inputs['Emission Color'].default_value = (0.12, 0.38, 1.0, 1); nt.links.new(haze, b.inputs['Emission Strength'])
+    return m
+def cloud_shell_material():
+    m = bpy.data.materials.new('earthcloud'); m.use_nodes = True; nt = m.node_tree; b = nt.nodes['Principled BSDF']; b.inputs['Base Color'].default_value = (1, 1, 1, 1); b.inputs['Roughness'].default_value = 1.0
+    b.inputs['Emission Color'].default_value = (0.85, 0.9, 1.0, 1); b.inputs['Emission Strength'].default_value = 0.25
+    tc = nt.nodes.new('ShaderNodeTexCoord'); nz = nt.nodes.new('ShaderNodeTexNoise'); nz.inputs['Scale'].default_value = 0.00055; nz.inputs['Detail'].default_value = 9; nz.inputs['Roughness'].default_value = 0.62
+    nt.links.new(tc.outputs['Object'], nz.inputs['Vector']); mr = nt.nodes.new('ShaderNodeMapRange'); mr.inputs['From Min'].default_value = 0.52; mr.inputs['From Max'].default_value = 0.66
+    nt.links.new(nz.outputs['Fac'], mr.inputs['Value']); nt.links.new(mr.outputs['Result'], b.inputs['Alpha']); return m
+def atmosphere_material():
+    m = bpy.data.materials.new('atmo'); m.use_nodes = True; nt = m.node_tree; nt.nodes.clear()
+    o = nt.nodes.new('ShaderNodeOutputMaterial'); mx = nt.nodes.new('ShaderNodeMixShader'); tr = nt.nodes.new('ShaderNodeBsdfTransparent'); em = nt.nodes.new('ShaderNodeEmission')
+    em.inputs['Color'].default_value = (0.25, 0.55, 1.0, 1); em.inputs['Strength'].default_value = 9.0; lw = _lw(nt, 0.5)
+    nt.links.new(_math(nt, 'POWER', lw.outputs['Facing'], 6.0, True), mx.inputs['Fac']); nt.links.new(tr.outputs[0], mx.inputs[1]); nt.links.new(em.outputs[0], mx.inputs[2]); nt.links.new(mx.outputs[0], o.inputs['Surface']); return m
+def sphere(name, r, loc, m, seg=384, rings=192):
+    bpy.ops.mesh.primitive_uv_sphere_add(radius=r, segments=seg, ring_count=rings, location=loc); o = bpy.context.object; o.name = name
+    o.data.polygons.foreach_set('use_smooth', [True] * len(o.data.polygons)); o.data.materials.append(m); o.visible_shadow = False; return o
+EC = SP + Vector((0, 0, -R_E))
+SPACE_OBJS = [sphere('earth', R_E, EC, earth_material()), sphere('earthcloud', R_E + 60, EC, cloud_shell_material(), 256, 128), sphere('atmo', R_E + 450, EC, atmosphere_material(), 256, 128)]
+SPACE_OBJS[0].visible_shadow = True
+# stars: little emissive quads far away (a denoiser would eat single pixels); a denser band for the Milky Way
+STARM = [mat(f'star{i}', (0, 0, 0), 1.0, emit=c, estr=e_) for i, (c, e_) in enumerate((((1.0, 1.0, 1.0), 5), ((0.7, 0.8, 1.0), 5), ((1.0, 0.85, 0.65), 5), ((1.0, 1.0, 1.0), 22), ((0.7, 0.8, 1.0), 22), ((1.0, 0.85, 0.65), 22)))]
+rs = random.Random(77); bm = bmesh.new(); gal = Vector((0.3, 0.5, 0.8)).normalized(); e1 = gal.cross(Vector((0, 0, 1))).normalized(); e2 = gal.cross(e1)
+for i in range(3000):
+    if i < 1800: v = Vector((rs.gauss(0, 1), rs.gauss(0, 1), rs.gauss(0, 1))).normalized()
+    else: th = rs.uniform(0, 6.2832); v = (e1 * math.cos(th) + e2 * math.sin(th) + gal * rs.gauss(0, 0.2)).normalized()
+    sz = 1.2e5 * 0.00095 * (1.0 + 1.8 * rs.random() ** 7); t1 = v.cross(Vector((0, 0, 1))); t1 = (t1 if t1.length > 0.05 else Vector((1, 0, 0))).normalized(); t2 = v.cross(t1); c = v * 1.2e5
+    fc = bm.faces.new([bm.verts.new(c + t1 * a * sz / 2 + t2 * b_ * sz / 2) for a, b_ in ((-1, -1), (1, -1), (1, 1), (-1, 1))]); fc.material_index = rs.choice((0, 0, 0, 1, 2)) + (3 if rs.random() < 0.08 else 0)
+me = bpy.data.meshes.new('stars'); bm.to_mesh(me); bm.free(); STARS = bpy.data.objects.new('stars', me); COL.objects.link(STARS); STARS.location = SP; STARS.visible_shadow = False
+for m_ in STARM: me.materials.append(m_)
+SUNDIR = -(Euler((math.radians(48), 0, math.radians(205))).to_matrix() @ Vector((0, 0, -1)))                     # towards the sun (same as the arena's sun lamp)
+SUNM = mat('sundisc', (0, 0, 0), 1.0, emit=(1.0, 0.97, 0.88), estr=900); SUNO = ico('sundisc', 700.0, SP + SUNDIR * 1.15e5, SUNM, 3); SUNO.visible_shadow = False
+# floating specks around its path: they whip past while it climbs and hang in the air while it floats
+bm = bmesh.new(); rs = random.Random(5)
+for i in range(260):
+    ang = rs.uniform(0, 6.2832); rad = 5 + 60 * rs.random() ** 0.7; z = rs.uniform(H_A - 1100, H_A + 90); r_ = rs.uniform(0.12, 0.5)
+    g_ = bmesh.ops.create_icosphere(bm, subdivisions=1, radius=r_); vs = g_['verts']
+    bmesh.ops.translate(bm, verts=vs, vec=(math.cos(ang) * rad, math.sin(ang) * rad, z))
+    for f_ in set(f for v_ in vs for f in v_.link_faces): f_.material_index = 0 if rs.random() < 0.65 else 1
+me = bpy.data.meshes.new('specks'); bm.to_mesh(me); bm.free(); SPECKS = bpy.data.objects.new('specks', me); COL.objects.link(SPECKS); SPECKS.location = SP; SPECKS.visible_shadow = False
+me.materials.append(mat('speckg', (0, 0, 0), 1.0, emit=(0.4, 1.0, 0.5), estr=16)); me.materials.append(mat('speckw', (0, 0, 0), 1.0, emit=(1.0, 1.0, 0.95), estr=14))
+for o_ in SPACE_OBJS + [STARS, SUNO, SPECKS]: SPK(o_)
+SPW = bpy.data.worlds.new('space'); SPW.use_fake_user = True; SPW.use_nodes = True; nt_ = SPW.node_tree; nt_.nodes.clear()
+wo = nt_.nodes.new('ShaderNodeOutputWorld'); wb = nt_.nodes.new('ShaderNodeBackground'); tcw = nt_.nodes.new('ShaderNodeTexCoord'); nzw = nt_.nodes.new('ShaderNodeTexNoise'); nzw.inputs['Scale'].default_value = 1.6; nzw.inputs['Detail'].default_value = 8
+rw = nt_.nodes.new('ShaderNodeValToRGB'); ew = rw.color_ramp.elements; ew[0].position = 0.5; ew[0].color = (0, 0, 0, 1); ew[1].position = 0.85; ew[1].color = (0.05, 0.07, 0.16, 1)
+nt_.links.new(tcw.outputs['Generated'], nzw.inputs['Vector']); nt_.links.new(nzw.outputs['Fac'], rw.inputs['Fac']); nt_.links.new(rw.outputs['Color'], wb.inputs['Color']); wb.inputs['Strength'].default_value = 0.35; nt_.links.new(wb.outputs[0], wo.inputs['Surface'])
 
 # ---------------------------------------------------------------- phone and room reactions
 def spark_burst(c, t, n, seed, size, speed, dirv, spread=1.0, life=0.6):
@@ -379,7 +468,7 @@ for i in range(46):      # gold coins thrown up by the slam
 
 # ---------------------------------------------------------------- the crowd and the fighters watching the sky
 def_fan = '''def fan_sched(team, j):
-    return [(0, 'idle', 1), (T_FLASH + 0.2 * j, 'ready', 1.0), (T_DROP + 1.0 + 0.5 * j, 'hit', 0.4), (T_IMP - 0.5, 'hit', 0.8), (T_IMP + 0.25, 'lose', 1.0 + 0.3 * j), (T_IMP + 1.4 + 0.5 * j, 'win', 1.0 + 0.3 * j)]
+    return [(0, 'idle', 1), (T_DROP - 0.05 + 0.2 * j, 'ready', 1.0), (T_DROP + 1.0 + 0.5 * j, 'hit', 0.4), (T_IMP - 0.5, 'hit', 0.8), (T_IMP + 0.25, 'lose', 1.0 + 0.3 * j), (T_IMP + 1.4 + 0.5 * j, 'win', 1.0 + 0.3 * j)]
 '''
 cr_src = '\n'.join(src[i_crowd:i_crowdcall]); a0_ = cr_src.index('def fan_sched'); a1_ = cr_src.index('SOURCES = ')
 exec(compile(cr_src[:a0_] + def_fan + cr_src[a1_:], CL, 'exec'), g)
@@ -413,8 +502,8 @@ for o in bpy.data.objects:
 cam = bpy.data.objects.new('cam', bpy.data.cameras.new('cam')); COL.objects.link(cam); sc.camera = cam
 cam.data.sensor_width = 36; cam.data.dof.use_dof = True; cam.data.clip_end = 3000; cam.data.clip_start = 0.01
 SHOTS = []; _t = [0.0]
-def SH(dur, a0, s0, s1, p0, p1, l0, l1, lens, fstop=2.8, shake=0.0, lens1=None, fp=0, fl=0, orb=None, ec=0, roll=None, fstop1=None, up1=None):
-    SHOTS.append(dict(t0=round(_t[0], 4), t1=round(_t[0] + dur, 4), a0=a0, s0=s0, s1=s1, p0=list(p0), p1=list(p1), l0=list(l0), l1=list(l1), lens=lens, lens1=lens1 or lens, fstop=fstop, shake=shake, fp=fp, fl=fl, orb=orb, ec=ec, roll=roll, fstop1=fstop1 or fstop, up1=up1)); _t[0] += dur
+def SH(dur, a0, s0, s1, p0, p1, l0, l1, lens, fstop=2.8, shake=0.0, lens1=None, fp=0, fl=0, orb=None, ec=0, roll=None, fstop1=None, up1=None, sp=False):
+    SHOTS.append(dict(t0=round(_t[0], 4), t1=round(_t[0] + dur, 4), a0=a0, s0=s0, s1=s1, p0=list(p0), p1=list(p1), l0=list(l0), l1=list(l1), lens=lens, lens1=lens1 or lens, fstop=fstop, shake=shake, fp=fp, fl=fl, orb=orb, ec=ec, roll=roll, fstop1=fstop1 or fstop, up1=up1, sp=sp)); _t[0] += dur
 # fp / fl: 0 = world, 1 = offset from the candle's foot (metres), 3 = offset in candle heights
 # 1. over his shoulder, pushing in on the phone while he taps BUY; the chart goes parabolic and fills the frame
 SH(T_SWAP, 0.0, 1, 1, ph(0, 0, 0) + Vector((0.45, -0.75, 0.62)), ph(0.12, 0.03, 0.34), ph(0, 0, 0), ph(0.012, 0.004, 0), 68, 4.0, 0.25, 70, ec=2, fstop1=16, up1=list(v_))
@@ -430,6 +519,11 @@ SH(1.7, T_CEIL + 0.45, 0.5, 0.6, (CEN.x + 0.4, CEN.y + 1.7, 14.0), (CEN.x + 0.15
 # 5. the chase: out into the sky
 SH(0.95, T_SWAP + 1.75, 1.1, 1.1, (1.2, -2.0, -0.3), (0.9, -3.0, -0.6), (0, 0, 0.5), (0, 0, 0.5), 24, 4.0, 0.3, fp=3, fl=3)
 # 6. the fall, like a rocket coming back down: an onboard camera looking down from over its top, rolling; a long-lens chase; then the ground, among the fighters
+# 5b. SPACE: it breaks out of the atmosphere (smash cut), climbs, floats a moment, then tips over and falls back
+SPx, SPy = SP.x, SP.y
+SH(1.0, T_SP0 + 0.083, 1.0, 1.0, (50, -42, 20), (40, -48, 14), (0, 0, -1), (0, 0, 1), 20, 5.6, 0.3, fp=1, fl=1, roll=(0.22, 0.12), sp=True)
+SH(1.5, T_SP0 + UA, 0.6, 0.6, (0, 0, 0), (0, 0, 0), (SPx, SPy, H_A + 3), (SPx, SPy, H_A + 3), 17, 4.0, 0.12, orb=[SPx, SPy, H_A + 6, 38, 2.0, 3.4, 4, 6], roll=(0.18, -0.12), sp=True)
+SH(1.0, T_SP0 + UB, 0.5, 1.3, (95, -66, 14), (90, -72, 6), (0, 0, 6), (0, 0, 3), 24, 5.6, 0.25, fp=1, fl=1, roll=(-0.1, 0.1), sp=True)
 SH(1.2, T_DROP, 0.85, 0.85, (10.0, -14.0, 28.0), (7.5, -10.5, 23.0), (0, 0, -6), (0, 0, -10), 24, 5.6, 0.5, fp=1, fl=1, roll=(0.0, 0.5))
 SH(1.0, T_DROP + 1.05, 0.9, 0.9, (46, -56, 0), (38, -48, 0), (0, 0, 6), (0, 0, 6), 50, 4.0, 0.3, fp=1, fl=1, roll=(-0.12, 0.1))
 SH(0.9, T_DROP + 1.95, 0.9, 0.9, (GX - 2.2, GY - 4.8, 0.5), (GX - 1.8, GY - 4.4, 0.7), (0, 0, 6), (0, 0, 6), 14, 4.0, 0.3, fl=1)
@@ -444,7 +538,7 @@ SH(1.1, T_IMP + 1.8, 1.0, 1.0, (-4, -36, 7), (-2, -37, 10), (9, -21, 7), (9, -21
 # the pull-back starts 1.1 s into its move: its first second sat inside the near tower
 SH(2.1, T_IMP + 2.9, 1.0, 1.0, (9, -30, 3), (9, -62, 32), (9, -21, 7), (9, -21, 9), 24, 4.0, 0.15, 32); SHOTS[-1].update(u0=1.1 / 3.2, seed=round(SHOTS[-1]['t0'] - 1.1, 4))
 N_FILM = int(round(_t[0] * FPS)); print('FILM ends at', _t[0], 'frames', N_FILM)
-json.dump(dict(fps=FPS, first=1, last=N_FILM, shots=SHOTS, t_swap=T_SWAP, t_ceil=T_CEIL, t_flash=T_FLASH, t_drop=T_DROP, t_imp=T_IMP), open(os.path.join(MYHERE, 'edl.json'), 'w'), indent=0)
+json.dump(dict(fps=FPS, first=1, last=N_FILM, shots=SHOTS, t_swap=T_SWAP, t_ceil=T_CEIL, t_flash=T_FLASH, t_drop=T_DROP, t_imp=T_IMP, t_sp0=T_SP0, ua=UA, ub=UB), open(os.path.join(MYHERE, 'edl.json'), 'w'), indent=0)
 sc.frame_set(1)
 bpy.ops.wm.save_as_mainfile(filepath=os.path.abspath(OUT), compress=False)
 print('SAVED', OUT)

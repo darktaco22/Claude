@@ -7,13 +7,15 @@ T0 = time.time(); BUDGET = float(os.environ.get('RENDER_BUDGET', '0') or 0)
 lst = sys.argv[sys.argv.index('--') + 1]; E = json.load(open(os.environ.get('EDL') or os.path.join(os.path.dirname(os.path.abspath(__file__)), 'edl.json')))
 fl = [int(x) for x in open(lst).read().split()]; done_file = lst + '.done'
 done = set(int(x) for x in open(done_file).read().split()) if os.path.exists(done_file) else set()
-fl = [f for f in fl if f not in done]; sc = bpy.context.scene; cam = sc.camera; FPS = E['fps']; sc.render.use_overwrite = True; GC = bpy.data.objects['GC']
+fl = [f for f in fl if f not in done]; sc = bpy.context.scene; cam = sc.camera; FPS = E['fps']; sc.render.use_overwrite = True; GC = bpy.data.objects['GC']; WORLD0 = sc.world
 def ease(u): u = max(0.0, min(1.0, u)); return u * u * (3 - 2 * u)
 def setup(f):
     t = (f - 1) / FPS; s = next((s for s in E['shots'] if s['t0'] <= t < s['t1']), E['shots'][-1]); dur = s['t1'] - s['t0']
     u = (t - s['t0']) / dur; a = s['a0'] + (t - s['t0']) * (s['s0'] + (s['s1'] - s['s0']) * u * 0.5); af = a * FPS + 1
     sc.frame_set(int(af), subframe=af - int(af)); sp = s['s0'] + (s['s1'] - s['s0']) * u; sc.render.motion_blur_shutter = max(0.1, 0.4 * sp)
     u = s.get('u0', 0) + (1 - s.get('u0', 0)) * u                # a shot may start part-way along its camera move
+    if s.get('sp') and 'space' in bpy.data.worlds: sc.world = bpy.data.worlds['space']; cam.data.clip_end = 300000.0         # the space shots: black sky, far planes
+    else: sc.world = WORLD0; cam.data.clip_end = 3000.0
     cp = GC.matrix_world.translation.copy(); H = GC.scale.x * 13.2; ec = s.get('ec', 0)
     e = ease(u) if ec == 0 else (u * u if ec == 1 else (1 - (1 - u) ** 2 if ec == 2 else u))
     if s['orb']:

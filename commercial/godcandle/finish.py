@@ -8,7 +8,7 @@ from PIL import Image, ImageDraw, ImageFont, ImageFilter
 FR, OUT = sys.argv[1:3]; os.makedirs(OUT, exist_ok=True)
 HERE = os.path.dirname(os.path.abspath(__file__)); A = os.path.join(HERE, '..', 'assets'); AU = os.path.join(HERE, '..', 'comeback', 'audio')
 E = json.load(open(os.path.join(HERE, 'edl.json'))); SHOTS = E['shots']; FPS = 24; NFILM = E['last']; HOLD = 40; NF = NFILM + HOLD
-T_SWAP, T_CEIL, T_FLASH, T_DROP, T_IMP = E['t_swap'], E['t_ceil'], E['t_flash'], E['t_drop'], E['t_imp']
+T_SWAP, T_CEIL, T_FLASH, T_DROP, T_IMP = E['t_swap'], E['t_ceil'], E['t_flash'], E['t_drop'], E['t_imp']; T_SP0, UA, UB = E.get('t_sp0', T_FLASH + 0.05), E.get('ua', 1.083), E.get('ub', 1.983)
 W, H = 1920, 1080; CH = 816; Y0 = (H - CH) // 2
 ONLY = [int(x) for x in sys.argv[3].split(',')] if len(sys.argv) > 3 else None
 def font(s): return ImageFont.truetype(os.path.join(A, 'lilita.ttf'), s)
@@ -36,7 +36,8 @@ def cut_times():
 yy, xx = np.mgrid[0:CH, 0:W].astype(np.float32)
 RR = ((xx - W / 2) / (W / 2)) ** 2 + ((yy - CH / 2) / (CH / 2)) ** 2
 VIG = (1 - 0.38 * RR ** 1.25)[..., None]
-T_EV = dict(swap=ft(T_SWAP, -9), ceil=ft(T_CEIL, -9), imp=ft(T_IMP, -9), flash=min(cut_times(), key=lambda c: abs(c - (ft(T_FLASH - 0.01, -9) or -9))) if ft(T_FLASH - 0.01) else -9)
+T_EV = dict(swap=ft(T_SWAP, -9), ceil=ft(T_CEIL, -9), imp=ft(T_IMP, -9), flash=min(cut_times(), key=lambda c: abs(c - (ft(T_DROP - 0.01, -9) or -9))) if ft(T_DROP - 0.01) else -9,
+            space=min(cut_times(), key=lambda c: abs(c - (ft(T_FLASH - 0.01, -9) or -9))) if ft(T_FLASH - 0.01) else -9)   # 'space' = the smash cut out of the sky, 'flash' = the cut back into the fall
 def bump(t, t0, dur): return max(0.0, 1 - abs(t - t0) / dur) if dur > 0 else 0.0
 def decay(t, t0, dur): return max(0.0, 1 - (t - t0) / dur) if t >= t0 else 0.0
 def punch(a, k, cx=0.5, cy=0.5):
@@ -76,6 +77,8 @@ def frame(f):
     d = decay(t, T_EV['ceil'], 0.5); k += 0.05 * d; ab += 8 * d; fl = max(fl, 0.35 * decay(t, T_EV['ceil'], 0.2))
     fc = T_EV['flash']
     if fc > 0: fl = max(fl, 0.9 * bump(t, fc, 0.14))
+    sc_ = T_EV['space']
+    if sc_ > 0: fl = max(fl, 1.0 * bump(t, sc_, 0.16)); d = decay(t, sc_, 0.35); k += 0.05 * d; ab += 10 * d
     d = decay(t, T_EV['imp'], 1.1); k += 0.12 * d * d; ab += 22 * d * d; fl = max(fl, 1.0 * decay(t, T_EV['imp'] - 0.01, 0.35) ** 1.5); rb = 0.7 * d * d; col = np.array([0.75, 1.0, 0.8], np.float32) if d > 0.7 else col
     if k > 1: a = punch(a, k)
     a = radial_blur(a, rb); a = aberrate(a, ab)
@@ -142,7 +145,13 @@ riser(ft(2.7, t_sw - 0.8), t_sw, 0.7, 120, 2400)                               #
 boom(t_sw, 48, 2.4, 1.0); crash(t_sw, 0.45); whoosh(t_sw, 1.2, 0.5)           # it leaves the screen
 t_ce = ft(T_CEIL, t_sw + 1.2); crash(t_ce, 0.9); boom(t_ce, 62, 1.8, 0.8)      # through the ceiling
 whoosh(ft(4.5, t_sw + 1.0), 1.6, 0.6); riser(ft(4.5, t_sw + 1.0), ft(T_FLASH - 0.02, t_sw + 2.5), 0.5, 140, 3200)
-t_fl = ft(T_FLASH - 0.01, t_sw + 3.0)
+t_sp = ft(T_FLASH - 0.01, t_sw + 2.6); t_fl = ft(T_DROP - 0.01, t_sp + 3.5)         # t_sp: the smash cut into space, t_fl: the cut back into the fall (the music starts there)
+boom(t_sp, 40, 2.4, 0.9)                                                                   # the riser ends on a hit, then silence and a low hum
+xs = np.arange(int((t_fl - t_sp) * SR)) / SR; hum_ = (np.sin(2 * np.pi * 55 * xs) + 0.6 * np.sin(2 * np.pi * 82.4 * xs) + 0.05 * np.sin(2 * np.pi * 1320 * xs) * (0.6 + 0.4 * np.sin(2 * np.pi * 0.7 * xs))) * 0.11
+put(mono(hum_) * envelope([(0, 0), (0.25, 1), (len(xs) / SR - 0.5, 1), (len(xs) / SR, 0.3)], len(xs)), t_sp)
+whoosh(t_sp + 0.05, 0.9, 0.3, up=False)
+for x_ in fts(T_SP0 + UA)[:1]: ding(x_, 0.22)                                              # the apex: a soft chime as it floats
+riser(ft(T_SP0 + UB, t_fl - 1.0), t_fl, 0.5, 80, 1500)                                      # it tips over and the fall builds
 mo = load('mus_overdose'); L_ = END - t_fl; x = seg(mo, 6.0, 6.0 + L_)
 put(x * envelope([(0, 0.0), (0.05, 0.9), (L_ - 12, 0.8), (L_ - 6, 0.55), (L_, 0.3)], len(x)), t_fl)                                           # the music kicks in at the cut to the sky
 cheer = load('crowd_cheer'); gasp = load('crowd_gasp'); ooh = load('crowd_ooh')
