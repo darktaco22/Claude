@@ -236,6 +236,8 @@ clip(US, 'idle', F(T_ARR), F(T_TAP))
 clip(US, 'attack1', F(T_TAP), F(T_TAP + 1.03), 1.0)
 clip(US, 'idle', F(T_TAP + 1.03), F(T_KFALL + 1.2))
 clip(US, 'win', F(T_KFALL + 1.2), LAST_F, 1.0)
+place(US, (WALK[-1][0], WALK[-1][1], 0), US['root'].rotation_euler.z, F(T_KFALL + 1.0))      # he turns to face the crowd
+place(US, (WALK[-1][0], WALK[-1][1] - 0.5, 0), S_ + 2 * math.pi if US['root'].rotation_euler.z > math.pi else S_, F(T_KFALL + 1.7))
 area('useless_key', (16.5, -9.0, 4.0), (14.5, -16.0, 1.0), 2200, 3.0, (1.0, 0.92, 0.8))
 area('king_key', (12.5, -8.5, 3.0), (9.0, -5.3, 1.0), 1500, 3.0, (1.0, 0.9, 0.8))
 
@@ -244,10 +246,10 @@ SQUAD = []
 for k_, (uid, dx) in enumerate((('floki', -1.05), ('goat', 0.95), ('swordcat', -1.25), ('toshi', 1.2))):
     u = fighter(uid, 2.3, 'r', False)
     x = 14.5 + dx
-    t0 = T_WALK + 5.55 + k_ * 0.22
-    drop(u, x, -6.2, t0 - 0.5, S_)
+    t0 = T_WALK + 6.55 + k_ * 0.22          # they land in front of the red tower (its footprint ends at y = -8.95)
+    drop(u, x, -10.4, t0 - 0.5, S_)
     clip(u, 'ready', F(t0 - 0.5) - 5, F(t0))
-    tb = run_to(u, [(x, -6.2), (x, -20.5), (9.0 + dx * 2.2, -24.6)], t0, 5.0)
+    tb = run_to(u, [(x, -10.4), (x, -20.5), (9.0 + dx * 2.2, -24.6)], t0, 5.0)
     place(u, (9.0 + dx * 2.2, -24.6, 0), S_, F(tb) + 3)
     fight(u, tb, T_KFALL + 0.5, 1.1, k_)
     clip(u, 'lose', F(T_KFALL + 0.5), LAST_F, 1.0)
@@ -324,8 +326,8 @@ box('mic_handle', (0.07, 0.07, 0.6), (0, 0, -0.3), DARK, parent=MIC)
 sphere('mic_head', 0.13, (0, 0, 0.1), mat('mic_foam', (0.03, 0.03, 0.035), 0.95), 16).parent = MIC
 box('mic_flag', (0.26, 0.26, 0.2), (0, 0, -0.16), GOLD, parent=MIC)
 MIC.rotation_euler = (0.35, -0.5, 0)
-for t, p in ((T_INT - 0.2, PEPE_HEAD + Vector((1.6, 1.4, -2.2))), (T_INT + 0.35, PEPE_HEAD + Vector((0.72, 0.7, -0.92))),
-             (T_INT + 0.5, PEPE_HEAD + Vector((0.68, 0.64, -0.86)))):
+for t, p in ((T_INT - 0.2, PEPE_HEAD + Vector((1.6, 1.4, -2.2))), (T_INT + 0.35, PEPE_HEAD + Vector((0.7, 0.7, -0.7))),
+             (T_INT + 0.5, PEPE_HEAD + Vector((0.66, 0.64, -0.64)))):
     MIC.location = p
     key(MIC, 'location', F(t))
 show(MIC, F(T_INT - 0.2))
@@ -533,7 +535,7 @@ SH('walk wide', d_, T_WALK + 0.3, 1, (19.6, -25.6, 2.0), (19.0, -24.6, 2.1), (12
 e_ = say('c11', t0() + 0.2)
 say('b10', e_ + 0.3)
 EV['walk'] = t0()
-SH('walk hero', 5.0, T_WALK + 4.75, 0.4, (14.5, -4.9, 0.65), (14.5, -5.2, 0.7), (14.5, -16.6, 0.9), (14.5, -15.3, 0.9), 120, 2.0, hand=TIGHT, live=True)
+SH('walk hero', 5.0, T_WALK + 4.75, 0.4, (14.5, -9.3, 0.65), (14.5, -9.5, 0.7), (14.5, -16.6, 0.9), (14.5, -15.3, 0.9), 85, 2.0, hand=TIGHT, live=True)
 EV['hero'] = t0()
 EV['hero_boom'] = [ft(T_WALK + 5.35), ft(T_WALK + 6.3)]
 SH('squad pass', 3.2, T_WALK + 6.75, 0.5, (19.6, -13.2, 1.25), (19.4, -13.6, 1.25), (14.5, -14.4, 1.15), (14.5, -13.6, 1.15), 45, 2.8, 0.2, hand=LOOSE)

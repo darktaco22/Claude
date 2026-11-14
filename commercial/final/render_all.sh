@@ -13,6 +13,8 @@ if [ ! -f "$W/scene.blend" ] || [ scene.py -nt "$W/scene.blend" ]; then
 fi
 N=$(python3 -c "import json;print(json.load(open('edl.json'))['last'])")
 [ -f "$W/all.txt" ] || seq 1 "$N" | tr '\n' ' ' > "$W/all.txt"
+# Full size takes ~40 s a frame (32 h). 75 % with 7 samples is about 16 h; finish.py upscales to 1080p.
+export SCALE=${SCALE:-75} SAMPLES=${SAMPLES:-7}
 export RENDER_BUDGET=$((BUDGET - $(date +%s) + T0)); rc=0
 "$BL" -b "$W/scene.blend" -P render_edl.py -- "$W/all.txt" >> "$W/render.log" 2>&1 || rc=$?
 if [ $rc = 3 ]; then echo "RELAUNCH: $(grep -o 'BUDGET-STOP [0-9]*' "$W/render.log" | tail -1) frames left"; exit 3; fi

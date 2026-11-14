@@ -31,21 +31,25 @@ Useless, who walks the pitch unmarked, taps the king's tower and wins 3–2. Int
 3. `KOKORO=/root/wild_work/kokoro ./render_all.sh` as a tracked background job (timeout 7200000); on exit 3 run again.
 
 ## State when this was written
-- Script, voices, scene, renderer, finish and graphics all written and tested on a low-res run-through
-  (`$W/ani`, every 6th frame at 40 %): all 29 shots read.
-- A rebuild with four shot fixes was running (walk hero camera moved behind the squad's landing point, "useless
-  wins" camera out of the smoke, interview microphone lowered, king-tower smoke thinned), followed by tests
-  `$W/t4` (the fixed shots, half size) and `$W/t5` (five full-size frames for timing: `grep DONE $W/t5.log`).
+- Script, voices, scene, renderer, finish and graphics all written and tested on a low-res run-through: all 29
+  shots read. Graphics tested on those frames.
+- Measured: full size is 35–48 s a frame (32 h). Decision: render at `SCALE=75 SAMPLES=7` (now the default in
+  `render_all.sh`), about 16 h in 2-hour chunks.
+- Test `$W/t4` showed: walk-hero camera was INSIDE the red right tower (black frames; tower footprint is
+  x 12.05–16.95, y −8.95 to −4.05) and the squad landed inside it too; "useless wins" showed the coin's blank back;
+  interview microphone was out of frame. Fixed in `scene.py` (camera at y −9.3, squad lands at y −10.4, Useless
+  turns to face south after the collapse, microphone raised). A rebuild plus test `$W/t6` (8 frames at render
+  settings; times in `$W/t6.log`) was running.
 
 ## Next steps
-1. Look at `$W/t4/*.png` (walk hero ×5, useless wins, interview, collapse ×2). Fix anything still wrong.
-2. Read the full-size frame times in `$W/t5.log`. Budget: 2852 frames. Half-size tests took 12–15 s a frame, so
-   expect 20–30 s at full size (16–24 h). If over ~25 s, render with `SCALE=85` (finish.py upscales anyway).
-3. `rm -f $W/all.txt $W/all.txt.done; rm -rf $W/frames` then `./render_all.sh` in 2-hour chunks until `ALL-DONE`.
-   Disk: about 4 GB free; frames need ~2.5 GB, finished frames ~6 GB → delete `$W/ani`, `$W/t1..t5`,
-   `/root/tools/vdb`, `/root/tools/cast`, `/root/wild_work/frames` first, and encode straight after finishing.
-4. Review with contact sheets + dark-frame scan, check mp4 < 100 MB (raise `-crf` if not), commit, push, send.
-5. Not yet heard by anyone: the mix. Say so when delivering.
+1. Look at `$W/t6/*.png` (walk hero ×4, squad pass, useless wins, interview, collapse). Fix anything still wrong.
+2. `rm -f $W/all.txt $W/all.txt.done; rm -rf $W/frames`, then
+   `cd commercial/final && KOKORO=/root/wild_work/kokoro ./render_all.sh 2>&1 | tail -5` as a tracked background job
+   (timeout 7200000). On `RELAUNCH` / exit 3 run the same command again, about 8 times, until `ALL-DONE`.
+   Disk: finished frames need ~6 GB; delete `$W/t*`, and `$W/frames` once `$W/fin` exists if space runs short
+   (render_all.sh finishes then encodes; if finish.py fails on disk space, free space and run finish + ffmpeg by hand).
+3. Review with contact sheets + dark-frame scan, check mp4 < 100 MB (raise `-crf` if not), commit, push, send.
+4. Not yet heard by anyone: the mix. Say so when delivering.
 
 ## Known soft spots
 - Opening aerial is plain; the booth shot shows the commentators from behind and is dark.
