@@ -10,6 +10,9 @@ Everything here works headless in Blender 4.2 and was tested in this environment
 | `scatter.py` | Geometry-nodes scatter of instances over a surface (grass, flowers, rocks) | own code |
 | `fire.py` | Mantaflow fire/smoke bake to OpenVDB. Pipeline works; look still needs tuning (see playbook) | Blender built-in |
 | `vdb.py` | Loads downloaded fire/smoke/cloud volumes with a ready material. Tested with CGHeven CampFire 02: real flame shapes (`demo_fire.jpg`) | CGHeven free library and JangaFX packs, both CC0 |
+| `lightrig.py` | Key / key-soft / fill / rim rig around a subject relative to the camera, shared colour sets per mood, eye catch-light | after Blender Studio's lighting guide |
+| `fxcard.py` | Stock explosion/smoke footage on a camera-facing card, with an optional light so the scene reacts | clips: CGHeven (CC0) |
+| `lab.py` | Integration test: game character + scanned field + sky + rig + explosion (`demo_lab.jpg`: sky only / rig / explosion) | |
 | `demo.py` | One-still proof: `blender -b -P demo.py -- ASSET_DIR out.png` | |
 
 ## Assets tested
@@ -27,7 +30,9 @@ cdn.cgheven.com, jangafx.com, studio.blender.org, projects.blender.org, ambientc
 ## Volume downloads: mind the disk
 - CGHeven: open `https://cgheven.com/assets/<name>`; the page source holds direct `cdn.cgheven.com` links. Free
   items say `"license":"CC0"`; links starting `cgh-protected://` are paid. VDB list: `/category/vdbs` (campfire,
-  smoke shockwaves, hero clouds). `.rar` files need an unpacker that is not installed here.
+  smoke shockwaves, hero clouds). `.rar` files: `apt-get install -y unar` then `unar file.rar`.
+- CGHeven footage (explosions, smoke plumes): each asset page lists 1K/2K H.264 clips of a few MB on black. The
+  1K aerial explosion is 4 MB, 120 frames at 60 fps. Smoke shockwave VDB is 5 GB: too big for this disk.
 - **Sizes on the page are wrong.** CampFire_02_VDB.zip is 1.9 GB and unpacks to 9.4 GB (200 frames of ~47 MB). It
   filled the disk once. Check `Content-Length` first, extract only the frames needed (`unzip zip name_060.vdb`), and
   delete the zip.
