@@ -497,7 +497,7 @@ def frame(f):
     if f > N3D:
         im = end_card(t)
     else:
-        src = Image.open(os.path.join(FR, f'f_{f:04d}.png')).convert('RGB').resize((W, H), Image.LANCZOS)
+        src = Image.open(next(q for q in (os.path.join(FR, f'f_{f:04d}.png'), os.path.join(FR, f'f_{f:04d}.jpg')) if os.path.exists(q))).convert('RGB').resize((W, H), Image.LANCZOS)
         src = src.filter(ImageFilter.UnsharpMask(radius=1.6, percent=55, threshold=2))
         a = np.asarray(src, np.float32) / 255.0
         k = 1.0
