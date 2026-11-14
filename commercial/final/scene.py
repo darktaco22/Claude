@@ -95,15 +95,30 @@ def fan_sched(team, j):
 
 exec(compile('\n'.join(src[i_sources:i_keepout]), CL, 'exec'), g)
 # the commentary box, high in the west stand, and a row of blue fans who will walk out
-BOOTH = Vector((-17.4, -16.0, row_z(10)))
+BOOTH = Vector((-13.6, -16.0, row_z(6)))
 EXIT_ROW = 4
 EXIT_Y = YS - (DEPTH * (EXIT_ROW + 0.5) + 0.2)
 EXIT_Z = row_z(EXIT_ROW)
-KEEP_OUT = [(BOOTH, 3.6)] + [(Vector((x, EXIT_Y, EXIT_Z)), 0.95) for x in [2 + 1.4 * i for i in range(11)]]
+KEEP_OUT = [(BOOTH, 3.6)] + [(Vector((x, EXIT_Y, EXIT_Z)), 1.45) for x in [-5 + 1.4 * i for i in range(17)]]
 exec(compile('\n'.join(src[i_keepout + 1:i_crowdcall + 1]), CL, 'exec'), g)
 exec(compile('\n'.join(src[i_light:i_edit]), CL, 'exec'), g)           # dusk sun, team washes, bridge lights
 
 E_ = heading(1, 0)                                                     # facing east
+
+# Explosions: the fire is stock footage on cards (see fx_card); the sphere "fire" of the clash code is switched off
+# and its smoke and dust are thinned, because opaque spheres read as balls.
+NOFIRE = bpy.data.materials.new('nofire')
+NOFIRE.use_nodes = True
+NOFIRE.node_tree.nodes.clear()
+_o = NOFIRE.node_tree.nodes.new('ShaderNodeOutputMaterial')
+_t = NOFIRE.node_tree.nodes.new('ShaderNodeBsdfTransparent')
+NOFIRE.node_tree.links.new(_t.outputs[0], _o.inputs['Surface'])
+SMOKE = smoke_mat('smoke_thin', (0.10, 0.095, 0.09), 0.3)
+DUST = smoke_mat('dust_thin', (0.5, 0.46, 0.4), 0.22)
+
+
+def fall_tower(k, t, seed, crew=()):
+    kill_tower(k, t, seed, crew, NOFIRE)
 
 
 # ================================================================ small helpers
@@ -136,7 +151,7 @@ def area(name, loc, target, energy, size, color):
 
 
 # ================================================================ the two managers, on their king towers
-PEPE_P = Vector((9.0, -28.95, 3.75))
+PEPE_P = Vector((9.0, -28.3, 5.45))            # on top of the king tower's cannon
 PEPE_HEAD = PEPE_P + Vector((0, 0.05, 2.0))
 PEPE = hero('pepe', 2.3)
 place(PEPE, PEPE_P, N_)
@@ -171,12 +186,12 @@ for k_, tt in enumerate((t_ + 0.9, t_ + 1.9, t_ + 2.8)):
 fling(POP, T_SWAT, (-1.0, -0.25), up=11, dist=17, dur=1.7)
 sparks(Vector((3.5, -15.6, 1.9)), T_SWAT, 22, 44, 9.0)
 t_ = run_to(WH, [(3.5, -14.3), (3.5, -19.5)], T_SWAT + 0.6, 5.2 / (T_T1 - 1.5 - T_SWAT - 0.6), 'walk')
-t_ = run_to(WH, [(3.5, -19.5), (3.5, -27.6)], T_T1 - 1.5, 4.0)
-t_ = run_to(WH, [(3.5, -27.6), (7.4, -27.0)], t_, 3.0)
+t_ = run_to(WH, [(3.5, -19.5), (3.5, -30.6)], T_T1 - 1.5, 4.0)
+t_ = run_to(WH, [(3.5, -30.6), (7.4, -27.0)], t_ + 0.4, 3.0)
 place(WH, (7.4, -27.0, 0), heading(1.6, -2.5), F(t_) + 4)
 fight(WH, t_, T_KFALL + 0.5, 0.9)
 clip(WH, 'lose', F(T_KFALL + 0.5), LAST_F, 1.0)
-kill_tower('bL', T_T1, 11)
+fall_tower('bL', T_T1, 11)
 
 # ================================================================ right lane: the Troll and Moo Deng
 TR = fighter('troll', 2.7, 'r')
@@ -195,7 +210,7 @@ for u, x0, y0, x1, y1, dt in ((TR, 13.7, -8.5, 13.5, -23.1, 0.0), (MD, 15.4, -9.
 fight(NY, T_T1 + 4.6, T_T1 + 6.0, 1.2)
 fling(NY, T_T1 + 6.0, (1.0, -0.2), up=10, dist=15, dur=1.6)
 sparks(Vector((14.5, -20.0, 1.8)), T_T1 + 6.0, 20, 61, 9.0)
-kill_tower('bR', T_T2, 12)
+fall_tower('bR', T_T2, 12)
 for u, x, y in ((TR, 10.6, -26.6), (MD, 9.0, -25.6)):
     tc = run_to(u, [(u['root'].location.x, u['root'].location.y), (x, y)], u['t_free'], 3.4)
     place(u, (x, y, 0), heading(9 - x, -29.5 - y), F(tc) + 4)
@@ -239,7 +254,7 @@ for k_, (uid, dx) in enumerate((('floki', -1.05), ('goat', 0.95), ('swordcat', -
     SQUAD.append(u)
 
 # ================================================================ the king's tower falls; Giga with it
-kill_tower('rK', T_KFALL, 13, crew=(GIGA,))
+fall_tower('rK', T_KFALL, 13, crew=(GIGA,))
 for f, dx in ((F(T_HIT), 0.0), (F(T_HIT) + 2, 0.05), (F(T_HIT) + 4, -0.04), (F(T_HIT) + 6, 0.0)):
     TW['rK'].location.x = TPOS['rK'][0] + dx
     key(TW['rK'], 'location', f)
@@ -271,12 +286,14 @@ for k_ in range(420):
 
 # ================================================================ blue fans who have seen enough
 for k_, uid in enumerate(('wojak', 'chillguy', 'cate', 'ket', 'dope', 'apu', 'lmao')):
-    u = unit(uid, 1.9)
-    x0 = 3.0 + 1.9 * k_
-    t0 = T_EXIT + 0.25 * (6 - k_)
+    u = unit(uid, 2.2)
+    smooth(u, False)
+    x0 = 2.5 + 2.0 * k_
+    t0 = T_EXIT + 0.3 * k_
     place(u, (x0, EXIT_Y, EXIT_Z), N_, 1)
     clip(u, 'lose' if k_ % 2 else 'idle', 1, F(t0), 1.0)
-    walk3(u, (x0, EXIT_Y, EXIT_Z), (x0 + 22, EXIT_Y, EXIT_Z), t0, 1.7)
+    walk3(u, (x0, EXIT_Y, EXIT_Z), (x0 - 26, EXIT_Y, EXIT_Z), t0, 1.9)
+area('exit_key', (-3.0, EXIT_Y + 4.0, EXIT_Z + 4.0), (3.0, EXIT_Y, EXIT_Z + 1.0), 2500, 4.0, (1.0, 0.92, 0.82))
 
 # ================================================================ the commentary box
 platform = box('booth_floor', (4.4, 6.4, 0.3), BOOTH + Vector((-0.6, 0, -0.15)), DARK)
@@ -307,8 +324,8 @@ box('mic_handle', (0.07, 0.07, 0.6), (0, 0, -0.3), DARK, parent=MIC)
 sphere('mic_head', 0.13, (0, 0, 0.1), mat('mic_foam', (0.03, 0.03, 0.035), 0.95), 16).parent = MIC
 box('mic_flag', (0.26, 0.26, 0.2), (0, 0, -0.16), GOLD, parent=MIC)
 MIC.rotation_euler = (0.35, -0.5, 0)
-for t, p in ((T_INT - 0.2, PEPE_HEAD + Vector((1.6, 1.4, -2.2))), (T_INT + 0.35, PEPE_HEAD + Vector((0.42, 0.62, -0.42))),
-             (T_INT + 0.5, PEPE_HEAD + Vector((0.38, 0.55, -0.36)))):
+for t, p in ((T_INT - 0.2, PEPE_HEAD + Vector((1.6, 1.4, -2.2))), (T_INT + 0.35, PEPE_HEAD + Vector((0.5, 0.75, -0.72))),
+             (T_INT + 0.5, PEPE_HEAD + Vector((0.46, 0.68, -0.66)))):
     MIC.location = p
     key(MIC, 'location', F(t))
 show(MIC, F(T_INT - 0.2))
@@ -383,7 +400,7 @@ COL.objects.link(boomL)
 boomL.location = (11.9, -24.0, 4.0)
 boomL.data.color = (1.0, 0.55, 0.2)
 boomL.data.shadow_soft_size = 2.0
-for t, e in ((T_WALK + 5.3, 0), (T_WALK + 5.5, 90000), (T_WALK + 6.0, 40000), (T_WALK + 6.4, 80000), (T_WALK + 7.6, 0)):
+for t, e in ((T_WALK + 5.3, 0), (T_WALK + 5.5, 26000), (T_WALK + 6.0, 12000), (T_WALK + 6.4, 22000), (T_WALK + 7.6, 0)):
     boomL.data.energy = e
     boomL.data.keyframe_insert('energy', frame=F(t))
 
@@ -435,7 +452,7 @@ say('b01', t0() + 0.3)
 GFX.append(('names', t0() + 0.5, now() - 0.3, None))
 
 # --- 2. tale of the tape
-SH('giga hero', D('c02') + 0.5, 13.0, 1, (12.6, -11.5, 1.6), (12.2, -10.6, 1.9), GIGA_HEAD + Vector((0, 0, -0.8)), GIGA_HEAD + Vector((0, 0, -0.6)), 50,
+SH('giga hero', D('c02') + 0.5, 13.0, 1, (12.6, -11.5, 1.6), (12.2, -10.6, 1.9), GIGA_HEAD + Vector((0, 0, -0.9)), GIGA_HEAD + Vector((0, 0, -0.7)), 75,
    2.8, hand=CALM)
 say('c02', t0() + 0.2)
 GFX.append(('card_giga', t0() + 0.5, None, None))
@@ -443,11 +460,11 @@ SH('giga close', D('b02') + 0.5, 16.5, 1, (11.4, -9.8, 5.3), (11.0, -9.2, 5.5), 
    hand=TIGHT)
 say('b02', t0() + 0.2)
 GFX[-1] = ('card_giga', GFX[-1][1], now() - 0.25, None)
-SH('pepe hero', D('c03') + 0.5, 6.0, 1, (5.4, -20.6, 1.5), (5.8, -21.4, 1.8), PEPE_HEAD + Vector((0, 0, -0.7)), PEPE_HEAD + Vector((0, 0, -0.55)), 50, 2.8,
+SH('pepe hero', D('c03') + 0.5, 6.0, 1, (5.4, -20.0, 1.6), (5.8, -20.8, 1.9), PEPE_HEAD + Vector((0, 0, -0.9)), PEPE_HEAD + Vector((0, 0, -0.7)), 75, 2.8,
    hand=CALM)
 say('c03', t0() + 0.2)
 GFX.append(('card_pepe', t0() + 0.5, None, None))
-SH('pepe close', D('b03') + 0.5, 9.0, 1, (7.0, -22.4, 4.9), (7.3, -23.0, 5.1), PEPE_HEAD + Vector((0, 0, -0.3)), PEPE_HEAD + Vector((0, 0, -0.25)), 105, 2.8,
+SH('pepe close', D('b03') + 0.5, 9.0, 1, (7.0, -21.8, 6.6), (7.3, -22.4, 6.8), PEPE_HEAD + Vector((0, 0, -0.3)), PEPE_HEAD + Vector((0, 0, -0.25)), 105, 2.8,
    hand=TIGHT)
 say('b03', t0() + 0.2)
 GFX[-1] = ('card_pepe', GFX[-1][1], now() - 0.25, None)
@@ -461,10 +478,10 @@ d_ = D('b04') + 0.6
 SH('whale bridge', d_, T_SWAT - 0.78 * d_, 1, (-2.4, -18.6, 1.1), (-1.9, -18.2, 1.25), (3.5, -15.4, 2.0), (3.5, -15.6, 2.0), 40, 2.8, 0.25, hand=LOOSE)
 say('b04', t0() + 0.15)
 EV['swat'] = ft(T_SWAT)
-SH('pepe nothing', D('c05') + 0.45, T_SWAT + 2.0, 1, (6.3, -19.5, 3.2), (6.4, -19.9, 3.3), PEPE_HEAD + Vector((0, 0, -0.5)), PEPE_HEAD + Vector((0, 0, -0.5)), 85,
+SH('pepe nothing', D('c05') + 0.45, T_SWAT + 2.0, 1, (6.3, -18.9, 4.6), (6.4, -19.3, 4.7), PEPE_HEAD + Vector((0, 0, -0.7)), PEPE_HEAD + Vector((0, 0, -0.7)), 85,
    2.8, hand=CALM)
 say('c05', t0() + 0.15)
-SH('pepe holding', D('b05') + 0.55, T_SWAT + 6.0, 1, (8.2, -21.0, 5.5), (8.3, -21.6, 5.55), PEPE_HEAD + Vector((0, 0, -0.1)), PEPE_HEAD + Vector((0, 0, -0.1)), 180,
+SH('pepe holding', D('b05') + 0.55, T_SWAT + 6.0, 1, (8.2, -20.4, 7.2), (8.3, -21.0, 7.25), PEPE_HEAD + Vector((0, 0, -0.1)), PEPE_HEAD + Vector((0, 0, -0.1)), 180,
    2.8, hand=TIGHT)
 say('b05', t0() + 0.2)
 
@@ -474,14 +491,14 @@ EV['t1'] = ft(T_T1)
 say('c06', ft(T_T1) + 0.12)
 d_ = D('b06') + 0.5
 RS = 0.45
-SH('replay', d_, T_T1 - RS * (d_ - 0.75), RS, (-5.2, -26.6, 2.2), (-5.0, -26.2, 2.3), (3.5, -25.3, 2.7), (3.5, -25.3, 2.7), 60, 4.0, live=False)
+SH('replay', d_, T_T1 - RS * (d_ - 0.75), RS, (-5.2, -26.6, 2.2), (-5.0, -26.2, 2.3), (3.5, -25.0, 2.9), (3.5, -25.0, 2.9), 38, 4.0, live=False)
 say('b06', t0() + 0.15)
 GFX.append(('replay', t0(), None, None))
 EV['t1_replay'] = ft(T_T1)
 GFX.append(('tele_tower', t0() + 1.5, ft(T_T1) - 0.2, None))
 GFX.append(('tele_whale', ft(T_T1) - 1.15, ft(T_T1) + 0.2, None))
 d_ = D('c07') + 0.35 + D('b07') + 0.6
-SH('whale burst', d_, T_T1 + 0.02, 0.3, (3.9, -32.5, 0.8), (3.8, -32.0, 0.85), (3.5, -26.0, 2.3), (3.5, -27.0, 2.3), 45, 2.8, 0.3, live=False)
+SH('whale burst', d_, T_T1 + 0.02, 0.3, (3.8, -32.4, 0.8), (3.75, -32.2, 0.85), (3.5, -26.0, 2.2), (3.5, -27.5, 2.2), 35, 2.8, 0.3, live=False)
 e_ = say('c07', t0() + 0.3)
 say('b07', e_ + 0.35)
 GFX[-3] = ('replay', GFX[-3][1], now(), None)
@@ -491,12 +508,12 @@ SH('second tower', 2.25, T_T2 - 0.55, 1, (26.5, -21.0, 8.5), (26.0, -21.5, 8.0),
 EV['t2'] = ft(T_T2)
 say('c08', ft(T_T2) + 0.1)
 d_ = D('c08') - (2.25 - 0.65) + 0.35 + D('b08') + 0.5
-SH('exits', d_, T_EXIT + 0.4, 1, (7.0, -31.5, 5.2), (8.5, -31.8, 5.3), (11.0, EXIT_Y, EXIT_Z + 1.0), (13.0, EXIT_Y, EXIT_Z + 1.0), 50, 4.0, hand=CALM)
+SH('exits', d_, T_EXIT + 0.4, 1, (-4.6, EXIT_Y + 1.5, EXIT_Z + 1.7), (-4.3, EXIT_Y + 1.4, EXIT_Z + 1.7), (6.0, EXIT_Y, EXIT_Z + 1.3), (5.0, EXIT_Y, EXIT_Z + 1.3), 50, 2.8, hand=CALM)
 say('b08', CUES[-1][2] + 0.35)
 
 # --- 6. one card
 d_ = D('c09') + 0.3
-SH('one card', d_, T_CAST + 0.75 - d_, 1, (6.6, -20.8, 3.4), (6.9, -21.4, 3.6), PEPE_HEAD + Vector((0, 0, -0.45)), PEPE_HEAD + Vector((0, 0, -0.4)), 85, 2.8,
+SH('one card', d_, T_CAST + 0.75 - d_, 1, (6.6, -20.2, 5.0), (6.9, -20.8, 5.2), PEPE_HEAD + Vector((0, 0, -0.6)), PEPE_HEAD + Vector((0, 0, -0.55)), 85, 2.8,
    hand=CALM)
 say('c09', t0() + 0.1)
 EV['cast'] = ft(T_CAST + 0.5)
@@ -512,11 +529,11 @@ GFX.append(('lower_useless', t0() + 0.4, now() - 0.25, None))
 
 # --- 7. the walk
 d_ = D('c11') + 0.3 + D('b10') + 0.55
-SH('walk wide', d_, T_WALK + 0.3, 1, (27.5, -17.0, 9.5), (27.5, -17.0, 9.5), (12.6, -21.8, 0.8), (14.5, -16.2, 0.8), 70, 4.0, hand=CALM)
+SH('walk wide', d_, T_WALK + 0.3, 1, (27.5, -17.0, 9.5), (27.5, -17.0, 9.5), (12.6, -21.8, 0.8), (14.5, -16.2, 0.8), 95, 4.0, hand=CALM)
 e_ = say('c11', t0() + 0.2)
 say('b10', e_ + 0.3)
 EV['walk'] = t0()
-SH('walk hero', 5.0, T_WALK + 4.75, 0.4, (16.9, -8.2, 0.65), (16.75, -8.6, 0.7), (14.5, -16.6, 0.95), (14.5, -15.3, 0.95), 135, 2.0, hand=TIGHT, live=True)
+SH('walk hero', 5.0, T_WALK + 4.75, 0.4, (16.9, -8.2, 0.65), (16.75, -8.6, 0.7), (14.5, -16.6, 0.9), (14.5, -15.3, 0.9), 85, 2.0, hand=TIGHT, live=True)
 EV['hero'] = t0()
 EV['hero_boom'] = [ft(T_WALK + 5.35), ft(T_WALK + 6.3)]
 SH('squad pass', 3.2, T_WALK + 6.75, 0.5, (19.6, -13.2, 1.25), (19.4, -13.6, 1.25), (14.5, -14.4, 1.15), (14.5, -13.6, 1.15), 45, 2.8, 0.2, hand=LOOSE)
@@ -525,11 +542,11 @@ SH('giga notices', 2.3, T_NOTICE - 0.9, 1, (10.6, -9.6, 5.6), (10.5, -9.3, 5.65)
    hand=TIGHT)
 EV['notice'] = ft(T_NOTICE)
 d_ = D('c12') + 0.55
-SH('arrive', d_, T_ARR - d_ + 0.5, 1, (9.9, -10.4, 0.45), (9.6, -9.6, 0.5), (9.0, -3.4, 4.2), (9.0, -3.4, 4.6), 22, 4.0, hand=CALM)
+SH('arrive', d_, T_ARR - d_ + 0.5, 1, (10.6, -11.6, 0.5), (10.2, -10.6, 0.55), (9.0, -3.8, 2.6), (9.0, -3.8, 2.9), 20, 4.0, hand=CALM)
 say('c12', t0() + 0.15)
 
 # --- 8. the tap
-SH('tap', 2.2, T_TAP - 0.55, 1, (11.6, -6.4, 0.75), (11.5, -6.2, 0.75), (9.1, -4.9, 0.85), (9.1, -4.9, 0.85), 85, 2.8, hand=TIGHT)
+SH('tap', 2.2, T_TAP - 0.55, 1, (12.6, -7.6, 0.9), (12.4, -7.3, 0.9), (9.1, -4.9, 1.0), (9.1, -4.9, 1.0), 55, 2.8, hand=TIGHT)
 EV['tap'] = ft(T_HIT)
 SH('beat', 1.75, T_HIT + 0.2, 1, (9.0, -15.5, 2.6), (9.0, -15.5, 2.6), (9.0, -3.5, 3.6), (9.0, -3.5, 3.6), 40, 5.6)
 EV['crack'] = t0() + 0.75
@@ -538,14 +555,14 @@ SH('collapse', d_, T_KFALL - 0.12, 0.5, (4.2, -11.2, 0.7), (4.6, -11.8, 0.8), (9
 EV['kfall'] = ft(T_KFALL)
 say('c13', ft(T_KFALL) + 0.65)
 d_ = D('b11') + 0.6
-SH('useless wins', d_ * 0.5, T_KFALL + 3.2, 1, (11.8, -8.6, 0.8), (11.4, -8.2, 0.9), (9.0, -5.3, 1.0), (9.0, -5.3, 1.0), 60, 2.8, hand=LOOSE)
+SH('useless wins', d_ * 0.5, T_KFALL + 3.2, 1, (12.9, -2.6, 1.5), (12.5, -2.4, 1.6), (9.0, -5.3, 0.95), (9.0, -5.3, 0.95), 50, 2.8, hand=LOOSE)
 say('b11', t0() + 0.2)
 EV['party'] = t0()
 SH('stadium', d_ * 0.5, T_KFALL + 5.0, 1, (30, -44, 13), (33, -50, 20), (9, -14, 5), (9, -14, 7), 24, 8.0, hand=CALM)
 
 # --- 9. the interview
 d_ = 0.35 + D('c14') + 2.3 + D('b12') + 0.6
-SH('interview', d_, T_INT - 0.3, 1, (10.5, -24.6, 5.5), (10.35, -25.0, 5.55), PEPE_HEAD + Vector((0.12, 0, -0.12)), PEPE_HEAD + Vector((0.12, 0, -0.12)), 100, 2.8,
+SH('interview', d_, T_INT - 0.3, 1, (10.5, -24.0, 7.2), (10.35, -24.4, 7.25), PEPE_HEAD + Vector((0.12, 0, -0.12)), PEPE_HEAD + Vector((0.12, 0, -0.12)), 100, 2.8,
    hand=TIGHT)
 e_ = say('c14', t0() + 0.35)
 say('b12', e_ + 2.3)
