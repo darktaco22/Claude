@@ -1,6 +1,8 @@
 # Render toolkit (free tools picked up from professional Blender workflows)
 
-Everything here works headless in Blender 4.2 and was tested in this environment. Large downloads are not in git;
+Everything here works headless in Blender 4.2 and was tested in this environment. Large downloads and the built character library (`chars.blend`, 54 MB) are not in git;
+rebuild the library with `blender -b -P assets.py -- build ../comeback/models ../noobpro/models/units.json OUT.blend` (seconds).
+
 `polyhaven.py` fetches them again on demand (a few seconds each).
 
 | File | What it gives | Source / licence |
@@ -14,6 +16,9 @@ Everything here works headless in Blender 4.2 and was tested in this environment
 | `fxcard.py` | Stock explosion/smoke footage on a camera-facing card, with an optional light so the scene reacts | clips: CGHeven (CC0) |
 | `lab.py` | Integration test: game character + scanned field + sky + rig + explosion (`demo_lab.jpg`: sky only / rig / explosion) | |
 | `pipeline.py`, `pipeline_test.py` | Pipeline automation: link sets from a JSON description, mass-rename objects, prefix bones + vertex groups, shift/retime/sample F-curves, batch-render a folder of models with cleanup and resume. 15 tests pass (`blender -b -P pipeline_test.py`) | after Blender Studio's Scripting for Artists course |
+| `assets.py`, `assets_test.py` | Character library: all 39 game characters in one .blend with height, source and clip lengths stored on each; `load_many` appends several in one pass (6 characters in 0.5 s vs 0.8 s by glTF) | built from `comeback/models` |
+| `preflight.py` | Checks before a long render: camera, missing images/libraries/volumes, empty material slots, no lights, disk space, bad focus. Exits with code 2 on errors | after Blender Studio's shot-delivery checks |
+| `casting.py` | Lit portrait of every character and a labelled sheet (`casting_sheet.jpg`); resumable | uses the whole toolkit |
 | `demo.py` | One-still proof: `blender -b -P demo.py -- ASSET_DIR out.png` | |
 
 ## Assets tested

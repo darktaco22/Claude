@@ -65,6 +65,14 @@ those topics with my own code.
   `wm.event_timer_add`. Useful if we ever build tools for a human at the keyboard; headless renders don't need them.
 - Batch work: skip finished outputs so a run can resume; remove imported objects and purge orphans each item.
 
+## Applying the course (measured)
+- A library is not automatically faster: six separate appends from a 54 MB library took 2.7 s against 0.9 s for
+  glTF import, because each call reopens the file. One `libraries.load` for all six took 0.5 s. Measure first.
+- Run `preflight.check` before every render longer than a few minutes; it costs under a second.
+- `casting_sheet.jpg` shows every character under the same light. Look at it when casting a film: `bome`, `mensa`,
+  `pnut` and `useless` have unusual proportions that need their own camera framing.
+- Start a new film from `assets.load_many` + `lightrig` + `preflight` instead of copying an old `scene.py`.
+
 ## Edit and story
 - Write the script first, record narration, then cut shots to the measured line durations.
 - Speed ramps: 0.3–0.5× on impacts only. One joke per shot. Hold the last beat longer than feels natural.
