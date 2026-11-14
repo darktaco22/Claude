@@ -13,6 +13,7 @@ Everything here works headless in Blender 4.2 and was tested in this environment
 | `lightrig.py` | Key / key-soft / fill / rim rig around a subject relative to the camera, shared colour sets per mood, eye catch-light | after Blender Studio's lighting guide |
 | `fxcard.py` | Stock explosion/smoke footage on a camera-facing card, with an optional light so the scene reacts | clips: CGHeven (CC0) |
 | `lab.py` | Integration test: game character + scanned field + sky + rig + explosion (`demo_lab.jpg`: sky only / rig / explosion) | |
+| `pipeline.py`, `pipeline_test.py` | Pipeline automation: link sets from a JSON description, mass-rename objects, prefix bones + vertex groups, shift/retime/sample F-curves, batch-render a folder of models with cleanup and resume. 15 tests pass (`blender -b -P pipeline_test.py`) | after Blender Studio's Scripting for Artists course |
 | `demo.py` | One-still proof: `blender -b -P demo.py -- ASSET_DIR out.png` | |
 
 ## Assets tested

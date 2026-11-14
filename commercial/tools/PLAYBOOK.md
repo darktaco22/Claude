@@ -43,6 +43,28 @@ render teaches something, so the next session starts from here.
   14 m; 60 000 W washed the field yellow.
 - Poly Haven grass is real-world scale, which suits the characters (about 1.7 m tall) without rescaling.
 
+## Learned from "Scripting for Artists" (Sybren Stüvel, Blender Studio)
+Studied: the 11 free chapters (1, 6–15) from their subtitles. Not studied: chapters 2–5, 16 and the four tech
+chapters (F-curves, 10,000 OBJ files, bone renaming, all angles), which are subscriber-only; `pipeline.py` covers
+those topics with my own code.
+- Use the `context` passed in, not `bpy.context`: an operator's context can differ (pinned tabs, overrides).
+- `bpy.data.x.new(name)` may return a different name (`.001`). Keep the returned data-block; never re-look-up by name.
+- Don't modify what you loop over: `for c in list(obj.users_collection)`.
+- `try: scene.collection.children[name]` / `except KeyError:` create. Never a bare `except`.
+- Link assets with `bpy.data.libraries.load(path, link=True)`; inside the `with`, `data_to.collections` is names,
+  after it, real collections. Instance each with an empty (`instance_type='COLLECTION'`).
+- Describe a set in a JSON file next to the blend (`//set.json`, resolve with `bpy.path.abspath`), keep code generic.
+- Remember where imported data came from in a custom property, so it can be reloaded; copy `matrix_world` before
+  deleting an object; remove a data-block only when `users == 0`.
+- Prefer data calls over operators (set `obj.scale` instead of `bpy.ops.transform.resize`).
+- Readability: guard clauses and early return, one job per function, real names (no `utils`/`misc`), `if items:`
+  not `if len(items) != 0`, PEP 8, one statement per line. **My film scripts break this last rule** (semicolon
+  chains in `scene.py`); new code follows it, as `pipeline.py` does.
+- Operators: `bl_idname` `category.name`, class `CATEGORY_OT_name`, `bl_options {'REGISTER','UNDO'}` for the redo
+  panel, `poll()` to limit context; modal operators return `RUNNING_MODAL` / `PASS_THROUGH`, timers via
+  `wm.event_timer_add`. Useful if we ever build tools for a human at the keyboard; headless renders don't need them.
+- Batch work: skip finished outputs so a run can resume; remove imported objects and purge orphans each item.
+
 ## Edit and story
 - Write the script first, record narration, then cut shots to the measured line durations.
 - Speed ramps: 0.3–0.5× on impacts only. One joke per shot. Hold the last beat longer than feels natural.
