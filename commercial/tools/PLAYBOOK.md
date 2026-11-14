@@ -18,10 +18,9 @@ render teaches something, so the next session starts from here.
   white and lose colour (seen in the eruption and timber shots of Natural History).
 - **Ground.** Hand-made blade grass reads as plastic. Use scanned grass/flowers through `scatter.py`, mixed sizes,
   and exclude areas under props.
-- **Fire/smoke.** Sphere puffs look like balls. `fire.py` bakes a real Mantaflow simulation to OpenVDB and renders
-  (pipeline proven, ~1 min at res 96), but the default look is NOT good yet: it still reads as a glowing ball then a
-  dark blob. To do before using it in a film: irregular emitter, higher initial velocity, noise upres, lit smoke.
-  Downloaded CC0 VDBs (JangaFX) remain the better option if the host is allowed.
+- **Fire/smoke.** Sphere puffs look like balls. Best: downloaded CC0 volumes through `vdb.py` (real flame shapes,
+  ~25 s a frame at 960×540). `fire.py` (own Mantaflow simulation) runs but still looks like a glowing ball; it needs
+  an irregular emitter, more velocity and noise before film use. Keep fire emission near 1; it clips to white fast.
 - **Camera.** Add recorded shake (`shakify.py`): INVESTIGATION at 0.3–0.6 for calm shots, THE_CLOSEUP for tension,
   HANDYCAM_RUN for chaos. Synthetic sine shake looks mechanical.
 - **Finish (2D).** Bloom, light halation, vignette, grain, letterbox. Text needs a shadow and must avoid bright sky.

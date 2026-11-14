@@ -9,6 +9,7 @@ Everything here works headless in Blender 4.2 and was tested in this environment
 | `polyhaven.py` | Download and load photo-scanned models, HDRI skies and ground materials. `pick()` filters the variants. | Poly Haven, all CC0 |
 | `scatter.py` | Geometry-nodes scatter of instances over a surface (grass, flowers, rocks) | own code |
 | `fire.py` | Mantaflow fire/smoke bake to OpenVDB. Pipeline works; look still needs tuning (see playbook) | Blender built-in |
+| `vdb.py` | Loads downloaded fire/smoke/cloud volumes with a ready material. Tested with CGHeven CampFire 02: real flame shapes (`demo_fire.jpg`) | CGHeven free library and JangaFX packs, both CC0 |
 | `demo.py` | One-still proof: `blender -b -P demo.py -- ASSET_DIR out.png` | |
 
 ## Assets tested
@@ -20,11 +21,18 @@ Notes: Poly Haven models are real-world scale (grass 5–30 cm), so scale them f
 every variant and three detail levels; always go through `pick()`. Files named `*_geometry_nodes` are preview spheres.
 
 ## Reachable from this environment
-github.com, api.polyhaven.com / dl.polyhaven.org, extensions.blender.org, download.blender.org.
+github.com, api.polyhaven.com / dl.polyhaven.org, extensions.blender.org, download.blender.org, cgheven.com +
+cdn.cgheven.com, jangafx.com, studio.blender.org, projects.blender.org, ambientcg.com.
 
-## Not reachable (would need the hosts allowed in the environment's network settings)
-Free CC0 fire/smoke/explosion VDB volumes: jangafx.com (EmberGen free VDBs), cgheven.com. These are the proper fix
-for ball-like fire puffs. Also studio.blender.org and projects.blender.org (Blender Studio film files and tools).
+## Volume downloads: mind the disk
+- CGHeven: open `https://cgheven.com/assets/<name>`; the page source holds direct `cdn.cgheven.com` links. Free
+  items say `"license":"CC0"`; links starting `cgh-protected://` are paid. VDB list: `/category/vdbs` (campfire,
+  smoke shockwaves, hero clouds). `.rar` files need an unpacker that is not installed here.
+- **Sizes on the page are wrong.** CampFire_02_VDB.zip is 1.9 GB and unpacks to 9.4 GB (200 frames of ~47 MB). It
+  filled the disk once. Check `Content-Length` first, extract only the frames needed (`unzip zip name_060.vdb`), and
+  delete the zip.
+- JangaFX packs (CC0, 59 MB to 6.6 GB) are hosted on MediaFire, whose download servers change name, so they cannot
+  be reached with an exact-host allowlist.
 
 ## Looked at and not adopted
 - Compify (Ian Hubert / Nathan Vegdahl): for compositing onto filmed footage; we have none.
