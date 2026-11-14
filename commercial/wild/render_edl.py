@@ -8,6 +8,7 @@ lst = sys.argv[sys.argv.index('--') + 1]; E = json.load(open(os.environ.get('EDL
 fl = [int(x) for x in open(lst).read().split()]; done_file = lst + '.done'
 done = set(int(x) for x in open(done_file).read().split()) if os.path.exists(done_file) else set()
 fl = [f for f in fl if f not in done]; sc = bpy.context.scene; cam = sc.camera; FPS = E['fps']; sc.render.use_overwrite = True
+sc.render.use_persistent_data = True          # keep the static geometry between frames
 cam.data.dof.aperture_ratio = 1.6          # an anamorphic lens: oval highlights out of focus
 sc.render.resolution_percentage = int(os.environ.get('SCALE', '100')); OUTD = os.environ.get('OUT', os.environ['W'] + '/frames'); os.makedirs(OUTD, exist_ok=True)
 if os.environ.get('SAMPLES'): sc.cycles.samples = int(os.environ['SAMPLES'])
