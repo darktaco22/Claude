@@ -8,6 +8,7 @@ Everything here works headless in Blender 4.2 and was tested in this environment
 | `shake_data.py`, `shakify.py` | Real recorded handheld camera shake (9 recordings). `shakify.apply(cam, 'INVESTIGATION', frame)` | Camera Shakify by Ian Hubert and Nathan Vegdahl; shake data is CC0. The add-on itself needs Blender 4.4, so `shakify.py` reads the data directly. |
 | `polyhaven.py` | Download and load photo-scanned models, HDRI skies and ground materials. `pick()` filters the variants. | Poly Haven, all CC0 |
 | `scatter.py` | Geometry-nodes scatter of instances over a surface (grass, flowers, rocks) | own code |
+| `fire.py` | Mantaflow fire/smoke bake to OpenVDB. Pipeline works; look still needs tuning (see playbook) | Blender built-in |
 | `demo.py` | One-still proof: `blender -b -P demo.py -- ASSET_DIR out.png` | |
 
 ## Assets tested

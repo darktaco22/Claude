@@ -16,3 +16,9 @@ stops. That is why renders kept "stopping"; nothing crashed. Full evidence: `com
   the scene are dropped automatically.
 - Workers (other sessions) follow the same rules. Put "launch with run_in_background, timeout 7200000; on exit 3 run it
   again" in every worker prompt.
+
+## Blender work: read the playbook first
+
+Before any Blender scene or render task, read `commercial/tools/PLAYBOOK.md` and `commercial/tools/README.md`. They hold
+the lessons and reusable tools from earlier renders (lighting, lenses, camera shake, scanned assets, fire). When a
+render teaches something new, add it there in the same commit.
