@@ -183,7 +183,7 @@ linear(r); clip(TROLL, 'run', F(T_RUG), F(T_RUNEND), 2.4, 1); clip(TROLL, 'walk'
 REDC_ = mat('redcandle', (0.8, 0.02, 0.01), 0.4, emit=(1.0, 0.02, 0.01), estr=0.55)
 tc_ = bpy.data.objects.new('tinycandle', None); COL.objects.link(tc_); tc_.location = TC
 box('tc_body', (0.11, 0.11, 0.34), (0, 0, 0.25), REDC_, parent=tc_); box('tc_wick', (0.02, 0.02, 0.62), (0, 0, 0.31), REDC_, parent=tc_)
-for f, s in ((F(T_PLIP) - 1, 0.001), (F(T_PLIP) + 3, 1.25), (F(T_PLIP) + 6, 0.92), (F(T_PLIP) + 9, 1.0)): tc_.scale = (1.2, 1.2, 1.2 * s); key(tc_, 'scale', f)
+for f, s in ((F(T_PLIP) - 1, 0.001), (F(T_PLIP) + 3, 1.25), (F(T_PLIP) + 6, 0.92), (F(T_PLIP) + 9, 1.0)): tc_.scale = (0.75, 0.75, 0.75 * s); key(tc_, 'scale', f)
 tc_.scale = (0.001,) * 3; key(tc_, 'scale', F(T_PLIP) - 2); const(tc_, ()); dust(TC + Vector((0, 0, 0.05)), T_PLIP, 0.22, 70, 4)
 for j, u in enumerate(HERD): dust(Vector((u['home'][0] + 1.5, u['home'][1], 0.2)), T_PLIP + 0.6 + 0.07 * j, 0.45, 71 + j, 3); dust(Vector((u['home'][0] + 7, u['home'][1], 0.2)), T_PLIP + 1.0 + 0.07 * j, 0.55, 81 + j, 3)
 
