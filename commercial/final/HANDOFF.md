@@ -61,3 +61,7 @@ Useless, who walks the pitch unmarked, taps the king's tower and wins 3–2. Int
 - Opening aerial is plain; the booth shot shows the commentators from behind and is dark.
 - Whale fills the frame at the end of the replay burst (kept: "He's simply enormous").
 - Telestrator whale arrow uses fixed screen positions, tuned to the replay camera (38 mm).
+
+## Progress log
+- Chunk 1 done: 386 of 2852 frames (about 17 s a frame). Raw frames are ~0.7 MB each (2 GB in total).
+- Finished frames are now written as JPEG (quality 95) because 1080p PNGs (about 7 GB) do not fit on the disk.

@@ -1,5 +1,5 @@
 """Finish "THE FINAL":  python3 finish.py FRAMES_DIR OUT_DIR VO_DIR [f1,f2,...]
-->  OUT_DIR/c_####.png (1920x1080, 24 fps) + mix.wav
+->  OUT_DIR/c_####.jpg (1920x1080, 24 fps) + mix.wav
 
 Picture: the 3D frames upscaled and graded for a clean broadcast look, then a full graphics package drawn at
 1080p: opening title, commentator names, tale-of-the-tape cards, score bug with clock and win probability, LIVE and
@@ -517,7 +517,7 @@ def frame(f):
         a = a + np.random.default_rng(f).normal(0, 0.006 + 0.008 * cin, (H, W, 1)).astype(np.float32)
         im = Image.fromarray((np.clip(a, 0, 1) * 255).astype(np.uint8)).convert('RGBA')
         im = overlays(im, t).convert('RGB')
-    im.save(os.path.join(OUT, f'c_{f:04d}.png'), compress_level=3)
+    im.save(os.path.join(OUT, f'c_{f:04d}.jpg'), quality=95, subsampling=0)
 
 
 for f in ([] if os.environ.get('SOUND_ONLY') else (ONLY or range(1, NF + 1))):

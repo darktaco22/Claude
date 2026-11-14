@@ -22,6 +22,6 @@ if [ $rc = 3 ]; then echo "RELAUNCH: $(grep -o 'BUDGET-STOP [0-9]*' "$W/render.l
 for f in $(seq 1 "$N"); do [ -f "$W/frames/f_$(printf %04d "$f").png" ] || { echo "FRAME MISSING $f"; exit 1; }; done
 rm -rf "$W/fin"; python3 finish.py "$W/frames" "$W/fin" "$W/vo" > "$W/finish.log" 2>&1
 O="$HERE/../output/meme-royale-the-final.mp4"
-ffmpeg -v error -y -framerate 24 -i "$W/fin/c_%04d.png" -i "$W/fin/mix.wav" -af loudnorm=I=-14:TP=-1.5:LRA=11 -ar 48000 \
+ffmpeg -v error -y -framerate 24 -i "$W/fin/c_%04d.jpg" -i "$W/fin/mix.wav" -af loudnorm=I=-14:TP=-1.5:LRA=11 -ar 48000 \
   -c:v libx264 -preset slow -crf 21 -pix_fmt yuv420p -c:a aac -b:a 192k -shortest -movflags +faststart "$O"
 ls -la "$O"; echo ALL-DONE
