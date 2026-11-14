@@ -41,13 +41,19 @@ Useless, who walks the pitch unmarked, taps the king's tower and wins 3–2. Int
   turns to face south after the collapse, microphone raised). A rebuild plus test `$W/t6` (8 frames at render
   settings; times in `$W/t6.log`) was running.
 
+## Full render: STARTED
+- Test `$W/t6` passed (walk, squad pass, celebration, collapse all read; ~22 s a frame at 75 % / 7 samples, so
+  about 17.5 h for 2852 frames). The interview microphone was moved once more; that change is in `scene.py` AND was
+  patched straight into `$W/scene.blend` (`$W/patch.py`) to avoid a rebuild.
+- Running: `cd commercial/final && KOKORO=/root/wild_work/kokoro ./render_all.sh 2>&1 | tail -5` (tracked background
+  job, timeout 7200000). Frames go to `$W/frames`; progress: `ls $W/frames | wc -l` of 2852.
+
 ## Next steps
-1. Look at `$W/t6/*.png` (walk hero ×4, squad pass, useless wins, interview, collapse). Fix anything still wrong.
-2. `rm -f $W/all.txt $W/all.txt.done; rm -rf $W/frames`, then
-   `cd commercial/final && KOKORO=/root/wild_work/kokoro ./render_all.sh 2>&1 | tail -5` as a tracked background job
-   (timeout 7200000). On `RELAUNCH` / exit 3 run the same command again, about 8 times, until `ALL-DONE`.
-   Disk: finished frames need ~6 GB; delete `$W/t*`, and `$W/frames` once `$W/fin` exists if space runs short
-   (render_all.sh finishes then encodes; if finish.py fails on disk space, free space and run finish + ffmpeg by hand).
+1. Each time the job ends with `RELAUNCH` (exit 3 inside the script; the pipe reports exit 0, so read the output),
+   run the same command again, about 9 times, until `ALL-DONE`. If the container was reclaimed, rebuild the work
+   folder (section above), then run it.
+2. Disk: finished frames need ~6 GB. If finish.py dies on disk space, free space (`$W/frames` is no longer needed
+   once `$W/fin` is complete) and run finish.py + the ffmpeg line from `render_all.sh` by hand.
 3. Review with contact sheets + dark-frame scan, check mp4 < 100 MB (raise `-crf` if not), commit, push, send.
 4. Not yet heard by anyone: the mix. Say so when delivering.
 

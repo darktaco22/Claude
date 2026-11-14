@@ -326,8 +326,8 @@ box('mic_handle', (0.07, 0.07, 0.6), (0, 0, -0.3), DARK, parent=MIC)
 sphere('mic_head', 0.13, (0, 0, 0.1), mat('mic_foam', (0.03, 0.03, 0.035), 0.95), 16).parent = MIC
 box('mic_flag', (0.26, 0.26, 0.2), (0, 0, -0.16), GOLD, parent=MIC)
 MIC.rotation_euler = (0.35, -0.5, 0)
-for t, p in ((T_INT - 0.2, PEPE_HEAD + Vector((1.6, 1.4, -2.2))), (T_INT + 0.35, PEPE_HEAD + Vector((0.7, 0.7, -0.7))),
-             (T_INT + 0.5, PEPE_HEAD + Vector((0.66, 0.64, -0.64)))):
+for t, p in ((T_INT - 0.2, PEPE_HEAD + Vector((1.6, 1.4, -2.2))), (T_INT + 0.35, PEPE_HEAD + Vector((0.66, 0.56, -0.54))),
+             (T_INT + 0.5, PEPE_HEAD + Vector((0.62, 0.5, -0.48)))):
     MIC.location = p
     key(MIC, 'location', F(t))
 show(MIC, F(T_INT - 0.2))
