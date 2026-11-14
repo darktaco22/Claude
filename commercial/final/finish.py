@@ -133,12 +133,12 @@ def grade(a, cinema=0.0):
     a = lum + (a - lum) * (1.12 - 0.1 * cinema)
     a = np.clip((a - 0.012) * 1.07, 0, 1) ** 1.03
     if cinema > 0:
-        tint = a * np.array([1.05, 0.99, 0.9], np.float32) + 0.05 * (1 - lum) ** 2 * np.array([-0.2, 0.1, 0.5], np.float32)
+        tint = a * np.array([0.98, 0.93, 0.84], np.float32) + 0.05 * (1 - lum) ** 2 * np.array([-0.2, 0.1, 0.5], np.float32)
         a = a * (1 - cinema) + tint * cinema
     hi = np.clip((a.max(axis=2, keepdims=True) - 0.78) / 0.22, 0, 1) * a
     hb = Image.fromarray((np.clip(hi, 0, 1) * 255).astype(np.uint8)).resize((W // 4, H // 4), Image.BILINEAR)
     b1 = np.asarray(hb.filter(ImageFilter.GaussianBlur(9)).resize((W, H), Image.BILINEAR), np.float32) / 255.0
-    return a + b1 * (0.26 + 0.2 * cinema)
+    return a + b1 * (0.26 - 0.1 * cinema)
 
 
 # ---------------------------------------------------------------- graphics helpers
@@ -173,9 +173,9 @@ T_MATCH0 = S['kickoff']['t0']
 T_MATCH1 = T_CARD
 CINEMA = (S['walk hero']['t0'], S['squad pass']['t1'])
 REPLAY = GFX['replay']
-TICKER = ('BREAKING: Local frog still holding     ◆     Whale denies moving markets     ◆     Analysts expect number to go up, or down     ◆     '
-          'Useless listed on zero exchanges     ◆     Giga asked for comment, flexes instead     ◆     Blue fans seen buying back in at the top     ◆     '
-          'Stadium roof funded by transaction fees, does not exist     ◆     Meme Royale: free to play, still     ◆     ')
+TICKER = ('BREAKING: Local frog still holding      |      Whale denies moving markets      |      Analysts expect number to go up, or down      |      '
+          'Useless listed on zero exchanges      |      Giga asked for comment, flexes instead      |      Blue fans seen buying back in at the top      |      '
+          'Stadium roof funded by transaction fees, does not exist      |      Meme Royale: free to play, still      |      ')
 
 
 def interp(pts, t):
@@ -356,29 +356,26 @@ def hand_arrow(d, x0, y0, x1, y1, prog, colour, width=9):
 
 
 def draw_telestrator(d, t):
+    """Replay: the analyst circles the tower ("fine", "still fine"), then points out the Whale arriving."""
     s = S['replay']
     yel = rgba((255, 232, 40), 245)
     t0, t1 = GFX['tele_tower']
     if t0 <= t < s['t1']:
-        x, y, k = project(s, t, (3.5, -25.5, 3.0))
+        x, y, k = project(s, t, (3.5, -25.5, 4.4))
         a = 245 * ease((t1 + 0.25 - t) / 0.25)
         col = rgba((255, 232, 40), a)
-        hand_circle(d, x, y, 2.7 * k, 3.6 * k, ease((t - t0) / 0.55), col)
+        hand_circle(d, x, y, 3.0 * k, 1.75 * k, ease((t - t0) / 0.55), col)
         b6 = CUE['b06'][0]
-        for label, dt, dy in (('FINE', 2.75, -1.0), ('STILL FINE', 3.75, 0.2)):
+        for label, dt, yy_ in (('FINE', 2.75, 330), ('STILL FINE', 3.75, 450)):
             kk = ease((t - b6 - dt) / 0.18)
             if kk > 0 and a > 0:
-                xx_, yy_ = x + 3.4 * k, y + dy * 1.9 * k
-                hand_arrow(d, xx_ + 150, yy_, xx_ + 20, yy_, kk, col, 7)
-                text(d, (xx_ + 168, yy_), label, lil(int(54 * (0.8 + 0.2 * out_back(kk)))), col)
+                w_ = text(d, (90, yy_), label, lil(int(58 * (0.8 + 0.2 * out_back(kk)))), col)
+                hand_arrow(d, 90 + w_ + 24, yy_, max(90 + w_ + 90, x - 3.1 * k), yy_ + (y - yy_) * 0.35, kk, col, 7)
     t0, t1 = GFX['tele_whale']
     if t0 <= t < t1:
-        a_time = s['a0'] + (t - s['t0']) * s['s0']
-        wy = -19.5 - 4.0 * (a_time - (E['times']['t1'] - 1.5))
-        x, y, k = project(s, t, (3.5, wy, 2.2))
         kk = ease((t - t0) / 0.2)
-        hand_arrow(d, x, y - 5.4 * k, x, y - 2.6 * k, kk, yel, 9)
-        text(d, (x, y - 6.3 * k), 'WHALE', lil(60), yel, 'mm')
+        hand_arrow(d, 520, 700, 330, 800, kk, yel, 9)
+        text(d, (540, 690), 'WHALE', lil(64), yel, 'lm')
 
 
 def draw_fulltime(d, t):
@@ -510,7 +507,7 @@ def frame(f):
             k += zoom * d_ * d_
             fl = max(fl, flash * decay(t, EV[name], 0.2))
         for tb in EV['hero_boom']:
-            fl = max(fl, 0.22 * decay(t, tb, 0.3))
+            fl = max(fl, 0.08 * decay(t, tb, 0.3))
         a = punch(a, k)
         cin = fade(t, CINEMA[0], CINEMA[1], 0.5)
         a = grade(a, cin)
