@@ -65,3 +65,9 @@ Useless, who walks the pitch unmarked, taps the king's tower and wins 3–2. Int
 ## Progress log
 - Chunk 1 done: 386 of 2852 frames (about 17 s a frame). Raw frames are ~0.7 MB each (2 GB in total).
 - Finished frames are now written as JPEG (quality 95) because 1080p PNGs (about 7 GB) do not fit on the disk.
+
+## Parallel render (workers)
+- This machine: frames 1-900 (`render_all.sh`, list shrunk to 1-900; it ends with FRAME MISSING until the workers' frames are merged).
+- Four worker sessions run `./render_worker.sh A B`: 901-1388, 1389-1876, 1877-2364, 2365-2852. They push JPEGs to `frames_jpg/` on this branch.
+- To finish: `git pull`, copy `frames_jpg/*.jpg` into `$W/frames`, check all 2852 frames exist (finish.py takes .png or .jpg),
+  then run the finish + ffmpeg lines of `render_all.sh` by hand.
