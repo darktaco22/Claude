@@ -73,6 +73,16 @@ those topics with my own code.
   `pnut` and `useless` have unusual proportions that need their own camera framing.
 - Start a new film from `assets.load_many` + `lightrig` + `preflight` instead of copying an old `scene.py`.
 
+## Learned from "The Final" (in progress, see `commercial/final/HANDOFF.md`)
+- Video on a card: Blender clamps the movie frame to the clip before applying `frame_offset`. To show clip frame k at
+  scene frame f set `frame_start = f - k + 1`, `frame_offset = 0`, `use_auto_refresh = True`.
+- Stock explosion cards need emission strength ~1.7 under AgX; 4+ washes to white. Sphere smoke over them hides them.
+- Characters standing behind a tower's cannon are hidden from every low angle: stand them on top of it.
+- Never put a camera in the lane of running characters, or inside a smoke plume; check with a run-through.
+- Building on the clash stadium takes ~12 min per rebuild (2286 crowd instances); batch shot fixes per rebuild.
+- `pgrep -f` uses extended regex: `a|b`, not `a\|b`.
+- Draw broadcast graphics at 1080p in the finish, not in 3D; test them on run-through frames before the full render.
+
 ## Edit and story
 - Write the script first, record narration, then cut shots to the measured line durations.
 - Speed ramps: 0.3–0.5× on impacts only. One joke per shot. Hold the last beat longer than feels natural.

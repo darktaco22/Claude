@@ -22,3 +22,8 @@ stops. That is why renders kept "stopping"; nothing crashed. Full evidence: `com
 Before any Blender scene or render task, read `commercial/tools/PLAYBOOK.md` and `commercial/tools/README.md`. They hold
 the lessons and reusable tools from earlier renders (lighting, lenses, camera shake, scanned assets, fire). When a
 render teaches something new, add it there in the same commit.
+
+## Work in progress
+
+"The Final" (2-minute film): state, render plan and next steps are in `commercial/final/HANDOFF.md`. Read it before
+continuing that film.
