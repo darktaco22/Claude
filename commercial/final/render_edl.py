@@ -43,7 +43,7 @@ CARDS = []
 for card in E.get('cards', []):
     obj = bpy.data.objects[card['name']]
     node = obj.data.materials[0].node_tree.nodes['clip']
-    node.image_user.use_auto_refresh = False
+    node.image_user.use_auto_refresh = True
     CARDS.append((card, obj, node))
 
 
@@ -59,9 +59,11 @@ def set_cards(anim_time):
         visible = 1 <= k <= card['n']
         obj.hide_render = not visible
         if visible:
-            node.image_user.frame_start = 1
+            # Blender shows video frame (scene frame - frame_start + 1), clamped to the clip BEFORE any offset,
+            # so the start is moved rather than the offset
             node.image_user.frame_duration = card['n']
-            node.image_user.frame_offset = k - sc.frame_current
+            node.image_user.frame_offset = 0
+            node.image_user.frame_start = sc.frame_current - k + 1
 
 
 def setup(f):

@@ -113,8 +113,8 @@ NOFIRE.node_tree.nodes.clear()
 _o = NOFIRE.node_tree.nodes.new('ShaderNodeOutputMaterial')
 _t = NOFIRE.node_tree.nodes.new('ShaderNodeBsdfTransparent')
 NOFIRE.node_tree.links.new(_t.outputs[0], _o.inputs['Surface'])
-SMOKE = smoke_mat('smoke_thin', (0.10, 0.095, 0.09), 0.3)
-DUST = smoke_mat('dust_thin', (0.5, 0.46, 0.4), 0.22)
+SMOKE = smoke_mat('smoke_thin', (0.10, 0.095, 0.09), 0.16)
+DUST = smoke_mat('dust_thin', (0.5, 0.46, 0.4), 0.09)
 
 
 def fall_tower(k, t, seed, crew=()):
@@ -324,8 +324,8 @@ box('mic_handle', (0.07, 0.07, 0.6), (0, 0, -0.3), DARK, parent=MIC)
 sphere('mic_head', 0.13, (0, 0, 0.1), mat('mic_foam', (0.03, 0.03, 0.035), 0.95), 16).parent = MIC
 box('mic_flag', (0.26, 0.26, 0.2), (0, 0, -0.16), GOLD, parent=MIC)
 MIC.rotation_euler = (0.35, -0.5, 0)
-for t, p in ((T_INT - 0.2, PEPE_HEAD + Vector((1.6, 1.4, -2.2))), (T_INT + 0.35, PEPE_HEAD + Vector((0.5, 0.75, -0.72))),
-             (T_INT + 0.5, PEPE_HEAD + Vector((0.46, 0.68, -0.66)))):
+for t, p in ((T_INT - 0.2, PEPE_HEAD + Vector((1.6, 1.4, -2.2))), (T_INT + 0.35, PEPE_HEAD + Vector((0.5, 0.75, -0.55))),
+             (T_INT + 0.5, PEPE_HEAD + Vector((0.46, 0.68, -0.5)))):
     MIC.location = p
     key(MIC, 'location', F(t))
 show(MIC, F(T_INT - 0.2))
@@ -390,11 +390,11 @@ cam.data.clip_end = 3000
 cam.data.clip_start = 0.05
 
 EXP = 'explosion.mp4'
-fx_card('fx_t1', EXP, (3.5, -25.5, 4.6), 10.0, T_T1 - 0.08, 4.0)
-fx_card('fx_t2', EXP, (14.5, -25.5, 4.6), 10.0, T_T2 - 0.08, 4.0)
-fx_card('fx_walk', EXP, (11.9, -24.6, 4.4), 9.0, T_WALK + 5.35, 4.5)
-fx_card('fx_walk2', EXP, (9.8, -27.0, 4.0), 8.0, T_WALK + 6.3, 4.0)
-fx_card('fx_king', EXP, (9.0, -2.5, 6.0), 15.0, T_KFALL - 0.08, 4.5)
+fx_card('fx_t1', EXP, (3.5, -25.5, 4.6), 11.0, T_T1 - 0.08, 1.7)
+fx_card('fx_t2', EXP, (14.5, -25.5, 4.6), 11.0, T_T2 - 0.08, 1.7)
+fx_card('fx_walk', EXP, (11.9, -24.6, 4.4), 9.0, T_WALK + 5.35, 1.8)
+fx_card('fx_walk2', EXP, (9.8, -27.0, 4.0), 8.0, T_WALK + 6.3, 1.7)
+fx_card('fx_king', EXP, (9.0, -2.5, 6.5), 17.0, T_KFALL - 0.08, 1.8)
 boomL = bpy.data.objects.new('walk_boom', bpy.data.lights.new('walk_boom', 'POINT'))
 COL.objects.link(boomL)
 boomL.location = (11.9, -24.0, 4.0)
@@ -529,11 +529,11 @@ GFX.append(('lower_useless', t0() + 0.4, now() - 0.25, None))
 
 # --- 7. the walk
 d_ = D('c11') + 0.3 + D('b10') + 0.55
-SH('walk wide', d_, T_WALK + 0.3, 1, (27.5, -17.0, 9.5), (27.5, -17.0, 9.5), (12.6, -21.8, 0.8), (14.5, -16.2, 0.8), 95, 4.0, hand=CALM)
+SH('walk wide', d_, T_WALK + 0.3, 1, (19.6, -25.6, 2.0), (19.0, -24.6, 2.1), (12.8, -21.4, 0.9), (14.5, -17.0, 0.9), 45, 4.0, hand=CALM)
 e_ = say('c11', t0() + 0.2)
 say('b10', e_ + 0.3)
 EV['walk'] = t0()
-SH('walk hero', 5.0, T_WALK + 4.75, 0.4, (16.9, -8.2, 0.65), (16.75, -8.6, 0.7), (14.5, -16.6, 0.9), (14.5, -15.3, 0.9), 85, 2.0, hand=TIGHT, live=True)
+SH('walk hero', 5.0, T_WALK + 4.75, 0.4, (15.7, -8.2, 0.65), (15.6, -8.6, 0.7), (14.5, -16.6, 0.9), (14.5, -15.3, 0.9), 85, 2.0, hand=TIGHT, live=True)
 EV['hero'] = t0()
 EV['hero_boom'] = [ft(T_WALK + 5.35), ft(T_WALK + 6.3)]
 SH('squad pass', 3.2, T_WALK + 6.75, 0.5, (19.6, -13.2, 1.25), (19.4, -13.6, 1.25), (14.5, -14.4, 1.15), (14.5, -13.6, 1.15), 45, 2.8, 0.2, hand=LOOSE)
@@ -555,7 +555,7 @@ SH('collapse', d_, T_KFALL - 0.12, 0.5, (4.2, -11.2, 0.7), (4.6, -11.8, 0.8), (9
 EV['kfall'] = ft(T_KFALL)
 say('c13', ft(T_KFALL) + 0.65)
 d_ = D('b11') + 0.6
-SH('useless wins', d_ * 0.5, T_KFALL + 3.2, 1, (12.9, -2.6, 1.5), (12.5, -2.4, 1.6), (9.0, -5.3, 0.95), (9.0, -5.3, 0.95), 50, 2.8, hand=LOOSE)
+SH('useless wins', d_ * 0.5, T_KFALL + 3.2, 1, (9.6, -0.6, 4.6), (9.3, -0.9, 4.3), (9.0, -5.3, 0.9), (9.0, -5.3, 0.9), 35, 4.0, hand=LOOSE)
 say('b11', t0() + 0.2)
 EV['party'] = t0()
 SH('stadium', d_ * 0.5, T_KFALL + 5.0, 1, (30, -44, 13), (33, -50, 20), (9, -14, 5), (9, -14, 7), 24, 8.0, hand=CALM)
