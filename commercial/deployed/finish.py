@@ -224,6 +224,16 @@ def draw_hud(im, t):
         text(d, (40, 44), 'ARENA 2  ·  BACKYARD BBQ', lil(40), rgba(GOLD, 255))
         text(d, (W - 40, 44), clock, lil(46), rgba(WHITE, 255), 'rm')
         text(d, (W / 2, 44), "THE THUMB'S VIEW", rub(26, 800), rgba((255, 120, 120), 255 if int(t * 2) % 2 == 0 else 150), 'mm', 8)
+        u = (t - item['f']) / (item['f1'] - item['f'])
+        s = shot_at(t)
+        tx, ty = project(s, t, s['l0'])
+        if item.get('target'):
+            radius = 150 + 14 * math.sin(t * 9)
+            d.ellipse((tx - radius, ty - radius, tx + radius, ty + radius), outline=rgba((255, 230, 90), 230), width=10)
+            d.ellipse((tx - radius * 0.55, ty - radius * 0.55, tx + radius * 0.55, ty + radius * 0.55), outline=rgba((255, 230, 90), 150), width=5)
+        press = ease(u / 0.25) * (1 - ease((u - 0.55) / 0.3))                 # the thumb comes down, taps, and leaves
+        textures.thumb(im, int(tx + 60), int(ty + 40 + 520 * (1 - press)), press=press > 0.9)
+        d = ImageDraw.Draw(im, 'RGBA')
         d.rectangle((0, H - 250, W, H), fill=rgba(INK, 225))
         card_w, card_h, gap = 150, 188, 22
         x0 = W / 2 - (len(hand) * card_w + (len(hand) - 1) * gap) / 2
@@ -241,15 +251,6 @@ def draw_hud(im, t):
         for k in range(10):
             d.rounded_rectangle((bar_x + k * seg + 3, H - 36, bar_x + (k + 1) * seg - 3, H - 14), 6,
                                 fill=rgba(COP if k < copium else (44, 21, 84), 255))
-        u = (t - item['f']) / (item['f1'] - item['f'])
-        s = shot_at(t)
-        tx, ty = project(s, t, s['l0'])
-        if item.get('target'):
-            radius = 150 + 14 * math.sin(t * 9)
-            d.ellipse((tx - radius, ty - radius, tx + radius, ty + radius), outline=rgba((255, 230, 90), 230), width=10)
-            d.ellipse((tx - radius * 0.55, ty - radius * 0.55, tx + radius * 0.55, ty + radius * 0.55), outline=rgba((255, 230, 90), 150), width=5)
-        press = ease(u / 0.25) * (1 - ease((u - 0.55) / 0.3))                 # the thumb comes down, taps, and leaves
-        textures.thumb(im, int(tx + 60), int(ty + 40 + 520 * (1 - press)), press=press > 0.9)
 
 
 def draw_banner(d, t):

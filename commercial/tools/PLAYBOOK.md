@@ -83,6 +83,22 @@ those topics with my own code.
 - `pgrep -f` uses extended regex: `a|b`, not `a\|b`.
 - Draw broadcast graphics at 1080p in the finish, not in 3D; test them on run-through frames before the full render.
 
+## Learned from "Deployed" (see `commercial/deployed/HANDOFF.md`)
+- Build new sets from code (`deployed/sets.py`): the whole film rebuilds in 30 s, against 12 min for the stadium, so
+  staging can be fixed many times. A per-shot contact sheet (`animatic.py`) finds most camera mistakes in one pass.
+- Geometry-nodes scatter works in the surface object's local space: an object scale stretches every instance and thins
+  the density. Give the surface a real-size mesh. Poly Haven grass clumps are 3-15 cm; scale 4-6.5 for toy characters.
+- Appending the same collection twice in one `libraries.load` crashes Blender 4.2: `assets.load_many` now loads repeats
+  in further passes.
+- Close-ups: 35-50 mm at about 1.7 m. 70-90 mm at that distance shows one eye. Check that no other character stands
+  between camera and subject, and that the camera is not inside a tower, a hull or another mesh (grey or black frame).
+- A sky seen straight toward the sun is a blank white. Put the sun 30-40 degrees off the view axis and give camera rays
+  a darker sky than lighting rays (`sets.world(camera_gain=0.45)`).
+- A camera that follows an accelerating fall must be cut into short linear pieces, or the subject leaves the frame.
+- Render cost here is light calculation, not scene setup: bounces made no difference; haze volume +15 s and motion blur
+  +12 s a frame. Switch them on per shot. 67 % size with 6 samples and OIDN is clean for these characters.
+- Objects created by different helpers can collide by name (`boom` tail boom vs `boom` explosion card): prefix effects.
+
 ## Edit and story
 - Write the script first, record narration, then cut shots to the measured line durations.
 - Speed ramps: 0.3–0.5× on impacts only. One joke per shot. Hold the last beat longer than feels natural.

@@ -33,12 +33,30 @@ cam = sc.camera
 FPS = E['fps']
 sc.render.use_overwrite = True
 sc.render.use_persistent_data = True
-sc.render.resolution_percentage = int(os.environ.get('SCALE', '100'))
+sc.render.resolution_percentage = int(os.environ.get('SCALE', '67'))
 OUTD = os.environ.get('OUT', os.environ['W'] + '/frames')
 os.makedirs(OUTD, exist_ok=True)
 if os.environ.get('SAMPLES'):
     sc.cycles.samples = int(os.environ['SAMPLES'])
 
+if os.environ.get('NOMB'):
+    sc.render.use_motion_blur = False
+if os.environ.get('NOHAZE') and bpy.data.objects.get('haze'):
+    bpy.data.objects.remove(bpy.data.objects['haze'])
+if os.environ.get('NOSUBD'):
+    for obj in bpy.data.objects:
+        for mod in obj.modifiers:
+            if mod.type == 'SUBSURF':
+                mod.render_levels = 0
+if os.environ.get('BOUNCES'):
+    k = int(os.environ['BOUNCES'])
+    sc.cycles.max_bounces = k
+    sc.cycles.diffuse_bounces = min(k, 2)
+    sc.cycles.glossy_bounces = k
+    sc.cycles.transmission_bounces = k
+    sc.cycles.transparent_max_bounces = 6
+    sc.cycles.caustics_reflective = False
+    sc.cycles.caustics_refractive = False
 CARDS = []
 for card in E.get('cards', []):
     obj = bpy.data.objects[card['name']]
@@ -110,6 +128,7 @@ def setup(f):
         target = bpy.data.collections.get(name) or bpy.data.objects.get(name)
         if target is not None:
             target.hide_render = name in hidden
+    sc.render.use_motion_blur = bool(s.get('mb'))
     if FILL is not None:
         FILL.data.energy = s.get('fill', 0.0)
 

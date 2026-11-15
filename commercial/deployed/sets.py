@@ -622,9 +622,12 @@ def build_exterior(ship):
     prop.node_tree.nodes['Principled BSDF'].inputs['Alpha'].default_value = 0.22
     prop.blend_method = 'BLEND'
     belly = box('belly', (HALF_W * 2 + 0.1, Y1 - Y0 + 0.2, 0.5), (0, 0, -0.3), skin, col, root, bevel=0.12)
-    nose_col = collection('NOSE')                                 # separate so interior shots can hide it (it reaches into the hold)
-    nose = sphere('nose', 1.0, (0, Y0 - 0.3, 1.45), skin, nose_col, root, scale=(HALF_W * 1.02, 3.4, 1.62))
-    sphere('canopy', 1.0, (0, Y0 - 1.9, 2.1), glass, nose_col, root, scale=(1.5, 1.4, 0.75))
+    nose_col = collection('NOSE')                                 # outer skin: only the opening shot shows it (it would block the ramp)
+    nose = sphere('fuselage', 1.0, (0, -1.6, 1.4), skin, nose_col, root, scale=(2.75, 10.2, 2.25))   # rounded outer skin
+    sphere('canopy', 1.0, (0, -9.6, 2.35), glass, nose_col, root, scale=(1.35, 1.7, 0.8))
+    for side in (-1, 1):
+        for k in range(5):
+            sphere('window', 0.26, (side * 2.62, -5.0 + k * 2.1, 2.0), glass, nose_col, root, scale=(0.3, 1, 1))
     box('wing', (27.0, 3.4, 0.38), (0, -1.2, HEIGHT + 0.1), skin, col, root, bevel=0.15)
     for x in (-9.0, -4.6, 4.6, 9.0):
         cylinder('engine', 0.62, 3.2, (x, -2.4, HEIGHT - 0.25), dark, col, root, rot=(math.pi / 2, 0, 0))

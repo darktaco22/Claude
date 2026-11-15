@@ -27,3 +27,5 @@ render teaches something new, add it there in the same commit.
 
 "The Final" (2-minute film): state, render plan and next steps are in `commercial/final/HANDOFF.md`. Read it before
 continuing that film.
+
+"Deployed" (2.5-minute drop ship comedy): state and render plan are in `commercial/deployed/HANDOFF.md`.

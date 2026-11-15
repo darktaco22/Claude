@@ -282,17 +282,25 @@ def event(kind, t, **extra):
 
 def shot(name, end, p0, l0, lens, p1=None, l1=None, space='hold', speed=1.0, fstop=2.8, hand=('INVESTIGATION', 0.35), shake=0.0,
          fill_power=0.0, hide=None, focus=None, ec=0, lens1=None):
+    # haze (light shafts in the hold) and motion blur are slow, so only the shots named below get them
     """A shot from the previous cut to animation time `end`."""
     global CUT, FILM
     convert = (lambda p: list(H(*p))) if space == 'hold' else (lambda p: list(p))
     duration = (end - CUT) / speed
     if hide is None:
-        hide = ['grass_field', 'NOSE'] if space == 'hold' else ['haze']
+        hide = ['grass_field', 'NOSE'] if space == 'hold' else ['haze', 'NOSE']
+    hide = list(hide)
+    if name not in HAZE_SHOTS and 'haze' not in hide:
+        hide.append('haze')
     SHOTS.append(dict(name=name, t0=round(FILM, 4), t1=round(FILM + duration, 4), a0=round(CUT, 4), s0=speed,
                       p0=convert(p0), p1=convert(p1 or p0), l0=convert(l0), l1=convert(l1 or l0), lens=lens, lens1=lens1 or lens,
-                      fstop=fstop, shake=shake, ec=ec, focus=focus, hand=list(hand) if hand else None, fill=fill_power, hide=list(hide)))
+                      fstop=fstop, shake=shake, ec=ec, focus=focus, hand=list(hand) if hand else None, fill=fill_power, hide=list(hide), mb=name in BLUR_SHOTS))
     CUT = end
     FILM += duration
+
+
+HAZE_SHOTS = {'hold_wide', 'ramp_opens', 'hold_shakes', 'hold_cheers', 'next_match'}
+BLUR_SHOTS = {'lmao_leaps', 'lmao_falls', 'house_runs', 'house_pops', 'egg_out', 'egg_falls', 'tower_attack', 'crate_out', 'push_side'}
 
 
 def screen(state, t):
@@ -307,8 +315,8 @@ EYE = 1.32                                                          # eye height
 screen('idle', 0.0)
 event('title', 0.4, text='SOMEWHERE ABOVE ARENA 2')
 say('p01', at=0.9)
-shot('ext_ship', 5.6, (-34, -40, 36.0), (0, -8, 47.5), 40, p1=(-25, -31, 39.0), space='world', fstop=5.6, hand=('INVESTIGATION', 0.5),
-     hide=['haze'])
+shot('ext_ship', 5.6, (-30.0, -44.0, 40.0), (0, -9, 47.5), 60, p1=(-25.0, -38.0, 41.5), space='world', fstop=5.6, hand=('INVESTIGATION', 0.5),
+     hide=['haze', 'grass_field'])
 shot('hold_wide', 9.2, (0.0, -5.3, 1.95), (0.0, 3.0, 1.25), 24, p1=(0.0, -3.9, 1.6), hide=CLOSED, fstop=4.0, fill_power=20)
 
 # ---------------------------------------------------------------- B. briefing
@@ -320,21 +328,21 @@ sarge.at(s01[1] - 0.3, pos=H(0, 3.0))
 sarge.clip(s01[1] - 0.3, 'idle')
 shot('sarge_walk', s01[1] + 0.15, (0.3, 0.3, 1.0), (0.0, 4.3, 1.3), 40, l1=(0.0, 3.0, 1.36), hide=CLOSED, fill_power=60)
 e01 = say('e01', actor=egg)
-shot('egg_1', e01[1] + 0.2, (0.5, 1.1, 1.05), (-1.3, 1.7, 0.98), 50, hide=CLOSED, fill_power=40)
+shot('egg_1', e01[1] + 0.2, (0.5, 1.1, 1.05), (-1.3, 1.7, 1.02), 34, hide=CLOSED, fill_power=40)
 sarge.face(e01[0], H(-1.3, 1.7))
 s02 = say('s02', actor=sarge)
-shot('sarge_cu', s02[0] + 1.25, (-0.95, 1.5, 1.2), (0.0, 3.0, 1.38), 50, hide=CLOSED, fill_power=50)
+shot('sarge_cu', s02[0] + 1.25, (-0.45, 1.3, 1.25), (0.0, 3.0, 1.38), 50, hide=CLOSED, fill_power=50)
 shot('monitor_thumb', s02[0] + 2.45, (0.5, -3.3, 1.8), (0.75, -6.0, 1.85), 55, p1=(0.55, -3.7, 1.82), hide=CLOSED, fstop=4.0)
-shot('sarge_cu2', s02[1] + 0.15, (-0.95, 1.5, 1.2), (0.0, 3.0, 1.4), 62, hide=CLOSED, fill_power=50)
+shot('sarge_cu2', s02[1] + 0.15, (-0.45, 1.3, 1.25), (0.0, 3.0, 1.4), 62, hide=CLOSED, fill_power=50)
 e02 = say('e02', actor=egg, gap=0.45)
-shot('egg_2', e02[1] + 0.3, (0.4, 1.2, 1.05), (-1.3, 1.7, 1.0), 62, hide=CLOSED, fill_power=40)
+shot('egg_2', e02[1] + 0.3, (0.4, 1.2, 1.05), (-1.3, 1.7, 1.02), 40, hide=CLOSED, fill_power=40)
 k01 = say('k01', actor=ket, gap=0.4)
-shot('ket_1', k01[1] + 0.3, (-0.5, 1.35, 1.25), (1.3, 0.6, 1.2), 50, hide=CLOSED, fill_power=40)
+shot('ket_1', k01[1] + 0.3, (-0.5, 1.35, 1.25), (1.3, 0.6, 1.36), 38, hide=CLOSED, fill_power=40)
 sarge.face(k01[1], H(0, -6))
 s03 = say('s03', actor=sarge, gap=0.35)
 shot('sarge_rows', s03[1] + 0.15, (0.75, 0.1, 1.15), (0.0, 3.0, 1.35), 35, p1=(0.6, 0.5, 1.2), hide=CLOSED, fill_power=60)
 c01 = say('c01', actor=chill, gap=0.5)
-shot('chill_1', c01[1] + 0.4, (-0.5, 1.6, 1.3), (1.3, 2.4, 1.25), 50, hide=CLOSED, fill_power=40)
+shot('chill_1', c01[1] + 0.4, (-0.5, 1.6, 1.3), (1.3, 2.4, 1.42), 38, hide=CLOSED, fill_power=40)
 
 # ---------------------------------------------------------------- C. first drop: LMAO
 screen('lmao', T - 0.1)
@@ -379,17 +387,23 @@ def fall_point(t, t0, t1, start, end):
     return pos
 
 
-def fall_shot(name, end, t0, t1, start, land, offset, lens, speed):
-    """The camera drops beside a falling character and keeps it framed."""
-    a, b = fall_point(CUT, t0, t1, start, land), fall_point(end, t0, t1, start, land)
+def fall_shot(name, end, t0, t1, start, land, offset, lens, speed, look_up=0.8):
+    """The camera drops beside a falling character and keeps it framed. The fall accelerates, so the shot is cut
+    into short linear pieces (invisible cuts: each starts where the last ended)."""
     offset = Vector(offset)
-    shot(name, end, tuple(a + offset), tuple(a + Vector((0, 0, 0.8))), lens, p1=tuple(b + offset * 1.25), l1=tuple(b + Vector((0, 0, 0.8))),
-         space='world', speed=speed, fstop=4.0, hand=('HANDYCAM_RUN', 0.4), ec=3)
+    first, pieces = CUT, 5
+    for index in range(pieces):
+        ta = first + (end - first) * index / pieces
+        tb = first + (end - first) * (index + 1) / pieces
+        a, b = fall_point(ta, t0, t1, start, land), fall_point(tb, t0, t1, start, land)
+        ka, kb = 1 + 0.25 * index / pieces, 1 + 0.25 * (index + 1) / pieces
+        shot(name, tb, tuple(a + offset * ka), tuple(a + Vector((0, 0, look_up))), lens, p1=tuple(b + offset * kb),
+             l1=tuple(b + Vector((0, 0, look_up))), space='world', speed=speed, fstop=4.0, hand=None, ec=3)
 
 
 fall(lmao, T_JUMP1, T_LAND1, H(0.0, 8.4, -0.55), LAND1, spin=1.0)
 shot('lmao_leaps', T_JUMP1 + 0.45, (1.9, 10.6, 0.1), (0.0, 7.2, 0.9), 32, fstop=4.0, hand=('HANDYCAM_RUN', 0.3))
-fall_shot('lmao_falls', T_JUMP1 + 1.5, T_JUMP1, T_LAND1, H(0.0, 8.4, -0.55), LAND1, (2.6, 3.4, -1.6), 35, 0.55)
+fall_shot('lmao_falls', T_JUMP1 + 1.5, T_JUMP1, T_LAND1, H(0.0, 8.4, -0.55), LAND1, (2.4, 3.2, -0.6), 28, 0.55, look_up=0.4)
 shot('thumb_view_1', T_LAND1 + 0.35, (-5.5, -1.0, 40.0), (-5.5, 5.4, 0.0), 75, space='world', fstop=8.0, hand=None)
 event('hud', T_JUMP1 + 1.5, until=T_LAND1 + 0.35, card='lmao')
 event('land', T_LAND1)
@@ -409,9 +423,9 @@ y02 = say('y02', gap=0.3)
 shot('sarge_looks_down', T_BONK + 0.85, (-0.2, 3.3, 1.5), (-0.95, 5.0, 1.35), 50, fill_power=30, shake=0.2)
 shot('monitor_dead', y02[1] + 0.1, (0.6, -3.2, 1.8), (0.75, -6.0, 1.85), 60, fstop=4.0)
 e03 = say('e03', actor=egg, gap=0.35)
-shot('egg_3', e03[1] + 0.2, (0.5, 1.1, 1.05), (-1.3, 1.7, 0.98), 55, fill_power=40)
+shot('egg_3', e03[1] + 0.2, (0.5, 1.1, 1.05), (-1.3, 1.7, 1.02), 36, fill_power=40)
 k02 = say('k02', actor=ket, gap=0.7)
-shot('ket_2', k02[1] + 0.45, (-0.5, 1.35, 1.25), (1.3, 0.6, 1.2), 58, fill_power=40)
+shot('ket_2', k02[1] + 0.45, (-0.5, 1.35, 1.25), (1.3, 0.6, 1.36), 42, fill_power=40)
 
 # ---------------------------------------------------------------- D. the airdrop
 CRATE_AT = (0.55, 5.1)
@@ -478,7 +492,7 @@ sarge.face(T - 2.0, H(0.55, 12))
 shot('sarge_silent', T + 1.2, (1.0, 7.6, 1.2), (0.55, 4.15, 1.38), 50, p1=(0.95, 7.3, 1.25), fill_power=25)
 T += 1.2
 c02 = say('c02', actor=chill, gap=0.55)
-shot('chill_2', c02[1] + 0.3, (-0.5, 1.6, 1.3), (1.3, 2.4, 1.25), 55, fill_power=40)
+shot('chill_2', c02[1] + 0.3, (-0.5, 1.6, 1.3), (1.3, 2.4, 1.42), 40, fill_power=40)
 s06 = say('s06', actor=sarge, gap=0.5)
 shot('sarge_duck', s06[1] + 0.4, (0.1, 6.9, 1.3), (0.55, 4.15, 1.4), 62, fill_power=30)
 
@@ -492,10 +506,10 @@ screen('tower', T_BOOM + 0.3)
 y04 = say('y04', at=T_BOOM + 1.9, gap=0.3)
 shot('hold_shakes', y04[1] + 0.2, (0.3, -4.4, 1.5), (0.0, 3.0, 1.3), 26, shake=1.6, fill_power=15, fstop=4.0, hand=('HANDYCAM_RUN', 0.5))
 e04 = say('e04', actor=egg, gap=0.35)
-shot('egg_4', e04[1] + 0.15, (0.5, 1.1, 1.05), (-1.3, 1.7, 0.98), 58, fill_power=40, shake=0.3)
+shot('egg_4', e04[1] + 0.15, (0.5, 1.1, 1.05), (-1.3, 1.7, 1.02), 40, fill_power=40, shake=0.3)
 screen('wagmi', e04[1])
 k03 = say('k03', actor=ket, gap=0.3)
-shot('ket_3', k03[1] + 0.35, (-0.5, 1.35, 1.25), (1.3, 0.6, 1.2), 58, fill_power=40)
+shot('ket_3', k03[1] + 0.35, (-0.5, 1.35, 1.25), (1.3, 0.6, 1.36), 42, fill_power=40)
 T_EMOTE = T + 0.3
 event('emote', T_EMOTE)
 shot('wagmi', T_EMOTE + 2.4, (7.5, -24.0, 1.8), (0.0, -13.5, 6.6), 28, p1=(7.0, -23.2, 2.0), space='world', fstop=4.0)
@@ -505,7 +519,7 @@ sarge.face(T - 1.0, H(0, -6))
 s07 = say('s07', actor=sarge, gap=0.45)
 shot('sarge_burn', s07[1] + 0.25, (0.25, 0.9, 1.3), (0.0, 3.0, 1.42), 60, p1=(0.2, 1.25, 1.32), lens1=70, fill_power=50)
 c03 = say('c03', actor=chill, gap=0.5)
-shot('chill_3', c03[1] + 0.35, (-0.5, 1.6, 1.3), (1.3, 2.4, 1.25), 58, fill_power=40)
+shot('chill_3', c03[1] + 0.35, (-0.5, 1.6, 1.3), (1.3, 2.4, 1.42), 42, fill_power=40)
 
 # ---------------------------------------------------------------- F. Chillhouse
 T_FULL = T
@@ -596,12 +610,12 @@ for actor, spot in ((ket, (1.3, 2.9)), (chill, (1.35, 3.9)), (pudgy, (-1.3, 2.6)
 egg.face(T - 0.4, H(0.55, 5.1))
 sarge.face(T - 0.4, H(-0.45, 4.9))
 e05 = say('e05', actor=egg, gap=0.6)
-shot('egg_5', e05[1] + 0.4, (1.3, 3.2, 1.1), (-0.45, 4.9, 1.0), 48, p1=(1.2, 3.3, 1.1), fill_power=45)
+shot('egg_5', e05[1] + 0.4, (1.3, 3.2, 1.1), (-0.45, 4.9, 1.0), 40, p1=(1.2, 3.3, 1.1), fill_power=45)
 event('music_swell', T)
 s10 = say('s10', actor=sarge, gap=0.5)
 shot('speech', s10[1] + 0.3, (-0.2, 2.2, 1.15), (0.05, 5.0, 1.3), 50, p1=(-0.15, 2.7, 1.2), lens1=58, fill_power=35)
 e06 = say('e06', actor=egg, gap=0.3)
-shot('egg_6', e06[1] + 0.2, (1.3, 3.2, 1.1), (-0.45, 4.9, 1.0), 55, fill_power=45)
+shot('egg_6', e06[1] + 0.2, (1.3, 3.2, 1.1), (-0.45, 4.9, 1.0), 45, fill_power=45)
 s11 = say('s11', actor=sarge, gap=0.0)
 T_SHOVE = s11[1] - 0.35
 sarge.clip(T_SHOVE - 0.3, 'attack1')
@@ -616,7 +630,7 @@ egg.at(T_EGG_OUT, pos=H(-0.2, 8.3, 0.0), tilt=0.6)
 fall(egg, T_EGG_OUT, T_EGG_LAND, H(-0.2, 8.3, 0.0), EGG_LAND, spin=2.0, clip='hit')
 event('scream', T_EGG_OUT)
 shot('egg_out', T_EGG_OUT + 0.3, (1.6, 10.8, 0.4), (-0.2, 7.0, 1.0), 32, fstop=4.0, hand=('HANDYCAM_RUN', 0.4))
-fall_shot('egg_falls', T_EGG_OUT + 1.45, T_EGG_OUT, T_EGG_LAND, H(-0.2, 8.3, 0.0), EGG_LAND, (1.8, -2.8, -1.2), 40, 0.4)
+fall_shot('egg_falls', T_EGG_OUT + 1.45, T_EGG_OUT, T_EGG_LAND, H(-0.2, 8.3, 0.0), EGG_LAND, (1.8, -2.8, 0.2), 30, 0.4, look_up=0.7)
 shot('thumb_view_egg', T_EGG_LAND + 0.2, (0.0, -14.0, 40.0), (0.0, -8.0, 0.0), 70, space='world', fstop=8.0, hand=None)
 event('hud', T_EGG_OUT + 1.45, until=T_EGG_LAND + 0.2, card='cupsey')
 event('land', T_EGG_LAND)
@@ -629,7 +643,7 @@ shot('egg_cowers', T_FREEZE + 0.9, (-1.4, -5.6, 2.1), (0.0, -9.6, 0.9), 50, p1=(
 event('freeze', T_FREEZE)
 T = T_FREEZE + 1.0
 T_ICONS = T
-shot('frozen', T_ICONS + 1.5, (4.0, -5.6, 1.2), (0.0, -7.4, 1.5), 35, p1=(3.7, -5.7, 1.2), space='world', fstop=4.0, hand=('INVESTIGATION', 0.2))
+shot('frozen', T_ICONS + 1.5, (2.6, -10.6, 1.1), (0.0, -7.2, 1.7), 28, p1=(2.4, -10.4, 1.15), space='world', fstop=4.0, hand=('INVESTIGATION', 0.2))
 T = T_ICONS + 0.9
 y07 = say('y07', gap=0.3)
 T_TOPPLE = y07[0] + 1.2
@@ -658,12 +672,12 @@ shot('sarge_proud', s12[1] + 0.25, (-0.9, 3.2, 1.4), (0.55, 5.1, 1.4), 60, p1=(-
 for actor in (ket, chill, pudgy, dope):
     actor.clip(s12[0] + 0.5, 'idle')
 c04 = say('c04', actor=chill, gap=0.5)
-shot('chill_4', c04[1] + 0.35, (-0.4, 3.0, 1.3), (1.35, 3.9, 1.25), 55, fill_power=40)
+shot('chill_4', c04[1] + 0.35, (-0.4, 3.0, 1.3), (1.35, 3.9, 1.42), 42, fill_power=40)
 screen('clout', T - 0.1)
 y09 = say('y09', gap=0.3)
 shot('monitor_clout', y09[1] + 0.1, (0.6, -3.2, 1.8), (0.75, -6.0, 1.85), 60, fstop=4.0)
 k05 = say('k05', actor=ket, gap=0.35)
-shot('ket_5', k05[1] + 0.25, (-0.4, 2.0, 1.25), (1.3, 2.9, 1.2), 55, fill_power=40)
+shot('ket_5', k05[1] + 0.25, (0.3, 4.7, 1.3), (1.3, 2.9, 1.36), 42, fill_power=40)
 T_NEXT = T
 screen('next', T_NEXT)
 event('klaxon', T_NEXT)
