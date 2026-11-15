@@ -36,3 +36,19 @@ already in `pack/`; to re-record: `python3 voices.py KOKORO_DIR pack/vo`, to red
 ## Progress log
 - Full render started. Ranges: this machine 1-437; workers 438-875, 876-1312, 1313-1749, 1750-2187, 2188-2624, 2625-3062, 3063-3499.
   Each worker runs `./render_worker.sh A B` and pushes to `commercial/deployed/frames_jpg`. When all 3499 are in: `./finish_all.sh`.
+
+## REWORK after the first review (user feedback, Nov 15) - read this first
+The first cut was wrong about the game: cards are NOT lost after playing. A deck is 8 cards; 4 are in the hand and the rest
+wait in a queue; a played card goes to the back of the queue and the next one steps in. There is no "last card". The
+arena also looked nothing like the game's Backyard BBQ. Fixes:
+1. **Real rules.** `sim/record.mjs` plays a real match with the game's own `sim.js` + `ai.js` (Node, no browser) and records
+   every unit 10 times a second plus events -> `pack/match.json` (seed 137: Thumb wins 2-1 on time; our right tower falls
+   at 0:41, enemy right tower 1:36, COPIUM OVERDOSE at 2:00, enemy left tower 2:47). The Thumb is a button masher who taps
+   cards at random: with about 25 plays he beats the weak bot about 1 time in 4 (`sim/search3.mjs` found it); a passive
+   Thumb always loses. One tap is on the enemy half and is refused ("enemy side"), the real rule.
+2. **Real arena.** `pack/game/` holds the game's own tower_rig, battlestation, bridge, edge pieces and every Backyard prop
+   (GLB) with its `layout.json`, plus ground/backdrop textures, downloaded from memeroyale.imaginestudio.fun/assets.
+   Game coordinates: court 18 x 32 (x, z), bridges at x 3.5 and 14.5 on z 16, rigs at (3.5|14.5, 25.5|6.5), king base at
+   (9, 29.5|2.5). Team 0 (ours) is z high. Characters are about 1.7 tall, towers 4.9: the same scale as the game.
+3. **Story.** The ship carries the deck: 4 characters at the ramp (the hand) and 4 on the bench (the queue). Each real
+   play makes the next character jump to the tapped spot; the queue shifts; the jumper pops back in at the end of the line.
