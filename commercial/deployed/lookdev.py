@@ -74,6 +74,28 @@ if what == 'hold':
     cam.data.dof.aperture_fstop = 2.8
     sc.frame_set(30)
 
+if what == 'game':
+    pack = os.path.join(HERE, 'pack', 'game')
+    arena = sets.build_game_arena(pack)
+    sets.sun(heading_deg=float(os.environ.get('SUN', '25')), elevation_deg=float(os.environ.get('ELEV', '16')), energy=4.5)
+    view = os.environ.get('VIEW', 'game')
+    if view == 'game':        # the game's own framing: from our side, high, looking at the far end
+        cam.location = sets.gp(9, 50.0, 40.0)
+        target = Vector(sets.gp(9, 12.0, 0.0))
+        cam.data.lens = 38
+    elif view == 'low':
+        cam.location = sets.gp(1.0, 30.0, 1.6)
+        target = Vector(sets.gp(9, 14.0, 1.8))
+        cam.data.lens = 28
+    else:
+        cam.location = sets.gp(-8.0, 12.0, 6.0)
+        target = Vector(sets.gp(9, 6.0, 1.5))
+        cam.data.lens = 30
+    cam.rotation_euler = (target - cam.location).to_track_quat('-Z', 'Y').to_euler()
+    cam.data.dof.focus_distance = (target - cam.location).length
+    cam.data.dof.aperture_fstop = 8.0
+    sc.frame_set(1)
+
 if what == 'yard':
     yard = sets.build_yard(W + '/tex', os.path.expanduser('~/tools/assets'), grass=not os.environ.get('NOGRASS'))
     sets.sun(heading_deg=float(os.environ.get('SUN', '180')), elevation_deg=9, energy=5.0)

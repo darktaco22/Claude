@@ -3,11 +3,12 @@
     python3 voices.py KOKORO_DIR OUT_DIR      -> OUT_DIR/<id>.wav + vo.json ({id: {dur, sub, who}})
 
 Cast: SARGE (Walter, jumpmaster), EGG (Cupsey, the rookie), KET (dry veteran), CHILL (Chill Guy), HOUSE (Chillhouse),
-PILOT (Farter, on the radio) and SYS (the game's announcer). Game terms are the real ones: Copium, Clout, Arena 2
+PILOT (on the radio). The announcer is the game's own voice (vo_fight, vo_overdose, vo_victory). Game terms are the real ones: Copium, Clout, Arena 2
 Backyard BBQ, Arena 3 Strip Mall Lot, emote WAGMI, bot name paperhands420.
 """
 import json
 import os
+import subprocess
 import sys
 
 import numpy as np
@@ -25,46 +26,58 @@ VOICES = {
 }
 
 LINES = [  # id, speaker, text as spoken, speed factor, caption
-    ('p01', 'pilot', 'Tower, this is Deck One. Eight cards on board, and one player at the controls. Pray for us.', 1.0, None),
-    ('s01', 'sarge', 'Listen up, cards! In thirty seconds, the Thumb is going to play us.', 1.0, None),
-    ('e01', 'egg', 'The Thumb, Sarge?', 1.0, None),
-    ('s02', 'sarge', 'The player, son. Big. Pink. Makes every decision down there.', 1.0, None),
-    ('e02', 'egg', 'And... he has a plan?', 1.0, None),
-    ('k01', 'ket', 'He has four cards and a feeling.', 1.0, None),
-    ('s03', 'sarge', 'He has been in Arena Two for eight months.', 1.0, None),
-    ('c01', 'chill', "Nine. But who's counting.", 1.0, None),
-    ('y01', 'sys', 'Copium: four.', 1.0, None),
-    ('s04', 'sarge', "Green light! L M A O, you're up! Go, go, go!", 1.08, "Green light! LMAO, you're up! Go, go, go!"),
-    ('y02', 'sys', 'L M A O has been eliminated.', 1.0, 'LMAO has been eliminated.'),
-    ('e03', 'egg', 'He lasted two seconds!', 1.0, None),
-    ('k02', 'ket', 'Personal best.', 0.95, None),
-    ('s05', 'sarge', "Here it comes. Airdrop. Their whole push is on the bridge. Even he can't miss this.", 1.0, None),
-    ('c02', 'chill', 'He got the duck, though.', 1.0, None),
-    ('s06', 'sarge', 'He always gets the duck.', 0.95, None),
-    ('y04', 'sys', 'Left tower destroyed.', 1.0, None),
-    ('e04', 'egg', "We're losing! What's he doing now?", 1.0, None),
-    ('k03', 'ket', "He's emoting.", 0.95, None),
-    ('s07', 'sarge', "We are down a tower, and he is sending: we're all gonna make it.", 1.0,
-     "We are down a tower, and he is sending \"we're all gonna make it\"."),
-    ('c03', 'chill', 'Confidence is important.', 1.0, None),
-    ('y05', 'sys', 'Copium: ten. Copium is full.', 1.0, None),
-    ('s08', 'sarge', "He's leaking copium! Chillhouse! Move, move, move!", 1.08, None),
+    # --- the briefing, before the match
+    ('p01', 'pilot', 'Tower, this is Deck One. Eight cards on board. One player on the controls. Pray for us.', 1.0, None),
+    ('s01', 'sarge', 'Listen up! Eight of us. Four at the door. Four on the bench.', 1.0, None),
+    ('e01', 'egg', "What's the difference?", 1.0, None),
+    ('s02', 'sarge', 'Door cards can be played. Bench cards wait. The Thumb taps a door card, that card jumps, and the next one on the bench steps up.', 1.02, None),
+    ('e02', 'egg', 'And the one who jumped?', 1.0, None),
+    ('s03', 'sarge', 'Back of the line.', 0.95, None),
+    ('k01', 'ket', 'Jump, fight, back in the queue. The circle of life.', 1.0, None),
+    ('c01', 'chill', 'With a deposit.', 0.95, None),
+    ('s04', 'sarge', 'Every jump costs Copium. Cupsey, four. L M A O, four. Chillhouse, five.', 1.0, 'Every jump costs Copium. Cupsey, four. LMAO, four. Chillhouse, five.'),
+    ('e03', 'egg', "And if he doesn't have enough?", 1.0, None),
+    ('k02', 'ket', 'We wait.', 0.95, None),
+    ('s05', 'sarge', "And if he has too much? Copium stops at ten. Everything above that is wasted.", 1.0, None),
+    ('c02', 'chill', 'Like my knees.', 0.95, None),
+    # --- the first minute
+    ('s06', 'sarge', "Dope! You're up! Go, go, go!", 1.08, None),
+    ('k03', 'ket', 'He picked the cheap one.', 1.0, None),
+    ('s07', 'sarge', "Chillhouse! Five Copium! He can afford you!", 1.06, None),
     ('h01', 'house', "Sorry. I'm a house.", 1.0, None),
-    ('s09', 'sarge', 'Everybody push!', 1.05, None),
-    ('k04', 'ket', 'I have seen rug pulls faster than this.', 1.0, None),
-    ('y06', 'sys', 'Thirty seconds remaining. Last card: Cupsey.', 1.0, None),
-    ('e05', 'egg', "Me? Sarge... I'm an egg.", 0.95, None),
-    ('s10', 'sarge', "Son, we are all eggs up here. Some of us just haven't hit the ground yet.", 0.95, None),
-    ('e06', 'egg', 'That is the worst speech I have ever heard.', 1.0, None),
-    ('s11', 'sarge', "It's the only one I've got. Go!", 1.05, None),
-    ('y07', 'sys', 'Opponent paper hands four twenty has left the match.', 1.0, 'Opponent paperhands420 has left the match.'),
-    ('y08', 'sys', 'Victory!', 0.95, None),
-    ('s12', 'sarge', 'He did it. The kid did absolutely nothing. And it worked.', 0.97, None),
-    ('c04', 'chill', 'Classic us.', 1.0, None),
-    ('y09', 'sys', 'Plus twenty-eight Clout. New arena unlocked: Strip Mall Lot.', 1.0, None),
-    ('k05', 'ket', 'A parking lot. We fought for a parking lot.', 0.97, None),
-    ('y10', 'sys', 'Next match in three. Two.', 0.95, None),
-    ('s13', 'sarge', 'Meme Royale. Free to play. And please. Play better than this guy.', 0.97, None),
+    ('e04', 'egg', "He's tapping the enemy side!", 1.05, None),
+    ('s08', 'sarge', "Can't deploy past the river. Not until one of their towers falls.", 1.0, None),
+    ('k04', 'ket', "He's a toucher.", 0.95, None),
+    ('e05', 'egg', "Why me? I'm a healer!", 1.05, None),
+    ('s09', 'sarge', 'Then heal! Jump!', 1.08, None),
+    ('s10', 'sarge', "Right tower's down!", 1.06, None),
+    ('c03', 'chill', 'He was tapping.', 0.95, None),
+    ('k05', 'ket', 'The wrong side.', 0.95, None),
+    ('c04', 'chill', "Finally. I soak hits. I can't be stunned or knocked back. I'm basically furniture.", 1.0, None),
+    # --- the airdrop and the first tower
+    ('s11', 'sarge', "Airdrop! Their whole push is... on the other side. He dropped it on our base.", 1.0, None),
+    ('k06', 'ket', 'Free coins. For the lawn.', 0.95, None),
+    ('s12', 'sarge', "Their right tower is down!", 1.06, None),
+    ('e06', 'egg', 'Who did that?', 1.0, None),
+    ('k07', 'ket', 'Units keep fighting after they jump. Remember?', 1.0, None),
+    ('s13', 'sarge', 'Cards rotate. Units stay.', 0.97, None),
+    # --- Copium overdose
+    ('s14', 'sarge', 'Copium overdose! Everything fills twice as fast!', 1.06, None),
+    ('e07', 'egg', 'Is that good?', 1.0, None),
+    ('k08', 'ket', 'For a tapper? Yes.', 0.95, None),
+    ('e08', 'egg', "I've jumped three times! Same four cards!", 1.05, None),
+    ('c05', 'chill', "It's a rotation.", 0.95, None),
+    ('e09', 'egg', 'Why are there three of me out there?', 1.0, None),
+    ('s15', 'sarge', 'Units stay. Cards rotate. Stop thinking!', 1.05, None),
+    # --- the finish
+    ('s16', 'sarge', 'Chillhouse! Last chance!', 1.08, None),
+    ('h02', 'house', 'Rent is due.', 0.95, None),
+    ('s17', 'sarge', 'Two towers to one!', 1.06, None),
+    ('k09', 'ket', 'He won by tapping.', 0.95, None),
+    ('e10', 'egg', "That's not a strategy.", 1.0, None),
+    ('s18', 'sarge', "It's a rhythm.", 0.92, None),
+    ('c06', 'chill', 'Next match. Same eight.', 0.95, None),
+    ('s19', 'sarge', 'Meme Royale. Free to play. Tap with purpose.', 0.97, None),
 ]
 
 
@@ -80,6 +93,13 @@ def main(kokoro_dir: str, out_dir: str) -> None:
         sf.write(f'{out_dir}/{line_id}.wav', audio, rate)
         result[line_id] = {'dur': round(len(audio) / rate, 3), 'sub': caption or text, 'who': who}
         print(line_id, who, result[line_id]['dur'], text)
+    game_audio = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'comeback', 'audio')
+    for line_id, clip, caption in (('a_fight', 'vo_fight', 'FIGHT!'), ('a_overdose', 'vo_overdose', 'COPIUM OVERDOSE!'), ('a_victory', 'vo_victory', 'VICTORY!'),
+                                   ('a_overtime', 'vo_overtime', 'OVERTIME!')):
+        out_path = f'{out_dir}/{line_id}.wav'
+        subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', os.path.join(game_audio, clip + '.mp3'), '-ac', '1', '-ar', '24000', out_path], check=True)
+        info = sf.info(out_path)
+        result[line_id] = {'dur': round(info.duration, 3), 'sub': caption, 'who': 'game'}
     with open(f'{out_dir}/vo.json', 'w') as handle:
         json.dump(result, handle, indent=1)
     print('TOTAL', round(sum(item['dur'] for item in result.values()), 1))

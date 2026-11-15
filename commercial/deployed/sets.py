@@ -637,3 +637,189 @@ def build_exterior(ship):
     box('fin', (0.3, 3.2, 4.2), (0, Y1 + 5.2, HEIGHT + 3.2), skin, col, root, rot=(math.radians(-22), 0, 0), bevel=0.1)
     box('tailplane', (9.5, 2.0, 0.26), (0, Y1 + 5.6, HEIGHT + 1.9), skin, col, root, bevel=0.1)
     return [belly, nose]
+
+
+# ================================================================ the game's own Backyard BBQ arena
+# Built from the files the game ships (pack/game: tower_rig, battlestation, bridge, edge pieces and the props listed in
+# layout.json, ground and backdrop painting). Game coordinates (x, z): the court is 18 x 32, our side is z > 16, the river
+# is z 15..17, bridges at x 3.5 / 14.5, rigs at x 3.5 / 14.5 (z 25.5 ours, 6.5 theirs), king bases at x 9 (z 29.5 / 2.5).
+# Blender coordinates: X = x - 9, Y = 16 - z (so our side is y < 0, as in the hold), Z up. A three.js rotation.y of t is
+# a Blender rotation_z of t.
+TEAM_GREEN = (0.486, 1.0, 0.42)
+TEAM_RED = (0.95, 0.12, 0.22)
+PAINT_GREEN = (0.22, 0.72, 0.29)
+PAINT_RED = (0.89, 0.24, 0.31)
+RIG_POS = {0: [(3.5, 25.5), (14.5, 25.5)], 1: [(3.5, 6.5), (14.5, 6.5)]}
+KING_POS = {0: (9.0, 29.5), 1: (9.0, 2.5)}
+
+
+def gp(x, z, y=0.0):
+    """Game position (x, z, height) to Blender coordinates."""
+    return (x - 9.0, 16.0 - z, y)
+
+
+def import_glb(path, col):
+    """Import a glTF into collection `col`; returns its top-level objects."""
+    before = set(bpy.data.objects)
+    bpy.ops.import_scene.gltf(filepath=path)
+    new = [obj for obj in bpy.data.objects if obj not in before]
+    for obj in new:
+        for old in list(obj.users_collection):
+            old.objects.unlink(obj)
+        col.objects.link(obj)
+        if obj.type == 'MESH':
+            for poly in obj.data.polygons:
+                poly.use_smooth = True
+    return [obj for obj in new if obj.parent is None]
+
+
+def duplicate(roots, col, parent=None):
+    """Linked duplicate of a hierarchy (shares meshes and materials)."""
+    copies = []
+    for root in roots:
+        copy = root.copy()
+        col.objects.link(copy)
+        copy.parent = parent
+        for child in root.children:
+            duplicate([child], col, copy)
+        copies.append(copy)
+    return copies
+
+
+def tint_team(roots, team):
+    """The game's team pieces are objects named `team_*`: paint and cloth take the paint colour, anything else glows.
+    team None is the neutral green of the bridges."""
+    seen = {}
+    for root in roots:
+        for obj in [root] + list(root.children_recursive):
+            if obj.type != 'MESH' or not obj.name.lower().startswith('team'):
+                continue
+            paint = obj.name.lower().startswith(('team_paint', 'team_cloth'))
+            for slot in obj.material_slots:
+                mat = slot.material
+                if not mat:
+                    continue
+                key = (mat.name, paint, team)
+                if key not in seen:
+                    new = mat.copy()
+                    new.name = f'{mat.name}.{"p" if paint else "g"}{team}'
+                    bsdf = new.node_tree.nodes.get('Principled BSDF')
+                    if bsdf:
+                        for name in ('Base Color', 'Emission Color', 'Emission Strength', 'Roughness'):
+                            for link in list(bsdf.inputs[name].links):
+                                new.node_tree.links.remove(link)
+                        glow = TEAM_RED if team == 1 else TEAM_GREEN
+                        if paint:
+                            color = PAINT_RED if team == 1 else PAINT_GREEN
+                            strength = 0.0
+                        else:
+                            color = tuple(c * 0.6 for c in glow)
+                            strength = 1.1
+                        bsdf.inputs['Base Color'].default_value = (*color, 1)
+                        bsdf.inputs['Roughness'].default_value = 0.75 if paint else 0.4
+                        bsdf.inputs['Emission Color'].default_value = (*glow, 1)
+                        bsdf.inputs['Emission Strength'].default_value = strength
+                    seen[key] = new
+                slot.link = 'OBJECT'                                 # objects share one mesh: colour per object
+                slot.material = seen[key]
+
+
+def textured_plane(name, size_x, size_y, loc, path, col, repeat=(1, 1), emit=0.0, rot=(0, 0, 0), tint=None):
+    mat = bpy.data.materials.new(name)
+    mat.use_nodes = True
+    tree = mat.node_tree
+    bsdf = tree.nodes['Principled BSDF']
+    tex = tree.nodes.new('ShaderNodeTexImage')
+    tex.image = bpy.data.images.load(path)
+    tex.extension = 'REPEAT'
+    coord = tree.nodes.new('ShaderNodeTexCoord')
+    mapping = tree.nodes.new('ShaderNodeMapping')
+    mapping.inputs['Scale'].default_value = (repeat[0], repeat[1], 1)
+    tree.links.new(coord.outputs['UV'], mapping.inputs['Vector'])
+    tree.links.new(mapping.outputs['Vector'], tex.inputs['Vector'])
+    out = tex.outputs['Color']
+    if tint:
+        mix = tree.nodes.new('ShaderNodeMix')
+        mix.data_type = 'RGBA'
+        mix.blend_type = 'MULTIPLY'
+        mix.inputs['Factor'].default_value = 1.0
+        mix.inputs['B'].default_value = (*tint, 1)
+        tree.links.new(out, mix.inputs['A'])
+        out = mix.outputs['Result']
+    tree.links.new(out, bsdf.inputs['Base Color'])
+    bsdf.inputs['Roughness'].default_value = 0.85
+    if emit:
+        tree.links.new(out, bsdf.inputs['Emission Color'])
+        bsdf.inputs['Emission Strength'].default_value = emit
+    obj = plane(name, size_x, size_y, loc, mat, col, None, rot)
+    return obj, mat
+
+
+def build_game_arena(pack):
+    """Returns dict: col, towers {id: {...}}, bridges, ducks. `pack` is commercial/deployed/pack/game."""
+    import json
+    col = collection('ARENA')
+    src = collection('ARENA_SRC')
+    src.hide_viewport = True
+    src.hide_render = True
+    cache = {}
+
+    def model(rel):
+        if rel not in cache:
+            cache[rel] = import_glb(os.path.join(pack, rel), src)
+        return cache[rel]
+
+    def place(rel, x, z, ry=0.0, scale=1.0, team=None, name=None):
+        copies = duplicate(model(rel), col)
+        holder = bpy.data.objects.new(name or os.path.basename(rel), None)
+        col.objects.link(holder)
+        holder.location = gp(x, z)
+        holder.rotation_euler = (0, 0, ry)
+        holder.scale = (scale, scale, scale)
+        for copy in copies:
+            copy.parent = holder
+        if team is not None or rel.endswith('bridge.glb'):
+            tint_team(copies, team)
+        return holder
+
+    # ground: the game's painted texture, 10 tiles per repeat, split by the river
+    ground_mat_file = os.path.join(pack, 'ground.webp')
+    tint = (0.56, 0.56, 0.39)
+    for name, z0, z1 in (('ground_ours', 17.0, 80.0), ('ground_theirs', -48.0, 15.0)):
+        height = z1 - z0
+        obj, _ = textured_plane(name, 140, height, gp(9, (z0 + z1) / 2, 0.0), ground_mat_file, col, repeat=(14, height / 10), tint=(1.5, 1.5, 1.05))
+        obj.data.uv_layers.active  # plane primitive carries UVs
+    bank = material('bank', (0.75, 0.70, 0.58), rough=0.9)
+    for z in (14.85, 17.15):
+        box('bank', (140, 0.3, 0.3), gp(9, z, -0.02), bank, col)
+    water = material('river', (0.04, 0.45, 0.78), rough=0.05, emit=(0.15, 0.6, 0.95), strength=0.5)
+    water.node_tree.nodes['Principled BSDF'].inputs['Transmission Weight'].default_value = 0.3
+    add_bump(water, 1.2, 0.08)
+    box('river', (140, 2.0, 0.1), gp(9, 16.0, -0.35), water, col)
+    ground_under = material('river_bed', (0.05, 0.12, 0.2), rough=0.9)
+    box('river_bed', (140, 2.4, 0.1), gp(9, 16.0, -0.7), ground_under, col)
+
+    layout = json.load(open(os.path.join(pack, 'layout.json')))
+    for item in layout:
+        if item['p'] == 'bridge':
+            continue
+        place(f"props/{item['p']}.glb", item['x'], item['z'], item.get('ry', 0.0), item.get('s', 1.0), name=item['p'])
+    bridges = [place('arena/bridge.glb', x, 16.0, 0.0, 1.0, None, 'bridge') for x in (3.5, 14.5)]
+
+    towers = {}
+    for team in (0, 1):
+        for lane, (x, z) in enumerate(RIG_POS[team]):
+            towers[(team, 'rig', lane)] = {'pos': (x, z), 'alive': place('arena/tower_rig.glb', x, z, 0.0, 1.0, team, f'rig_{team}_{lane}'),
+                                           'ruin': place('arena/tower_rig_ruin.glb', x, z, 0.0, 1.0, team, f'rig_ruin_{team}_{lane}')}
+        x, z = KING_POS[team]
+        towers[(team, 'hq', -1)] = {'pos': (x, z), 'alive': place('arena/battlestation.glb', x, z, 0.0 if team == 0 else math.pi, 1.0, team, f'hq_{team}'),
+                                    'ruin': place('arena/battlestation_ruin.glb', x, z, 0.0, 1.0, team, f'hq_ruin_{team}')}
+    for tower in towers.values():
+        tower['ruin'].hide_render = True
+        for child in tower['ruin'].children_recursive:
+            child.hide_render = True
+
+    back, _ = textured_plane('backdrop', 150, 75, gp(9, -62.0, 22.0), os.path.join(pack, 'backdrop.webp'), col, emit=1.0,
+                             rot=(math.pi / 2, 0, math.pi))
+    back.data.materials[0].node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value = (0, 0, 0, 1)
+    return {'col': col, 'towers': towers, 'bridges': bridges, 'backdrop': back, 'place': place}
