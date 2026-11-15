@@ -52,3 +52,12 @@ arena also looked nothing like the game's Backyard BBQ. Fixes:
    (9, 29.5|2.5). Team 0 (ours) is z high. Characters are about 1.7 tall, towers 4.9: the same scale as the game.
 3. **Story.** The ship carries the deck: 4 characters at the ramp (the hand) and 4 on the bench (the queue). Each real
    play makes the next character jump to the tapped spot; the queue shifts; the jumper pops back in at the end of the line.
+
+## Status after the rework (Nov 15)
+Built: real arena (`sets.build_game_arena`), replay of `pack/match.json` (`scene.py`), 102 shots / 145.5 s (139.5 s + 6 s end card),
+new voices (`voices.py`, 52 clips with the game's own announcer), HUD from real data (`monitor.py`), finish with HUD + tower
+health bars (`finish.py`). `DRY=1` rebuilds only `edl.json` in 30 s (use it while editing shots); the full build takes about 3 min.
+Render: 67 % size, 6 samples, about 19 s a frame (3349 frames). Ranges: local 1-419; workers 420-838, 839-1257, 1258-1676,
+1677-2095, 2096-2514, 2515-2933, 2934-3349. Then `./finish_all.sh` (writes `commercial/output/meme-royale-deployed.mp4`).
+Lessons (also in the playbook): subdivision costs ~130 MB per mesh, so only the ship's cast has it; library passes duplicate
+textures (dedupe by content, never by name: different characters share names like `base_0`).

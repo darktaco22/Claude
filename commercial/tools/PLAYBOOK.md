@@ -99,6 +99,15 @@ those topics with my own code.
   +12 s a frame. Switch them on per shot. 67 % size with 6 samples and OIDN is clean for these characters.
 - Objects created by different helpers can collide by name (`boom` tail boom vs `boom` explosion card): prefix effects.
 
+- **Use the game's own assets and rules.** For a game film, download the real models/textures (`assets/arena/*.glb`,
+  `assets/arenas/<id>/props/*.glb`, `layout.json`, ground/backdrop) and replay a match recorded from the game's own simulation
+  (`deployed/sim/record.mjs`, Node, no browser). It makes the arena and the action recognisable to players. Check the rules
+  first (hand of 4 / queue of 4, Copium cap 10, placement rules): a story that ignores them reads as wrong.
+- Memory: Cycles memory grows with every subdivided mesh (~130 MB each here) and every duplicated texture. 100 characters
+  without subdivision and with deduplicated textures render in about 3 GB; with both it exceeded 14 GB and was killed.
+- Text between camera and subject: characters standing in a row block a front close-up of the row behind. Put the bench in a
+  line along a wall and shoot it from the aisle.
+
 ## Edit and story
 - Write the script first, record narration, then cut shots to the measured line durations.
 - Speed ramps: 0.3–0.5× on impacts only. One joke per shot. Hold the last beat longer than feels natural.
