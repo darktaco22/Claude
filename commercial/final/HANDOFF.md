@@ -71,3 +71,7 @@ Useless, who walks the pitch unmarked, taps the king's tower and wins 3–2. Int
 - Four worker sessions run `./render_worker.sh A B`: 901-1388, 1389-1876, 1877-2364, 2365-2852. They push JPEGs to `frames_jpg/` on this branch.
 - To finish: `git pull`, copy `frames_jpg/*.jpg` into `$W/frames`, check all 2852 frames exist (finish.py takes .png or .jpg),
   then run the finish + ffmpeg lines of `render_all.sh` by hand.
+
+## DONE
+All frames rendered (this machine 1-900, four workers 901-2852), finished and encoded: `commercial/output/meme-royale-the-final.mp4`
+(127.6 s, 1080p, 77 MB, bitrate 5000k because crf 21 gave 135 MB). Mix level checked (mean -16.7 dB, peak -1.3 dB); not listened to by a person.
