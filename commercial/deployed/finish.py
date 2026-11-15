@@ -1,10 +1,11 @@
-"""Finish DEPLOYED: grade, captions, the Thumb's HUD on the top-down shots, banners, end card, and the sound mix.
+"""Finish DEPLOYED: grade, captions, the Thumb's HUD and tower health on the arena shots, banners, end card and the sound mix.
 
     python3 finish.py FRAMES_DIR OUT_DIR VO_DIR [f1,f2,...]
 ->  OUT_DIR/c_####.jpg (1920x1080, 24 fps) + mix.wav        (SOUND_ONLY=1 skips the picture)
 
-Picture frames may be .png or .jpg (workers push JPEGs). Sound uses the game's own effects and music
-(../comeback/audio) plus synthesized engine drone, klaxon, slide whistle and strings. Nobody has listened to the mix.
+Frames may be .png or .jpg. The HUD and the clock come from the recorded match (pack/match.json), the same data that
+drove the animation. Sound: the game's own effects and music (../comeback/audio), its announcer lines (a_*), Kokoro
+voices for the characters and a few synthesized sounds. Nobody has listened to the mix.
 """
 import json
 import math
@@ -18,13 +19,18 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+import monitor
 import textures
 
 A = os.path.join(HERE, '..', 'assets')
 AU = os.path.join(HERE, '..', 'comeback', 'audio')
+PACK = os.path.join(HERE, 'pack')
 E = json.load(open(os.path.join(HERE, 'edl.json')))
+MATCH = json.load(open(os.path.join(PACK, 'match.json')))
+STATE = monitor.State(MATCH)
 SHOTS = E['shots']
 FPS = E['fps']
+PRE = E['pre']
 W, H = 1920, 1080
 N3D = E['last']
 T_CARD = E['t_card']
@@ -32,7 +38,7 @@ T_FILM = E['t_film']
 NF = int(round(T_FILM * FPS))
 FR, OUT, VOD = sys.argv[1], sys.argv[2], sys.argv[3]
 ONLY = [int(x) for x in sys.argv[4].split(',')] if len(sys.argv) > 4 else None
-CARDS_DIR = os.environ.get('CARDS', os.path.join(HERE, 'pack', 'cards'))
+CARDS_DIR = os.environ.get('CARDS', os.path.join(PACK, 'cards'))
 os.makedirs(OUT, exist_ok=True)
 
 INK = (20, 10, 39)
@@ -41,7 +47,7 @@ GOLD = (255, 205, 80)
 COP = (178, 80, 246)
 SPEAKER = {'sarge': ('SARGE', (196, 170, 96)), 'egg': ('CUPSEY', (120, 220, 130)), 'ket': ('KET', (240, 150, 170)),
            'chill': ('CHILL GUY', (226, 178, 120)), 'house': ('CHILLHOUSE', (230, 110, 90)), 'pilot': ('PILOT', (130, 180, 255)),
-           'sys': ('GAME', (200, 140, 255))}
+           'game': ('GAME', (200, 140, 255))}
 EVENTS = E['events']
 
 
@@ -102,8 +108,14 @@ def shot_at(t):
     return next((s for s in SHOTS if s['t0'] <= t < s['t1']), SHOTS[-1])
 
 
+def match_time(t):
+    """Film time to match time (negative before the match)."""
+    s = shot_at(t)
+    return s['a0'] + (t - s['t0']) * s['s0'] - PRE
+
+
 def project(s, t, point):
-    """Screen position of a world point in shot s at film time t (pinhole camera, no handheld shake)."""
+    """Screen position of a world point in shot s at film time t (pinhole camera, no handheld shake); None if behind the camera."""
     u = ease((t - s['t0']) / (s['t1'] - s['t0']))
     p = np.array(s['p0']) + (np.array(s['p1']) - np.array(s['p0'])) * u
     look = np.array(s['l0']) + (np.array(s['l1']) - np.array(s['l0'])) * u
@@ -114,6 +126,8 @@ def project(s, t, point):
     up = np.cross(right, fwd)
     v = np.array(point) - p
     z = float(v @ fwd)
+    if z < 0.3:
+        return None
     lens = s['lens'] + (s['lens1'] - s['lens']) * u
     k = lens / 36.0 * W
     return W / 2 + float(v @ right) / z * k, H / 2 - float(v @ up) / z * k
@@ -138,7 +152,7 @@ def grade(a):
     lum = a.mean(axis=2, keepdims=True)
     a = lum + (a - lum) * 1.1
     a = np.clip((a - 0.01) * 1.06, 0, 1) ** 1.02
-    a = a * np.array([1.02, 1.0, 0.95], np.float32) + 0.03 * (1 - lum) ** 2 * np.array([-0.1, 0.15, 0.5], np.float32)   # warm lights, teal shadows
+    a = a * np.array([1.02, 1.0, 0.95], np.float32) + 0.03 * (1 - lum) ** 2 * np.array([-0.1, 0.15, 0.5], np.float32)
     hi = np.clip((a.max(axis=2, keepdims=True) - 0.76) / 0.24, 0, 1) * a
     small = Image.fromarray((np.clip(hi, 0, 1) * 255).astype(np.uint8)).resize((W // 4, H // 4), Image.BILINEAR)
     bloom = np.asarray(small.filter(ImageFilter.GaussianBlur(10)).resize((W, H), Image.BILINEAR), np.float32) / 255.0
@@ -183,9 +197,6 @@ def draw_title(d, t):
         shown = string[:int(max(0, (t - t0) / 0.045))]
         alpha = 255 * fade(t, t0, t0 + 4.6, 0.4)
         text(d, (96, H - 150), shown, rub(34, 700), rgba(WHITE, alpha), 'lm', 8, 3, rgba(INK, alpha))
-        if int(t * 3) % 2 == 0 and len(shown) < len(string):
-            width = sum(d.textlength(c, font=rub(34, 700)) + 8 for c in shown)
-            d.rectangle((96 + width + 4, H - 168, 96 + width + 22, H - 132), fill=rgba(WHITE, alpha))
     wide = next(s for s in SHOTS if s['name'] == 'hold_wide')
     if wide['t0'] + 0.3 <= t < wide['t1']:
         k = out_back((t - wide['t0'] - 0.3) / 0.45)
@@ -194,89 +205,83 @@ def draw_title(d, t):
         text(d, (W / 2, H / 2 + 110), 'A MEME ROYALE STORY', rub(34, 700), rgba(WHITE, alpha), 'mm', 12, 3, rgba(INK, alpha))
 
 
-_cache = {}
+def banner(d, t, f0, f1, string, color=(150, 20, 30)):
+    if f0 <= t < f1:
+        k = out_back((t - f0) / 0.3)
+        alpha = 255 * fade(t, f0, f1, 0.2)
+        height = 150 * k
+        y = 190
+        d.rectangle((0, y - height / 2, W, y + height / 2), fill=rgba(color, alpha * 0.92))
+        d.rectangle((0, y - height / 2, W, y - height / 2 + 6), fill=rgba(GOLD, alpha))
+        d.rectangle((0, y + height / 2 - 6, W, y + height / 2), fill=rgba(GOLD, alpha))
+        text(d, (W / 2, y), string, lil(72), rgba(WHITE, alpha), 'mm', 3, 5, rgba(INK, alpha))
 
 
-def card_art(uid, size):
-    key = (uid, size)
-    if key not in _cache:
-        art = Image.open(os.path.join(CARDS_DIR, uid + '.webp')).convert('RGBA').resize(size, Image.LANCZOS)
-        mask = Image.new('L', size, 0)
-        ImageDraw.Draw(mask).rounded_rectangle((0, 0, size[0], size[1]), 16, fill=255)
-        art.putalpha(mask)
-        _cache[key] = art
-    return _cache[key]
-
-
-HUD_HAND = {'lmao': (['lmao', 'airdrop', 'chillhouse', 'cupsey'], 4, '2:41'), 'airdrop': (['airdrop', 'chillhouse', 'cupsey'], 3, '2:10'),
-            'chillhouse': (['chillhouse', 'cupsey'], 10, '0:58'), 'cupsey': (['cupsey'], 4, '0:30')}
-COST = {'lmao': 4, 'airdrop': 3, 'chillhouse': 5, 'cupsey': 4}
-
-
-def draw_hud(im, t):
-    """On the top-down shots we see what the Thumb sees: the game's HUD, his card, and his thumb."""
-    for item in events('hud'):
-        if not item['f'] <= t < item['f1']:
-            continue
-        d = ImageDraw.Draw(im, 'RGBA')
-        hand, copium, clock = HUD_HAND[item['card']]
-        d.rectangle((0, 0, W, 86), fill=rgba(INK, 235))
-        text(d, (40, 44), 'ARENA 2  ·  BACKYARD BBQ', lil(40), rgba(GOLD, 255))
-        text(d, (W - 40, 44), clock, lil(46), rgba(WHITE, 255), 'rm')
-        text(d, (W / 2, 44), "THE THUMB'S VIEW", rub(26, 800), rgba((255, 120, 120), 255 if int(t * 2) % 2 == 0 else 150), 'mm', 8)
-        u = (t - item['f']) / (item['f1'] - item['f'])
-        s = shot_at(t)
-        tx, ty = project(s, t, s['l0'])
-        if item.get('target'):
-            radius = 150 + 14 * math.sin(t * 9)
-            d.ellipse((tx - radius, ty - radius, tx + radius, ty + radius), outline=rgba((255, 230, 90), 230), width=10)
-            d.ellipse((tx - radius * 0.55, ty - radius * 0.55, tx + radius * 0.55, ty + radius * 0.55), outline=rgba((255, 230, 90), 150), width=5)
-        press = ease(u / 0.25) * (1 - ease((u - 0.55) / 0.3))                 # the thumb comes down, taps, and leaves
-        textures.thumb(im, int(tx + 60), int(ty + 40 + 520 * (1 - press)), press=press > 0.9)
-        d = ImageDraw.Draw(im, 'RGBA')
-        d.rectangle((0, H - 250, W, H), fill=rgba(INK, 225))
-        card_w, card_h, gap = 150, 188, 22
-        x0 = W / 2 - (len(hand) * card_w + (len(hand) - 1) * gap) / 2
-        for index, uid in enumerate(hand):
-            x = int(x0 + index * (card_w + gap))
-            y = H - 236 - (22 if uid == item['card'] else 0)
-            im.alpha_composite(card_art(uid, (card_w, card_h)), (x, y))
-            d.rounded_rectangle((x - 3, y - 3, x + card_w + 3, y + card_h + 3), 18, outline=rgba(GOLD if uid == item['card'] else INK, 255),
-                                width=6)
-            d.ellipse((x - 14, y - 14, x + 36, y + 36), fill=rgba(COP, 255), outline=rgba(INK, 255), width=4)
-            text(d, (x + 11, y + 11), str(COST[uid]), lil(30), rgba(WHITE, 255), 'mm')
-        bar_x, bar_w = 300, W - 600
-        d.rounded_rectangle((bar_x - 6, H - 40, bar_x + bar_w + 6, H - 10), 10, fill=rgba((10, 5, 20), 255))
-        seg = bar_w / 10
-        for k in range(10):
-            d.rounded_rectangle((bar_x + k * seg + 3, H - 36, bar_x + (k + 1) * seg - 3, H - 14), 6,
-                                fill=rgba(COP if k < copium else (44, 21, 84), 255))
-
-
-def draw_banner(d, t):
-    for item in events('banner'):
-        if item['f'] <= t < item['f1']:
-            k = out_back((t - item['f']) / 0.3)
-            alpha = 255 * fade(t, item['f'], item['f1'], 0.2)
-            height = 150 * k
-            d.rectangle((0, H / 2 - 60 - height / 2, W, H / 2 - 60 + height / 2), fill=rgba((150, 20, 30), alpha * 0.92))
-            d.rectangle((0, H / 2 - 60 - height / 2, W, H / 2 - 60 - height / 2 + 6), fill=rgba(GOLD, alpha))
-            d.rectangle((0, H / 2 - 60 + height / 2 - 6, W, H / 2 - 60 + height / 2), fill=rgba(GOLD, alpha))
-            text(d, (W / 2, H / 2 - 60), item['text'], lil(64), rgba(WHITE, alpha), 'mm', 3, 5, rgba(INK, alpha))
+def draw_banners(d, t):
+    for item in events('tower_down'):
+        banner(d, t, item['f'] + 0.1, item['f'] + 2.4, 'YOUR TOWER FELL' if item['team'] == 0 else 'ENEMY TOWER DOWN!',
+               (150, 20, 30) if item['team'] == 0 else (24, 120, 50))
+    for item in events('overdose'):
+        banner(d, t, item['f'], item['f'] + 2.6, 'COPIUM OVERDOSE  x2', (92, 36, 160))
     for item in events('victory'):
         if item['f'] <= t < item['f1']:
             u = t - item['f']
-            k = out_back(u / 0.4)
             alpha = 255 * fade(t, item['f'], item['f1'], 0.25)
             rng = np.random.default_rng(3)
-            for _ in range(140):                                               # confetti
+            for _ in range(140):
                 x0, speed, phase, size = rng.uniform(0, W), rng.uniform(260, 620), rng.uniform(0, 6.28), rng.uniform(8, 18)
                 color = [(255, 205, 80), (178, 80, 246), (90, 200, 255), (255, 110, 130), (120, 230, 140)][int(rng.integers(0, 5))]
                 y = -60 + speed * u + 40 * math.sin(phase + u * 3)
                 x = x0 + 50 * math.sin(phase + u * 2.2)
                 if 0 < y < H:
                     d.rectangle((x, y, x + size, y + size * 0.6), fill=rgba(color, alpha))
-            text(d, (W / 2, 250 + 60 * (1 - k)), 'VICTORY!', lil(260), rgba(GOLD, alpha), 'mm', 10, 12, rgba(INK, alpha))
+            text(d, (W / 2, 250 + 60 * (1 - out_back(u / 0.4))), 'VICTORY!', lil(260), rgba(GOLD, alpha), 'mm', 10, 12, rgba(INK, alpha))
+
+
+TOWER_MAX = {'rig': 2600, 'hq': 4400}
+
+
+def draw_game_hud(im, t, s):
+    """The arena shots carry the game's HUD: clock and score on top, the Thumb's tray, and the towers' health bars."""
+    m = match_time(t)
+    state = STATE.at(m)
+    d = ImageDraw.Draw(im, 'RGBA')
+    # tower health bars, projected from the recorded towers
+    frame = STATE.frame(max(0.0, m))
+    for e in frame['e']:
+        if e[1] != 't' or e[9]:
+            continue
+        x, z = e[4], e[5]
+        spot = project(s, t, (x - 9.0, 16.0 - z, 5.6 if e[2] == 'rig' else 6.8))
+        if spot is None or not (-100 < spot[0] < W + 100 and -100 < spot[1] < H + 100):
+            continue
+        scale = max(0.5, min(1.6, 38.0 / max(6.0, np.linalg.norm(np.array(s['p0']) - np.array((x - 9.0, 16.0 - z, 3.0))))))
+        bw, bh = 150 * scale, 22 * scale
+        fill = max(0.0, min(1.0, e[8] / TOWER_MAX[e[2]]))
+        color = (90, 230, 100) if e[3] == 0 else (255, 80, 100)
+        d.rounded_rectangle((spot[0] - bw / 2 - 3, spot[1] - bh / 2 - 3, spot[0] + bw / 2 + 3, spot[1] + bh / 2 + 3), 8 * scale, fill=rgba(INK, 235))
+        d.rounded_rectangle((spot[0] - bw / 2, spot[1] - bh / 2, spot[0] - bw / 2 + bw * fill, spot[1] + bh / 2), 6 * scale, fill=rgba(color, 255))
+        text(d, (spot[0], spot[1]), str(int(e[8])), lil(int(20 * scale)), rgba(WHITE, 255), 'mm', 0, 3, rgba(INK, 255))
+    # top bar
+    d.rectangle((0, 0, W, 70), fill=rgba(INK, 215))
+    text(d, (40, 36), 'ARENA 2  ·  BACKYARD BBQ', lil(34), rgba(GOLD, 255))
+    text(d, (W / 2, 36), f"{state['ws'][0]}  :  {state['ws'][1]}", lil(44), rgba(WHITE, 255), 'mm')
+    text(d, (W - 40, 36), monitor.clock_text(state['clock']), lil(44), rgba((255, 120, 120) if state['clock'] < 60 else WHITE, 255), 'rm')
+    # tray
+    tray_box = (24, H - 236, 940, 212)
+    monitor.tray(im, state, CARDS_DIR, tray_box, 1.55)
+
+
+def draw_time_jump(d, t):
+    """A cut that skips match time gets the clock for a moment."""
+    for previous, current in zip(SHOTS, SHOTS[1:]):
+        gap = current['a0'] - (previous['a0'] + (previous['t1'] - previous['t0']) * previous['s0'])
+        if abs(gap) > 1.5 and current['game']:
+            u = t - current['t0']
+            if 0 <= u < 1.3:
+                m = current['a0'] - PRE
+                alpha = 255 * fade(t, current['t0'], current['t0'] + 1.3, 0.25)
+                text(d, (W / 2, 160), monitor.clock_text(STATE.frame(max(0.0, m))['clock']), lil(150), rgba(WHITE, alpha), 'mm', 4, 9, rgba(INK, alpha))
 
 
 BG = None
@@ -303,21 +308,17 @@ def end_card(t):
     k2 = ease((u - 0.9) / 0.5)
     text(d, (W / 2, 740), 'FREE TO PLAY', rub(56, 800), rgba((255, 236, 200), 255 * k2), 'mm', 10)
     text(d, (W / 2, 815), 'memeroyale.imaginestudio.fun', rub(32, 500), rgba(WHITE, 190 * k2), 'mm', 2)
-    k3 = ease((u - 3.4) / 0.4)
-    text(d, (W / 2, 905), 'PLAY BETTER THAN THIS GUY', rub(30, 800), rgba(GOLD, 230 * k3), 'mm', 7)
-    if k3 > 0:
-        textures.thumb(im, W - 330, int(H - 300 + 400 * (1 - out_back(k3))))
+    k3 = ease((u - 2.6) / 0.4)
+    text(d, (W / 2, 905), 'TAP WITH PURPOSE', rub(30, 800), rgba(GOLD, 230 * k3), 'mm', 7)
     d = ImageDraw.Draw(im, 'RGBA')
-    draw_captions(d, t, y=H - 84)
     fade_out = ease((T_FILM - t) / 0.5)
     if fade_out < 1:
         im = Image.fromarray((np.asarray(im.convert('RGB'), np.float32) * fade_out).astype(np.uint8))
     return im.convert('RGB')
 
 
-BOOM = first('boom')['f']
-POP = first('pop')['f']
-FREEZE = first('freeze')['f']
+BOOMS = [item['f'] for item in events('tower_down')]
+JUMPS = [item['f'] for item in events('jump')]
 
 
 def frame(f):
@@ -329,24 +330,23 @@ def frame(f):
         src = Image.open(path).convert('RGB').resize((W, H), Image.LANCZOS)
         src = src.filter(ImageFilter.UnsharpMask(radius=1.6, percent=55, threshold=2))
         a = np.asarray(src, np.float32) / 255.0
-        zoom = 1.0 + 0.06 * decay(t, BOOM, 0.7) ** 2 + 0.03 * decay(t, POP, 0.4) ** 2
+        zoom = 1.0 + sum(0.05 * decay(t, b, 0.6) ** 2 for b in BOOMS)
         a = grade(punch(a, zoom))
-        flash = 0.4 * decay(t, BOOM, 0.2)
+        flash = max([0.35 * decay(t, b, 0.2) for b in BOOMS] + [0.0])
         if flash > 0:
             a = a * (1 - flash) + np.array([1.0, 0.9, 0.75], np.float32) * flash * 1.15
-        if FREEZE <= t < FREEZE + 3.0:                                         # the world goes a little grey while they are frozen
-            lum = a.mean(axis=2, keepdims=True)
-            k = 0.35 * fade(t, FREEZE, FREEZE + 3.0, 0.3)
-            a = a * (1 - k) + lum * k
         a = a * VIG * ease(t / 0.8) * ease((T_CARD - t) / 0.12)
         a = a + np.random.default_rng(f).normal(0, 0.007, (H, W, 1)).astype(np.float32)
         im = Image.fromarray((np.clip(a, 0, 1) * 255).astype(np.uint8)).convert('RGBA')
-        draw_hud(im, t)
+        s = shot_at(t)
+        in_game = s.get('game', False)
+        if in_game:
+            draw_game_hud(im, t, s)
         d = ImageDraw.Draw(im, 'RGBA')
         draw_title(d, t)
-        draw_banner(d, t)
-        in_hud = any(item['f'] <= t < item['f1'] for item in events('hud'))
-        draw_captions(d, t, y=H - 330 if in_hud else None)
+        draw_banners(d, t)
+        draw_time_jump(d, t)
+        draw_captions(d, t, y=H - 316 if in_game else None)
         im = im.convert('RGB')
     im.save(os.path.join(OUT, f'c_{f:04d}.jpg'), quality=95, subsampling=0)
 
@@ -405,17 +405,6 @@ def strings(m, t, dur, gain=0.1, attack=1.2, release=1.6, bright=7):
     put('mus', mono(signal * envelope), t, gain / 3)
 
 
-def brass(m, t, dur, gain=0.12):
-    length = int((dur + 0.25) * SR)
-    x = np.arange(length) / SR
-    signal = np.zeros(length)
-    for detune in (-0.04, 0.05):
-        for h in range(1, 13):
-            signal += np.sin(2 * np.pi * midi(m + detune) * h * x) / h ** 0.9 * np.clip(x / (0.02 + 0.01 * h), 0, 1)
-    envelope = np.clip(x / 0.03, 0, 1) * np.clip((dur + 0.25 - x) / 0.25, 0, 1) * (0.75 + 0.25 * np.exp(-x / 0.15))
-    put('mus', mono(signal * envelope), t, gain / 4)
-
-
 def snare(t, gain=0.2):
     x = np.arange(int(0.16 * SR)) / SR
     signal = rng.normal(0, 1, len(x)) * np.exp(-x / 0.035) + 0.5 * np.sin(2 * np.pi * 190 * x) * np.exp(-x / 0.02)
@@ -437,7 +426,6 @@ def whoosh(t, dur=1.0, gain=0.4):
 
 
 def tone(t, f0, f1, dur, gain=0.2, vibrato=0.0, shape=1.0):
-    """A sine glide from f0 to f1: slide whistle (falling), squeak (rising), blips."""
     x = np.arange(int(dur * SR)) / SR
     u = x / dur
     freq = f0 * (f1 / f0) ** (u ** shape)
@@ -446,46 +434,33 @@ def tone(t, f0, f1, dur, gain=0.2, vibrato=0.0, shape=1.0):
     put('fx', mono(signal), t, gain)
 
 
-def klaxon(t, dur=1.4, gain=0.22):
+def klaxon(t, dur=1.2, gain=0.2):
     x = np.arange(int(dur * SR)) / SR
     gate = (np.sin(2 * np.pi * 2.2 * x) > -0.2).astype(np.float32)
     signal = np.sign(np.sin(2 * np.pi * 310 * x)) * 0.5 + np.sign(np.sin(2 * np.pi * 466 * x)) * 0.35
     put('fx', mono(lowpass(signal, 8) * gate * np.clip((dur - x) / 0.1, 0, 1)), t, gain)
 
 
-def splash(t, gain=0.5):
-    x = np.arange(int(1.6 * SR)) / SR
-    signal = lowpass(rng.normal(0, 1, len(x)), 14) * 4 * np.exp(-x / 0.45) * np.clip(x / 0.03, 0, 1)
-    put('fx', mono(signal), t, gain)
-    thud(t, 0.5, 60)
-
-
-def boing(t, gain=0.3):
-    x = np.arange(int(0.9 * SR)) / SR
-    freq = 120 + 260 * np.exp(-x / 0.25) * (1 + 0.5 * np.sin(2 * np.pi * 11 * x))
-    signal = np.sin(2 * np.pi * np.cumsum(freq) / SR) * np.exp(-x / 0.35)
-    put('fx', mono(signal), t, gain)
-
-
 def is_hold(s):
-    return s['p0'][2] > 30 and not s['name'].startswith('thumb_view')
+    return not s.get('game', False) and s['name'] != 'ext_ship' and not s['name'].startswith(('fall_',))
 
 
-# dialogue: levelled; the pilot through a radio, the game's announcer slightly bright
+# dialogue: levelled; the pilot through a radio; the game's announcer as recorded
 for cue in E['cues']:
     x = load(os.path.join(VOD, cue['id'] + '.wav'))
-    x = x * (0.085 / (float(np.sqrt((x ** 2).mean())) + 1e-9))
+    target = 0.11 if cue['who'] == 'game' else 0.085
+    x = x * (target / (float(np.sqrt((x ** 2).mean())) + 1e-9))
     if cue['who'] == 'pilot':
         m = x[:, 0]
-        m = m - lowpass(m, 60)                                                  # thin it out, add hiss and a click
+        m = m - lowpass(m, 60)
         m = np.tanh(lowpass(m, 5) * 5) * 0.4 + rng.normal(0, 0.004, len(m))
         x = mono(m)
         tone(cue['f'] - 0.12, 1800, 1800, 0.06, 0.08)
         tone(cue['f'] + cue['dur'] + 0.05, 1400, 1400, 0.06, 0.08)
     put('vo', x, cue['f'], 1.0)
 
-# ambience: engine drone in the hold (louder wind once the ramp is open), a quiet garden outside
-t_ramp = first('ramp')['f']
+# ambience: the engines inside the ship, wind and a garden outside
+t_ramp = first('match_start')['f']
 length = n
 x = np.arange(length) / SR
 drone = (np.sin(2 * np.pi * 55 * x) + 0.6 * np.sin(2 * np.pi * 82.5 * x + 0.5 * np.sin(2 * np.pi * 0.7 * x)) + 0.4 * np.sin(2 * np.pi * 110.3 * x)) * 0.05
@@ -496,12 +471,17 @@ wind_env = np.zeros(length, np.float32)
 yard_env = np.zeros(length, np.float32)
 for s in SHOTS:
     i0, i1 = int(s['t0'] * SR), int(s['t1'] * SR)
-    if is_hold(s):
-        hold_env[i0:i1] = 1.0
-        wind_env[i0:i1] = 0.9 if s['t0'] >= t_ramp else 0.0
-    else:
+    if s.get('game', False):
         yard_env[i0:i1] = 1.0
-        wind_env[i0:i1] = 0.25
+        wind_env[i0:i1] = 0.2
+    elif s['name'] == 'ext_ship':
+        hold_env[i0:i1] = 0.7
+        wind_env[i0:i1] = 0.8
+    elif s['name'].startswith('fall_'):
+        wind_env[i0:i1] = 1.0
+    else:
+        hold_env[i0:i1] = 1.0
+        wind_env[i0:i1] = 0.7 if s['t0'] >= t_ramp else 0.0
 smooth = int(0.08 * SR)
 for env_ in (hold_env, wind_env, yard_env):
     env_[:] = np.convolve(env_, np.ones(smooth) / smooth, 'same')
@@ -515,89 +495,66 @@ for k in range(int(END * 1.3)):
     birds[i:i + len(chirp)] += chirp[:max(0, length - i)] * rng.uniform(0.2, 0.6)
 BUS['amb'] += mono(birds * yard_env * 0.05)
 
-# music: a snare march under the briefing, the game's battle music on the ground, strings for the speech
-brief0 = next(s for s in SHOTS if s['name'] == 'hold_wide')['t0']
-brief1 = t_ramp
-beat = 0.5
+# music: a snare march in the briefing, the game's battle music on the arena shots, its overdose music from 2:00
+brief0 = SHOTS[0]['t0']
+beat_len = 0.5
 k = 0
-while brief0 + k * beat < brief1:
-    tb = brief0 + k * beat
-    snare(tb, 0.1)
+while brief0 + k * beat_len < t_ramp:
+    tb = brief0 + k * beat_len
+    snare(tb, 0.08)
     if k % 2 == 1:
-        snare(tb + beat * 0.5, 0.06)
-        snare(tb + beat * 0.75, 0.06)
+        snare(tb + beat_len * 0.5, 0.05)
     if k % 8 == 0:
-        thud(tb, 0.25, 60, 'mus')
+        thud(tb, 0.2, 60, 'mus')
     k += 1
+for m_, dt, dur in ((50, 0.0, 14.0), (57, 0.0, 14.0), (62, 2.0, 12.0), (66, 5.0, 9.0)):
+    strings(m_, brief0 + 2.0 + dt, min(dur, t_ramp - brief0 - 3.0), 0.06, attack=2.5, release=1.0, bright=5)
 battle = game('mus_battle')
-loop = np.concatenate([battle] * (int(END * SR / len(battle)) + 2))[:n]
+overdose_music = game('mus_overdose')
+t_od = first('overdose')['f']
 music_env = np.zeros(n, np.float32)
-t_swell = first('music_swell')['f']
-t_scream = first('scream')['f']
+od_env = np.zeros(n, np.float32)
 for s in SHOTS:
-    if not is_hold(s) and not (t_swell <= s['t0'] < FREEZE + 4) and s['name'] != 'ext_ship':
-        music_env[int(s['t0'] * SR):int(s['t1'] * SR)] = 1.0
-music_env[int(t_ramp * SR):int(t_swell * SR)] = np.maximum(music_env[int(t_ramp * SR):int(t_swell * SR)], 0.35)
-music_env[int(FREEZE * SR):] = 0.0
-music_env = np.convolve(music_env, np.ones(int(0.25 * SR)) / int(0.25 * SR), 'same')
-BUS['mus'] += loop * music_env[:, None] * 0.22
-for m, dt, dur in ((50, 0.0, 9.0), (57, 0.0, 9.0), (62, 1.0, 8.0), (66, 3.2, 5.8), (69, 5.2, 4.0), (74, 6.6, 2.8)):   # the speech: a noble D major
-    strings(m, t_swell + dt, min(dur, t_scream - t_swell - dt + 0.4), 0.11, attack=1.6, release=0.5)
-for m in (38, 45, 50, 57, 62):                                                  # opening pad
-    strings(m, 0.2, 7.5, 0.06, attack=2.5, release=2.0, bright=5)
-
-# effects
-for item in events('klaxon'):
-    klaxon(item['f'])
-whoosh(t_ramp, 2.2, 0.5)
-thud(t_ramp + 2.0, 0.6, 70)
-put('fx', game('laugh_blast'), first('laugh')['f'], 0.5)
-fall_whistles = [(first('laugh')['f'] + 1.6, 2.2), (first('pop')['f'] + 0.1, 2.1), (t_scream, 4.6)]
-for t0, dur in fall_whistles:
-    tone(t0, 1900, 420, dur, 0.1, vibrato=0.6, shape=1.4)
-tone(t_scream, 900, 1500, 0.5, 0.12, vibrato=2.0)                               # the egg's yelp on the way out
-tone(t_scream + 0.5, 1500, 700, 3.6, 0.07, vibrato=3.0)
-for item in events('land'):
-    put('fx', game('deploy_drop'), item['f'] - 0.05, 0.6)
-    thud(item['f'], 0.5, 80)
-for item in events('bonk'):
-    put('fx', game('punch_heavy'), item['f'], 0.55)
-put('fx', game('unit_die'), first('unit_die')['f'], 0.6)
-put('fx', game('swing'), first('kick')['f'] - 0.1, 0.6)
-thud(first('kick')['f'], 0.6, 110)
-put('fx', game('deploy_spell'), first('coins')['f'], 0.5)
-for item in events('plop'):
-    tone(item['f'], rng.uniform(900, 1500), rng.uniform(500, 700), 0.09, 0.05 if item.get('quiet') else 0.16)
-lucky = [item for item in events('plop') if not item.get('quiet')][0]
-put('fx', game('w_gain'), lucky['f'], 0.5)
-put('fx', game('tower_destroy'), BOOM, 0.8)
-put('fx', game('rocket_explode'), BOOM, 0.6)
-put('fx', game('emote_pop'), first('emote')['f'], 0.7)
-alarm = first('alarm')
-tb = alarm['f']
-while tb < alarm['f1']:
-    tone(tb, 880, 880, 0.18, 0.07)
-    tone(tb + 0.25, 660, 660, 0.18, 0.07)
-    tb += 0.55
-thud(first('thud')['f'], 0.9, 70)
-put('fx', game('house_stomp'), first('thud')['f'], 0.6)
-tone(POP, 300, 1400, 0.09, 0.3)
-thud(POP, 0.5, 140)
-boing(first('boing')['f'], 0.4)
-splash(first('splash')['f'], 0.5)
-tone(first('squeak')['f'], 1500, 2300, 0.14, 0.2)
-tone(first('squeak')['f'] + 0.16, 2300, 1400, 0.18, 0.2)
-put('fx', game('swing'), first('shove')['f'], 0.6)
-tone(FREEZE, 600, 90, 0.5, 0.25, shape=0.6)                                     # everything winds down
-for item in events('blip'):
-    tone(item['f'], 1200, 800, 0.1, 0.12)
-for item in events('clunk'):
-    thud(item['f'], 0.5, 120)
-put('fx', game('victory'), first('victory')['f'], 0.6)
-put('fx', game('crowd_cheer'), first('cheer')['f'], 0.35)
-put('fx', game('crowd_boo'), first('groan')['f'], 0.3)
+    if s['t0'] >= t_ramp:
+        i0, i1 = int(s['t0'] * SR), int(s['t1'] * SR)
+        (od_env if (t_od <= s['t0'] < t_od + 24.0) else music_env)[i0:i1] = 1.0 if s.get('game', False) else 0.45
+for env_ in (music_env, od_env):
+    env_[:] = np.convolve(env_, np.ones(int(0.25 * SR)) / int(0.25 * SR), 'same')
+loop = np.concatenate([battle] * (int(END * SR / len(battle)) + 2))[:n]
+loop_od = np.concatenate([overdose_music] * (int(END * SR / len(overdose_music)) + 2))[:n]
+BUS['mus'] += loop * music_env[:, None] * 0.2 + loop_od * od_env[:, None] * 0.22
 menu = game('mus_menu')
 put('mus', menu[:int((T_FILM - T_CARD + 0.5) * SR)], T_CARD, 0.3)
+
+# effects, each on its own recorded event
+put('fx', game('battle_start'), first('match_start')['f'], 0.5)
+for item in events('klaxon'):
+    klaxon(item['f'])
+for item in events('jump'):
+    whoosh(item['f'] - 0.1, 1.4, 0.35)
+for item in events('land'):
+    put('fx', game('deploy_spell' if item.get('spell') else 'deploy_drop'), item['f'] - 0.05, 0.55)
+    thud(item['f'], 0.45, 80)
+for item in events('card_pop'):
+    put('fx', game('emote_pop'), item['f'], 0.18)
+for item in events('tower_down'):
+    put('fx', game('tower_destroy'), item['f'], 0.8)
+    put('fx', game('rocket_explode'), item['f'], 0.55)
+for item in events('coins'):
+    for j in range(14):
+        tone(item['f'] + 0.2 + j * 0.09, rng.uniform(1100, 2000), rng.uniform(700, 1000), 0.08, 0.06)
+for item in events('hit'):
+    put('fx', game('punch_heavy' if item.get('heavy') else 'tower_hit'), item['f'], 0.18, pan=rng.uniform(-0.5, 0.5))
+for item in events('boom'):
+    put('fx', game('rocket_explode'), item['f'], 0.25, pan=rng.uniform(-0.5, 0.5))
+for item in events('tshot'):
+    put('fx', game('tower_shot'), item['f'], 0.2)
+for item in events('illegal'):
+    tone(item['f'], 220, 140, 0.35, 0.22, shape=0.7)
+    tone(item['f'] + 0.12, 220, 140, 0.35, 0.18, shape=0.7)
+put('fx', game('victory'), first('victory')['f'], 0.55)
+put('fx', game('crowd_cheer'), first('cheer')['f'], 0.4)
+put('fx', game('crowd_ooh'), BOOMS[0] + 0.3, 0.3) if BOOMS else None
 
 # mix: music, ambience and effects duck under speech
 speech = np.abs(BUS['vo']).max(axis=1)

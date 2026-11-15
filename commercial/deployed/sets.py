@@ -785,9 +785,9 @@ def build_game_arena(pack):
     # ground: the game's painted texture, 10 tiles per repeat, split by the river
     ground_mat_file = os.path.join(pack, 'ground.webp')
     tint = (0.56, 0.56, 0.39)
-    for name, z0, z1 in (('ground_ours', 17.0, 80.0), ('ground_theirs', -48.0, 15.0)):
+    for name, z0, z1 in (('ground_ours', 17.0, 400.0), ('ground_theirs', -380.0, 15.0)):
         height = z1 - z0
-        obj, _ = textured_plane(name, 140, height, gp(9, (z0 + z1) / 2, 0.0), ground_mat_file, col, repeat=(14, height / 10), tint=(1.5, 1.5, 1.05))
+        obj, _ = textured_plane(name, 800, height, gp(9, (z0 + z1) / 2, 0.0), ground_mat_file, col, repeat=(80, height / 10), tint=(1.5, 1.5, 1.05))
         obj.data.uv_layers.active  # plane primitive carries UVs
     bank = material('bank', (0.75, 0.70, 0.58), rough=0.9)
     for z in (14.85, 17.15):

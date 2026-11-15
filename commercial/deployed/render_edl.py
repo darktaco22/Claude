@@ -78,7 +78,8 @@ def set_cards(anim_time):
     """Show each explosion card at the video frame that matches the animation time (60 fps source)."""
     for card, obj, node in CARDS:
         k = int((anim_time - card['t0']) * card['fps']) + 1
-        visible = 1 <= k <= card['n']
+        visible = 1 <= k <= card['n'] or card.get('always', False)
+        k = max(1, min(card['n'], k))
         obj.hide_render = not visible
         if visible:
             # Blender shows video frame (scene frame - frame_start + 1), clamped to the clip BEFORE any offset,
