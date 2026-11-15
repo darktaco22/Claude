@@ -387,23 +387,26 @@ def fall_point(t, t0, t1, start, end):
     return pos
 
 
-def fall_shot(name, end, t0, t1, start, land, offset, lens, speed, look_up=0.8):
+def fall_shot(name, end, t0, t1, start, land, offset, lens, speed, look_up=0.8, spin=1.0):
     """The camera drops beside a falling character and keeps it framed. The fall accelerates, so the shot is cut
     into short linear pieces (invisible cuts: each starts where the last ended)."""
     offset = Vector(offset)
-    first, pieces = CUT, 5
+    first, pieces = CUT, 8
     for index in range(pieces):
         ta = first + (end - first) * index / pieces
         tb = first + (end - first) * (index + 1) / pieces
         a, b = fall_point(ta, t0, t1, start, land), fall_point(tb, t0, t1, start, land)
         ka, kb = 1 + 0.25 * index / pieces, 1 + 0.25 * (index + 1) / pieces
-        shot(name, tb, tuple(a + offset * ka), tuple(a + Vector((0, 0, look_up))), lens, p1=tuple(b + offset * kb),
-             l1=tuple(b + Vector((0, 0, look_up))), space='world', speed=speed, fstop=4.0, hand=None, ec=3)
+        # the body tumbles about its feet, so its middle swings around the rig point
+        za = look_up * math.cos(math.tau * spin * (ta - t0) / (t1 - t0))
+        zb = look_up * math.cos(math.tau * spin * (tb - t0) / (t1 - t0))
+        shot(name, tb, tuple(a + offset * ka), tuple(a + Vector((0, 0, za))), lens, p1=tuple(b + offset * kb),
+             l1=tuple(b + Vector((0, 0, zb))), space='world', speed=speed, fstop=4.0, hand=None, ec=3)
 
 
 fall(lmao, T_JUMP1, T_LAND1, H(0.0, 8.4, -0.55), LAND1, spin=1.0)
 shot('lmao_leaps', T_JUMP1 + 0.45, (1.9, 10.6, 0.1), (0.0, 7.2, 0.9), 32, fstop=4.0, hand=('HANDYCAM_RUN', 0.3))
-fall_shot('lmao_falls', T_JUMP1 + 1.5, T_JUMP1, T_LAND1, H(0.0, 8.4, -0.55), LAND1, (2.4, 3.2, -0.6), 28, 0.55, look_up=0.4)
+fall_shot('lmao_falls', T_JUMP1 + 1.5, T_JUMP1, T_LAND1, H(0.0, 8.4, -0.55), LAND1, (2.4, 3.2, -0.3), 28, 0.55, look_up=0.85, spin=1.0)
 shot('thumb_view_1', T_LAND1 + 0.35, (-5.5, -1.0, 40.0), (-5.5, 5.4, 0.0), 75, space='world', fstop=8.0, hand=None)
 event('hud', T_JUMP1 + 1.5, until=T_LAND1 + 0.35, card='lmao')
 event('land', T_LAND1)
@@ -630,7 +633,7 @@ egg.at(T_EGG_OUT, pos=H(-0.2, 8.3, 0.0), tilt=0.6)
 fall(egg, T_EGG_OUT, T_EGG_LAND, H(-0.2, 8.3, 0.0), EGG_LAND, spin=2.0, clip='hit')
 event('scream', T_EGG_OUT)
 shot('egg_out', T_EGG_OUT + 0.3, (1.6, 10.8, 0.4), (-0.2, 7.0, 1.0), 32, fstop=4.0, hand=('HANDYCAM_RUN', 0.4))
-fall_shot('egg_falls', T_EGG_OUT + 1.45, T_EGG_OUT, T_EGG_LAND, H(-0.2, 8.3, 0.0), EGG_LAND, (1.8, -2.8, 0.2), 30, 0.4, look_up=0.7)
+fall_shot('egg_falls', T_EGG_OUT + 1.45, T_EGG_OUT, T_EGG_LAND, H(-0.2, 8.3, 0.0), EGG_LAND, (1.8, -2.8, 0.0), 30, 0.4, look_up=0.75, spin=2.0)
 shot('thumb_view_egg', T_EGG_LAND + 0.2, (0.0, -14.0, 40.0), (0.0, -8.0, 0.0), 70, space='world', fstop=8.0, hand=None)
 event('hud', T_EGG_OUT + 1.45, until=T_EGG_LAND + 0.2, card='cupsey')
 event('land', T_EGG_LAND)

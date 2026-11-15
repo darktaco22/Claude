@@ -34,3 +34,5 @@ names, the WAGMI emote, the bot name. Card art on the monitor and HUD is the gam
 already in `pack/`; to re-record: `python3 voices.py KOKORO_DIR pack/vo`, to redraw: `python3 textures.py pack/cards pack/tex`.
 
 ## Progress log
+- Full render started. Ranges: this machine 1-437; workers 438-875, 876-1312, 1313-1749, 1750-2187, 2188-2624, 2625-3062, 3063-3499.
+  Each worker runs `./render_worker.sh A B` and pushes to `commercial/deployed/frames_jpg`. When all 3499 are in: `./finish_all.sh`.
