@@ -354,7 +354,7 @@ def build_ship(tex_dir):
 
 
 # ------------------------------------------------------------------ sky and sun
-def world(hdri_path, strength=1.0, rotation_deg=0.0):
+def world(hdri_path, strength=1.0, rotation_deg=0.0, camera_gain=0.45):
     wld = bpy.data.worlds.new('sky')
     bpy.context.scene.world = wld
     wld.use_nodes = True
@@ -367,8 +367,14 @@ def world(hdri_path, strength=1.0, rotation_deg=0.0):
     tree.links.new(coord.outputs['Generated'], mapping.inputs['Vector'])
     tree.links.new(mapping.outputs['Vector'], env.inputs['Vector'])
     background = tree.nodes['Background']
-    background.inputs['Strength'].default_value = strength
     tree.links.new(env.outputs['Color'], background.inputs['Color'])
+    # the camera sees a darker sky than the one that lights the scene, so it keeps its colour instead of clipping
+    path = tree.nodes.new('ShaderNodeLightPath')
+    mix = tree.nodes.new('ShaderNodeMix')
+    mix.inputs['A'].default_value = strength
+    mix.inputs['B'].default_value = strength * camera_gain
+    tree.links.new(path.outputs['Is Camera Ray'], mix.inputs['Factor'])
+    tree.links.new(mix.outputs['Result'], background.inputs['Strength'])
     return wld
 
 
@@ -384,3 +390,247 @@ def sun(heading_deg=180.0, elevation_deg=14.0, energy=4.0, color=(1.0, 0.72, 0.4
     direction = Vector((math.sin(h) * math.cos(e), math.cos(h) * math.cos(e), -math.sin(e)))
     obj.rotation_euler = direction.to_track_quat('-Z', 'Y').to_euler()
     return obj
+
+
+# ------------------------------------------------------------------ the Backyard BBQ arena
+# The units are toys in a real backyard: props are about six times life size. Our side is y < 0 (blue), the
+# opponent's y > 0 (red). The paddling pool is the river, with a plank bridge on each lane (x = -5.5 and 5.5).
+LANE = 5.5
+TOWERS = {'our_left': (-LANE, -9.0), 'our_right': (LANE, -9.0), 'our_king': (0.0, -13.5),
+          'their_left': (-LANE, 9.0), 'their_right': (LANE, 9.0), 'their_king': (0.0, 13.5)}
+
+
+def lawn_material():
+    mat = bpy.data.materials.new('lawn')
+    mat.use_nodes = True
+    tree = mat.node_tree
+    bsdf = tree.nodes['Principled BSDF']
+    coord = tree.nodes.new('ShaderNodeTexCoord')
+    wave = tree.nodes.new('ShaderNodeTexWave')                  # mown stripes
+    wave.inputs['Scale'].default_value = 0.42
+    wave.inputs['Distortion'].default_value = 0.6
+    wave.inputs['Detail'].default_value = 1.0
+    noise = tree.nodes.new('ShaderNodeTexNoise')
+    noise.inputs['Scale'].default_value = 2.2
+    noise.inputs['Detail'].default_value = 8
+    ramp = tree.nodes.new('ShaderNodeValToRGB')
+    ramp.color_ramp.elements[0].color = (0.085, 0.2, 0.03, 1)
+    ramp.color_ramp.elements[1].color = (0.2, 0.36, 0.06, 1)
+    mix = tree.nodes.new('ShaderNodeMath')
+    mix.operation = 'ADD'
+    scale = tree.nodes.new('ShaderNodeMath')
+    scale.operation = 'MULTIPLY'
+    scale.inputs[1].default_value = 0.45
+    tree.links.new(coord.outputs['Object'], wave.inputs['Vector'])
+    tree.links.new(coord.outputs['Object'], noise.inputs['Vector'])
+    tree.links.new(noise.outputs['Fac'], scale.inputs[0])
+    tree.links.new(wave.outputs['Fac'], mix.inputs[0])
+    tree.links.new(scale.outputs[0], mix.inputs[1])
+    tree.links.new(mix.outputs[0], ramp.inputs['Fac'])
+    tree.links.new(ramp.outputs['Color'], bsdf.inputs['Base Color'])
+    bsdf.inputs['Roughness'].default_value = 0.9
+    return mat
+
+
+def tower(name, x, y, team, col, king=False):
+    """Toy tower: stone body, team-coloured cap with battlements, a cannon on top. Returns its parts for wrecking."""
+    stone = _shared('stone', lambda: add_bump(material('stone', (0.5, 0.48, 0.45), rough=0.85), 2.5, 0.5))
+    color = (0.1, 0.3, 0.95) if team == 'blue' else (0.9, 0.12, 0.1)
+    team_mat = _shared('team_' + team, lambda: material('team_' + team, color, rough=0.45))
+    gold = _shared('gold', lambda: material('gold', (1.0, 0.72, 0.2), rough=0.3, metal=1.0))
+    dark = _shared('gun', lambda: material('gun', (0.05, 0.05, 0.06), rough=0.4, metal=0.8))
+    width, height = (3.2, 4.2) if king else (2.3, 3.0)
+    root = bpy.data.objects.new(name, None)
+    col.objects.link(root)
+    root.location = (x, y, 0)
+    parts = [box(name + '_body', (width, width, height), (0, 0, height / 2), stone, col, root, bevel=0.08),
+             box(name + '_band', (width + 0.12, width + 0.12, 0.35), (0, 0, height * 0.55), team_mat, col, root, bevel=0.04),
+             box(name + '_cap', (width + 0.4, width + 0.4, 0.4), (0, 0, height + 0.2), team_mat, col, root, bevel=0.06)]
+    count = 4 if king else 3
+    for i in range(count):
+        for j in range(count):
+            if 0 < i < count - 1 and 0 < j < count - 1:
+                continue
+            step = (width + 0.4 - 0.5) / (count - 1)
+            parts.append(box(name + '_merlon', (0.5, 0.5, 0.5), (-(width + 0.4) / 2 + 0.25 + i * step, -(width + 0.4) / 2 + 0.25 + j * step,
+                                                              height + 0.65), stone, col, root, bevel=0.04))
+    facing = 1 if team == 'blue' else -1
+    parts.append(sphere(name + '_gun', 0.55 if king else 0.42, (0, 0, height + 0.75), dark, col, root))
+    parts.append(cylinder(name + '_barrel', 0.2 if king else 0.15, 1.2, (0, facing * 0.6, height + 0.85), dark, col, root,
+                          rot=(math.radians(80), 0, 0), verts=16))
+    if king:
+        for k in range(5):
+            angle = k * math.tau / 5
+            parts.append(box(name + '_crown', (0.22, 0.22, 0.7), (math.cos(angle) * 0.75, math.sin(angle) * 0.75 - facing * 0.9, height + 0.75),
+                             gold, col, root, rot=(0, 0, angle)))
+    return {'root': root, 'parts': parts, 'height': height, 'team': team, 'king': king}
+
+
+_SHARED = {}
+
+
+def _shared(key, make):
+    if key not in _SHARED or _SHARED[key].name not in bpy.data.materials:
+        _SHARED[key] = make()
+    return _SHARED[key]
+
+
+def duck(col, loc, size=1.0):
+    yellow = material('duck', (1.0, 0.78, 0.05), rough=0.25)
+    orange = material('duck_beak', (1.0, 0.35, 0.02), rough=0.3)
+    black = material('duck_eye', (0.01, 0.01, 0.01), rough=0.1)
+    root = bpy.data.objects.new('DUCK', None)
+    col.objects.link(root)
+    root.location = loc
+    root.scale = (size, size, size)
+    sphere('duck_body', 0.6, (0, 0, 0.35), yellow, col, root, scale=(1.0, 1.35, 0.8))
+    sphere('duck_tail', 0.25, (0, -0.75, 0.6), yellow, col, root, scale=(0.8, 1.0, 0.8))
+    sphere('duck_head', 0.4, (0, 0.55, 1.05), yellow, col, root)
+    sphere('duck_beak', 0.2, (0, 0.95, 0.98), orange, col, root, scale=(1.1, 1.3, 0.45))
+    for side in (-1, 1):
+        sphere('duck_eye', 0.07, (side * 0.2, 0.86, 1.2), black, col, root)
+        sphere('duck_wing', 0.3, (side * 0.55, -0.05, 0.45), yellow, col, root, scale=(0.35, 1.2, 0.7))
+    return root
+
+
+def build_yard(tex_dir, asset_dir=None, grass=True):
+    col = collection('YARD')
+    lawn = plane('lawn', 90, 100, (0, 0, 0), lawn_material(), col)
+    wood = add_bump(material('plank', (0.5, 0.33, 0.17), rough=0.75), 6.0, 0.5)
+    white = material('white_paint', (0.85, 0.83, 0.78), rough=0.6)
+    pool_blue = material('pool_blue', (0.05, 0.35, 0.9), rough=0.25)
+    pool_white = material('pool_white', (0.9, 0.92, 0.95), rough=0.25)
+    water = material('water', (0.02, 0.35, 0.6), rough=0.04)
+    water.node_tree.nodes['Principled BSDF'].inputs['Transmission Weight'].default_value = 0.5
+    add_bump(water, 1.4, 0.12)
+    dark = material('yard_dark', (0.03, 0.03, 0.035), rough=0.4, metal=0.6)
+    red = material('yard_red', (0.8, 0.08, 0.06), rough=0.4)
+
+    # paddling pool river: three stacked tubes on each bank, water between, round ends
+    half = 12.5
+    for side in (-1, 1):
+        for k, mat in enumerate((pool_blue, pool_white, pool_blue)):
+            cylinder('pool_tube', 0.28, half * 2, (0, side * 1.75, 0.26 + k * 0.42), mat, col, rot=(0, math.pi / 2, 0))
+            cylinder('pool_end', 0.28, 3.5, (side * half, 0, 0.26 + k * 0.42), mat, col, rot=(math.pi / 2, 0, 0))
+    plane('water', half * 2, 3.3, (0, 0, 0.95), water, col)
+    bridges = []
+    for x in (-LANE, LANE):
+        for k in range(9):                                       # arched plank bridge over the pool wall
+            y = -2.6 + k * 0.65
+            z = 1.5 - 0.11 * (k - 4) ** 2 * 0.55
+            bridges.append(box('bridge_plank', (2.3, 0.58, 0.14), (x, y, z), wood, col, rot=(-(k - 4) * 0.12, 0, 0), bevel=0.02))
+        for side in (-1, 1):
+            box('bridge_ramp', (2.3, 1.6, 0.12), (x, side * 3.5, 0.55), wood, col, rot=(side * -0.62, 0, 0))
+
+    towers = {name: tower(name, x, y, 'blue' if name.startswith('our') else 'red', col, king='king' in name)
+              for name, (x, y) in TOWERS.items()}
+    the_duck = duck(col, (9.3, 0.1, 0.72), 1.0)
+
+    # picket fence (giant): rails and pickets on three sides
+    random.seed(7)
+    for x in (-15.0, 15.0):
+        for k in range(46):
+            y = -23 + k * 1.02
+            box('picket', (0.14, 0.9, 7.0 + (0.5 if k % 2 else 0)), (x, y, 3.5), white, col, rot=(0, 0, random.uniform(-0.03, 0.03)))
+        for z in (1.6, 5.2):
+            box('fence_rail', (0.2, 47.0, 0.5), (x - math.copysign(0.2, x), 0, z), white, col)
+    for k in range(30):
+        box('picket', (0.9, 0.14, 7.0 + (0.5 if k % 2 else 0)), (-14.8 + k * 1.02, 24.0, 3.5), white, col)
+
+    # the kettle grill behind the opponent's king tower, with glowing coals
+    cylinder('grill_bowl', 4.2, 2.2, (0, 20.0, 7.4), dark, col, verts=48)
+    sphere('grill_lid', 4.25, (0, 20.0, 8.6), dark, col, scale=(1, 1, 0.55))
+    for k in range(3):
+        angle = k * math.tau / 3 + 0.5
+        leg = cylinder('grill_leg', 0.16, 7.4, (math.cos(angle) * 3.0, 20.0 + math.sin(angle) * 3.0, 3.6), _shared('gun', lambda: dark), col,
+                       rot=(math.sin(angle) * 0.22, -math.cos(angle) * 0.22, 0))
+    coals = material('coals', (1, 0.3, 0.05), emit=(1.0, 0.25, 0.04), strength=6.0)
+    cylinder('grill_glow', 4.0, 0.1, (0, 20.0, 6.25), coals, col, verts=48)
+    light('grill_light', 'POINT', (0, 18.0, 5.6), 9000.0, (1.0, 0.35, 0.1), col, size=2.0)
+
+    # trampoline on our right
+    tramp = bpy.data.objects.new('TRAMPOLINE', None)
+    col.objects.link(tramp)
+    tramp.location = (9.5, -5.0, 0)
+    mat_black = material('tramp_mat', (0.02, 0.02, 0.025), rough=0.7)
+    cylinder('tramp_mat', 2.3, 0.06, (0, 0, 1.3), mat_black, col, tramp, verts=48)
+    bpy.ops.mesh.primitive_torus_add(major_radius=2.5, minor_radius=0.22, major_segments=48, minor_segments=10)
+    pad = bpy.context.active_object
+    pad.location = (0, 0, 1.32)
+    _adopt(pad, pool_blue, col, tramp)
+    for poly in pad.data.polygons:
+        poly.use_smooth = True
+    for k in range(6):
+        angle = k * math.tau / 6
+        cylinder('tramp_leg', 0.07, 1.3, (math.cos(angle) * 2.5, math.sin(angle) * 2.5, 0.65), dark, col, tramp, verts=10)
+
+    # cooler, string lights on poles, tiki torches
+    box('cooler', (4.6, 3.0, 2.6), (-11.0, 4.5, 1.3), red, col, rot=(0, 0, 0.25), bevel=0.15)
+    box('cooler_lid', (4.7, 3.1, 0.6), (-11.0, 4.5, 2.9), pool_white, col, rot=(0, 0, 0.25), bevel=0.15)
+    bulb_mat = material('bulb', (1, 0.8, 0.5), emit=(1.0, 0.7, 0.35), strength=9.0)
+    poles = [(-13.5, -21.0), (13.5, -8.0), (-13.5, 6.0), (13.5, 21.0)]
+    for x, y in poles:
+        cylinder('pole', 0.14, 11.0, (x, y, 5.5), wood, col, verts=10)
+    for (x0, y0), (x1, y1) in zip(poles, poles[1:]):
+        for k in range(1, 22):
+            u = k / 22
+            sag = 2.2 * 4 * u * (1 - u)
+            sphere('string_bulb', 0.16, (x0 + (x1 - x0) * u, y0 + (y1 - y0) * u, 10.8 - sag), bulb_mat, col)
+    flame = material('flame', (1, 0.5, 0.1), emit=(1.0, 0.45, 0.08), strength=7.0)
+    torches = []
+    for x, y in ((-12.5, -12.0), (12.5, 12.0), (-12.5, 14.0), (12.5, -17.0)):
+        cylinder('tiki', 0.12, 5.0, (x, y, 2.5), wood, col, verts=10)
+        cylinder('tiki_head', 0.34, 0.8, (x, y, 5.2), wood, col, verts=12)
+        bpy.ops.mesh.primitive_cone_add(radius1=0.26, depth=0.9, vertices=12)
+        cone = bpy.context.active_object
+        cone.location = (x, y, 6.0)
+        _adopt(cone, flame, col, None)
+        torches.append(light('tiki_light', 'POINT', (x, y, 6.2), 2500.0, (1.0, 0.5, 0.15), col, size=0.4))
+
+    scattered = None
+    if grass and asset_dir:
+        scattered = _grass(lawn, asset_dir, col)
+    return {'col': col, 'lawn': lawn, 'towers': towers, 'duck': the_duck, 'trampoline': tramp, 'grass': scattered}
+
+
+def _grass(lawn, asset_dir, col):
+    """Scanned grass clumps (Poly Haven, CC0) over the playing field only, scaled up for the toy-sized units."""
+    import polyhaven
+    import scatter
+    objs = polyhaven.pick(polyhaven.append_model(asset_dir, 'grass_bermuda_01', '1k'))
+    objs = [obj for obj in objs if not any(word in obj.name for word in ('dead', 'single', 'seedling', 'medium'))]
+    for obj in objs:                                             # bake each object's own scale into its mesh:
+        obj.data.transform(obj.matrix_basis)                     # the scatter resets instance transforms
+        obj.matrix_basis.identity()
+        print('GRASS', obj.name, tuple(round(v, 3) for v in obj.dimensions))
+    field = plane('grass_field', 29, 44, (0, 0, 0.005), None, col)
+    for vertex in field.data.vertices:                           # real-size mesh: geometry nodes work in local space,
+        vertex.co.x *= 29                                        # so an object scale would stretch every instance
+        vertex.co.y *= 44
+    field.scale = (1, 1, 1)
+    field.data.materials.append(lawn.data.materials[0])
+    return scatter.scatter(field, objs, density=34.0, scale=(4.0, 6.5), seed=3, name='yard_grass')
+
+
+def build_exterior(ship):
+    """Outside of the drop ship for the opening shot: nose, wings, four engines with prop discs, tail."""
+    col, root = ship['col'], ship['root']
+    skin = add_bump(material('skin', (0.2, 0.24, 0.2), rough=0.5, metal=0.6), 2.0, 0.1)
+    dark = material('skin_dark', (0.05, 0.055, 0.06), rough=0.4, metal=0.7)
+    glass = material('canopy', (0.3, 0.2, 0.1), rough=0.1, emit=(1.0, 0.6, 0.25), strength=1.5)
+    prop = material('prop_disc', (0.1, 0.1, 0.1), rough=0.3)
+    prop.node_tree.nodes['Principled BSDF'].inputs['Alpha'].default_value = 0.22
+    prop.blend_method = 'BLEND'
+    belly = box('belly', (HALF_W * 2 + 0.1, Y1 - Y0 + 0.2, 0.5), (0, 0, -0.3), skin, col, root, bevel=0.12)
+    nose_col = collection('NOSE')                                 # separate so interior shots can hide it (it reaches into the hold)
+    nose = sphere('nose', 1.0, (0, Y0 - 0.3, 1.45), skin, nose_col, root, scale=(HALF_W * 1.02, 3.4, 1.62))
+    sphere('canopy', 1.0, (0, Y0 - 1.9, 2.1), glass, nose_col, root, scale=(1.5, 1.4, 0.75))
+    box('wing', (27.0, 3.4, 0.38), (0, -1.2, HEIGHT + 0.1), skin, col, root, bevel=0.15)
+    for x in (-9.0, -4.6, 4.6, 9.0):
+        cylinder('engine', 0.62, 3.2, (x, -2.4, HEIGHT - 0.25), dark, col, root, rot=(math.pi / 2, 0, 0))
+        cylinder('spinner', 0.2, 0.7, (x, -4.3, HEIGHT - 0.25), skin, col, root, rot=(math.pi / 2, 0, 0), verts=12)
+        cylinder('prop', 1.9, 0.03, (x, -4.25, HEIGHT - 0.25), prop, col, root, rot=(math.pi / 2, 0, 0), verts=32)
+    box('boom', (1.3, 6.5, 1.2), (0, Y1 + 2.6, HEIGHT + 0.6), skin, col, root, rot=(math.radians(14), 0, 0), bevel=0.2)
+    box('fin', (0.3, 3.2, 4.2), (0, Y1 + 5.2, HEIGHT + 3.2), skin, col, root, rot=(math.radians(-22), 0, 0), bevel=0.1)
+    box('tailplane', (9.5, 2.0, 0.26), (0, Y1 + 5.6, HEIGHT + 1.9), skin, col, root, bevel=0.1)
+    return [belly, nose]

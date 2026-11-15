@@ -74,5 +74,35 @@ if what == 'hold':
     cam.data.dof.aperture_fstop = 2.8
     sc.frame_set(30)
 
+if what == 'yard':
+    yard = sets.build_yard(W + '/tex', os.path.expanduser('~/tools/assets'), grass=not os.environ.get('NOGRASS'))
+    sets.sun(heading_deg=float(os.environ.get('SUN', '180')), elevation_deg=9, energy=5.0)
+    cast = [('cupsey', (0.0, 8.0), 180), ('bonk', (-1.6, 10.6), 0), ('bonk', (0.2, 11.0), 0), ('bonk', (1.8, 10.5), 0)]
+    chars = assets.load_many(LIB, [c[0] for c in cast], sc.collection)
+    for char, (uid, (x, y), heading) in zip(chars, cast):
+        for root in char['roots']:
+            root.location = (x, y, 0)
+            root.rotation_mode = 'XYZ'
+            root.rotation_euler = (0, 0, math.radians(heading))
+        char['armature'].animation_data_create()
+        char['armature'].animation_data.action = char['clips']['idle']
+    view = os.environ.get('VIEW', 'top')
+    if view == 'top':
+        cam.location = (0.0, -6.0, 46.0)
+        target = Vector((0.0, 1.0, 0.0))
+        cam.data.lens = 28
+    elif view == 'low':
+        cam.location = (0.6, 5.2, 0.7)
+        target = Vector((0.0, 11.0, 1.6))
+        cam.data.lens = 35
+    else:
+        cam.location = (-9.0, -19.0, 5.0)
+        target = Vector((2.0, 4.0, 2.0))
+        cam.data.lens = 30
+    cam.rotation_euler = (target - cam.location).to_track_quat('-Z', 'Y').to_euler()
+    cam.data.dof.focus_distance = (Vector((0, 8, 1)) - cam.location).length
+    cam.data.dof.aperture_fstop = 4.0
+    sc.frame_set(30)
+
 sc.render.filepath = out
 bpy.ops.render.render(write_still=True)

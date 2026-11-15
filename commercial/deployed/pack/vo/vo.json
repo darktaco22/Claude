@@ -1,0 +1,197 @@
+{
+ "p01": {
+  "dur": 4.518,
+  "sub": "Tower, this is Deck One. Eight cards on board, and one player at the controls. Pray for us.",
+  "who": "pilot"
+ },
+ "s01": {
+  "dur": 3.607,
+  "sub": "Listen up, cards! In thirty seconds, the Thumb is going to play us.",
+  "who": "sarge"
+ },
+ "e01": {
+  "dur": 0.925,
+  "sub": "The Thumb, Sarge?",
+  "who": "egg"
+ },
+ "s02": {
+  "dur": 3.192,
+  "sub": "The player, son. Big. Pink. Makes every decision down there.",
+  "who": "sarge"
+ },
+ "e02": {
+  "dur": 0.959,
+  "sub": "And... he has a plan?",
+  "who": "egg"
+ },
+ "k01": {
+  "dur": 1.734,
+  "sub": "He has four cards and a feeling.",
+  "who": "ket"
+ },
+ "s03": {
+  "dur": 2.339,
+  "sub": "He has been in Arena Two for eight months.",
+  "who": "sarge"
+ },
+ "c01": {
+  "dur": 1.672,
+  "sub": "Nine. But who's counting.",
+  "who": "chill"
+ },
+ "y01": {
+  "dur": 1.156,
+  "sub": "Copium: four.",
+  "who": "sys"
+ },
+ "s04": {
+  "dur": 2.405,
+  "sub": "Green light! LMAO, you're up! Go, go, go!",
+  "who": "sarge"
+ },
+ "y02": {
+  "dur": 2.256,
+  "sub": "LMAO has been eliminated.",
+  "who": "sys"
+ },
+ "e03": {
+  "dur": 1.192,
+  "sub": "He lasted two seconds!",
+  "who": "egg"
+ },
+ "k02": {
+  "dur": 0.975,
+  "sub": "Personal best.",
+  "who": "ket"
+ },
+ "s05": {
+  "dur": 4.152,
+  "sub": "Here it comes. Airdrop. Their whole push is on the bridge. Even he can't miss this.",
+  "who": "sarge"
+ },
+ "c02": {
+  "dur": 1.591,
+  "sub": "He got the duck, though.",
+  "who": "chill"
+ },
+ "s06": {
+  "dur": 1.6,
+  "sub": "He always gets the duck.",
+  "who": "sarge"
+ },
+ "y04": {
+  "dur": 1.469,
+  "sub": "Left tower destroyed.",
+  "who": "sys"
+ },
+ "e04": {
+  "dur": 1.407,
+  "sub": "We're losing! What's he doing now?",
+  "who": "egg"
+ },
+ "k03": {
+  "dur": 0.849,
+  "sub": "He's emoting.",
+  "who": "ket"
+ },
+ "s07": {
+  "dur": 3.046,
+  "sub": "We are down a tower, and he is sending \"we're all gonna make it\".",
+  "who": "sarge"
+ },
+ "c03": {
+  "dur": 1.87,
+  "sub": "Confidence is important.",
+  "who": "chill"
+ },
+ "y05": {
+  "dur": 2.021,
+  "sub": "Copium: ten. Copium is full.",
+  "who": "sys"
+ },
+ "s08": {
+  "dur": 2.619,
+  "sub": "He's leaking copium! Chillhouse! Move, move, move!",
+  "who": "sarge"
+ },
+ "h01": {
+  "dur": 1.772,
+  "sub": "Sorry. I'm a house.",
+  "who": "house"
+ },
+ "s09": {
+  "dur": 1.109,
+  "sub": "Everybody push!",
+  "who": "sarge"
+ },
+ "k04": {
+  "dur": 1.984,
+  "sub": "I have seen rug pulls faster than this.",
+  "who": "ket"
+ },
+ "y06": {
+  "dur": 2.749,
+  "sub": "Thirty seconds remaining. Last card: Cupsey.",
+  "who": "sys"
+ },
+ "e05": {
+  "dur": 1.309,
+  "sub": "Me? Sarge... I'm an egg.",
+  "who": "egg"
+ },
+ "s10": {
+  "dur": 3.692,
+  "sub": "Son, we are all eggs up here. Some of us just haven't hit the ground yet.",
+  "who": "sarge"
+ },
+ "e06": {
+  "dur": 1.831,
+  "sub": "That is the worst speech I have ever heard.",
+  "who": "egg"
+ },
+ "s11": {
+  "dur": 1.933,
+  "sub": "It's the only one I've got. Go!",
+  "who": "sarge"
+ },
+ "y07": {
+  "dur": 2.921,
+  "sub": "Opponent paperhands420 has left the match.",
+  "who": "sys"
+ },
+ "y08": {
+  "dur": 0.806,
+  "sub": "Victory!",
+  "who": "sys"
+ },
+ "s12": {
+  "dur": 3.151,
+  "sub": "He did it. The kid did absolutely nothing. And it worked.",
+  "who": "sarge"
+ },
+ "c04": {
+  "dur": 1.146,
+  "sub": "Classic us.",
+  "who": "chill"
+ },
+ "y09": {
+  "dur": 3.704,
+  "sub": "Plus twenty-eight Clout. New arena unlocked: Strip Mall Lot.",
+  "who": "sys"
+ },
+ "k05": {
+  "dur": 2.639,
+  "sub": "A parking lot. We fought for a parking lot.",
+  "who": "ket"
+ },
+ "y10": {
+  "dur": 1.805,
+  "sub": "Next match in three. Two.",
+  "who": "sys"
+ },
+ "s13": {
+  "dur": 3.268,
+  "sub": "Meme Royale. Free to play. And please. Play better than this guy.",
+  "who": "sarge"
+ }
+}

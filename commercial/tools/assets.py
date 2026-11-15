@@ -69,16 +69,30 @@ def load(lib_path: str, uid: str, parent: bpy.types.Collection, height: float = 
 
 
 def load_many(lib_path: str, uids: list, parent: bpy.types.Collection, height: float = 0.0) -> list:
-    """Append several characters with the library opened once. The same id may appear more than once."""
-    with bpy.data.libraries.load(lib_path, link=False) as (data_from, data_to):
-        missing = [uid for uid in uids if PREFIX + uid not in data_from.collections]
-        if missing:
-            raise KeyError(f'{missing} not in {lib_path}')
-        data_to.collections = [PREFIX + uid for uid in uids]
-        wanted = set(uids)
-        data_to.actions = [name for name in data_from.actions if name.split(':')[0] in wanted]
-    actions = [action for action in data_to.actions if action]
-    return [_finish(uid, collection, actions, parent, height) for uid, collection in zip(uids, data_to.collections)]
+    """Append several characters. The same id may appear more than once: one library pass can append a collection
+    only once (asking twice crashes Blender 4.2), so repeats are loaded in further passes. Copies share actions."""
+    results = [None] * len(uids)
+    remaining = list(enumerate(uids))
+    shared_actions = {}
+    while remaining:
+        batch, later, seen = [], [], set()
+        for index, uid in remaining:
+            (later if uid in seen else batch).append((index, uid))
+            seen.add(uid)
+        with bpy.data.libraries.load(lib_path, link=False) as (data_from, data_to):
+            missing = [uid for _, uid in batch if PREFIX + uid not in data_from.collections]
+            if missing:
+                raise KeyError(f'{missing} not in {lib_path}')
+            data_to.collections = [PREFIX + uid for _, uid in batch]
+            wanted = {uid for _, uid in batch if uid not in shared_actions}
+            data_to.actions = [name for name in data_from.actions if name.split(':')[0] in wanted]
+        for action in data_to.actions:
+            if action:
+                shared_actions.setdefault(action.get('unit'), []).append(action)
+        for (index, uid), loaded in zip(batch, data_to.collections):
+            results[index] = _finish(uid, loaded, shared_actions.get(uid, []), parent, height)
+        remaining = later
+    return results
 
 
 def _finish(uid: str, collection, actions: list, parent, height: float) -> dict:
