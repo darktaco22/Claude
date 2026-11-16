@@ -523,8 +523,8 @@ for index, card in enumerate(ORDER0[4:]):
     queue.append(actor)
 sarge = new_actor('sarge', 'walter')
 smooth_hero(sarge)
-SARGE_AT = (2.15, 5.45)                              # beside the ramp: the jumpers run down the middle
-sarge.put(0, H(*SARGE_AT), hh(-2.15, -2.05))
+SARGE_AT = (1.55, 5.3)                              # beside the ramp: the jumpers run down the middle
+sarge.put(0, H(*SARGE_AT), hh(-1.55, -2.0))
 sarge.show(0)
 sarge.play(0, 'idle')
 
@@ -934,7 +934,7 @@ def face(actor_pos, side, lens, dist=1.9, up=0.0, name='cu', shake=0.3, fill_pow
 def sarge_face(side, lens=55, dist=4.0, up=0.15, name='sarge'):
     """Sarge stands at the ramp facing the crew: the camera shoots him from the aisle."""
     def fn(end):
-        shot(name, end, (SARGE_AT[0] - 0.9 + side * 0.12, SARGE_AT[1] - dist, EYE + 0.45 + up), (SARGE_AT[0], SARGE_AT[1], EYE + up), lens, hide=hides(), fill_power=60, shake=0.3, fstop=2.4, keep=['sarge'])
+        shot(name, end, (SARGE_AT[0] - 0.55 + side * 0.25, SARGE_AT[1] - dist, 1.25 + up), (SARGE_AT[0], SARGE_AT[1], 0.95 + up), lens * 1.25, hide=hides(), fill_power=60, shake=0.3, fstop=2.4, keep=['sarge'])
     return fn
 
 
@@ -1112,17 +1112,17 @@ def ramp_shot(i, hold=0.4, tail=0.15):
     shot(f'ramp_{i}', entry[2] + tail, (-1.85, 4.3, 1.45), (0.0, 6.9, 0.9), 22, p1=(-1.85, 4.8, 1.45), hide=hides(), fill_power=15, fstop=4.0, a_start=entry[2] - hold)
 
 
-FALL_SLOW = 0.75                                                # the fall plays at three quarters speed
+FALL_SLOW = 0.6                                                # the fall plays at three quarters speed
 
 
-def play_seq(i, chase_for=2.0, drag=1.3, hold=0.8, line=None, line_at='drag', lead=0.25, who=None):
+def play_seq(i, chase_for=2.6, drag=1.8, hold=0.95, line=None, line_at='drag', lead=0.25, who=None):
     """One real play: the drag on the phone, the jump off the ramp, the (slightly slow) fall and the follow of the new unit.
     `line` is a recorded line that starts `lead` seconds into the shot named by `line_at` (drag, ramp, fall, land)."""
     entry = jump_of(i)
     T = M(entry[0]['t'])
     if line and line_at == 'drag':
         say_now(line, lead, who)
-    phone(f'phone_{i}', T + 0.1, a_start=T - drag)
+    phone(f'phone_{i}', T + 0.2, a_start=T - drag)
     if line and line_at == 'ramp':
         say_now(line, lead, who)
     ramp_shot(i, hold)
