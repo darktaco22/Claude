@@ -61,3 +61,27 @@ Render: 67 % size, 6 samples, about 19 s a frame (3349 frames). Ranges: local 1-
 1677-2095, 2096-2514, 2515-2933, 2934-3349. Then `./finish_all.sh` (writes `commercial/output/meme-royale-deployed.mp4`).
 Lessons (also in the playbook): subdivision costs ~130 MB per mesh, so only the ship's cast has it; library passes duplicate
 textures (dedupe by content, never by name: different characters share names like `base_0`).
+
+## Rework 3 (after playing the live game) - findings and plan
+
+Played a real match on memeroyale.imaginestudio.fun with Playwright (guest account, throwaway password never committed;
+`reference/play_match.js`; the lobby needs a tap on the splash `#boot` every page load; cards are DRAGGED onto your half;
+a new account's arena is Mom's Basement; the user's screenshot `reference/user_screenshot_moon.png` is the Moon arena).
+
+What real play looks like (what v2 got wrong):
+- Camera: steep top-down view of the whole board, portrait phone screen. Field is SPARSE: 1-4 units per side at a time
+  (v2 replay: enemy average 2.6, p90 7, max 11 because the enemy deck had swarm cards useless/fud/firesale).
+- HUD: top-left dark pill (name in team colour, trophy + number), top-right "TIME LEFT m:ss" pill, W score badges
+  (red top, green below, at the right river bank), emote button bottom-left, tower HP as red/green pills with numbers,
+  names pop up over units when a card is played, banners FIGHT!, TAKE THE L, DEFEAT screen.
+- Tray: dark panel with a GREEN border; NEXT label + small card with a hex purple cost badge on the left; four cards with
+  hex cost badges top-left and the card NAME under the art; selected card has a coloured (cyan) frame; below, a purple
+  Copium potion icon with the number and a 10-segment purple bar. (v2's tray drew round badges and no names.)
+
+Fixes so far: enemy deck without swarm cards (`sim/search3.mjs` deck1 = troll dope bonk neet zcat apu farter popcat) keeps
+the enemy at <=4 units. `node search3.mjs 3000 0.3 0.4` finds winning masher matches (e.g. seed 2811: illegal tap 16.5,
+enemy rig 59.7, ours 155, enemy 161.3, win 2-1 at 180). Scene segments C-G in scene.py are hard-wired to the old match's
+times (40.97, 43.6, 88.8, 95.83, 120, 164.5, 166.57) and need re-timing to the new recording.
+
+To do: re-record + re-time the story, redraw the tray/HUD exactly like the real one, declutter the ship (no characters
+overlapping/clipping: one bay each), re-render (about 3 h with 8 machines), finish.

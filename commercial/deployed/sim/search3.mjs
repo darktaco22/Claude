@@ -4,7 +4,7 @@ import {Battle} from '/home/user/Claude/meme-royale-research/client_src/sim.js';
 import {Bot} from '/home/user/Claude/meme-royale-research/client_src/ai.js';
 import fs from 'fs';
 const N = +process.argv[2] || 500, SK0 = +(process.argv[3] ?? 0.3), SK1 = +(process.argv[4] ?? 0.6);
-const deck0 = ['lmao','chillguy','cupsey','chillhouse','airdrop','ket','dope','pudgy'], deck1 = ['bonk','jeanphil','troll','useless','fud','firesale','neet','dope'];
+const deck0 = ['lmao','chillguy','cupsey','chillhouse','airdrop','ket','dope','pudgy'], deck1 = ['troll','dope','bonk','neet','zcat','apu','farter','popcat'];
 const order0 = ['lmao','ket','cupsey','dope','chillhouse','chillguy','pudgy','airdrop'];
 function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 const hits = [], STAT = {n: 0, win: 0, winEarlyDown: 0};
