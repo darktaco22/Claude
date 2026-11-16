@@ -724,7 +724,7 @@ def tint_team(roots, team):
                 slot.material = seen[key]
 
 
-def textured_plane(name, size_x, size_y, loc, path, col, repeat=(1, 1), emit=0.0, rot=(0, 0, 0), tint=None):
+def textured_plane(name, size_x, size_y, loc, path, col, repeat=(1, 1), emit=0.0, rot=(0, 0, 0), tint=None, feather=None):
     mat = bpy.data.materials.new(name)
     mat.use_nodes = True
     tree = mat.node_tree
@@ -751,6 +751,34 @@ def textured_plane(name, size_x, size_y, loc, path, col, repeat=(1, 1), emit=0.0
     if emit:
         tree.links.new(out, bsdf.inputs['Emission Color'])
         bsdf.inputs['Emission Strength'].default_value = emit
+    if feather:                                   # soft left, right and top edges: the picture melts into the sky instead of ending in a hard rectangle
+        sep = tree.nodes.new('ShaderNodeSeparateXYZ')
+        tree.links.new(coord.outputs['UV'], sep.inputs['Vector'])
+
+        def math_node(op, a, b=None, clamp=False):
+            node = tree.nodes.new('ShaderNodeMath')
+            node.operation = op
+            node.use_clamp = clamp
+            for index, item in enumerate((a, b)):
+                if item is None:
+                    continue
+                if isinstance(item, (int, float)):
+                    node.inputs[index].default_value = item
+                else:
+                    tree.links.new(item, node.inputs[index])
+            return node.outputs[0]
+
+        u, v = sep.outputs['X'], sep.outputs['Y']
+        side = math_node('MULTIPLY', math_node('MINIMUM', u, math_node('SUBTRACT', 1.0, u)), 1.0 / feather[0], clamp=True)
+        top = math_node('MULTIPLY', math_node('SUBTRACT', 1.0, v), 1.0 / feather[1], clamp=True)
+        mask = math_node('MULTIPLY', side, top)
+        clear = tree.nodes.new('ShaderNodeBsdfTransparent')
+        mixer = tree.nodes.new('ShaderNodeMixShader')
+        tree.links.new(mask, mixer.inputs[0])
+        tree.links.new(clear.outputs[0], mixer.inputs[1])
+        tree.links.new(bsdf.outputs['BSDF'], mixer.inputs[2])
+        out_node = next(n for n in tree.nodes if n.type == 'OUTPUT_MATERIAL')
+        tree.links.new(mixer.outputs[0], out_node.inputs['Surface'])
     obj = plane(name, size_x, size_y, loc, mat, col, None, rot)
     return obj, mat
 
@@ -820,6 +848,6 @@ def build_game_arena(pack):
             child.hide_render = True
 
     back, _ = textured_plane('backdrop', 150, 75, gp(9, -62.0, 22.0), os.path.join(pack, 'backdrop.webp'), col, emit=1.0,
-                             rot=(math.pi / 2, 0, math.pi))
+                             rot=(math.pi / 2, 0, math.pi), feather=(0.22, 0.4))
     back.data.materials[0].node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value = (0, 0, 0, 1)
     return {'col': col, 'towers': towers, 'bridges': bridges, 'backdrop': back, 'place': place}

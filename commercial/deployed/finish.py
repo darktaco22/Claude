@@ -432,7 +432,7 @@ def draw_time_jump(d, t):
             if 0 <= u < 1.3:
                 m = current['a0'] - PRE
                 alpha = 255 * fade(t, current['t0'], current['t0'] + 1.3, 0.25)
-                text(d, (W / 2, 160), monitor.clock_text(STATE.frame(max(0.0, m))['clock']), lil(150), rgba(WHITE, alpha), 'mm', 4, 9, rgba(INK, alpha))
+                text(d, (W / 2, 360), monitor.clock_text(STATE.frame(max(0.0, m))['clock']), lil(150), rgba(WHITE, alpha), 'mm', 4, 9, rgba(INK, alpha))
 
 
 BG = None
@@ -503,8 +503,9 @@ def frame(f):
             draw_game_hud(im, t, s)
         d = ImageDraw.Draw(im, 'RGBA')
         draw_title(d, t)
-        draw_banners(d, t)
-        draw_time_jump(d, t)
+        if in_game:
+            draw_banners(d, t)
+            draw_time_jump(d, t)
         draw_captions(d, t)
         im = im.convert('RGB')
     im.save(os.path.join(OUT, f'c_{f:04d}.jpg'), quality=95, subsampling=0)

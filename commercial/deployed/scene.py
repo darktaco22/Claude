@@ -982,6 +982,7 @@ def fall_cam(i, end, off=(2.6, -3.0, -0.3), lens=30, look_up=0.6, name=None, pie
         ca, cb = pa + Vector(off) * (1 + 0.2 * k / pieces), pb + Vector(off) * (1 + 0.2 * (k + 1) / pieces)
         ga, gb = clear(ca.x + 9.0, 16.0 - ca.y, ca.z), clear(cb.x + 9.0, 16.0 - cb.y, cb.z)
         ca.x, ca.y, cb.x, cb.y = ga[0] - 9.0, 16.0 - ga[1], gb[0] - 9.0, 16.0 - gb[1]
+        ca.z, cb.z = max(ca.z, 1.6), max(cb.z, 1.6)
         shot(name or f'fall_{i}', tb, tuple(ca), tuple(pa + Vector((0, 0, look_up))), lens, p1=tuple(cb), l1=tuple(pb + Vector((0, 0, look_up))),
              space='world', hand=None, ec=3, fstop=4.0)
 
@@ -1049,7 +1050,7 @@ def phone(name, end, a_start=None, **kw):
 def ramp_shot(i, hold=0.4, tail=0.15):
     """The jumper stands at the ramp edge and goes (a_jump is the release of the drag)."""
     entry = jump_of(i)
-    shot(f'ramp_{i}', entry[2] + tail, (0.0, 1.2, 2.3), (0.0, 6.6, 0.8), 26, p1=(0.0, 1.6, 2.25), hide=hides(), fill_power=15, fstop=4.0, a_start=entry[2] - hold)
+    shot(f'ramp_{i}', entry[2] + tail, (-1.85, 4.3, 1.45), (0.0, 6.9, 0.9), 22, p1=(-1.85, 4.8, 1.45), hide=hides(), fill_power=15, fstop=4.0, a_start=entry[2] - hold)
 
 
 def play_seq(i, chase_for=0.8, drag=0.85, hold=0.4):
