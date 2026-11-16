@@ -102,13 +102,13 @@ def screen(state, cards_dir, size=(528, 318)):
     for y in range(h):
         shade = int(26 * y / h)
         draw.line((0, y, w, y), fill=(70 - shade, 68 - shade, 92 - shade))
-    k = 0.46
+    k = w / 924.0
     hud.top_pills(image, k, 'ULTRA CHAD', 7521, state['clock'], True)
-    hud.w_badges(image, k, state['ws'], 135)
+    ImageDraw.Draw(image).text((w // 2, 40), f"{state['ws'][0]}  :  {state['ws'][1]}", font=font(30), fill=(255, 255, 255), anchor='mm', stroke_width=4, stroke_fill=INK)
     if state['message']:
         draw = ImageDraw.Draw(image)
         draw.text((w // 2, 112), state['message'], font=font(30), fill=state['color'], anchor='mm', stroke_width=4, stroke_fill=INK)
-    hud.tray(image, state, cards_dir, k, bottom=h - 6)
+    hud.tray(image, state, cards_dir, k, bottom=h - 4)
     return image.convert('RGB')
 
 
