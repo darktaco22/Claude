@@ -26,13 +26,7 @@ keys=['intro']+[a for a in ARENAS if (not only or a in only)]+['outro']
 keys=[k for k in keys if os.path.exists(f'{SEGD}/s_{k}.mp4')]
 def sh(cmd): subprocess.run(cmd,check=True)
 E='-c:v libx264 -crf 12 -preset fast -pix_fmt yuv420p -c:a aac -b:a 256k'.split()
-# 1 captions
-files=[]
-for k in keys:
-    o=f'{SEGD}/c_{k}.mp4'; files.append(o)
-    if k in ('intro','outro'): sh(['ffmpeg','-v','error','-y','-i',f'{SEGD}/s_{k}.mp4','-c','copy',o]); continue
-    p=f'{SEGD}/cap_{k}.png'; cap_png(k,p); a=0.35; b=0.35+VO[k]+0.2
-    sh(['ffmpeg','-v','error','-y','-i',f'{SEGD}/s_{k}.mp4','-loop','1','-i',p,'-filter_complex',f"[0:v][1:v]overlay=0:0:enable='between(t,{a},{b})':format=auto:shortest=1[v]",'-map','[v]','-map','0:a']+E+[o])
+files=[f'{SEGD}/c_{k}.mp4' for k in keys]
 def join(fl,out,last=False):
     inp=[];fc=[];ds=[dur(f) for f in fl]
     for f in fl: inp+=['-i',f]
@@ -42,7 +36,7 @@ def join(fl,out,last=False):
         fc.append(f'[{ac}][{i}:a]acrossfade=d={F}[a{i}]'); ac=f'a{i}'; L=L+ds[i]-F
     if last:
         fc.append(f'[{cur}]noise=alls=5:allf=t,format=yuv420p[vo]'); fc.append(f'[{ac}]loudnorm=I=-14:TP=-1.5:LRA=11[ao]'); cur,ac='vo','ao'
-        enc=['-c:v','libx264','-crf','22','-maxrate','5M','-bufsize','10M','-preset','medium','-pix_fmt','yuv420p','-c:a','aac','-b:a','192k','-movflags','+faststart']
+        enc=['-c:v','libx264','-crf','22','-maxrate','4M','-bufsize','8M','-preset','medium','-pix_fmt','yuv420p','-c:a','aac','-b:a','192k','-movflags','+faststart']
     else: enc=E
     sh(['ffmpeg','-v','error','-y']+inp+['-filter_complex',';'.join(fc),'-map',f'[{cur}]' if not cur.endswith(':v') else cur,'-map',f'[{ac}]' if not ac.endswith(':a') else ac,'-r','30']+enc+[out]); return L
 parts=[]
