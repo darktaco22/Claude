@@ -19,7 +19,7 @@ const seen = new Map();   // id -> first/last tick
 const life = {};
 for (let i = 0; i < 30 * 200 && !b.over; i++) {
   bot.update(DT);
-  for (const p of plays) if (!p.done && b.t >= p.t) {
+  for (const p of plays) if (!p.done && b.t >= p.t - 0.02) {
     const slot = b.hands[0].indexOf(p.card);
     if (slot < 0) continue;                                       // not in hand yet: wait for the rotation
     if (p.illegal) { p.done = true; log.push({t: +b.t.toFixed(2), what: 'illegal', card: p.card, x: p.x, z: p.z, why: b.canPlay(0, slot, p.x, p.z), copium: +b.copium[0].toFixed(1)}); continue; }

@@ -239,37 +239,188 @@ def draw_banners(d, t):
 
 
 TOWER_MAX = {'rig': 2600, 'hq': 4400}
+import hud
+PW, PH = 720, 1558                       # the phone picture is drawn at this size, then fitted into the film frame
+PK = PW / 924.0
+OPPONENT = 'ULTRA CHAD'
+DRAG_LEAD = 0.85
+PLAYS = [item for item in MATCH['log'] if item['what'] == 'thumb']
+ILLEGAL = [item for item in MATCH['log'] if item['what'] == 'illegal']
+DOWNS = [item for item in MATCH['log'] if item['what'] == 'tower_down']
 
 
-def draw_game_hud(im, t, s):
-    """The arena shots carry the game's HUD: clock and score on top, the Thumb's tray, and the towers' health bars."""
-    m = match_time(t)
-    state = STATE.at(m)
-    d = ImageDraw.Draw(im, 'RGBA')
-    # tower health bars, projected from the recorded towers
+def project_px(s, t, point, cw, ch):
+    """Pinhole projection into a cw x ch image (Blender sensor fit: 36 mm across the larger side)."""
+    u = ease((t - s['t0']) / (s['t1'] - s['t0']))
+    p = np.array(s['p0']) + (np.array(s['p1']) - np.array(s['p0'])) * u
+    look = np.array(s['l0']) + (np.array(s['l1']) - np.array(s['l0'])) * u
+    fwd = look - p
+    fwd = fwd / np.linalg.norm(fwd)
+    right = np.cross(fwd, np.array([0, 0, 1.0]))
+    right = right / np.linalg.norm(right)
+    up = np.cross(right, fwd)
+    v = np.array(point) - p
+    z = float(v @ fwd)
+    if z < 0.3:
+        return None
+    lens = s['lens'] + (s['lens1'] - s['lens']) * u
+    k = lens / 36.0 * max(cw, ch)
+    return cw / 2 + float(v @ right) / z * k, ch / 2 - float(v @ up) / z * k
+
+
+def gpt(x, z, h=0.0):
+    return (x - 9.0, 16.0 - z, h)
+
+
+def draw_towers(im, s, t, m, cw, ch, k):
     frame = STATE.frame(max(0.0, m))
     for e in frame['e']:
         if e[1] != 't' or e[9]:
             continue
-        x, z = e[4], e[5]
-        spot = project(s, t, (x - 9.0, 16.0 - z, 5.6 if e[2] == 'rig' else 6.8))
-        if spot is None or not (-100 < spot[0] < W + 100 and -100 < spot[1] < H + 100):
+        spot = project_px(s, t, gpt(e[4], e[5], 5.0 if e[2] == 'rig' else 6.0), cw, ch)
+        if spot is None or not (-60 < spot[0] < cw + 60 and -60 < spot[1] < ch + 60):
             continue
-        scale = max(0.5, min(1.6, 38.0 / max(6.0, np.linalg.norm(np.array(s['p0']) - np.array((x - 9.0, 16.0 - z, 3.0))))))
-        bw, bh = 150 * scale, 22 * scale
-        fill = max(0.0, min(1.0, e[8] / TOWER_MAX[e[2]]))
-        color = (90, 230, 100) if e[3] == 0 else (255, 80, 100)
-        d.rounded_rectangle((spot[0] - bw / 2 - 3, spot[1] - bh / 2 - 3, spot[0] + bw / 2 + 3, spot[1] + bh / 2 + 3), 8 * scale, fill=rgba(INK, 235))
-        d.rounded_rectangle((spot[0] - bw / 2, spot[1] - bh / 2, spot[0] - bw / 2 + bw * fill, spot[1] + bh / 2), 6 * scale, fill=rgba(color, 255))
-        text(d, (spot[0], spot[1]), str(int(e[8])), lil(int(20 * scale)), rgba(WHITE, 255), 'mm', 0, 3, rgba(INK, 255))
-    # top bar
-    d.rectangle((0, 0, W, 70), fill=rgba(INK, 215))
-    text(d, (40, 36), 'ARENA 2  ·  BACKYARD BBQ', lil(34), rgba(GOLD, 255))
-    text(d, (W / 2, 36), f"{state['ws'][0]}  :  {state['ws'][1]}", lil(44), rgba(WHITE, 255), 'mm')
-    text(d, (W - 40, 36), monitor.clock_text(state['clock']), lil(44), rgba((255, 120, 120) if state['clock'] < 60 else WHITE, 255), 'rm')
-    # tray
-    tray_box = (24, H - 236, 940, 212)
-    monitor.tray(im, state, CARDS_DIR, tray_box, 1.55)
+        hud.hp_pill(im, spot[0], spot[1] + (0 if e[2] == 'rig' else 8 * k), k, e[8], e[3])
+
+
+def ease_io(u):
+    u = max(0.0, min(1.0, u))
+    return u * u * (3 - 2 * u)
+
+
+def phone_state(m):
+    state = dict(STATE.at(m))
+    state['press'] = None
+    return state
+
+
+def draw_phone_hud(im, s, t):
+    """The game's screen, drawn on a PW x PH picture of the arena from the game's camera."""
+    m = match_time(t)
+    cw, ch = im.size
+    state = phone_state(m)
+    d = ImageDraw.Draw(im, 'RGBA')
+    draw_towers(im, s, t, m, cw, ch, PK)
+    river = project_px(s, t, gpt(18.0, 16.0, 0.0), cw, ch)
+    hud.top_pills(im, PK, OPPONENT, 7521, state['clock'] if m >= 0 else 180, True, y=40 * PK)
+    hud.w_badges(im, PK, state['ws'], river[1] if river else ch * 0.42)
+    box = hud.tray_box(cw, ch, PK)
+    hud.emote_button(im, PK, 28 * PK, box[1] - 112 * PK)
+    drag = None
+    # a drag in progress (or an illegal one): the card follows the finger from its slot to the spot
+    items = [(p['t'], p['slot'], p['x'], p['z'], False, p['card']) for p in PLAYS]
+    for item in ILLEGAL:
+        hand_now, _, _ = STATE.hand_queue(item['t'] - 0.01)
+        if item['card'] in hand_now:
+            items.append((item['t'], hand_now.index(item['card']), item.get('x', 9.0), item.get('z', 8.0), True, item['card']))
+    for tp, slot, gx, gz, bad, card in items:
+        lead = 1.1 if bad else DRAG_LEAD
+        if tp - lead <= m < tp:
+            u = ease_io((m - (tp - lead)) / (lead * 0.92))
+            x0 = box[0] + (183 + 177 * slot + 76) * PK
+            y0 = box[1] + (25 + 95) * PK
+            target = project_px(s, t, gpt(gx, gz, 0.0), cw, ch)
+            if target is not None:
+                gxp, gyp = x0 + (target[0] - x0) * u, y0 + (target[1] - y0) * u
+                drag = (slot, gxp, gyp)
+                ring = (200, 70, 90, 150) if bad else (120, 235, 130, 150)
+                if u > 0.15:
+                    rr = 62 * PK
+                    d.ellipse((target[0] - rr, target[1] - rr * 0.55, target[0] + rr, target[1] + rr * 0.55), fill=ring, outline=(255, 255, 255, 220), width=max(2, int(3 * PK)))
+        if bad and tp <= m < tp + 0.55:                   # the card slides back
+            slot_x = box[0] + (183 + 177 * slot + 76) * PK
+            target = project_px(s, t, gpt(gx, gz, 0.0), cw, ch)
+            if target is not None:
+                u = ease_io((m - tp) / 0.5)
+                drag = (slot, target[0] + (slot_x - target[0]) * u, target[1] + (box[1] + 120 * PK - target[1]) * u)
+        if not bad and tp <= m < tp + 0.7:                # the drop: a ring spreads out where the unit lands
+            target = project_px(s, t, gpt(gx, gz, 0.0), cw, ch)
+            if target is not None:
+                u = (m - tp) / 0.7
+                rr = (40 + 90 * u) * PK
+                d.ellipse((target[0] - rr, target[1] - rr * 0.55, target[0] + rr, target[1] + rr * 0.55), outline=(255, 255, 255, int(220 * (1 - u))), width=max(2, int(4 * PK)))
+        if not bad and tp <= m < tp + 1.8:                # the card's name floats up from the spot
+            target = project_px(s, t, gpt(gx, gz, 2.2 + 1.2 * (m - tp)), cw, ch)
+            if target is not None:
+                hud.popup(im, target[0], target[1], hud.NAMES.get(card, card.upper()), PK, 0, int(255 * min(1.0, (tp + 1.8 - m) / 0.6)))
+    hud.tray(im, state, CARDS_DIR, PK, drag=drag)
+    d = ImageDraw.Draw(im, 'RGBA')
+    # messages and banners
+    if 0 <= m < 2.4:
+        text(d, (cw / 2, ch * 0.30), 'FIGHT!', lil(int(150 * PK)), rgba(WHITE, 255 * min(1.0, (2.4 - m) / 0.6)), 'mm', 4, 9 * PK, rgba(INK, 255))
+    if 1.2 <= m < 4.5:
+        a = min(1.0, (4.5 - m) / 0.5)
+        d.rounded_rectangle((cw * 0.12, ch * 0.62, cw * 0.88, ch * 0.62 + 92 * PK), int(22 * PK), fill=rgba((30, 60, 130), 235 * a), outline=rgba((120, 170, 255), 255 * a), width=max(2, int(3 * PK)))
+        text(d, (cw / 2, ch * 0.62 + 46 * PK), 'Drag a card onto your side of the arena', lil(int(32 * PK)), rgba(WHITE, 255 * a), 'mm', 0, 3 * PK, rgba(INK, 255 * a))
+    for item in ILLEGAL:
+        if item['t'] - 0.05 <= m < item['t'] + 1.5:
+            a = min(1.0, (item['t'] + 1.5 - m) / 0.4)
+            d.rounded_rectangle((cw * 0.28, ch * 0.20, cw * 0.72, ch * 0.20 + 70 * PK), int(18 * PK), fill=rgba((40, 20, 70), 240 * a), outline=rgba((255, 255, 255), 90 * a), width=2)
+            text(d, (cw / 2, ch * 0.20 + 35 * PK), "Can't drop here", lil(int(30 * PK)), rgba(WHITE, 255 * a), 'mm', 0, 3 * PK, rgba(INK, 255 * a))
+    for item in DOWNS:
+        if item['t'] + 0.1 <= m < item['t'] + 2.5:
+            ours = item['team'] == 0
+            u = out_back((m - item['t'] - 0.1) / 0.3)
+            a = 255 * min(1.0, (item['t'] + 2.5 - m) / 0.3)
+            y = ch * 0.40
+            h = 110 * PK * u
+            d.rectangle((0, y - h / 2, cw, y + h / 2), fill=rgba((150, 20, 30) if ours else (24, 120, 50), a * 0.92))
+            d.rectangle((0, y - h / 2, cw, y - h / 2 + 5 * PK), fill=rgba(GOLD, a))
+            d.rectangle((0, y + h / 2 - 5 * PK, cw, y + h / 2), fill=rgba(GOLD, a))
+            text(d, (cw / 2, y), 'YOUR TOWER FELL' if ours else 'ENEMY TOWER DOWN!', lil(int(50 * PK)), rgba(WHITE, a), 'mm', 2, 4 * PK, rgba(INK, a))
+    if 120.0 <= m < 122.8:
+        u = out_back((m - 120.0) / 0.3)
+        a = 255 * min(1.0, (122.8 - m) / 0.3)
+        y, h = ch * 0.40, 120 * PK * u
+        d.rectangle((0, y - h / 2, cw, y + h / 2), fill=rgba((92, 36, 160), a * 0.92))
+        d.rectangle((0, y - h / 2, cw, y - h / 2 + 5 * PK), fill=rgba(GOLD, a))
+        d.rectangle((0, y + h / 2 - 5 * PK, cw, y + h / 2), fill=rgba(GOLD, a))
+        text(d, (cw / 2, y), 'COPIUM OVERDOSE  x2', lil(int(48 * PK)), rgba(WHITE, a), 'mm', 2, 4 * PK, rgba(INK, a))
+    if m >= 180.0:
+        u = m - 180.0
+        rng = np.random.default_rng(3)
+        for _ in range(90):
+            x0, speed, phase, size = rng.uniform(0, cw), rng.uniform(160, 420), rng.uniform(0, 6.28), rng.uniform(7, 14)
+            color = [(255, 205, 80), (178, 80, 246), (90, 200, 255), (255, 110, 130), (120, 230, 140)][int(rng.integers(0, 5))]
+            y = -40 + speed * u + 30 * math.sin(phase + u * 3)
+            x = x0 + 30 * math.sin(phase + u * 2.2)
+            if 0 < y < ch:
+                d.rectangle((x, y, x + size, y + size * 0.6), fill=rgba(color, 255))
+        text(d, (cw / 2, ch * 0.30 + 40 * PK * (1 - out_back(u / 0.4))), 'VICTORY!', lil(int(150 * PK)), rgba(GOLD, 255), 'mm', 4, 9 * PK, rgba(INK, 255))
+    return im
+
+
+def phone_picture(src, s, t):
+    """Fit the portrait phone picture into the 16:9 film frame: a blurred, darkened copy behind, the phone in front."""
+    base = src.resize((PW, PH), Image.LANCZOS).convert('RGBA')
+    draw_phone_hud(base, s, t)
+    back = base.convert('RGB').resize((W, int(W * PH / PW)), Image.BILINEAR)
+    top = (back.height - H) // 2
+    back = back.crop((0, top, W, top + H)).filter(ImageFilter.GaussianBlur(38))
+    back = Image.fromarray((np.asarray(back, np.float32) * 0.50).astype(np.uint8)).convert('RGBA')
+    ph = H - 140
+    pw = int(ph * PW / PH)
+    screen = base.convert('RGB').resize((pw, ph), Image.LANCZOS).convert('RGBA')
+    mask = Image.new('L', (pw, ph), 0)
+    ImageDraw.Draw(mask).rounded_rectangle((0, 0, pw - 1, ph - 1), 42, fill=255)
+    x0, y0 = (W - pw) // 2, 24
+    shadow = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+    ImageDraw.Draw(shadow).rounded_rectangle((x0 - 6, y0 + 10, x0 + pw + 6, y0 + ph + 14), 50, fill=(0, 0, 0, 170))
+    back.alpha_composite(shadow.filter(ImageFilter.GaussianBlur(14)))
+    bezel = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+    ImageDraw.Draw(bezel).rounded_rectangle((x0 - 10, y0 - 10, x0 + pw + 10, y0 + ph + 10), 52, fill=(18, 18, 24, 255), outline=(84, 84, 100, 255), width=3)
+    back.alpha_composite(bezel)
+    back.paste(screen, (x0, y0), mask)
+    return back
+
+
+def draw_game_hud(im, t, s):
+    """Cinematic arena shots keep a light version of the game's HUD: tower health pills, the clock and the score."""
+    m = match_time(t)
+    state = STATE.at(m)
+    draw_towers(im, s, t, m, W, H, 0.82)
+    hud.top_pills(im, 0.8, OPPONENT, 7521, state['clock'], True, y=4)
+    hud.w_badges(im, 0.8, state['ws'], 215)
 
 
 def draw_time_jump(d, t):
@@ -309,7 +460,7 @@ def end_card(t):
     text(d, (W / 2, 740), 'FREE TO PLAY', rub(56, 800), rgba((255, 236, 200), 255 * k2), 'mm', 10)
     text(d, (W / 2, 815), 'memeroyale.imaginestudio.fun', rub(32, 500), rgba(WHITE, 190 * k2), 'mm', 2)
     k3 = ease((u - 2.6) / 0.4)
-    text(d, (W / 2, 905), 'TAP WITH PURPOSE', rub(30, 800), rgba(GOLD, 230 * k3), 'mm', 7)
+    text(d, (W / 2, 905), 'DRAG WITH PURPOSE', rub(30, 800), rgba(GOLD, 230 * k3), 'mm', 7)
     d = ImageDraw.Draw(im, 'RGBA')
     fade_out = ease((T_FILM - t) / 0.5)
     if fade_out < 1:
@@ -340,13 +491,21 @@ def frame(f):
         im = Image.fromarray((np.clip(a, 0, 1) * 255).astype(np.uint8)).convert('RGBA')
         s = shot_at(t)
         in_game = s.get('game', False)
+        if s.get('phone'):
+            im = phone_picture(Image.open(path).convert('RGB'), s, t)
+            im = Image.fromarray((np.clip(np.asarray(im.convert('RGB'), np.float32) / 255.0 * VIG * ease(t / 0.8) * ease((T_CARD - t) / 0.12), 0, 1) * 255).astype(np.uint8)).convert('RGBA')
+            d = ImageDraw.Draw(im, 'RGBA')
+            draw_captions(d, t, y=H - 88)
+            im = im.convert('RGB')
+            im.save(os.path.join(OUT, f'c_{f:04d}.jpg'), quality=95, subsampling=0)
+            return
         if in_game:
             draw_game_hud(im, t, s)
         d = ImageDraw.Draw(im, 'RGBA')
         draw_title(d, t)
         draw_banners(d, t)
         draw_time_jump(d, t)
-        draw_captions(d, t, y=H - 316 if in_game else None)
+        draw_captions(d, t)
         im = im.convert('RGB')
     im.save(os.path.join(OUT, f'c_{f:04d}.jpg'), quality=95, subsampling=0)
 

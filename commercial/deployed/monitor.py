@@ -87,61 +87,28 @@ def card_art(cards_dir, uid, size):
     return _art[key]
 
 
-def tray(image, state, cards_dir, box, scale=1.0, highlight=None):
-    """Draw the game's tray (NEXT, four cards, Copium bar) inside `box` = (x, y, w, h) of an RGBA image."""
-    x0, y0, w, h = box
-    draw = ImageDraw.Draw(image, 'RGBA')
-    draw.rounded_rectangle((x0, y0, x0 + w, y0 + h), int(14 * scale), fill=(24, 12, 48, 235), outline=(120, 70, 200, 255), width=max(2, int(3 * scale)))
-    card_h = int(h * 0.62)
-    card_w = int(card_h * 0.8)
-    gap = int(10 * scale)
-    nx = x0 + int(14 * scale)
-    ny = y0 + int(h * 0.1)
-    next_h = int(card_h * 0.72)
-    next_w = int(next_h * 0.8)
-    draw.text((nx + next_w // 2, ny - int(2 * scale)), 'NEXT', font=font(int(14 * scale)), fill=(255, 255, 255, 255), anchor='mb')
-    image.alpha_composite(card_art(cards_dir, state['next'], (next_w, next_h)), (nx, ny + int(4 * scale)))
-    draw.ellipse((nx - 5, ny + 2, nx + int(22 * scale), ny + int(28 * scale)), fill=COP + (255,), outline=INK + (255,), width=2)
-    draw.text((nx + int(8 * scale), ny + int(15 * scale)), str(COST[state['next']]), font=font(int(18 * scale)), fill=(255, 255, 255, 255), anchor='mm')
-    cx = nx + next_w + int(22 * scale)
-    for index, uid in enumerate(state['hand']):
-        x = cx + index * (card_w + gap)
-        lift = int(10 * scale) if (highlight == index or (state.get('press') and state['last'] and state['last']['slot'] == index)) else 0
-        y = y0 + int(h * 0.06) - lift
-        image.alpha_composite(card_art(cards_dir, uid, (card_w, card_h)), (x, y))
-        draw.rounded_rectangle((x - 2, y - 2, x + card_w + 2, y + card_h + 2), max(6, card_w // 9), outline=(255, 226, 90, 255) if lift else INK + (255,), width=max(2, int(3 * scale)))
-        draw.ellipse((x - 7, y - 7, x + int(24 * scale), y + int(24 * scale)), fill=COP + (255,), outline=INK + (255,), width=2)
-        draw.text((x + int(8.5 * scale), y + int(8.5 * scale)), str(COST[uid]), font=font(int(18 * scale)), fill=(255, 255, 255, 255), anchor='mm')
-    # copium bar
-    bx, by = x0 + int(60 * scale), y0 + int(h * 0.76)
-    bw, bh = w - int(76 * scale), int(h * 0.17)
-    draw.rounded_rectangle((bx - 4, by - 4, bx + bw + 4, by + bh + 4), int(8 * scale), fill=(14, 6, 28, 255))
-    seg = bw / 10
-    for k in range(10):
-        fill = max(0.0, min(1.0, state['copium'] - k))
-        left = bx + k * seg + 2
-        draw.rounded_rectangle((left, by, bx + (k + 1) * seg - 2, by + bh), int(5 * scale), fill=COP_EMPTY + (255,))
-        if fill > 0.02:
-            draw.rounded_rectangle((left, by, left + (seg - 4) * fill, by + bh), int(5 * scale), fill=(COP_HI if fill >= 1 and state['copium'] >= 9.99 else COP) + (255,))
-    draw.text((x0 + int(30 * scale), by + bh // 2), str(int(state['copium'])), font=font(int(26 * scale)), fill=(255, 255, 255, 255), anchor='mm',
-              stroke_width=max(2, int(3 * scale)), stroke_fill=INK)
+def tray(image, state, cards_dir, box=None, scale=1.0, highlight=None):
+    """Compatibility wrapper: the game's tray, drawn by hud.py (scale = hud k)."""
+    import hud
+    hud.tray(image, state, cards_dir, scale, bottom=None if box is None else box[1] + box[3])
 
 
 def screen(state, cards_dir, size=(528, 318)):
-    """The whole screen shown on the hold's monitor."""
+    """The whole screen shown on the hold's monitor: the Thumb's game UI (time, score, tray)."""
+    import hud
     w, h = size
-    image = Image.new('RGBA', size, (42, 16, 112, 255))
+    image = Image.new('RGBA', size, (62, 60, 78, 255))
     draw = ImageDraw.Draw(image)
     for y in range(h):
-        shade = int(34 * y / h)
-        draw.line((0, y, w, y), fill=(44 - shade // 2, 16, 118 - shade))
-    draw.rectangle((0, 0, w, 32), fill=INK)
-    draw.text((12, 16), 'ARENA 2  ·  BACKYARD BBQ', font=font(16), fill=(255, 210, 90), anchor='lm')
-    draw.text((w - 12, 16), clock_text(state['clock']), font=font(20), fill=(255, 255, 255), anchor='rm')
-    draw.text((w // 2, 16), f"{state['ws'][0]} : {state['ws'][1]}", font=font(18), fill=(255, 255, 255), anchor='mm')
+        shade = int(26 * y / h)
+        draw.line((0, y, w, y), fill=(70 - shade, 68 - shade, 92 - shade))
+    k = 0.46
+    hud.top_pills(image, k, 'ULTRA CHAD', 7521, state['clock'], True)
+    hud.w_badges(image, k, state['ws'], 135)
     if state['message']:
-        draw.text((w // 2, 96), state['message'], font=font(34), fill=state['color'], anchor='mm', stroke_width=4, stroke_fill=INK)
-    tray(image, state, cards_dir, (10, h - 150, w - 20, 140), 0.85)
+        draw = ImageDraw.Draw(image)
+        draw.text((w // 2, 112), state['message'], font=font(30), fill=state['color'], anchor='mm', stroke_width=4, stroke_fill=INK)
+    hud.tray(image, state, cards_dir, k, bottom=h - 6)
     return image.convert('RGB')
 
 

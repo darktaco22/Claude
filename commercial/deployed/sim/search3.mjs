@@ -21,10 +21,10 @@ for (let s = 1; s <= N; s++) {
     if (b.t >= next) {
       next = b.t + (2.2 + r() * 5) * lazy;
       const slot = Math.floor(r() * 4), id = b.hands[0][slot];
-      let x = 1 + r() * 16, z = 17.5 + r() * 14;
-      if (!gag && b.t > 16) { gag = true; plays.push([+b.t.toFixed(2), id, 9, 8, 'illegal']); log.push([+b.t.toFixed(1), 'illegal', id]); }
+      let continue_ = false; let x = +(1 + r() * 16).toFixed(1), z = +(17.5 + r() * 14).toFixed(1);
+      if (!gag && b.t > 16) { gag = true; plays.push([+b.t.toFixed(2), id, 9, 8, 'illegal']); log.push([+b.t.toFixed(1), 'illegal', id]); next = b.t + 1.7; continue_ = true; }
       else if (id === 'airdrop' && !aird) { aird = true; x = 9; z = 16; }
-      if (b.copium[0] >= 3.5 || id === 'dope') if (!b.canPlay(0, slot, x, z)) {
+      if (!continue_) if (b.copium[0] >= 3.5 || id === 'dope') if (!b.canPlay(0, slot, x, z)) {
         b.play(0, slot, x, z); plays.push([+b.t.toFixed(2), id, +x.toFixed(1), +z.toFixed(1)]); log.push([+b.t.toFixed(1), id]);
       }
     }
@@ -34,7 +34,7 @@ for (let s = 1; s <= N; s++) {
   const downs = log.filter(l => l[1] === 'down');
   STAT.n++; if (b.winner === 0) STAT.win++;
   const ourDown = downs.filter(d => d[2] === 0), theirDown = downs.filter(d => d[2] === 1);
-  if (b.winner === 0 && aird && ourDown.length >= 1 && theirDown.length >= 1 && b.t > 150 && ourDown[0][0] < theirDown[theirDown.length - 1][0]) {
+  if (b.winner === 0 && plays.some(p => p[1] === 'airdrop') && ourDown.length >= 1 && theirDown.length >= 1 && b.t > 178 && ourDown[0][0] < 75 && theirDown.length >= 2 && theirDown[1][0] < 119) {
     STAT.winEarlyDown++;
     hits.push({s, skill, end: +b.t.toFixed(0), ws: b.ws.join('-'), plays: plays.length, log: log.map(l => l.join(' ')), plan: {seed: s, skill, order0, deck0, deck1, plays}});
   }

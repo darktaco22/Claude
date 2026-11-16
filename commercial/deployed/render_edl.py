@@ -65,6 +65,16 @@ for card in E.get('cards', []):
     CARDS.append((card, obj, node))
 
 
+HOLD = {}                                   # card/sarge key -> every object of those hold actors (the rig, its children, the ring)
+for obj in bpy.data.objects:
+    if obj.name.startswith('RIG-') and 'hold' in obj:
+        group = HOLD.setdefault(obj['hold'], [])
+        group.append(obj)
+        group.extend(obj.children_recursive)
+        ring = bpy.data.objects.get('ring-' + obj.name[4:])
+        if ring is not None:
+            group.append(ring)
+BASE_RES = (sc.render.resolution_x, sc.render.resolution_y)
 HIDEABLE = sorted({name for shot_ in E['shots'] for name in (shot_.get('hide') or ())})
 FILL = bpy.data.objects.get('camfill')
 
@@ -130,6 +140,24 @@ def setup(f):
         if target is not None:
             target.hide_render = name in hidden
     sc.render.use_motion_blur = bool(s.get('mb'))
+    res = s.get('res') or BASE_RES
+    sc.render.resolution_x, sc.render.resolution_y = int(res[0]), int(res[1])
+    keep = s.get('keep')
+    for key, objs in HOLD.items():
+        for obj in objs:
+            if keep is not None and not s.get('phone'):
+                obj.hide_render = key not in keep           # solo close-up: nobody else in the frame
+            elif s.get('phone'):
+                if obj.name.startswith('RIG-'):             # the crew still inside the hovering ship must not show from above
+                    pos = obj.matrix_world.translation
+                    inside = pos.z > 15.0 and pos.y > -8.3 and abs(pos.x) < 3.6
+                    for member in [obj] + list(obj.children_recursive):
+                        member.hide_render = inside
+                    ring = bpy.data.objects.get('ring-' + obj.name[4:])
+                    if ring is not None:
+                        ring.hide_render = inside
+            else:
+                obj.hide_render = False
     if FILL is not None:
         FILL.data.energy = s.get('fill', 0.0)
 

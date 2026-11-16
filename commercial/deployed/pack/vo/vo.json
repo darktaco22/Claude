@@ -15,8 +15,8 @@
   "who": "egg"
  },
  "s02": {
-  "dur": 6.341,
-  "sub": "Door cards can be played. Bench cards wait. The Thumb taps a door card, that card jumps, and the next one on the bench steps up.",
+  "dur": 7.198,
+  "sub": "Door cards can be played. Bench cards wait. The Thumb drags a door card onto the field, that card jumps, and the next one on the bench steps up.",
   "who": "sarge"
  },
  "e02": {
@@ -65,13 +65,13 @@
   "who": "chill"
  },
  "s06": {
-  "dur": 1.686,
-  "sub": "Dope! You're up! Go, go, go!",
+  "dur": 2.449,
+  "sub": "Match on! Eyes on the screen! Wait for the Thumb!",
   "who": "sarge"
  },
  "k03": {
-  "dur": 1.232,
-  "sub": "He picked the cheap one.",
+  "dur": 1.863,
+  "sub": "Two Copium. The cheap one.",
   "who": "ket"
  },
  "s07": {
@@ -85,8 +85,8 @@
   "who": "house"
  },
  "e04": {
-  "dur": 1.29,
-  "sub": "He's tapping the enemy side!",
+  "dur": 1.543,
+  "sub": "He's dragging onto the enemy side!",
   "who": "egg"
  },
  "s08": {
@@ -110,13 +110,13 @@
   "who": "sarge"
  },
  "s10": {
-  "dur": 1.405,
-  "sub": "Right tower's down!",
+  "dur": 1.402,
+  "sub": "Left tower's down!",
   "who": "sarge"
  },
  "c03": {
-  "dur": 1.325,
-  "sub": "He was tapping.",
+  "dur": 1.414,
+  "sub": "He was dragging.",
   "who": "chill"
  },
  "k05": {
@@ -130,8 +130,8 @@
   "who": "chill"
  },
  "s11": {
-  "dur": 3.889,
-  "sub": "Airdrop! Their whole push is... on the other side. He dropped it on our base.",
+  "dur": 3.778,
+  "sub": "Airdrop! Their whole push is on the other side. He dropped it on our side.",
   "who": "sarge"
  },
  "k06": {
@@ -159,6 +159,11 @@
   "sub": "Cards rotate. Units stay.",
   "who": "sarge"
  },
+ "s20": {
+  "dur": 2.266,
+  "sub": "Second tower down! Two towers to one!",
+  "who": "sarge"
+ },
  "s14": {
   "dur": 2.73,
   "sub": "Copium overdose! Everything fills twice as fast!",
@@ -170,8 +175,8 @@
   "who": "egg"
  },
  "k08": {
-  "dur": 1.492,
-  "sub": "For a tapper? Yes.",
+  "dur": 1.489,
+  "sub": "For a dragger? Yes.",
   "who": "ket"
  },
  "e08": {
@@ -185,8 +190,8 @@
   "who": "chill"
  },
  "e09": {
-  "dur": 1.39,
-  "sub": "Why are there three of me out there?",
+  "dur": 1.706,
+  "sub": "Why am I still out there? I'm right here!",
   "who": "egg"
  },
  "s15": {
@@ -195,8 +200,8 @@
   "who": "sarge"
  },
  "s16": {
-  "dur": 1.513,
-  "sub": "Chillhouse! Last chance!",
+  "dur": 1.612,
+  "sub": "Twenty seconds! Hold the line!",
   "who": "sarge"
  },
  "h02": {
@@ -205,13 +210,13 @@
   "who": "house"
  },
  "s17": {
-  "dur": 1.337,
-  "sub": "Two towers to one!",
+  "dur": 1.637,
+  "sub": "Time! Two towers to one!",
   "who": "sarge"
  },
  "k09": {
-  "dur": 1.226,
-  "sub": "He won by tapping.",
+  "dur": 1.212,
+  "sub": "He won by mashing.",
   "who": "ket"
  },
  "e10": {
@@ -230,8 +235,8 @@
   "who": "chill"
  },
  "s19": {
-  "dur": 2.539,
-  "sub": "Meme Royale. Free to play. Tap with purpose.",
+  "dur": 2.633,
+  "sub": "Meme Royale. Free to play. Drag with purpose.",
   "who": "sarge"
  },
  "a_fight": {

@@ -128,3 +128,14 @@ those topics with my own code.
 
 ## Toolbox
 See `README.md` in this folder: camera shake, Poly Haven loader, scatter, fire simulation.
+
+
+## "Deployed" rework 3: play the real game first (lessons)
+
+- Before filming a game, PLAY it (Playwright + Chromium works: guest accounts, a throwaway password kept out of git) and look at real
+  frames. A film built only from source code reads as made by someone who never played: wrong HUD, too many units, tap vs drag.
+- Portrait game footage inside a 16:9 film: render the portrait view as its own shot (`res` per shot), draw the HUD at the
+  phone's native size, then fit it as a phone over a blurred, darkened copy of itself.
+- Close-ups blocked by crew in front of the speaker: hide everybody else for that shot (solo / `keep`), not new camera angles.
+- A tall cartoon fall (20 m) can take 1.0 s; physical 2 s made the jump look like it happened before the tap.
+- A recorded plan must replay exactly: round positions BEFORE the search plays them, and allow one tick of tolerance.

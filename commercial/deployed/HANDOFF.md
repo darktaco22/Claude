@@ -62,26 +62,27 @@ Render: 67 % size, 6 samples, about 19 s a frame (3349 frames). Ranges: local 1-
 Lessons (also in the playbook): subdivision costs ~130 MB per mesh, so only the ship's cast has it; library passes duplicate
 textures (dedupe by content, never by name: different characters share names like `base_0`).
 
-## Rework 3 (after playing the live game) - findings and plan
+## Rework 3 (after playing the live game): what the film is now
 
-Played a real match on memeroyale.imaginestudio.fun with Playwright (guest account, throwaway password never committed;
-`reference/play_match.js`; the lobby needs a tap on the splash `#boot` every page load; cards are DRAGGED onto your half;
-a new account's arena is Mom's Basement; the user's screenshot `reference/user_screenshot_moon.png` is the Moon arena).
+Played a real match on memeroyale.imaginestudio.fun with Playwright (guest account; the lobby needs a tap on the splash `#boot`
+after each page load; cards are DRAGGED onto your half; a new account's arena is Mom's Basement; `reference/` holds the user's
+Moon-arena screenshot, real-match frames and the Playwright script). Real play: steep top-down portrait camera, SPARSE field
+(1-4 units a side), name pill + TIME LEFT pill, W badges on the river bank, tower HP pills, green-bordered tray with NEXT,
+four cards with hex cost badges and names, Copium bottle + 10-segment bar.
 
-What real play looks like (what v2 got wrong):
-- Camera: steep top-down view of the whole board, portrait phone screen. Field is SPARSE: 1-4 units per side at a time
-  (v2 replay: enemy average 2.6, p90 7, max 11 because the enemy deck had swarm cards useless/fud/firesale).
-- HUD: top-left dark pill (name in team colour, trophy + number), top-right "TIME LEFT m:ss" pill, W score badges
-  (red top, green below, at the right river bank), emote button bottom-left, tower HP as red/green pills with numbers,
-  names pop up over units when a card is played, banners FIGHT!, TAKE THE L, DEFEAT screen.
-- Tray: dark panel with a GREEN border; NEXT label + small card with a hex purple cost badge on the left; four cards with
-  hex cost badges top-left and the card NAME under the art; selected card has a coloured (cyan) frame; below, a purple
-  Copium potion icon with the number and a 10-segment purple bar. (v2's tray drew round badges and no names.)
+What changed:
+- Match: `sim/plan14444.json` (`node search3.mjs 15000 0.3 0.4` finds winning button-masher matches against a SINGLE-UNIT enemy deck:
+  troll dope bonk neet zcat apu farter popcat; a rejected drag costs the Thumb 1.7 s). Illegal drag 17.97, our left tower 43.1,
+  enemy right tower 83.4, enemy left tower 91.2, overdose 120, win 2-1 at 180. Enemy averages 2.7 units (max 7).
+- `hud.py`: the real HUD drawn from the screenshot (tray, pills, W badges, HP pills, emote button). Used by the monitor, the phone
+  shots and the cinematic arena shots.
+- Phone shots (`phone=True`, `res=[806,1746]` in edl.json): the game's own static top-down camera (`PHONE_CAM` in scene.py, ship and
+  the crew still inside it hidden by render_edl.py), composed by finish.py into a phone on a blurred backdrop with the HUD, the drag
+  (card follows the finger from its slot, ring at the target), the drop ring, the card name popping up, "Can't drop here",
+  FIGHT!, tower/overdose/victory banners. Each play: phone drag (0.85 s) -> ramp shot -> fall (FALL = 1.0 s) -> short chase.
+- Ship close-ups are SOLO (`keep=[card]` / `keep=['sarge']`, actors tagged `rig['hold']`): nobody blocks or clips into the speaker.
+- Dialogue: "drag" not "tap", no "last card"; lines placed at match times; `VOICE PUSH` prints show lines shifted off overlaps.
+- Film: 3224 frames (134 s + 6 s end card).
 
-Fixes so far: enemy deck without swarm cards (`sim/search3.mjs` deck1 = troll dope bonk neet zcat apu farter popcat) keeps
-the enemy at <=4 units. `node search3.mjs 3000 0.3 0.4` finds winning masher matches (e.g. seed 2811: illegal tap 16.5,
-enemy rig 59.7, ours 155, enemy 161.3, win 2-1 at 180). Scene segments C-G in scene.py are hard-wired to the old match's
-times (40.97, 43.6, 88.8, 95.83, 120, 164.5, 166.57) and need re-timing to the new recording.
-
-To do: re-record + re-time the story, redraw the tray/HUD exactly like the real one, declutter the ship (no characters
-overlapping/clipping: one bay each), re-render (about 3 h with 8 machines), finish.
+Render: ranges of about 403 frames for 8 machines (see the table in the worker prompts / git log). Phone frames render in about 9 s,
+ship and arena frames 15-25 s.
