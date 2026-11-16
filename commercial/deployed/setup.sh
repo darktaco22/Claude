@@ -9,7 +9,7 @@ if [ ! -x "$BL" ]; then
 fi
 python3 -c "import PIL, numpy, soundfile" 2>/dev/null || pip install -q pillow numpy soundfile
 BP=$(dirname "$BL")/4.2/python/bin/python3.11
-"$BP" -c "import PIL, numpy" 2>/dev/null || { "$BP" -m ensurepip -q 2>/dev/null; "$BP" -m pip install -q pillow numpy; }
+"$BP" -c "import PIL, numpy" 2>/dev/null || { "$BP" -m ensurepip >/dev/null 2>&1 || true; "$BP" -m pip install -q pillow numpy; }
 cd "$HERE"
 [ -f "$W/chars.blend" ] || "$BL" -b -P ../tools/assets.py -- build ../comeback/models ../noobpro/models/units.json "$W/chars.blend" > "$W/chars.log" 2>&1
 [ -f "$W/assets/kloppenheim_06_puresky/kloppenheim_06_puresky_2k.exr" ] || python3 ../tools/polyhaven.py "$W/assets" hdri kloppenheim_06_puresky 2k
