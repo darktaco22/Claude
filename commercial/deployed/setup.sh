@@ -17,6 +17,6 @@ if [ ! -f "$W/scene.blend" ] || [ scene.py -nt "$W/scene.blend" ] || [ sets.py -
   cp edl.json "$W/edl_repo.json"
   "$BL" -b --factory-startup -P scene.py -- --out "$W/scene.blend" --pack "$HERE/pack" --lib "$W/chars.blend" --assets "$W/assets" --mon "$HERE/pack/monitor.mp4" > "$W/build.log" 2>&1
   grep -q BUILT "$W/build.log" || { echo "build failed"; tail -20 "$W/build.log"; exit 1; }
-  cmp -s edl.json "$W/edl_repo.json" || echo "WARNING: rebuilt edl.json differs from the repo's"
+  cmp -s edl.json "$W/edl_repo.json" || { echo "ERROR: the edit rebuilt on this machine differs from the committed edl.json (stale checkout? git pull). Not rendering."; exit 1; }
 fi
 echo SETUP-OK

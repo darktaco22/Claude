@@ -173,20 +173,41 @@ def text(d, xy, string, font, fill, anchor='lm', spacing=0, stroke=0, stroke_fil
     return total
 
 
+def wrap_caption(d, string, font, limit):
+    """Break a line into at most two balanced rows that fit `limit` pixels."""
+    if d.textlength(string, font=font) <= limit:
+        return [string]
+    words = string.split()
+    best = None
+    for k in range(1, len(words)):
+        a, b = ' '.join(words[:k]), ' '.join(words[k:])
+        width = max(d.textlength(a, font=font), d.textlength(b, font=font))
+        if best is None or width < best[0]:
+            best = (width, [a, b])
+    return best[1]
+
+
 def draw_captions(d, t, y=None):
-    for cue in E['cues']:
-        if cue['f'] - 0.05 <= t < cue['f'] + cue['dur'] + 0.15:
+    cues = sorted(E['cues'], key=lambda item: item['f'])
+    for index, cue in enumerate(cues):
+        end = cue['f'] + cue['dur'] + 0.15
+        if index + 1 < len(cues):
+            end = min(end, cues[index + 1]['f'] - 0.02)           # one caption at a time
+        if cue['f'] - 0.05 <= t < end:
             tag, color = SPEAKER[cue['who']]
             font = rub(34, 500)
             tag_w = d.textlength(tag, font=rub(24, 800)) + 30
-            line_w = d.textlength(cue['sub'], font=font) + 44
-            top = y if y is not None else H - 104
+            rows = wrap_caption(d, cue['sub'], font, W - tag_w - 140)
+            line_w = max(d.textlength(row, font=font) for row in rows) + 44
+            box_h = 56 if len(rows) == 1 else 98
+            top = (y if y is not None else H - 104) - (box_h - 56)
             x = W / 2 - (tag_w + line_w) / 2
-            d.rounded_rectangle((x, top, x + tag_w + line_w, top + 56), 10, fill=rgba((0, 0, 0), 205))
-            d.rounded_rectangle((x, top, x + tag_w, top + 56), 10, fill=rgba(color, 250))
-            d.rectangle((x + tag_w - 10, top, x + tag_w, top + 56), fill=rgba(color, 250))
-            text(d, (x + tag_w / 2, top + 29), tag, rub(24, 800), rgba(INK, 255), 'mm')
-            text(d, (x + tag_w + 22, top + 29), cue['sub'], font, rgba(WHITE, 255))
+            d.rounded_rectangle((x, top, x + tag_w + line_w, top + box_h), 10, fill=rgba((0, 0, 0), 205))
+            d.rounded_rectangle((x, top, x + tag_w, top + box_h), 10, fill=rgba(color, 250))
+            d.rectangle((x + tag_w - 10, top, x + tag_w, top + box_h), fill=rgba(color, 250))
+            text(d, (x + tag_w / 2, top + box_h / 2 + 1), tag, rub(24, 800), rgba(INK, 255), 'mm')
+            for n, row in enumerate(rows):
+                text(d, (x + tag_w + 22, top + 29 + 40 * n), row, font, rgba(WHITE, 255))
 
 
 def draw_title(d, t):
