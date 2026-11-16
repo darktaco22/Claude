@@ -302,6 +302,30 @@ for e in EVENTS_SIM:
     if e['type'] == 'spawn':
         LANDED.setdefault(e['id'], e['t'] + 1.03)             # (a unit deployed in the last second never lands in the recording)
 UID = {'firesale': 'useless', 'uselessarmy': 'useless'}
+# no two characters may overlap on screen: the game lets units touch, the film pushes them apart (a few frames, at most a few tenths of a tile)
+RADIUS = json.load(open(os.path.join(PACK, 'radii.json')))
+SEPARATED = 0
+for frame in FR:
+    live = [e for e in frame['e'] if e[1] == 'u' and not e[9]]
+    for _pass in range(5):
+        moved = False
+        for i in range(len(live)):
+            for j in range(i + 1, len(live)):
+                a, b = live[i], live[j]
+                lim = 0.95 * (RADIUS.get(a[2], 0.4) + RADIUS.get(b[2], 0.4)) + 0.08
+                dx, dz = b[4] - a[4], b[5] - a[5]
+                d = math.hypot(dx, dz)
+                if d < lim:
+                    if d < 1e-4:
+                        dx, dz, d = 1.0, 0.3 * ((a[0] + b[0]) % 3 - 1), 1.0
+                    push = (lim - d) / 2.0
+                    a[4], a[5] = a[4] - dx / d * push, a[5] - dz / d * push
+                    b[4], b[5] = b[4] + dx / d * push, b[5] + dz / d * push
+                    moved = True
+        if not moved:
+            break
+        SEPARATED += 1
+print('SEPARATION passes', SEPARATED)
 ENT = {}
 for frame in FR:
     for e in frame['e']:
@@ -453,7 +477,8 @@ for index, card in enumerate(ORDER0[4:]):
     queue.append(actor)
 sarge = new_actor('sarge', 'walter')
 smooth_hero(sarge)
-sarge.put(0, H(0.0, 5.55), hh(0, -1))
+SARGE_AT = (2.15, 5.45)                              # beside the ramp: the jumpers run down the middle
+sarge.put(0, H(*SARGE_AT), hh(-2.15, -2.05))
 sarge.show(0)
 sarge.play(0, 'idle')
 
@@ -521,17 +546,18 @@ def process_play(play, spawn):
     jumper.spawn = spawn
     # the next card steps up into the vacant hand slot, the others shuffle forward, a copy pops in at the back
     a_step = a_jump - 0.6
-    stepper.go(a_step, H(*HS[slot]), speed=1.7, then='idle')
-    stepper.put(a_step + 2.0, head=hh(0, 1))
+    waypoint = stepper.go(a_step, H(HS[slot][0], 2.2), speed=1.7, then=None)       # along the aisle behind the row, never through it
+    stepper.go(waypoint, H(*HS[slot]), speed=1.7, then='idle')
+    stepper.put(a_step + 2.4, head=hh(0, 1))
     for index, other in enumerate(queue):
         other.go(a_step + 0.3, H(*QS[index]), speed=1.4, then='idle')
         other.put(a_step + 1.6, head=hh(0, 1))
     clone = crate_actor(f'crate-c{len(ALL)}') if play['card'] == 'airdrop' else new_actor(f"{play['card']}-c{len(ALL)}", UID.get(play['card'], play['card']))
     clone.card = play['card']
-    clone.put(a_step + 0.4, H(*QS[3]), hh(0, 1))
-    clone.show(a_step + 0.4)
-    clone.play(a_step + 0.4, 'idle', 0.8 + 0.3 * random.random())
-    event('card_pop', a_step + 0.4, card=play['card'])
+    clone.put(a_step + 1.45, H(*QS[3]), hh(0, 1))
+    clone.show(a_step + 1.45)
+    clone.play(a_step + 1.45, 'idle', 0.8 + 0.3 * random.random())
+    event('card_pop', a_step + 1.45, card=play['card'])
     queue.append(clone)
     JUMPS.append((play, jumper, a_jump, a_land, target))
     return jumper
@@ -851,7 +877,7 @@ def face(actor_pos, side, lens, dist=1.9, up=0.0, name='cu', shake=0.3, fill_pow
 def sarge_face(side, lens=55, dist=4.0, up=0.15, name='sarge'):
     """Sarge stands at the ramp facing the crew: the camera shoots him from the aisle."""
     def fn(end):
-        shot(name, end, (side * 0.12, 5.55 - dist, EYE + 0.45 + up), (0.0, 5.55, EYE + up), lens, hide=hides(), fill_power=60, shake=0.3, fstop=2.4, keep=['sarge'])
+        shot(name, end, (SARGE_AT[0] - 0.9 + side * 0.12, SARGE_AT[1] - dist, EYE + 0.45 + up), (SARGE_AT[0], SARGE_AT[1], EYE + up), lens, hide=hides(), fill_power=60, shake=0.3, fstop=2.4, keep=['sarge'])
     return fn
 
 
@@ -1135,6 +1161,47 @@ for e in EVENTS_SIM:
         event('boom', M(e['t']))
     if e['type'] == 'tower_shot' and any(a0 <= M(e['t']) < a1 for a0, a1 in game_ranges) and rng_hits.random() < 0.5:
         event('tshot', M(e['t']))
+
+
+# ==== CLIP CHECK: no two characters in the ship may overlap, at any time
+def _pos_at(actor, frame):
+    keys = actor.loc
+    if not keys:
+        return None
+    if frame <= keys[0][0]:
+        return keys[0][1]
+    for (f0, p0), (f1, p1) in zip(keys, keys[1:]):
+        if f0 <= frame <= f1:
+            u = 0.0 if f1 == f0 else (frame - f0) / (f1 - f0)
+            return tuple(p0[n] + (p1[n] - p0[n]) * u for n in range(3))
+    return keys[-1][1]
+
+
+def _visible(actor, a):
+    return any(on <= a and (off is None or a < off) for on, flag, off in actor.vis)
+
+
+_crew = [actor for actor in ALL if getattr(actor, 'card', None) or actor is sarge]
+_worst = {}
+for _k in range(int(M(0.0) * 10) - 460, int(M(184.0) * 10)):
+    _a = _k / 10.0
+    _in = []
+    for actor in _crew:
+        if not _visible(actor, _a):
+            continue
+        p = _pos_at(actor, F(_a))
+        if p is not None and p[2] > 15.0 and p[1] > -8.3 and abs(p[0]) < 3.6:
+            _in.append((actor, p))
+    for _i in range(len(_in)):
+        for _j in range(_i + 1, len(_in)):
+            d = math.hypot(_in[_i][1][0] - _in[_j][1][0], _in[_i][1][1] - _in[_j][1][1])
+            if d < 0.85:
+                key = (_in[_i][0].label, _in[_j][0].label)
+                if key not in _worst or d < _worst[key][0]:
+                    _worst[key] = (round(d, 2), round(_a - PRE, 1))
+for key, (d, at_) in sorted(_worst.items(), key=lambda kv: kv[1][0]):
+    print('CLIP', key, 'min distance', d, 'at match time', at_)
+print('CLIP CHECK done:', len(_worst), 'pairs closer than 0.85 m')
 
 # ==== FINALIZE
 for actor in ALL:
