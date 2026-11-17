@@ -139,3 +139,12 @@ See `README.md` in this folder: camera shake, Poly Haven loader, scatter, fire s
 - Close-ups blocked by crew in front of the speaker: hide everybody else for that shot (solo / `keep`), not new camera angles.
 - A tall cartoon fall (20 m) can take 1.0 s; physical 2 s made the jump look like it happened before the tap.
 - A recorded plan must replay exactly: round positions BEFORE the search plays them, and allow one tick of tolerance.
+
+## Deployed rework 4: lessons (timing, rigs, workers)
+- A rig with no animation clip at a frame drops to its bind pose (T-pose). Animate past the last shot (END_A) and never cut a one-shot clip (attack, emote) short: its first frames are the T-pose wind-up. `Actor.tidy_items` plays moves in full and merges flicker.
+- Pin each line to the shot that carries it (`say_now`, film time). Looking a cue up by animation time picks the wrong shot when ranges overlap.
+- Close-up cameras need per-character eye heights (the egg's face sits low) and the position where the actor stands once the shot is under way (`seat`).
+- Ramp shot: view the open ramp head-on from outside the door; a camera inside the row only shows backs.
+- Frames must be filed by edit hash (`frames_jpg/<hash>/`); a worker on a stale checkout otherwise mixes old frames in (this produced a giant Sarge on the phone screen).
+- Containers restart without warning. render_worker.sh pushes every 15 min and loops by itself; relaunching the same command resumes.
+- Workers will not take a range from a peer session without being told by the user; ask the user to nudge them if they sit idle.
