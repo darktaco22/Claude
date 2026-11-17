@@ -35,6 +35,9 @@ if '--cams' in argv:
     out = arg('--out', '/tmp/stills'); os.makedirs(out, exist_ok=True)
     for spec in arg('--cams').split(','):
         cn_, f = spec.split('@')
+        if cn_ == 'knee':
+            for m in list(sc.timeline_markers): sc.timeline_markers.remove(m)
+            sc.camera = camera('knee', (1.1, CH.y - 1.1, 0.6), tuple(CH + Vector((0, -0.3, 0.42))), lens=35, fstop=11)
         if cn_ == 'side':
             for m in list(sc.timeline_markers): sc.timeline_markers.remove(m)
             sc.camera = camera('side', (2.0, CH.y - 0.3, 0.8), tuple(CH + Vector((0, 0, 0.7))), lens=35, fstop=11)

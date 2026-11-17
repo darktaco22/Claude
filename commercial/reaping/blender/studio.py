@@ -68,7 +68,7 @@ plane('desk_logo', 0.9, 0.9, (DX, DY - 0.965, FZ + 0.55), rot=(math.pi / 2, 0, 0
 cyl('mug_host', 0.045, 0.1, (DX + 0.45, DY - 0.55, FZ + 1.1), mat('mug', (0.85, 0.85, 0.85), 0.25))
 # ---- guest: armchair, coffee table, tissues, plants
 GX, GY = 1.35, 1.35
-ph('modern_arm_chair_01', (GX, GY, FZ), face(-0.85, -1), 0.82)
+ph('modern_arm_chair_01', (GX, GY, FZ), face(-0.85, -1), float(arg('--chs', 0.68)))
 SEATZ = seat_top(GX, GY)
 ph('modern_coffee_table_01', (0.0, 0.55, FZ), 0, 1.0)
 box('tissue_box', (0.24, 0.12, 0.1), (0.35, 0.5, FZ + 0.47), mat('tbox', (0.35, 0.75, 0.85), 0.5))
@@ -87,7 +87,7 @@ for i, cid in enumerate(AUD):
     c = load(cid, (x, y, 0.0 + r * 0.3), face(-x * 0.05, 1), 0.95); CAST[f'aud{i}'] = c
 # ---- the cast
 POP = load('popcat', (DX, DY + 0.45, FZ), face(0.35, -1), 0.95); CAST['popcat'] = POP
-WJ = load('wojak', (GX, GY + 0.05, FZ), face(-0.85, -1), 1.0, subd=False); CAST['wojak'] = WJ
+WJ = load('wojak', (GX, GY + 0.05, FZ), face(-0.85, -1), float(arg('--wjs', 1.25)), subd=False); CAST['wojak'] = WJ
 import tears as TR
 print('TEARS', len(TR.build(WJ, 1, 400, period=20)))
 TOTAL = arg('--frames', 360, int); sc.frame_start, sc.frame_end = 1, TOTAL
@@ -97,7 +97,7 @@ for k, c in CAST.items():
 clip(POP, 'idle', -10, TOTAL + 10)
 for f0, f1 in ((86, 104), (112, 128), (300, 320)): clip(POP, 'attack1', f0, f1, speed=1.3, blend=3)   # the 'pop' mouth while talking
 # Wojak sits, slumped, sobbing: FK seated legs on the measured cushion, IK arms (hands on knees)
-off, kL, kR = sit_fk(WJ, SEATZ, front_y=-0.31, flesh=0.07, slope=float(arg('--slope', 26)))
+off, kL, kR = sit_fk(WJ, SEATZ, front_y=float(arg('--fy', -0.37)), flesh=0.09, slope=float(arg('--slope', 7)))
 for f in range(1, TOTAL + 1, 3):
     sob = 0.5 + 0.5 * math.sin(f * 0.55); sob2 = math.sin(f * 1.1)
     WJ.key(f, {'hips': off, 'spine': 0.3 + 0.04 * sob, 'lean': 0.02 * sob2,
@@ -122,6 +122,8 @@ c = shot('T5_pop', 301, camera('T5_pop', (DX + 0.55, DY - 1.9, FZ + 1.95), PH_ +
 cams['dbg_side'] = camera('dbg_side', (GX + 2.2, GY - 0.2, FZ + 0.9), (GX, GY, FZ + 0.6), lens=40, fstop=8)
 cams['dbg_34'] = camera('dbg_34', (GX + 0.6, GY - 2.2, FZ + 1.0), (GX, GY, FZ + 0.6), lens=40, fstop=8)
 cams['dbg_front'] = camera('dbg_front', (GX - 1.5, GY - 1.2, FZ + 0.75), (GX, GY, FZ + 0.6), lens=40, fstop=8)
+cams['dbg_knee'] = camera('dbg_knee', (GX + 1.1, GY - 0.9, FZ + 0.6), (GX - 0.1, GY - 0.25, FZ + 0.5), lens=35, fstop=11)
+cams['dbg_knee2'] = camera('dbg_knee2', (GX - 1.3, GY + 0.2, FZ + 0.55), (GX - 0.1, GY - 0.25, FZ + 0.5), lens=35, fstop=11)
 sc.camera = cams['T1_wide']
 if '--cams' in argv:
     out = arg('--out', '/tmp/stills'); os.makedirs(out, exist_ok=True)

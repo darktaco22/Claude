@@ -69,3 +69,5 @@ S.update({
                    cues=[(0.9, 1, 'emote'), (3.0, 1, 'walk')], moves="window.MOVE(1,3.0,3.4,6.5,0.3,0,%s);" % (PI / 2),
                    gests=[(1, 'tilt', 2.2, 0.9, 0.8), (0, 'sob', 3.2, 3.2, 0.9)]),
 })
+S['clashB'] = dict(arena='parking', T=8.0, people=[], cam=bcast(['whale', 'popcat'], dx=-6.0, h=5.2, dz=7.8, look=1.2, fov=40),
+                   js=[(0.1, "D.drop(b,0,'whale',14.4,19.4); D.drop(b,1,'popcat',14.4,12.8);")])
