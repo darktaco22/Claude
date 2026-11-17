@@ -1,7 +1,7 @@
 import numpy as np, soundfile as sf, json, sys
 from kokoro_onnx import Kokoro
 k=Kokoro('/root/kok/kokoro-v1.0.onnx','/root/kok/voices-v1.0.bin')
-CASTER=('am_puck',1.14); ANALYST=('bm_george',0.98)
+CASTER=('am_puck',1.04); ANALYST=('bm_george',0.98)
 # key: (caster setup line, analyst punchline, sticker text)
 S={
 "intro":("Ladies and gentlemen! Welcome to THE TROPHY ROAD! Seventeen arenas! Zero financial advice!","Please remain seated.",""),
@@ -22,6 +22,9 @@ S={
 "mine":("Diamond Hands Mine! Hold the line! Never sell! Never blink! Never check the price!","He checked the price.","HANDS: DIAMOND (SHAKING)"),
 "clouds":("Copium Clouds! Breathe in! It's all still going up! Breathe out! Still going up!","It is not still going up.","COPIUM: 100%"),
 "metaverse":("The Metaverse! The final arena! Look at that crowd!","There is no crowd.","PLAYERS ONLINE: 0"),
+"mA":("Then the road gets weird! The Backyard! The Strip Mall! Plaza After Dark!","",""),
+"mB":("The Trading Floor! Cold Storage!","",""),
+"mC":("The Factory! The Dump! The Mine!","",""),
 "outro":("Seventeen arenas! One road! More memes! More arenas! More chaos! Play it now on PC and mobile!","No financial advice included.",""),
 }
 def say(text,voice,speed):
@@ -31,7 +34,9 @@ def say(text,voice,speed):
 out={}
 for key,(c,a_,st) in S.items():
     ac,sr=say(c,*CASTER); sf.write(f'/root/road/v2_{key}_c.wav',ac,sr)
-    aa,sr=say(a_,*ANALYST); sf.write(f'/root/road/v2_{key}_a.wav',aa,sr)
-    out[key]=dict(c=len(ac)/sr,a=len(aa)/sr,caster=c,analyst=a_,sticker=st)
-    print(key,round(len(ac)/sr,2),round(len(aa)/sr,2))
+    if a_:
+        aa,sr=say(a_,*ANALYST); sf.write(f'/root/road/v2_{key}_a.wav',aa,sr); al=len(aa)/sr
+    else: al=0
+    out[key]=dict(c=len(ac)/sr,a=al,caster=c,analyst=a_,sticker=st)
+    print(key,round(len(ac)/sr,2),round(al,2))
 json.dump(out,open('/root/road/vo2.json','w'),indent=1)
