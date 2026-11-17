@@ -1137,10 +1137,18 @@ def chase(name, end, eid, off=(-3.4, 4.5, 1.9), lens=32, look_up=0.9, pieces=Non
                 return False
         return True
     if not camera_ok(off):
-        for cand in ((-off[0], off[1], off[2]), (off[0], -off[1], off[2]), (-off[0], -off[1], off[2]), (0.0, 5.5, off[2]), (0.0, -5.5, off[2]), (5.0, 0.0, off[2]), (-5.0, 0.0, off[2])):
-            if camera_ok(cand):
-                off, off1 = cand, None
-                break
+        cands = [(-off[0], off[1], off[2]), (off[0], -off[1], off[2]), (-off[0], -off[1], off[2]), (0.0, 5.5, off[2]), (0.0, -5.5, off[2]), (5.0, 0.0, off[2]), (-5.0, 0.0, off[2]),
+                 (0.0, -7.5, 4.2), (-6.5, -3.0, 3.6), (6.5, -3.0, 3.6), (0.0, 7.5, 4.2)]
+        chosen = next((c for c in cands if camera_ok(c)), None)
+        if chosen is None:                                   # none is clean: take the one that keeps the camera farthest from every tower
+            def room(c):
+                worst = 99.0
+                for u in (0.0, 0.5, 1.0):
+                    xu, zu = ent_at(eid, first + (end - first) * u - PRE)
+                    worst = min(worst, min(max(abs(xu + c[0] - tx), abs(zu + c[1] - tz)) - half for tx, tz, half in TOWER_BOXES))
+                return worst
+            chosen = max(cands + [off], key=room)
+        off, off1 = chosen, None
     for k in range(pieces):
         ta = first + (end - first) * k / pieces
         tb = first + (end - first) * (k + 1) / pieces
