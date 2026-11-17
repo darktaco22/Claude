@@ -1,0 +1,90 @@
+{
+ "intro": {
+  "caster": "Ladies and gentlemen! Welcome to THE TROPHY ROAD! Seventeen arenas! Zero financial advice!",
+  "analyst": "Please remain seated."
+ },
+ "basement": {
+  "caster": "Arena one! Mom's Basement! Our hero has a dream, a hoodie, and Wi-Fi!",
+  "analyst": "Dinner is at six."
+ },
+ "backyard": {
+  "caster": "Arena two! Backyard Barbecue! Rubber ducks! Lawn chairs! Absolutely zero fire safety!",
+  "analyst": "Somebody's dad is furious."
+ },
+ "parking": {
+  "caster": "Arena three! The Strip Mall Lot! Cheap parking, big dreams, and one very haunted shopping cart!",
+  "analyst": "Park responsibly."
+ },
+ "plaza": {
+  "caster": "Plaza After Dark! Neon! Sirens! And a liquidity pool of questionable depth!",
+  "analyst": "Do not swim."
+ },
+ "beach": {
+  "caster": "Muscle Beach! Sun's out! Guns are out! Gains are, honestly, theoretical!",
+  "analyst": "Leg day was postponed. Indefinitely."
+ },
+ "exchange": {
+  "caster": "The Trading Floor! Green candles! Red candles! A guy screaming BUY at absolutely nothing!",
+  "analyst": "He has no position. Just passion."
+ },
+ "casino": {
+  "caster": "Degen Casino! The house always wins! Unless you ask the house. The house says it's fine!",
+  "analyst": "The house is not fine."
+ },
+ "cold": {
+  "caster": "Cold Storage! Frozen wallets! Frostbitten bags! Somebody lost their seed phrase in the ice!",
+  "analyst": "Check the freezer. Then check it again."
+ },
+ "penthouse": {
+  "caster": "Lambo Penthouse! Marble floors! Gold everything! And a Lambo that is definitely not leased!",
+  "analyst": "It is leased."
+ },
+ "moon": {
+  "caster": "To The Moon! Zero gravity! Infinite hype! And the chart only goes up! Allegedly!",
+  "analyst": "The chart is upside down."
+ },
+ "factory": {
+  "caster": "The Memecoin Factory! Fresh tokens, straight off the line! Quality control left in twenty twenty-one!",
+  "analyst": "Another one every nine seconds."
+ },
+ "dump": {
+  "caster": "The Dump! Bags go in! Regret comes out! Please, no refunds!",
+  "analyst": "No refunds."
+ },
+ "cemetery": {
+  "caster": "Coin Cemetery! Rest in peace, old tickers! They had a roadmap! They had a community! They had a Discord!",
+  "analyst": "The Discord is also dead."
+ },
+ "trench": {
+  "caster": "Whale Trench! Deep waters! Bigger fish! One wrong move and you are the liquidity!",
+  "analyst": "You are the liquidity."
+ },
+ "mine": {
+  "caster": "Diamond Hands Mine! Hold the line! Never sell! Never blink! Never check the price!",
+  "analyst": "He checked the price."
+ },
+ "clouds": {
+  "caster": "Copium Clouds! Breathe in! It's all still going up! Breathe out! Still going up!",
+  "analyst": "It is not still going up."
+ },
+ "metaverse": {
+  "caster": "The Metaverse! The final arena! Look at that crowd!",
+  "analyst": "There is no crowd."
+ },
+ "mA": {
+  "caster": "Then the road gets weird! The Backyard! The Strip Mall! Plaza After Dark!",
+  "analyst": ""
+ },
+ "mB": {
+  "caster": "The Trading Floor! Cold Storage!",
+  "analyst": ""
+ },
+ "mC": {
+  "caster": "The Factory! The Dump! The Mine!",
+  "analyst": ""
+ },
+ "outro": {
+  "caster": "Seventeen arenas! One road! More memes! More arenas! More chaos! Play it now on PC and mobile!",
+  "analyst": "No financial advice included."
+ }
+}
