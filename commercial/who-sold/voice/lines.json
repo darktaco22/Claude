@@ -1,36 +1,123 @@
 {
  "cast": {
   "narrator": "Male, 45-60, deep, slow, grave American true-crime documentary narrator. Deadpan. Never jokes; every line delivered with total seriousness.",
-  "giga":     "Male, 25-35, deep, confident, relaxed gym-bro. Smug and sincere.",
-  "wojak":    "Male, 20-30, higher and thinner voice, sad, fragile, on the verge of tears.",
-  "whale":    "Male, 55-70, wealthy, refined, unhurried; speaks like a man reading a statement prepared by lawyers.",
-  "pepe":     "Male, 30-40, fast, intense, conspiratorial; barely containing excitement.",
-  "bonk":     "Male, any age, flat and blunt; one word.",
-  "troll":    "Male, 20-35, gleeful, mischievous, far too pleased with himself.",
-  "mom":      "Female, 50-60, warm, cheerful, slightly distracted mother."
+  "giga": "Male, 25-35, deep, confident, relaxed gym-bro. Smug and sincere.",
+  "wojak": "Male, 20-30, higher and thinner voice, sad, fragile, on the verge of tears.",
+  "whale": "Male, 55-70, wealthy, refined, unhurried; speaks like a man reading a statement prepared by lawyers.",
+  "pepe": "Male, 30-40, fast, intense, conspiratorial; barely containing excitement.",
+  "bonk": "Male, any age, flat and blunt; one word.",
+  "troll": "Male, 20-35, gleeful, mischievous, far too pleased with himself."
  },
  "lines": [
-  ["n01","narrator","Diamond Hands Mine. A quiet community, built on a single rule."],
-  ["n02","narrator","On the night of the fourteenth... somebody sold."],
-  ["n03","narrator","Within hours, investigators had a list of suspects. It was everyone."],
-  ["giga1","giga","I remember exactly where I was that night. Muscle Beach. Looking at myself."],
-  ["n04","narrator","His alibi was confirmed by a single witness. Himself."],
-  ["wojak1","wojak","Everyone thinks I did it because I'm crying. I'm always crying. This is just my face."],
-  ["n05","narrator","Detectives noted that he looked guilty. They also noted he has looked like that since two thousand ten."],
-  ["whale1","whale","On the advice of my lawyers, I do not recall owning anything. Ever."],
-  ["n06","narrator","The Whale then bought the police station."],
-  ["pepe1","pepe","It's all connected. The rubber ducks. The shopping cart. The moon. Wake up!"],
-  ["n07","narrator","It was not all connected."],
-  ["bonk1","bonk","Bonk."],
-  ["n08","narrator","The witness was cooperative. But unhelpful."],
-  ["n09","narrator","Then, a breakthrough. Security footage from the Degen Casino."],
-  ["n10","narrator","The footage showed nothing. But it was in black and white, so it felt important."],
-  ["troll1","troll","I did it. I also did the other one. And the next one."],
-  ["n11","narrator","One suspect confessed immediately. Including to crimes that had not happened yet."],
-  ["n12","narrator","And through it all, one phone kept ringing."],
-  ["n13","narrator","After nine months, forty detectives, and one haunted shopping cart, the sell order was traced to a single device. In a basement."],
-  ["mom1","mom","Oh, that was me, sweetie. I thought it was the microwave."],
-  ["n14","narrator","Dinner was at six. Justice was served. With peas."],
-  ["n15","narrator","Meme Royale. Play the game this documentary is barely about."]
+  [
+   "n01",
+   "narrator",
+   "Diamond Hands Mine. A quiet community, built on a single rule: never sell the game."
+  ],
+  [
+   "n02",
+   "narrator",
+   "On the night of the fourteenth, the Mine led the Grand Final by a mile. Then, with three seconds on the clock... somebody sold."
+  ],
+  [
+   "n03",
+   "narrator",
+   "Within hours, investigators had a list of suspects. It was everyone."
+  ],
+  [
+   "giga1",
+   "giga",
+   "I remember exactly where I was that night. Muscle Beach. Looking at myself."
+  ],
+  [
+   "n04",
+   "narrator",
+   "His alibi was confirmed by a single witness. Himself."
+  ],
+  [
+   "wojak1",
+   "wojak",
+   "Everyone thinks I did it because I'm crying. I'm always crying. This is just my face."
+  ],
+  [
+   "n05",
+   "narrator",
+   "Detectives noted that he looked guilty. They also noted he has looked like that since two thousand ten."
+  ],
+  [
+   "whale1",
+   "whale",
+   "On the advice of my lawyers, I do not recall owning anything. Ever."
+  ],
+  [
+   "n06",
+   "narrator",
+   "The Whale then bought the police station."
+  ],
+  [
+   "pepe1",
+   "pepe",
+   "It's all connected. The rubber ducks. The shopping cart. The moon. Wake up!"
+  ],
+  [
+   "n07",
+   "narrator",
+   "It was not all connected."
+  ],
+  [
+   "bonk1",
+   "bonk",
+   "Bonk."
+  ],
+  [
+   "n08",
+   "narrator",
+   "The witness was cooperative. But unhelpful."
+  ],
+  [
+   "n09",
+   "narrator",
+   "Then, a breakthrough. The match replay."
+  ],
+  [
+   "n10",
+   "narrator",
+   "The replay showed nothing. But it was in black and white, so it felt important."
+  ],
+  [
+   "troll1",
+   "troll",
+   "I did it. I also did the other one. And the next one."
+  ],
+  [
+   "n11",
+   "narrator",
+   "One suspect confessed immediately. Including to crimes that had not happened yet."
+  ],
+  [
+   "n12",
+   "narrator",
+   "And through it all, one alarm kept going off. Nobody knew whose."
+  ],
+  [
+   "n13",
+   "narrator",
+   "After nine months, forty detectives, and one haunted shopping cart, the surrender was traced to a single account. Username: The Narrator."
+  ],
+  [
+   "n13b",
+   "narrator",
+   "Yes. That was me. We were down a round, and I had a reservation."
+  ],
+  [
+   "n14",
+   "narrator",
+   "Dinner was at six. Justice was served. With peas."
+  ],
+  [
+   "n15",
+   "narrator",
+   "Meme Royale. Play the game this documentary is barely about."
+  ]
  ]
 }
