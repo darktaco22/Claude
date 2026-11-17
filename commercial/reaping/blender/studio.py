@@ -69,6 +69,7 @@ cyl('mug_host', 0.045, 0.1, (DX + 0.45, DY - 0.55, FZ + 1.1), mat('mug', (0.85, 
 # ---- guest: armchair, coffee table, tissues, plants
 GX, GY = 1.35, 1.35
 ph('modern_arm_chair_01', (GX, GY, FZ), face(-0.85, -1), 1.0)
+SEATZ = seat_top(GX, GY)
 ph('modern_coffee_table_01', (0.0, 0.55, FZ), 0, 1.0)
 box('tissue_box', (0.24, 0.12, 0.1), (0.35, 0.5, FZ + 0.47), mat('tbox', (0.35, 0.75, 0.85), 0.5))
 for i in range(3): box(f'tissue_{i}', (0.08, 0.06, 0.002), (0.35 + i * 0.01 - 0.01, 0.5, FZ + 0.54 + i * 0.012), mat('tis', (0.95, 0.95, 0.95), 0.9), rot=(0.4, 0.3 * i, 0.2))
@@ -95,16 +96,14 @@ for k, c in CAST.items():
     clip(c, 'idle', 1 - random.randint(0, 30), TOTAL + 10, speed=random.uniform(0.85, 1.05))
 clip(POP, 'idle', -10, TOTAL + 10)
 for f0, f1 in ((86, 104), (112, 128), (300, 320)): clip(POP, 'attack1', f0, f1, speed=1.3, blend=3)   # the 'pop' mouth while talking
-# Wojak sits, slumped, sobbing (IK pose; seat height from the chair)
-SEAT = 0.46
+# Wojak sits, slumped, sobbing: a real seated solve on the measured cushion
+base, kL, kR = sit_pose(WJ, SEATZ, back=-0.08, spread=0.04, slump=0.3, flesh=0.08)
 for f in range(1, TOTAL + 1, 3):
-    sob = 0.5 + 0.5 * math.sin(f * 0.55); sob2 = math.sin(f * 1.1)
-    WJ.key(f, {'hips': Vector((0, 0.24, -(WJ.hip.z - SEAT) * 0.98)), 'spine': 0.32 + 0.04 * sob, 'lean': 0.02 * sob2,
-               'foot_L': WJ.footL + Vector((0.03, -0.5, 0.0)), 'foot_R': WJ.footR + Vector((-0.03, -0.5, 0.0)),
-               'hand_L': Vector((0.17, -0.38, SEAT + 0.07 + 0.01 * sob)), 'hand_R': Vector((-0.17, -0.38, SEAT + 0.07 + 0.01 * sob)),
-               'look': WJ.headp + Vector((0.0, -2.0, -0.9 + 0.12 * sob2)), 'nosafe': True})
-for n in ('knee_L', 'knee_R'):
-    t = WJ.T[n]; t.location = t.location + Vector((0, -0.4, 0.2)); t.keyframe_insert('location', frame=1)
+    sob = 0.5 + 0.5 * math.sin(f * 0.55); sob2 = math.sin(f * 1.1); p = dict(base)
+    p['spine'] = 0.3 + 0.04 * sob; p['lean'] = 0.02 * sob2
+    p['hand_L'] = kL + Vector((0.02, 0.05, 0.1 + 0.01 * sob)); p['hand_R'] = kR + Vector((-0.02, 0.05, 0.1 + 0.01 * sob))
+    p['look'] = WJ.headp + Vector((0.0, -2.0, -0.9 + 0.12 * sob2)); WJ.key(f, p)
+sit_knees(WJ, kL, kR)
 # ---- lights
 lamp('key_host', 'AREA', (DX - 1.6, DY - 3.0, 2.8), (DX, DY + 0.4, 1.6), energy=420, color=(1.0, 0.93, 0.85), size=1.6)
 lamp('key_guest', 'AREA', (GX + 1.8, GY - 2.8, 2.6), (GX, GY, 1.0), energy=380, color=(1.0, 0.93, 0.86), size=1.6)

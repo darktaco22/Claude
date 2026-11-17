@@ -200,3 +200,32 @@ def finish(default_stills=()):
             if os.path.getsize(p) == 0: os.remove(p)
         sc.render.filepath = os.path.join(out, 'f_'); sc.render.use_overwrite = False; sc.render.use_placeholder = False
         bpy.ops.render.render(animation=True)
+
+# ------------------------------------------------------------------ sitting
+def seat_top(x, y, z0=2.5):
+    """world height of the first surface below (x, y): the chair's cushion (call before characters are loaded)"""
+    bpy.context.view_layer.update(); dg = bpy.context.evaluated_depsgraph_get()
+    hit, loc, nor, idx, ob, mw = bpy.context.scene.ray_cast(dg, Vector((x, y, z0)), Vector((0, 0, -1)))
+    print('SEAT', round(loc.z, 3) if hit else None, ob.name if hit else None); return loc.z if hit else 0.45
+def sit_pose(c, seat_z, back=0.08, spread=0.06, slump=0.0, flesh=0.06):
+    """A seated pose in the character's own space: hip joints on the cushion, thighs level and forward, knees bent,
+    shins down, feet planted (or dangling if the legs are short). Returns the pose dict and the knee points."""
+    B = c.B; s = c.ctrl.scale.x; seat = (seat_z - c.ctrl.location.z) / s
+    hl = lambda n: Vector(B[n].head_local)
+    up_l, up_r, kn_l, ft_l = hl('mixamorig:LeftUpLeg' if 'mixamorig:LeftUpLeg' in B else 'LeftUpLeg'), hl('mixamorig:RightUpLeg' if 'mixamorig:RightUpLeg' in B else 'RightUpLeg'), c.footL, c.footL
+    LL = Vector(B['LeftLeg'].head_local) if 'LeftLeg' in B else Vector(B['mixamorig:LeftLeg'].head_local)
+    up_l = Vector(B['LeftUpLeg'].head_local) if 'LeftUpLeg' in B else up_l; up_r = Vector(B['RightUpLeg'].head_local) if 'RightUpLeg' in B else up_r
+    thigh = (LL - up_l).length; shin = (c.footL - LL).length
+    hz = seat + flesh - up_l.z                       # lift/drop of the whole hips
+    hip_off = Vector((0, back, hz))
+    joint_z = up_l.z + hz; floor = c.footL.z
+    drop = joint_z - floor
+    if drop <= shin: fz = floor; fwd = math.sqrt(max(0.0, shin ** 2 - drop ** 2)) * 0.7   # feet planted, shins angled a little forward
+    else: fz = joint_z - shin; fwd = 0.0                                                   # short legs: they dangle
+    kL = Vector((up_l.x + spread, back - thigh, joint_z)); kR = Vector((up_r.x - spread, back - thigh, joint_z))
+    pose = {'hips': hip_off, 'spine': slump,
+            'foot_L': Vector((kL.x + 0.02, kL.y - fwd, fz)), 'foot_R': Vector((kR.x - 0.02, kR.y - fwd, fz)), 'nosafe': True}
+    return pose, kL, kR
+def sit_knees(c, kL, kR):
+    for n, k in (('knee_L', kL), ('knee_R', kR)):
+        t = c.T[n]; t.location = k + Vector((0, -0.6, 0.15)); t.keyframe_insert('location', frame=1)
