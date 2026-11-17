@@ -1,0 +1,32 @@
+started true
+PLAY 8.7 chillguy 3.5 20.5 cop 9.0
+PLAY 14.5 troll 3.5 19.5 cop 8.7
+PLAY 20.4 fud 3.5 15.2 cop 9.5
+PLAY 23.0 jeanphil 4.7 27.0 cop 8.7
+PLAY 25.7 ket 2.8 19.5 cop 6.9
+PLAY 34.5 chillguy 4.6 19.5 cop 7.5
+PLAY 44.3 troll 4.5 19.5 cop 8.0
+PLAY 51.2 lmao 3.7 15.6 cop 8.5
+PLAY 60.6 fud 4.9 14.8 cop 10.0
+PLAY 62.9 ket 4.0 19.5 cop 8.5
+PLAY 65.0 chillguy 3.7 20.4 cop 9.3
+PLAY 84.8 troll 4.7 19.5 cop 10.0
+PLAY 87.2 jeanphil 4.7 27.0 cop 10.0
+PLAY 89.6 fud 3.7 18.9 cop 7.5
+PLAY 92.1 ket 3.4 27.0 cop 8.4
+PLAY 94.8 chillguy 3.4 27.0 cop 6.4
+PLAY 97.4 troll 3.5 27.0 cop 4.3
+PLAY 114.8 lmao 3.3 18.5 cop 8.5
+PLAY 126.1 jeanphil 4.7 27.0 cop 10.0
+PLAY 128.8 ket 4.6 19.5 cop 8.2
+PLAY 133.1 fud 14.3 19.4 cop 8.2
+PLAY 135.0 troll 4.4 19.5 cop 7.6
+PLAY 136.7 chillguy 4.3 19.5 cop 6.8
+PLAY 139.4 jeanphil 4.7 27.0 cop 5.7
+PLAY 142.1 ket 4.4 19.5 cop 4.7
+PLAY 162.4 useless 4.0 19.5 cop 10.0
+PLAY 164.8 troll 3.8 19.5 cop 9.1
+PLAY 167.3 chillguy 3.4 19.5 cop 8.9
+PLAY 177.4 lmao 3.5 21.1 cop 10.0
+PLAY 179.9 ket 13.1 19.5 cop 7.1
+RESULT {"win":0,"ws":[0,1],"why":"time"} units mean 3.97 max 8 ge6 0.26

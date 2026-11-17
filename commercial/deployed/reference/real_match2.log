@@ -1,0 +1,88 @@
+started true
+PLAY 7.9 ket 3.5 20.5 cop 8.7
+PLAY 11.4 jeanphil 3.5 24.4 cop 7.3
+PLAY 15.6 lmao 3.5 21.4 cop 9.2
+PLAY 18.4 fud 4.4 15.5 cop 10.0
+PLAY 21.3 troll 13.3 19.5 cop 8.9
+PLAY 23.7 chillguy 14.1 19.5 cop 10.0
+PLAY 25.6 ket 14.3 20.7 cop 10.0
+PLAY 28.4 jeanphil 13.3 23.5 cop 10.0
+PLAY 31.1 fud 14.4 23.6 cop 7.7
+PLAY 33.7 troll 14.4 24.0 cop 8.6
+PLAY 36.3 chillguy 13.5 23.4 cop 9.5
+PLAY 40.6 ket 3.5 20.5 cop 8.1
+PLAY 43.3 lmao 13.5 23.3 cop 9.0
+PLAY 45.8 jeanphil 14.0 20.3 cop 5.9
+PLAY 54.4 troll 13.2 19.5 cop 9.0
+PLAY 56.7 chillguy 13.6 19.5 cop 7.8
+PLAY 58.5 fud 13.6 16.3 cop 8.5
+PLAY 60.9 ket 13.6 19.5 cop 7.3
+PLAY 62.8 jeanphil 13.3 27.0 cop 5.0
+PLAY 67.9 troll 12.9 19.5 cop 3.8
+PLAY 70.3 rug 14.2 17.0 cop 4.7
+PLAY 80.9 chillguy 13.8 19.5 cop 4.4
+PLAY 82.8 ket 13.9 19.5 cop 2.1
+PLAY 88.3 jeanphil 13.3 27.0 cop 4.1
+PLAY 90.8 troll 13.7 20.8 cop 5.0
+PLAY 93.3 fud 13.9 17.3 cop 3.9
+PLAY 101.3 chillguy 12.9 19.5 cop 4.7
+PLAY 103.8 ket 13.7 19.5 cop 5.6
+PLAY 106.2 jeanphil 13.3 27.0 cop 3.5
+PLAY 111.3 troll 14.5 19.5 cop 2.3
+PLAY 113.6 useless 14.4 19.5 cop 3.1
+EV {"t":120.033,"phase":"overdose","type":"phase"}
+PLAY 120.3 chillguy 12.9 21.6 cop 3.6
+PLAY 127.5 ket 14.4 19.5 cop 5.8
+PLAY 130.2 jeanphil 13.3 27.0 cop 7.7
+PLAY 132.0 troll 14.3 19.5 cop 9.0
+PLAY 134.7 fud 14.3 14.8 cop 8.9
+PLAY 137.3 chillguy 13.5 19.5 cop 8.8
+PLAY 139.7 ket 13.7 19.5 cop 10.0
+PLAY 144.1 lmao 13.8 23.6 cop 9.5
+PLAY 146.6 jeanphil 14.0 20.6 cop 7.0
+PLAY 150.1 troll 13.1 19.5 cop 6.5
+PLAY 152.7 fud 13.6 16.0 cop 6.4
+PLAY 154.6 chillguy 14.3 19.5 cop 5.8
+PLAY 157.3 ket 14.2 22.4 cop 4.7
+PLAY 160.1 jeanphil 13.3 27.0 cop 3.7
+PLAY 162.3 troll 14.1 22.7 cop 2.3
+PLAY 171.9 lmao 12.8 23.9 cop 7.1
+PLAY 175.5 chillguy 13.0 19.5 cop 5.7
+PLAY 180.0 ket 13.7 19.5 cop 5.9
+EV {"t":180.033,"phase":"overtime","type":"phase"}
+PLAY 182.7 fud 13.6 17.3 cop 4.9
+PLAY 185.4 troll 13.4 19.5 cop 4.8
+PLAY 187.4 jeanphil 13.3 27.0 cop 4.2
+PLAY 190.1 useless 15.0 19.5 cop 3.1
+PLAY 198.4 lmao 13.5 24.3 cop 7.0
+PLAY 201.2 chillguy 3.5 20.5 cop 9.0
+PLAY 202.9 ket 14.5 20.5 cop 7.3
+PLAY 205.5 troll 13.5 19.5 cop 6.1
+PLAY 209.0 fud 13.9 14.7 cop 6.6
+PLAY 211.6 jeanphil 13.3 27.0 cop 6.5
+PLAY 213.6 chillguy 14.4 20.4 cop 4.9
+PLAY 216.4 ket 14.1 19.9 cop 3.9
+PLAY 219.2 troll 3.6 19.5 cop 3.0
+PLAY 221.3 fud 3.6 17.6 cop 2.4
+PLAY 223.4 jeanphil 4.7 27.0 cop 1.9
+PLAY 225.5 useless 3.5 23.8 cop 0.4
+PLAY 236.8 chillguy 3.5 20.5 cop 8.5
+PLAY 239.5 ket 13.2 19.5 cop 7.5
+EV {"t":240.067,"phase":"triple","type":"phase"}
+PLAY 242.2 troll 13.6 19.5 cop 7.2
+PLAY 245.2 jeanphil 13.3 27.0 cop 8.3
+PLAY 247.3 useless 13.6 19.5 cop 10.0
+PLAY 250.2 fud 13.6 17.9 cop 10.0
+PLAY 253.2 ket 3.8 19.5 cop 10.0
+PLAY 255.2 troll 3.6 20.7 cop 10.0
+PLAY 257.2 chillguy 3.7 19.5 cop 10.0
+PLAY 262.0 jeanphil 4.7 27.0 cop 10.0
+PLAY 265.0 fud 4.7 15.8 cop 9.0
+PLAY 268.0 rug 4.7 16.6 cop 10.0
+PLAY 270.1 ket 4.4 19.5 cop 7.1
+PLAY 272.2 chillguy 2.8 20.7 cop 6.3
+EV {"t":273.8,"id":2,"team":0,"tower":"rig","x":14.5,"z":25.5,"type":"tower_down"}
+EV {"t":273.8,"team":1,"ws":1,"type":"w"}
+EV {"t":273.8,"winner":1,"why":"overtime","ws":[0,1],"type":"end"}
+PLAY 273.8 troll 2.8 20.7 cop 8.0
+RESULT {"win":0,"ws":[0,1],"why":"overtime"} units mean 5.28 max 14 ge6 0.41

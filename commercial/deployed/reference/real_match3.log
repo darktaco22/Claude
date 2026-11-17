@@ -1,0 +1,44 @@
+started true
+PLAY 7.6 chillguy 3.5 20.5 cop 8.5
+PLAY 13.9 jeanphil 3.5 22.9 cop 8.5
+PLAY 22.8 ket 3.5 20.5 cop 9.6
+PLAY 26.4 lmao 3.5 24.4 cop 8.1
+PLAY 29.0 troll 3.5 19.7 cop 9.3
+PLAY 31.5 chillguy 3.5 19.5 cop 8.3
+PLAY 33.9 jeanphil 4.7 27.0 cop 9.2
+PLAY 36.6 ket 3.5 21.1 cop 10.0
+PLAY 39.0 useless 3.5 23.6 cop 10.0
+PLAY 54.3 troll 4.9 19.5 cop 10.0
+PLAY 56.7 chillguy 4.2 19.5 cop 10.0
+PLAY 61.6 lmao 4.2 23.2 cop 8.4
+PLAY 63.7 jeanphil 4.2 20.7 cop 5.2
+PLAY 78.4 ket 3.9 19.5 cop 7.4
+PLAY 83.3 troll 3.9 19.5 cop 6.2
+PLAY 85.7 chillguy 4.1 22.7 cop 5.0
+PLAY 94.0 lmao 3.9 20.9 cop 5.0
+PLAY 106.5 jeanphil 3.7 20.4 cop 5.5
+PLAY 109.1 ket 3.6 19.5 cop 3.4
+PLAY 117.1 troll 4.5 19.5 cop 3.3
+EV {"t":120.033,"phase":"overdose","type":"phase"}
+PLAY 128.8 chillguy 3.5 20.5 cop 8.6
+PLAY 141.3 lmao 3.8 19.8 cop 10.0
+PLAY 143.9 jeanphil 3.8 24.3 cop 7.1
+PLAY 146.6 ket 4.8 19.5 cop 9.0
+PLAY 149.2 troll 4.3 19.5 cop 10.0
+PLAY 152.0 chillguy 3.9 19.5 cop 10.0
+PLAY 154.0 lmao 4.7 27.0 cop 10.0
+PLAY 155.1 jeanphil 4.7 27.0 cop 10.0
+PLAY 157.8 ket 3.6 24.0 cop 8.2
+PLAY 160.6 troll 3.9 23.9 cop 10.0
+EV {"t":162.1,"id":1,"team":0,"tower":"rig","x":3.5,"z":25.5,"type":"tower_down"}
+EV {"t":162.1,"team":1,"ws":1,"type":"w"}
+PLAY 163.6 chillguy 4.1 26.0 cop 10.0
+PLAY 166.5 useless 9.3 19.5 cop 10.0
+PLAY 169.3 jeanphil 13.3 27.0 cop 9.2
+PLAY 171.4 fud 13.9 16.6 cop 10.0
+PLAY 173.7 ket 14.3 20.2 cop 8.7
+PLAY 174.9 chillguy 14.4 23.1 cop 9.5
+PLAY 176.7 troll 14.4 23.5 cop 4.9
+PLAY 178.8 jeanphil 13.3 27.0 cop 4.3
+EV {"t":180.033,"winner":1,"why":"time","ws":[0,1],"type":"end"}
+RESULT {"win":0,"ws":[0,1],"why":"time"} units mean 3.56 max 11 ge6 0.17

@@ -148,3 +148,11 @@ See `README.md` in this folder: camera shake, Poly Haven loader, scatter, fire s
 - Frames must be filed by edit hash (`frames_jpg/<hash>/`); a worker on a stale checkout otherwise mixes old frames in (this produced a giant Sarge on the phone screen).
 - Containers restart without warning. render_worker.sh pushes every 15 min and loops by itself; relaunching the same command resumes.
 - Workers will not take a range from a peer session without being told by the user; ask the user to nudge them if they sit idle.
+
+## Real-game study (Deployed rework 5)
+- Headless Chromium runs the game at about 1 fps, so mouse drags take ~30 s each. Play over the game's own websocket instead:
+  wrap `window.WebSocket` with `addInitScript`, send `{"t":"play","slot":i,"x":..,"z":..,"card":id,"n":k}` (n counts messages after hello). Script: `commercial/deployed/reference/play_real_match.js`.
+- Snapshots are deltas: `add` (new unit: card, team), `d.unit` rows `[id, mask, values for the set bits]` (bit0 x, bit1 z, bit3 state, bit5 hp), `ev` (play, tower_down, phase, end).
+- Real rules seen: overdose x2 at 120 s, a tie at 180 s goes to OVERTIME until a tower falls, Copium x3 at 240 s. The server bot rushes a passive player (HQ down in about 52 s).
+- Three real matches played with a defence-first controller (lost 0-1 twice on time, once in overtime): units on the field averaged 3.4-4.0 (peak 8-14, six or more for 17-26 % of the time; overtime floods the field). The game's own sim with both sides playing like its Bot gives the same numbers (mean 3.7-4.5). The first Deployed match (button masher, never defends) averaged 5.6 with a peak of 13: too crowded.
+- Film match: `sim/search4.mjs` finds sparse matches (both sides play like the game's bot), `sim/record4.mjs` records one into pack/match.json.
