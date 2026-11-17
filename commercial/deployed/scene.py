@@ -668,6 +668,8 @@ def animate_unit(actor, eid, from_t=None, drop=False):
         if from_t is not None and t < from_t:
             continue
         a = M(t)
+        if death_a is not None and a > death_a + 0.5:               # the game removes a unit within a second of its death
+            continue
         x, z, face, moving, hp, dead, state = s[1], s[2], s[3], s[4], s[5], s[6], s[7]
         pos = gp(x, z, 0.0)
         if drop and state == 'deploy':
@@ -685,10 +687,14 @@ def animate_unit(actor, eid, from_t=None, drop=False):
             actor.play(a, 'idle')
         if dead and death_a is None:
             death_a = a
-            actor.play(a, 'die', 1.0)
+            actor.play(a, 'die', 1.7)                                # the game plays the death at 1.7x
         prev = s
     end = M(samples[-1][0])
-    off = None if death_a is None else death_a + 2.4
+    off = None if death_a is None else death_a + 0.95                # gone after 0.95 s, like the game
+    if death_a is not None:                                          # it sinks into the ground between 0.55 s and 0.9 s (the game fades it with a puff)
+        here = Vector(actor.pos)
+        actor.put(death_a + 0.55, here)
+        actor.put(death_a + 0.92, here + Vector((0, 0, -0.7)))
     if actor.vis:                                                    # a jumper: already visible since the ship
         actor.vis[-1] = (actor.vis[-1][0], 1, off)
     else:
