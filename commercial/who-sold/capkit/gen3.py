@@ -17,7 +17,7 @@ S={
  'lineup':dict(arena='parking',  T=6.0, people=[('giga',3.5,12.5,0),('wojak',5.7,12.5,0),('whale',8.3,12.5,0),('pepe',10.9,12.5,0),('bonk',12.9,12.5,0),('troll',14.9,12.5,0)],
                cam="D.dolly([5.6,2.9,23.2],[12.6,2.9,23.2],[3.6,2.3,12.5],[14.8,2.3,12.5],34,34)", cues=[(4.2,5,'emote')]),
  'mine':  dict(arena='mine',     T=5.0, people=[], cam="D.dolly([9,26,50],[9,15,40],[9,0,16],[9,1,14],34,38)", cues=[]),
- 'basement2': dict(arena='basement', T=5.0, people=[], cam="D.dolly([9,7,36],[9,5,30],[9,5.5,4],[9,5.5,4],30,24)", cues=[]),
+ 'basement2': dict(arena='basement', T=5.0, people=[], cam="D.dolly([9,10,24],[9,8.2,17.5],[9,6.2,4],[9,6.4,4],32,22)", cues=[]),
 }
 import sys
 for k,c in S.items():
