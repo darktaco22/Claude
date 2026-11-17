@@ -71,9 +71,10 @@ GX, GY = 1.35, 1.35
 ph('modern_arm_chair_01', (GX, GY, FZ), face(-0.85, -1), float(arg('--chs', 0.68)))
 SEATZ = seat_top(GX, GY)
 ph('modern_coffee_table_01', (0.0, 0.55, FZ), 0, 1.0)
-box('tissue_box', (0.24, 0.12, 0.1), (0.35, 0.5, FZ + 0.47), mat('tbox', (0.35, 0.75, 0.85), 0.5))
-for i in range(3): box(f'tissue_{i}', (0.08, 0.06, 0.002), (0.35 + i * 0.01 - 0.01, 0.5, FZ + 0.54 + i * 0.012), mat('tis', (0.95, 0.95, 0.95), 0.9), rot=(0.4, 0.3 * i, 0.2))
-cyl('mug_guest', 0.045, 0.1, (-0.25, 0.6, FZ + 0.47), mat('mug2', (0.8, 0.8, 0.82), 0.25))
+TT = seat_top(0.05, 0.45)   # the coffee table's real top (it runs 0.6 m wide along x, 1.2 m long along y)
+box('tissue_box', (0.22, 0.12, 0.1), (0.07, 0.38, TT + 0.05), mat('tbox', (0.35, 0.75, 0.85), 0.5), rot=(0, 0, 0.25))
+for i in range(3): box(f'tissue_{i}', (0.07, 0.05, 0.002), (0.07 + i * 0.006, 0.38, TT + 0.104 + i * 0.006), mat('tis', (0.95, 0.95, 0.95), 0.9), rot=(0.35, 0.25 * i, 0.25))
+cyl('mug_guest', 0.045, 0.1, (-0.12, 0.78, TT + 0.05), mat('mug2', (0.8, 0.8, 0.82), 0.25))
 ph('pachira_aquatica_01', (3.6, 2.6, FZ), 0.3, 1.2); ph('calathea_orbifolia_01', (-3.7, 2.9, FZ), 1.0, 1.4); ph('potted_plant_02', (2.6, 3.4, FZ), 0.0, 1.3)
 # ---- audience (in the dark, backs to camera) + rails
 seatm = mat('seat', (0.03, 0.03, 0.035), 0.6)
@@ -123,6 +124,7 @@ cams['dbg_side'] = camera('dbg_side', (GX + 2.2, GY - 0.2, FZ + 0.9), (GX, GY, F
 cams['dbg_34'] = camera('dbg_34', (GX + 0.6, GY - 2.2, FZ + 1.0), (GX, GY, FZ + 0.6), lens=40, fstop=8)
 cams['dbg_front'] = camera('dbg_front', (GX - 1.5, GY - 1.2, FZ + 0.75), (GX, GY, FZ + 0.6), lens=40, fstop=8)
 cams['dbg_knee'] = camera('dbg_knee', (GX + 1.1, GY - 0.9, FZ + 0.6), (GX - 0.1, GY - 0.25, FZ + 0.5), lens=35, fstop=11)
+cams['dbg_table'] = camera('dbg_table', (1.1, -0.6, 1.05), (0.0, 0.55, 0.6), lens=35, fstop=11)
 cams['dbg_knee2'] = camera('dbg_knee2', (GX - 1.3, GY + 0.2, FZ + 0.55), (GX - 0.1, GY - 0.25, FZ + 0.5), lens=35, fstop=11)
 sc.camera = cams['T1_wide']
 if '--cams' in argv:
