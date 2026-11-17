@@ -648,6 +648,7 @@ def clip_for(info, previous, current, dt):
     return 'run' if speed > 2.6 else 'walk'
 
 
+DEATHS = []
 HIT_TIMES = {}
 for e in EVENTS_SIM:
     if e['type'] == 'hit':
@@ -689,6 +690,10 @@ def animate_unit(actor, eid, from_t=None, drop=False):
             death_a = a
             actor.play(a, 'die', 1.7)                                # the game plays the death at 1.7x
         prev = s
+    if death_a is None and samples[-1][0] < FR[-1]['t'] - 0.4:      # the sim dropped the unit without a final 'dead' sample: it died there
+        death_a = M(samples[-1][0])
+        actor.play(death_a, 'die', 1.7)
+        DEATHS.append((round(samples[-1][0], 1), eid))
     end = M(samples[-1][0])
     off = None if death_a is None else death_a + 0.95                # gone after 0.95 s, like the game
     if death_a is not None:                                          # it sinks into the ground between 0.55 s and 0.9 s (the game fades it with a puff)
@@ -1115,6 +1120,27 @@ def chase(name, end, eid, off=(-3.4, 4.5, 1.9), lens=32, look_up=0.9, pieces=Non
     """Follow a simulated unit from a behind-and-above offset (game units)."""
     first = CUT
     pieces = pieces or max(1, int((end - first) / 0.6))
+    # the camera must not sit inside a tower or look at the unit through one: try the other sides when it would
+    def seg_blocked(cx, cz, ux, uz):
+        for step in range(1, 12):
+            px, pz = cx + (ux - cx) * step / 12, cz + (uz - cz) * step / 12
+            for tx, tz, half in TOWER_BOXES:
+                core = 2.6 if half < 5 else 3.0
+                if abs(px - tx) < core and abs(pz - tz) < core and math.hypot(ux - tx, uz - tz) > core + 0.3:
+                    return True
+        return False
+    def camera_ok(offset):
+        for u in (0.0, 0.5, 1.0):
+            xu, zu = ent_at(eid, first + (end - first) * u - PRE)
+            cx, cz = xu + offset[0], zu + offset[1]
+            if any(abs(cx - tx) < 4.6 and abs(cz - tz) < 4.6 for tx, tz, half in TOWER_BOXES) or seg_blocked(cx, cz, xu, zu):
+                return False
+        return True
+    if not camera_ok(off):
+        for cand in ((-off[0], off[1], off[2]), (off[0], -off[1], off[2]), (-off[0], -off[1], off[2]), (0.0, 5.5, off[2]), (0.0, -5.5, off[2]), (5.0, 0.0, off[2]), (-5.0, 0.0, off[2])):
+            if camera_ok(cand):
+                off, off1 = cand, None
+                break
     for k in range(pieces):
         ta = first + (end - first) * k / pieces
         tb = first + (end - first) * (k + 1) / pieces
@@ -1307,6 +1333,7 @@ for _k in range(int(M(0.0) * 10) - 460, int(M(184.0) * 10)):
                     _worst[key] = (round(d, 2), round(_a - PRE, 1))
 for key, (d, at_) in sorted(_worst.items(), key=lambda kv: kv[1][0]):
     print('CLIP', key, 'min distance', d, 'at match time', at_)
+print('DEATHS inferred:', len(DEATHS))
 print('CLIP CHECK done:', len(_worst), 'pairs closer than 0.85 m')
 
 # ==== FINALIZE

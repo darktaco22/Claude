@@ -14,7 +14,8 @@ for (let seed = 1; seed <= N; seed++) {
   const meanTot = stat.tot / Math.max(1, stat.n);
   const win = b.winner === 0; if (win) C.win++;
   if (win && air) C.air++;
-  const sparse = stat.maxSide <= 5 && meanTot <= 3.9 && stat.ge7 === 0 && stat.ge6 / stat.n < 0.12 && dups <= 3;
+  const nearTower = thumbs.some(t => t.card !== 'airdrop' && [[3.5,25.5],[14.5,25.5],[9,29.5],[3.5,6.5],[14.5,6.5],[9,2.5]].some(([x, z]) => Math.max(Math.abs(t.x - x), Math.abs(t.z - z)) < 2.0));
+  const sparse = !nearTower && stat.maxSide <= 5 && meanTot <= 3.9 && stat.ge7 === 0 && stat.ge6 / stat.n < 0.12 && dups <= 3;
   if (win && air && sparse) C.sparse++;
   const story = ours.length >= 1 && ours[0].t < 110 && theirs.length >= 2 && theirs[1].t < 160 && b.t > 175 && thumbs.length >= 11 && thumbs.length <= 24;
   if (win && air && sparse && story) {
