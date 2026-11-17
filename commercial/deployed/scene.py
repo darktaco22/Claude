@@ -914,27 +914,28 @@ def hides():
     return ['NOSE'] if CUT >= RAMP_OPEN_A else CLOSED
 
 
-def face(actor_pos, side, lens, dist=1.9, up=0.0, name='cu', shake=0.3, fill_power=40, hide=None, ship_side=1.0, keep=None):
+def face(actor_pos, side, lens, dist=1.9, up=0.0, name='cu', shake=0.3, fill_power=40, hide=None, ship_side=1.0, keep=None, eye=None):
     """Close-up of a ship character. The hand stands in a row facing the ramp: shoot it from the front. The bench is a line
     along the left wall: shoot it from the aisle, three-quarter view."""
     x, y = actor_pos
+    EYE_ = EYE if eye is None else eye
     if (x, y) in QS or x < -1.6 and y < 2.0:
-        cam_pos = (x + 1.9, y + 0.55 * side, EYE + 0.15 + up)
+        cam_pos = (x + 0.75 + 0.2 * side, y + 1.9, EYE_ + 0.1 + up)            # the bench faces the ramp: shoot it from the ramp side
         distance = 1.9
     else:
         cam_y = min(y + dist, 5.3)
-        cam_pos = (x + side * 0.3, cam_y, EYE + 0.1 + up)
+        cam_pos = (x + side * 0.3, cam_y, EYE_ + 0.1 + up)
         distance = cam_y - y
     scale = distance / dist if dist else 1.0
     def fn(end):
-        shot(f'{name}', end, cam_pos, (x, y, EYE + up), lens * scale * 0.78, hide=hides() if hide is None else hide, fill_power=fill_power, shake=shake, keep=keep)
+        shot(f'{name}', end, cam_pos, (x, y, EYE_ + up), lens * scale * 0.78, hide=hides() if hide is None else hide, fill_power=fill_power, shake=shake, keep=keep)
     return fn
 
 
 def sarge_face(side, lens=55, dist=4.0, up=0.15, name='sarge'):
     """Sarge stands at the ramp facing the crew: the camera shoots him from the aisle."""
     def fn(end):
-        shot(name, end, (SARGE_AT[0] - 0.55 + side * 0.25, SARGE_AT[1] - dist, 1.25 + up), (SARGE_AT[0], SARGE_AT[1], 0.95 + up), lens * 1.25, hide=hides(), fill_power=60, shake=0.3, fstop=2.4, keep=['sarge'])
+        shot(name, end, (SARGE_AT[0] - 0.55 + side * 0.25, SARGE_AT[1] - dist, 1.25 + up), (SARGE_AT[0], SARGE_AT[1], 0.95 + up), lens * 1.15, hide=hides(), fill_power=60, shake=0.3, fstop=2.4, keep=['sarge'])
     return fn
 
 
@@ -948,7 +949,43 @@ import monitor
 MATCH_STATE = monitor.State(MATCH)
 
 
+
+EYE_OF = {'cupsey': 0.95, 'ket': 1.3, 'chillguy': 1.35, 'chillhouse': 1.1, 'dope': 0.95, 'lmao': 1.3, 'pudgy': 1.0}      # eye height of each character (all are about 1.45 m tall; the egg's face sits low)
+
+
+def _pos_at(actor, frame):
+    keys = actor.loc
+    if not keys:
+        return None
+    if frame <= keys[0][0]:
+        return keys[0][1]
+    for (f0, p0), (f1, p1) in zip(keys, keys[1:]):
+        if f0 <= frame <= f1:
+            u = 0.0 if f1 == f0 else (frame - f0) / (f1 - f0)
+            return tuple(p0[n] + (p1[n] - p0[n]) * u for n in range(3))
+    return keys[-1][1]
+
+
+def _visible(actor, a):
+    return any(on <= a and (off is None or a < off) for on, flag, off in actor.vis)
+
+
 def seat(card, a):
+    """Ship-local position of a card's character at match animation time a: where its actor really stands then."""
+    for actor in ALL:
+        if getattr(actor, 'card', None) != card or not actor.label.startswith(card):
+            continue
+        if actor.vis and not _visible(actor, a):
+            continue
+        p = _pos_at(actor, F(a + 1.8))                                # where it stands once the shot is under way (it may be on its way)
+        if p is not None and p[2] > 15.0 and p[1] > -8.3 and abs(p[0]) < 3.6:
+            print('SEAT', card, round(a - PRE, 1), actor.label, round(-p[0], 2), round(-p[1], 2))
+            return (-p[0], -p[1])
+    print('SEAT-OLD', card, round(a - PRE, 1), seat_old(card, a))
+    return seat_old(card, a)
+
+
+def seat_old(card, a):
     """Ship-local position of a card's character at match animation time a (hand slot or queue slot)."""
     hand_now, queue_now = list(MATCH_STATE.hand0), list(MATCH_STATE.queue0)
     for play in PLAYS:
@@ -963,7 +1000,7 @@ def seat(card, a):
 
 def lface(card, a_hint, side, lens, dist=2.3, up=0.0, name=None, **kw):
     """Front close-up of whoever stands in `card`'s seat at animation time a_hint."""
-    return face(seat(card, a_hint), side, lens, dist, up, name or f'{card}_cu', keep=[card], **kw)
+    return face(seat(card, a_hint), side, lens, dist, up, name or f'{card}_cu', keep=[card], eye=EYE_OF.get(card), **kw)
 
 
 # ---- A. the briefing (before the match; the sim has not started)
@@ -1107,9 +1144,14 @@ def phone(name, end, a_start=None, **kw):
 
 
 def ramp_shot(i, hold=0.4, tail=0.15):
-    """The jumper stands at the ramp edge and goes (a_jump is the release of the drag)."""
+    """The jumper runs to the top of the ramp and goes (a_jump is the release of the drag): the camera follows it from the left."""
     entry = jump_of(i)
-    shot(f'ramp_{i}', entry[2] + tail, (-1.85, 4.3, 1.45), (0.0, 6.9, 0.9), 22, p1=(-1.85, 4.8, 1.45), hide=hides(), fill_power=15, fstop=4.0, a_start=entry[2] - hold)
+    jumper = entry[1]
+    a0, a1 = entry[2] - hold, entry[2] + tail
+    p0, p1 = _pos_at(jumper, F(a0 + 0.1)), _pos_at(jumper, F(entry[2] - 0.1))
+    look0 = Vector(p0) + Vector((0, 0, 0.8))
+    look1 = Vector(p1) + Vector((0, 0, 0.8))
+    shot(f'ramp_{i}', a1, tuple(H(0.7, 11.6, 0.9)), tuple(look0), 28, p1=tuple(H(0.6, 10.4, 1.0)), l1=tuple(look1), space='world', hide=hides(), fill_power=15, fstop=4.0, a_start=a0)
 
 
 FALL_SLOW = 0.6                                                # the fall plays at three quarters speed
@@ -1136,7 +1178,7 @@ def play_seq(i, chase_for=2.6, drag=1.8, hold=0.95, line=None, line_at='drag', l
         chase(f'chase_{i}', max(CUT + 0.5, entry[3] + chase_for), spawn_id)
 
 
-def battle(name, match_t, dur, cx, cz, dist=9.0, high=6.5, lens=30, drift=(1.5, -1.0)):
+def battle(name, match_t, dur, cx, cz, dist=11.0, high=8.0, lens=28, drift=(1.5, -1.0)):
     """A wide look at a real fight of the recorded match, from our side of the arena (game coordinates)."""
     at(match_t)
     ca = clear(cx + 2.5, min(cz + dist, 36.0), high)
@@ -1243,23 +1285,6 @@ for e in EVENTS_SIM:
 
 
 # ==== CLIP CHECK: no two characters in the ship may overlap, at any time
-def _pos_at(actor, frame):
-    keys = actor.loc
-    if not keys:
-        return None
-    if frame <= keys[0][0]:
-        return keys[0][1]
-    for (f0, p0), (f1, p1) in zip(keys, keys[1:]):
-        if f0 <= frame <= f1:
-            u = 0.0 if f1 == f0 else (frame - f0) / (f1 - f0)
-            return tuple(p0[n] + (p1[n] - p0[n]) * u for n in range(3))
-    return keys[-1][1]
-
-
-def _visible(actor, a):
-    return any(on <= a and (off is None or a < off) for on, flag, off in actor.vis)
-
-
 _crew = [actor for actor in ALL if getattr(actor, 'card', None) or actor is sarge]
 _worst = {}
 for _k in range(int(M(0.0) * 10) - 460, int(M(184.0) * 10)):
@@ -1287,7 +1312,7 @@ for actor in ALL:
     key = 'sarge' if actor is sarge else getattr(actor, 'card', None)
     if key:
         actor.rig['hold'] = key
-END_A = M(192.0)
+END_A = max(M(192.0), CUT + 3.0)                       # animate well past the last shot: a rig with no clip falls back to the T-pose
 for actor in ALL:
     actor.finish(END_A)
 write_bobs(ALL)
