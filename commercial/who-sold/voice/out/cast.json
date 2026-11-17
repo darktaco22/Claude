@@ -1,0 +1,98 @@
+{
+ "narrator": {
+  "dataset": "mythicinfinity/libritts_r (LibriTTS-R, train.clean.100)",
+  "speaker_id": "254",
+  "median_pitch_hz": 100.3,
+  "settings": {
+   "exaggeration": 0.35,
+   "cfg_weight": 0.6,
+   "temperature": 0.6
+  },
+  "licence": "CC BY 4.0",
+  "casting": "Male, 45-60, deep, slow, grave American true-crime documentary narrator. Deadpan. Never jokes; every line delivered with total seriousness."
+ },
+ "giga": {
+  "dataset": "mythicinfinity/libritts_r (LibriTTS-R, train.clean.100)",
+  "speaker_id": "6437",
+  "median_pitch_hz": 108.8,
+  "settings": {
+   "exaggeration": 0.5,
+   "cfg_weight": 0.5,
+   "temperature": 0.8
+  },
+  "licence": "CC BY 4.0",
+  "casting": "Male, 25-35, deep, confident, relaxed gym-bro. Smug and sincere."
+ },
+ "whale": {
+  "dataset": "mythicinfinity/libritts_r (LibriTTS-R, train.clean.100)",
+  "speaker_id": "196",
+  "median_pitch_hz": 117.6,
+  "settings": {
+   "exaggeration": 0.35,
+   "cfg_weight": 0.65,
+   "temperature": 0.8
+  },
+  "licence": "CC BY 4.0",
+  "casting": "Male, 55-70, wealthy, refined, unhurried; speaks like a man reading a statement prepared by lawyers."
+ },
+ "bonk": {
+  "dataset": "mythicinfinity/libritts_r (LibriTTS-R, train.clean.100)",
+  "speaker_id": "6367",
+  "median_pitch_hz": 126.4,
+  "settings": {
+   "exaggeration": 0.4,
+   "cfg_weight": 0.5,
+   "temperature": 0.8
+  },
+  "licence": "CC BY 4.0",
+  "casting": "Male, any age, flat and blunt; one word."
+ },
+ "pepe": {
+  "dataset": "mythicinfinity/libritts_r (LibriTTS-R, train.clean.100)",
+  "speaker_id": "3607",
+  "median_pitch_hz": 134.7,
+  "settings": {
+   "exaggeration": 0.5,
+   "cfg_weight": 0.45,
+   "temperature": 0.6
+  },
+  "licence": "CC BY 4.0",
+  "casting": "Male, 30-40, fast, intense, conspiratorial; barely containing excitement."
+ },
+ "troll": {
+  "dataset": "mythicinfinity/libritts_r (LibriTTS-R, train.clean.100)",
+  "speaker_id": "8629",
+  "median_pitch_hz": 143.5,
+  "settings": {
+   "exaggeration": 0.9,
+   "cfg_weight": 0.35,
+   "temperature": 0.8
+  },
+  "licence": "CC BY 4.0",
+  "casting": "Male, 20-35, gleeful, mischievous, far too pleased with himself."
+ },
+ "wojak": {
+  "dataset": "mythicinfinity/libritts_r (LibriTTS-R, train.clean.100)",
+  "speaker_id": "2691",
+  "median_pitch_hz": 158.8,
+  "settings": {
+   "exaggeration": 0.75,
+   "cfg_weight": 0.4,
+   "temperature": 0.8
+  },
+  "licence": "CC BY 4.0",
+  "casting": "Male, 20-30, higher and thinner voice, sad, fragile, on the verge of tears."
+ },
+ "mom": {
+  "dataset": "mythicinfinity/libritts_r (LibriTTS-R, train.clean.100)",
+  "speaker_id": "2989",
+  "median_pitch_hz": 215.1,
+  "settings": {
+   "exaggeration": 0.6,
+   "cfg_weight": 0.45,
+   "temperature": 0.8
+  },
+  "licence": "CC BY 4.0",
+  "casting": "Female, 50-60, warm, cheerful, slightly distracted mother."
+ }
+}

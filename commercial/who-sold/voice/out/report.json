@@ -1,0 +1,963 @@
+{
+ "n01": {
+  "role": "narrator",
+  "duration": 4.7,
+  "transcript": "Diamond hands, mine, a quiet community built on a single rule.",
+  "takes_tried": 4,
+  "pass": true,
+  "exaggeration": 0.35,
+  "takes": [
+   {
+    "seed": 448,
+    "exaggeration": 0.35,
+    "dur": 4.6,
+    "fails": [
+     "clip"
+    ],
+    "transcript": "Diamond Hands Mine A quiet community built on a single rule",
+    "exact": true
+   },
+   {
+    "seed": 449,
+    "exaggeration": 0.35,
+    "dur": 4.72,
+    "fails": [],
+    "transcript": "Diamond hands, mine, a quiet community built on a single rule.",
+    "exact": true
+   },
+   {
+    "seed": 450,
+    "exaggeration": 0.35,
+    "dur": 5.24,
+    "fails": [],
+    "transcript": "Diamond hands, mine. A quiet community built on a single rule.",
+    "exact": true
+   },
+   {
+    "seed": 451,
+    "exaggeration": 0.35,
+    "dur": 5.08,
+    "fails": [
+     "clip"
+    ],
+    "transcript": "Diamond Hands Mine, a quiet community built on a single rule.",
+    "exact": true
+   }
+  ]
+ },
+ "n02": {
+  "role": "narrator",
+  "duration": 2.89,
+  "transcript": "On the night of the 14th, somebody sold.",
+  "takes_tried": 4,
+  "pass": true,
+  "exaggeration": 0.35,
+  "takes": [
+   {
+    "seed": 409,
+    "exaggeration": 0.35,
+    "dur": 2.96,
+    "fails": [],
+    "transcript": "On the night of the 14th, somebody sold.",
+    "exact": true
+   },
+   {
+    "seed": 410,
+    "exaggeration": 0.35,
+    "dur": 2.96,
+    "fails": [],
+    "transcript": "On the night of the 14th, somebody sold.",
+    "exact": true
+   },
+   {
+    "seed": 411,
+    "exaggeration": 0.35,
+    "dur": 2.76,
+    "fails": [],
+    "transcript": "On the night of the 14th, somebody sold.",
+    "exact": true
+   },
+   {
+    "seed": 412,
+    "exaggeration": 0.35,
+    "dur": 2.92,
+    "fails": [],
+    "transcript": "On the night of the 14th, somebody sold.",
+    "exact": true
+   }
+  ]
+ },
+ "n03": {
+  "role": "narrator",
+  "duration": 5.32,
+  "transcript": "Within hours, investigators had a list of suspects. It was everyone.",
+  "takes_tried": 5,
+  "pass": true,
+  "exaggeration": 0.3,
+  "takes": [
+   {
+    "seed": 667,
+    "exaggeration": 0.35,
+    "dur": 5.64,
+    "fails": [
+     "clip"
+    ],
+    "transcript": "Within hours, investigators had a list of suspects. It was everyone.",
+    "exact": true
+   },
+   {
+    "seed": 668,
+    "exaggeration": 0.35,
+    "dur": 5.12,
+    "fails": [
+     "clip"
+    ],
+    "transcript": "Within hours, investigators had a list of suspects. It was everyone.",
+    "exact": true
+   },
+   {
+    "seed": 669,
+    "exaggeration": 0.35,
+    "dur": 5.36,
+    "fails": [
+     "clip"
+    ],
+    "transcript": "Within hours, investigators had a list of suspects. It was everyone.",
+    "exact": true
+   },
+   {
+    "seed": 670,
+    "exaggeration": 0.35,
+    "dur": 5.48,
+    "fails": [
+     "clip"
+    ],
+    "transcript": "Within hours, investigators had a list of suspects. It was everyone.",
+    "exact": true
+   },
+   {
+    "seed": 671,
+    "exaggeration": 0.3,
+    "dur": 5.36,
+    "fails": [],
+    "transcript": "Within hours, investigators had a list of suspects. It was everyone.",
+    "exact": true
+   }
+  ]
+ },
+ "giga1": {
+  "role": "giga",
+  "duration": 4.15,
+  "transcript": "I remember exactly where I was that night, Muscle Beach, looking at myself.",
+  "takes_tried": 3,
+  "pass": true,
+  "exaggeration": 0.5,
+  "takes": [
+   {
+    "seed": 481,
+    "exaggeration": 0.5,
+    "dur": 4.0,
+    "fails": [],
+    "transcript": "I remember exactly where I was that night, Muscle Beach, looking at myself.",
+    "exact": true
+   },
+   {
+    "seed": 482,
+    "exaggeration": 0.5,
+    "dur": 4.28,
+    "fails": [],
+    "transcript": "I remember exactly where I was that night, Muscle Beach, looking at myself.",
+    "exact": true
+   },
+   {
+    "seed": 483,
+    "exaggeration": 0.5,
+    "dur": 4.68,
+    "fails": [],
+    "transcript": "I remember exactly where I was that night, Muscle Beach, looking at myself.",
+    "exact": true
+   }
+  ]
+ },
+ "n04": {
+  "role": "narrator",
+  "duration": 4.05,
+  "transcript": "His alibi was confirmed by a single witness, himself.",
+  "takes_tried": 4,
+  "pass": true,
+  "exaggeration": 0.35,
+  "takes": [
+   {
+    "seed": 932,
+    "exaggeration": 0.35,
+    "dur": 4.12,
+    "fails": [],
+    "transcript": "His alibi was confirmed by a single witness, himself.",
+    "exact": true
+   },
+   {
+    "seed": 933,
+    "exaggeration": 0.35,
+    "dur": 4.44,
+    "fails": [],
+    "transcript": "His alibi was confirmed by a single witness, himself.",
+    "exact": true
+   },
+   {
+    "seed": 934,
+    "exaggeration": 0.35,
+    "dur": 4.28,
+    "fails": [],
+    "transcript": "His alibi was confirmed by a single witness, himself.",
+    "exact": true
+   },
+   {
+    "seed": 935,
+    "exaggeration": 0.35,
+    "dur": 4.52,
+    "fails": [],
+    "transcript": "His alibi was confirmed by a single witness, himself.",
+    "exact": true
+   }
+  ]
+ },
+ "wojak1": {
+  "role": "wojak",
+  "duration": 4.54,
+  "transcript": "Everyone thinks I did it because I'm crying. I'm always crying. This is just my face",
+  "takes_tried": 3,
+  "pass": true,
+  "exaggeration": 0.75,
+  "takes": [
+   {
+    "seed": 430,
+    "exaggeration": 0.75,
+    "dur": 4.76,
+    "fails": [
+     "clip"
+    ],
+    "transcript": "Everyone thinks I did it because I'm crying. I'm always crying. This is just my face",
+    "exact": true
+   },
+   {
+    "seed": 431,
+    "exaggeration": 0.75,
+    "dur": 5.08,
+    "fails": [],
+    "transcript": "Everyone thinks I did it because I'm crying. I'm always crying. This is just my face",
+    "exact": true
+   },
+   {
+    "seed": 432,
+    "exaggeration": 0.75,
+    "dur": 4.52,
+    "fails": [],
+    "transcript": "Everyone thinks I did it because I'm crying. I'm always crying. This is just my face",
+    "exact": true
+   }
+  ]
+ },
+ "n05": {
+  "role": "narrator",
+  "duration": 6.27,
+  "transcript": "Detectives noted that he looked guilty. They also noted he has looked like that since 2010.",
+  "takes_tried": 4,
+  "pass": true,
+  "exaggeration": 0.35,
+  "takes": [
+   {
+    "seed": 558,
+    "exaggeration": 0.35,
+    "dur": 6.32,
+    "fails": [],
+    "transcript": "Detectives noted that he looked guilty. They also noted he has looked like that since 2010.",
+    "exact": true
+   },
+   {
+    "seed": 559,
+    "exaggeration": 0.35,
+    "dur": 6.52,
+    "fails": [
+     "clip"
+    ],
+    "transcript": "Detectives noted that he looked guilty. They also noted he has looked like that since 2010.",
+    "exact": true
+   },
+   {
+    "seed": 560,
+    "exaggeration": 0.35,
+    "dur": 6.28,
+    "fails": [],
+    "transcript": "Detectives noted that he looked guilty. They also noted he has looked like that since 2010.",
+    "exact": true
+   },
+   {
+    "seed": 561,
+    "exaggeration": 0.35,
+    "dur": 6.64,
+    "fails": [
+     "clip"
+    ],
+    "transcript": "Detectives noted that he looked guilty. They also noted he has looked like that since 2010.",
+    "exact": true
+   }
+  ]
+ },
+ "whale1": {
+  "role": "whale",
+  "duration": 4.29,
+  "transcript": "On the advice of my lawyers, I do not recall owning anything, ever.",
+  "takes_tried": 3,
+  "pass": true,
+  "exaggeration": 0.35,
+  "takes": [
+   {
+    "seed": 434,
+    "exaggeration": 0.35,
+    "dur": 5.0,
+    "fails": [],
+    "transcript": "On the advice of my lawyers, I do not recall owning anything, ever.",
+    "exact": true
+   },
+   {
+    "seed": 435,
+    "exaggeration": 0.35,
+    "dur": 4.8,
+    "fails": [],
+    "transcript": "On the advice of my lawyers, I do not recall owning anything. Ever.",
+    "exact": true
+   },
+   {
+    "seed": 436,
+    "exaggeration": 0.35,
+    "dur": 5.44,
+    "fails": [
+     "clip"
+    ],
+    "transcript": "On the advice of my lawyers, I do not recall owning anything, ever.",
+    "exact": true
+   }
+  ]
+ },
+ "n06": {
+  "role": "narrator",
+  "duration": 2.14,
+  "transcript": "The whale then bought the police station.",
+  "takes_tried": 4,
+  "pass": true,
+  "exaggeration": 0.35,
+  "takes": [
+   {
+    "seed": 887,
+    "exaggeration": 0.35,
+    "dur": 2.36,
+    "fails": [],
+    "transcript": "The whale then bought the police station.",
+    "exact": true
+   },
+   {
+    "seed": 888,
+    "exaggeration": 0.35,
+    "dur": 2.48,
+    "fails": [
+     "clip"
+    ],
+    "transcript": "The whale then bought the police station.",
+    "exact": true
+   },
+   {
+    "seed": 889,
+    "exaggeration": 0.35,
+    "dur": 2.4,
+    "fails": [],
+    "transcript": "The whale then bought the police station.",
+    "exact": true
+   },
+   {
+    "seed": 890,
+    "exaggeration": 0.35,
+    "dur": 2.32,
+    "fails": [
+     "clip"
+    ],
+    "transcript": "The whale then bought the police station.",
+    "exact": true
+   }
+  ]
+ },
+ "n07": {
+  "role": "narrator",
+  "duration": 1.6,
+  "transcript": "It was not all connected.",
+  "takes_tried": 4,
+  "pass": true,
+  "exaggeration": 0.35,
+  "takes": [
+   {
+    "seed": 159,
+    "exaggeration": 0.35,
+    "dur": 2.2,
+    "fails": [],
+    "transcript": "It was not all connected.",
+    "exact": true
+   },
+   {
+    "seed": 160,
+    "exaggeration": 0.35,
+    "dur": 1.48,
+    "fails": [],
+    "transcript": "It was not all connected.",
+    "exact": true
+   },
+   {
+    "seed": 161,
+    "exaggeration": 0.35,
+    "dur": 1.72,
+    "fails": [],
+    "transcript": "It was not all connected.",
+    "exact": true
+   },
+   {
+    "seed": 162,
+    "exaggeration": 0.35,
+    "dur": 1.72,
+    "fails": [],
+    "transcript": "It was not all connected.",
+    "exact": true
+   }
+  ]
+ },
+ "bonk1": {
+  "role": "bonk",
+  "duration": 0.83,
+  "transcript": "bonk",
+  "takes_tried": 3,
+  "pass": true,
+  "exaggeration": 0.4,
+  "takes": [
+   {
+    "seed": 16,
+    "exaggeration": 0.4,
+    "dur": 0.84,
+    "fails": [],
+    "transcript": "bonk",
+    "exact": true
+   },
+   {
+    "seed": 17,
+    "exaggeration": 0.4,
+    "dur": 0.36,
+    "fails": [
+     "words"
+    ],
+    "transcript": "gone.",
+    "exact": false
+   },
+   {
+    "seed": 18,
+    "exaggeration": 0.4,
+    "dur": 0.72,
+    "fails": [],
+    "transcript": "VONK.",
+    "exact": false
+   }
+  ]
+ },
+ "n08": {
+  "role": "narrator",
+  "duration": 3.48,
+  "transcript": "The witness was cooperative, but unhelpful.",
+  "takes_tried": 4,
+  "pass": true,
+  "exaggeration": 0.35,
+  "takes": [
+   {
+    "seed": 685,
+    "exaggeration": 0.35,
+    "dur": 3.84,
+    "fails": [],
+    "transcript": "The witness was cooperative, but unhelpful.",
+    "exact": true
+   },
+   {
+    "seed": 686,
+    "exaggeration": 0.35,
+    "dur": 3.64,
+    "fails": [
+     "clip"
+    ],
+    "transcript": "The witness was cooperative, but unhelpful.",
+    "exact": true
+   },
+   {
+    "seed": 687,
+    "exaggeration": 0.35,
+    "dur": 3.8,
+    "fails": [
+     "clip"
+    ],
+    "transcript": "The witness was cooperative, but unhelpful.",
+    "exact": true
+   },
+   {
+    "seed": 688,
+    "exaggeration": 0.35,
+    "dur": 3.64,
+    "fails": [],
+    "transcript": "The witness was cooperative, but unhelpful.",
+    "exact": true
+   }
+  ]
+ },
+ "n09": {
+  "role": "narrator",
+  "duration": 4.47,
+  "transcript": "Then, a breakthrough. Security footage from the Deegan Casino...",
+  "takes_tried": 4,
+  "pass": true,
+  "exaggeration": 0.35,
+  "takes": [
+   {
+    "seed": 357,
+    "exaggeration": 0.35,
+    "dur": 4.2,
+    "fails": [
+     "clip",
+     "words"
+    ],
+    "transcript": "Then, a breakthrough, security footage from the Dejan Casino.",
+    "exact": false
+   },
+   {
+    "seed": 358,
+    "exaggeration": 0.35,
+    "dur": 4.4,
+    "fails": [],
+    "transcript": "Then, a breakthrough. Security footage from the Deegan Casino...",
+    "exact": false
+   },
+   {
+    "seed": 359,
+    "exaggeration": 0.35,
+    "dur": 4.36,
+    "fails": [],
+    "transcript": "Then, a breakthrough. Security footage from the Deagan Casino.",
+    "exact": false
+   },
+   {
+    "seed": 360,
+    "exaggeration": 0.35,
+    "dur": 4.48,
+    "fails": [
+     "clip"
+    ],
+    "transcript": "Then, a breakthrough, security footage from the Deegan Casino.",
+    "exact": false
+   }
+  ]
+ },
+ "n10": {
+  "role": "narrator",
+  "duration": 5.01,
+  "transcript": "The footage showed nothing, but it was in black and white so it felt important.",
+  "takes_tried": 4,
+  "pass": true,
+  "exaggeration": 0.35,
+  "takes": [
+   {
+    "seed": 969,
+    "exaggeration": 0.35,
+    "dur": 4.56,
+    "fails": [
+     "clip"
+    ],
+    "transcript": "The footage showed nothing, but it was in black and white so it felt important.",
+    "exact": true
+   },
+   {
+    "seed": 970,
+    "exaggeration": 0.35,
+    "dur": 5.32,
+    "fails": [],
+    "transcript": "The footage showed nothing, but it was in black and white, so it felt important.",
+    "exact": true
+   },
+   {
+    "seed": 971,
+    "exaggeration": 0.35,
+    "dur": 5.12,
+    "fails": [],
+    "transcript": "The footage showed nothing, but it was in black and white so it felt important.",
+    "exact": true
+   },
+   {
+    "seed": 972,
+    "exaggeration": 0.35,
+    "dur": 4.48,
+    "fails": [
+     "words"
+    ],
+    "transcript": "The footage showed nothing, but it wasn't black and white so it felt important.",
+    "exact": false
+   }
+  ]
+ },
+ "troll1": {
+  "role": "troll",
+  "duration": 3.14,
+  "transcript": "I did it. I also did the other one and the next one.",
+  "takes_tried": 3,
+  "pass": true,
+  "exaggeration": 0.9,
+  "takes": [
+   {
+    "seed": 266,
+    "exaggeration": 0.9,
+    "dur": 3.92,
+    "fails": [
+     "clip"
+    ],
+    "transcript": "I did it. I also did the other one and the next one.",
+    "exact": true
+   },
+   {
+    "seed": 267,
+    "exaggeration": 0.9,
+    "dur": 3.28,
+    "fails": [],
+    "transcript": "I did it. I also did the other one and the next one.",
+    "exact": true
+   },
+   {
+    "seed": 268,
+    "exaggeration": 0.9,
+    "dur": 3.6,
+    "fails": [
+     "clip"
+    ],
+    "transcript": "I did it. I also did the other one and the next one.",
+    "exact": true
+   }
+  ]
+ },
+ "n11": {
+  "role": "narrator",
+  "duration": 5.1,
+  "transcript": "One suspect confessed immediately, including to crimes that had not happened yet.",
+  "takes_tried": 4,
+  "pass": true,
+  "exaggeration": 0.35,
+  "takes": [
+   {
+    "seed": 621,
+    "exaggeration": 0.35,
+    "dur": 5.2,
+    "fails": [],
+    "transcript": "One suspect confessed immediately, including to crimes that had not happened yet.",
+    "exact": true
+   },
+   {
+    "seed": 622,
+    "exaggeration": 0.35,
+    "dur": 5.48,
+    "fails": [],
+    "transcript": "One suspect confessed immediately, including to crimes that had not happened yet.",
+    "exact": true
+   },
+   {
+    "seed": 623,
+    "exaggeration": 0.35,
+    "dur": 5.12,
+    "fails": [],
+    "transcript": "One suspect confessed immediately, including to crimes that had not happened yet.",
+    "exact": true
+   },
+   {
+    "seed": 624,
+    "exaggeration": 0.35,
+    "dur": 5.24,
+    "fails": [],
+    "transcript": "One suspect confessed immediately, including to crimes that had not happened yet.",
+    "exact": true
+   }
+  ]
+ },
+ "n12": {
+  "role": "narrator",
+  "duration": 2.93,
+  "transcript": "And through it all, one phone kept ringing.",
+  "takes_tried": 4,
+  "pass": true,
+  "exaggeration": 0.35,
+  "takes": [
+   {
+    "seed": 278,
+    "exaggeration": 0.35,
+    "dur": 2.96,
+    "fails": [],
+    "transcript": "And through it all, one phone kept ringing.",
+    "exact": true
+   },
+   {
+    "seed": 279,
+    "exaggeration": 0.35,
+    "dur": 2.8,
+    "fails": [
+     "clip"
+    ],
+    "transcript": "And through it all, one phone kept ringing.",
+    "exact": true
+   },
+   {
+    "seed": 280,
+    "exaggeration": 0.35,
+    "dur": 2.44,
+    "fails": [
+     "clip"
+    ],
+    "transcript": "And through it all, one phone kept ringing.",
+    "exact": true
+   },
+   {
+    "seed": 281,
+    "exaggeration": 0.35,
+    "dur": 2.76,
+    "fails": [
+     "clip"
+    ],
+    "transcript": "And through it all, one phone kept ringing.",
+    "exact": true
+   }
+  ]
+ },
+ "n13": {
+  "role": "narrator",
+  "duration": 8.84,
+  "transcript": "After 9 months, 40 detectives, and one haunted shopping cart, the cell order was traced to a single device in a basement.",
+  "takes_tried": 4,
+  "pass": true,
+  "exaggeration": 0.35,
+  "takes": [
+   {
+    "seed": 447,
+    "exaggeration": 0.35,
+    "dur": 9.12,
+    "fails": [
+     "clip"
+    ],
+    "transcript": "After 9 months, 40 detectives and one haunted shopping cart, the cell order was traced to a single device in a basement.",
+    "exact": false
+   },
+   {
+    "seed": 448,
+    "exaggeration": 0.35,
+    "dur": 8.84,
+    "fails": [
+     "clip"
+    ],
+    "transcript": "After 9 months, 40 detectives and one haunted shopping cart, the cell order was traced to a single device in a basement.",
+    "exact": false
+   },
+   {
+    "seed": 449,
+    "exaggeration": 0.35,
+    "dur": 9.44,
+    "fails": [
+     "clip"
+    ],
+    "transcript": "After 9 months, 40 detectives and one haunted shopping cart, the cell order was traced to a single device in a basement.",
+    "exact": false
+   },
+   {
+    "seed": 450,
+    "exaggeration": 0.35,
+    "dur": 9.12,
+    "fails": [],
+    "transcript": "After 9 months, 40 detectives, and one haunted shopping cart, the cell order was traced to a single device in a basement.",
+    "exact": false
+   }
+  ]
+ },
+ "mom1": {
+  "role": "mom",
+  "duration": 2.74,
+  "transcript": "Oh, that was me, sweetie. I thought it was the microwave.",
+  "takes_tried": 3,
+  "pass": true,
+  "exaggeration": 0.6,
+  "takes": [
+   {
+    "seed": 871,
+    "exaggeration": 0.6,
+    "dur": 2.56,
+    "fails": [
+     "dur"
+    ],
+    "transcript": "Oh, that was me, sweetie. I thought it was the microwave.",
+    "exact": true
+   },
+   {
+    "seed": 872,
+    "exaggeration": 0.6,
+    "dur": 2.68,
+    "fails": [],
+    "transcript": "Oh, that was me, sweetie. I thought it was the microwave.",
+    "exact": true
+   },
+   {
+    "seed": 873,
+    "exaggeration": 0.6,
+    "dur": 3.16,
+    "fails": [
+     "clip"
+    ],
+    "transcript": "Oh, that was me, sweetie. I thought it was the microwave.",
+    "exact": true
+   }
+  ]
+ },
+ "n14": {
+  "role": "narrator",
+  "duration": 4.16,
+  "transcript": "Dinner was at 6. Justice was served with peas.",
+  "takes_tried": 4,
+  "pass": true,
+  "exaggeration": 0.35,
+  "takes": [
+   {
+    "seed": 272,
+    "exaggeration": 0.35,
+    "dur": 4.24,
+    "fails": [
+     "clip"
+    ],
+    "transcript": "Dinner was at 6. Justice was served with peas.",
+    "exact": true
+   },
+   {
+    "seed": 273,
+    "exaggeration": 0.35,
+    "dur": 4.28,
+    "fails": [],
+    "transcript": "Dinner was at 6. Justice was served with peas.",
+    "exact": true
+   },
+   {
+    "seed": 274,
+    "exaggeration": 0.35,
+    "dur": 4.36,
+    "fails": [
+     "clip"
+    ],
+    "transcript": "Dinner was at six, justice was served with peas.",
+    "exact": true
+   },
+   {
+    "seed": 275,
+    "exaggeration": 0.35,
+    "dur": 4.56,
+    "fails": [
+     "clip"
+    ],
+    "transcript": "Dinner was at 6. Justice was served with peas.",
+    "exact": true
+   }
+  ]
+ },
+ "n15": {
+  "role": "narrator",
+  "duration": 3.75,
+  "transcript": "meme royale, play the game this documentary is barely about.",
+  "takes_tried": 4,
+  "pass": true,
+  "exaggeration": 0.35,
+  "takes": [
+   {
+    "seed": 449,
+    "exaggeration": 0.35,
+    "dur": 3.8,
+    "fails": [
+     "clip"
+    ],
+    "transcript": "Meme Royale. Play the game this documentary is barely about.",
+    "exact": true
+   },
+   {
+    "seed": 450,
+    "exaggeration": 0.35,
+    "dur": 3.68,
+    "fails": [],
+    "transcript": "meme royale, play the game this documentary is barely about.",
+    "exact": true
+   },
+   {
+    "seed": 451,
+    "exaggeration": 0.35,
+    "dur": 3.96,
+    "fails": [
+     "clip"
+    ],
+    "transcript": "Meme Royale. Play the game this documentary is barely about.",
+    "exact": true
+   },
+   {
+    "seed": 452,
+    "exaggeration": 0.35,
+    "dur": 3.8,
+    "fails": [
+     "clip"
+    ],
+    "transcript": "Meme Royale. Play the game this documentary is barely about.",
+    "exact": true
+   }
+  ]
+ },
+ "pepe1": {
+  "role": "pepe",
+  "duration": 4.25,
+  "transcript": "It's all connected. The rubber ducks, the shopping cart, the moon, wake up.",
+  "takes_tried": 4,
+  "pass": true,
+  "exaggeration": 0.45,
+  "takes": [
+   {
+    "seed": 719,
+    "exaggeration": 0.5,
+    "dur": 4.2,
+    "fails": [
+     "clip"
+    ],
+    "transcript": "It's all connected. The rubber ducks. The shopping cart. The moon. Wake up.",
+    "exact": true
+   },
+   {
+    "seed": 720,
+    "exaggeration": 0.5,
+    "dur": 4.2,
+    "fails": [
+     "clip"
+    ],
+    "transcript": "It's all connected. The rubber ducks, the shopping cart, the moon, wake up.",
+    "exact": true
+   },
+   {
+    "seed": 721,
+    "exaggeration": 0.5,
+    "dur": 4.08,
+    "fails": [
+     "clip"
+    ],
+    "transcript": "It's all connected, the rubber ducks, the shopping cart, the moon, wake up.",
+    "exact": true
+   },
+   {
+    "seed": 722,
+    "exaggeration": 0.45,
+    "dur": 4.48,
+    "fails": [],
+    "transcript": "It's all connected. The rubber ducks, the shopping cart, the moon, wake up.",
+    "exact": true
+   }
+  ]
+ }
+}
