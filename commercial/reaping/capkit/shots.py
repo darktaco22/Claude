@@ -56,3 +56,16 @@ S.update({
                    cues=[(0.9, 1, 'emote'), (3.0, 1, 'walk')], moves="window.MOVE(1,3.0,3.4,6.5,0.3,0,%s);" % (PI / 2),
                    gests=[(1, 'tilt', 2.2, 0.9, 0.8), (0, 'sob', 3.2, 3.2, 0.9)]),
 })
+# --- v3: 1v1 on the left lane bridge, elevated 3/4 broadcast camera (cannot collide), wider standoff
+def bcast(cards, dx=3.4, h=3.3, dz=4.6, look=0.85, fov=40):
+    return ("(()=>{let mx=null,mz=null; return (k,cam,b)=>{const es=[...b.ents.values()].filter(e=>e.kind==='unit'&&%s.includes(e.card));"
+            "if(es.length){const x=es.reduce((s,e)=>s+e.x,0)/es.length, z=es.reduce((s,e)=>s+e.z,0)/es.length; mx=mx==null?x:mx+(x-mx)*0.06; mz=mz==null?z:mz+(z-mz)*0.06;}"
+            "if(mx==null) return false; cam.fov=%s; cam.position.set(mx+%s, %s, mz+%s); cam.lookAt(mx, %s, mz);}})()" % (json.dumps(cards), fov, dx, h, dz, look))
+S.update({
+ 'clashA': dict(arena='parking', T=8.0, people=[], cam=bcast(['bonk', 'troll']), js=[(0.1, "D.drop(b,0,'bonk',3.6,19.4); D.drop(b,1,'troll',3.6,12.8);")]),
+ 'clashB': dict(arena='parking', T=8.0, people=[], cam=bcast(['whale', 'popcat'], dx=-3.4), js=[(0.1, "D.drop(b,0,'whale',14.4,19.4); D.drop(b,1,'popcat',14.4,12.8);")]),
+ 'standoff2': dict(arena='parking', T=7.0, people=[('wojak', 8.0, 17.4, PI / 2), ('giga', 10.0, 17.4, -PI / 2)],
+                   cam="D.dolly([9,1.45,23.6],[9,1.45,22.9],[9,1.15,17.4],[9,1.15,17.4],50,50)",
+                   cues=[(0.9, 1, 'emote'), (3.0, 1, 'walk')], moves="window.MOVE(1,3.0,3.4,6.5,0.3,0,%s);" % (PI / 2),
+                   gests=[(1, 'tilt', 2.2, 0.9, 0.8), (0, 'sob', 3.2, 3.2, 0.9)]),
+})

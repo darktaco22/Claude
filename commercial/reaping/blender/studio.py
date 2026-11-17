@@ -68,7 +68,7 @@ plane('desk_logo', 0.9, 0.9, (DX, DY - 0.965, FZ + 0.55), rot=(math.pi / 2, 0, 0
 cyl('mug_host', 0.045, 0.1, (DX + 0.45, DY - 0.55, FZ + 1.1), mat('mug', (0.85, 0.85, 0.85), 0.25))
 # ---- guest: armchair, coffee table, tissues, plants
 GX, GY = 1.35, 1.35
-ph('modern_arm_chair_01', (GX, GY, FZ), face(-0.85, -1), 1.0)
+ph('modern_arm_chair_01', (GX, GY, FZ), face(-0.85, -1), 0.82)
 SEATZ = seat_top(GX, GY)
 ph('modern_coffee_table_01', (0.0, 0.55, FZ), 0, 1.0)
 box('tissue_box', (0.24, 0.12, 0.1), (0.35, 0.5, FZ + 0.47), mat('tbox', (0.35, 0.75, 0.85), 0.5))
@@ -96,14 +96,13 @@ for k, c in CAST.items():
     clip(c, 'idle', 1 - random.randint(0, 30), TOTAL + 10, speed=random.uniform(0.85, 1.05))
 clip(POP, 'idle', -10, TOTAL + 10)
 for f0, f1 in ((86, 104), (112, 128), (300, 320)): clip(POP, 'attack1', f0, f1, speed=1.3, blend=3)   # the 'pop' mouth while talking
-# Wojak sits, slumped, sobbing: a real seated solve on the measured cushion
-base, kL, kR = sit_pose(WJ, SEATZ, back=-0.08, spread=0.04, slump=0.3, flesh=0.08)
+# Wojak sits, slumped, sobbing: FK seated legs on the measured cushion, IK arms (hands on knees)
+off, kL, kR = sit_fk(WJ, SEATZ, front_y=-0.31, flesh=0.07, slope=float(arg('--slope', 26)))
 for f in range(1, TOTAL + 1, 3):
-    sob = 0.5 + 0.5 * math.sin(f * 0.55); sob2 = math.sin(f * 1.1); p = dict(base)
-    p['spine'] = 0.3 + 0.04 * sob; p['lean'] = 0.02 * sob2
-    p['hand_L'] = kL + Vector((0.02, 0.05, 0.1 + 0.01 * sob)); p['hand_R'] = kR + Vector((-0.02, 0.05, 0.1 + 0.01 * sob))
-    p['look'] = WJ.headp + Vector((0.0, -2.0, -0.9 + 0.12 * sob2)); WJ.key(f, p)
-sit_knees(WJ, kL, kR)
+    sob = 0.5 + 0.5 * math.sin(f * 0.55); sob2 = math.sin(f * 1.1)
+    WJ.key(f, {'hips': off, 'spine': 0.3 + 0.04 * sob, 'lean': 0.02 * sob2,
+               'hand_L': kL + Vector((0.0, 0.06, 0.09 + 0.01 * sob)), 'hand_R': kR + Vector((0.0, 0.06, 0.09 + 0.01 * sob)),
+               'look': WJ.headp + Vector((0.0, -2.0, -0.9 + 0.12 * sob2)), 'nosafe': True})
 # ---- lights
 lamp('key_host', 'AREA', (DX - 1.6, DY - 3.0, 2.8), (DX, DY + 0.4, 1.6), energy=420, color=(1.0, 0.93, 0.85), size=1.6)
 lamp('key_guest', 'AREA', (GX + 1.8, GY - 2.8, 2.6), (GX, GY, 1.0), energy=380, color=(1.0, 0.93, 0.86), size=1.6)
@@ -121,6 +120,8 @@ WH_ = Vector((GX, GY - 0.2, FZ + 0.95)); c = shot('T3_wojak', 161, camera('T3_wo
 c = shot('T4_two', 231, camera('T4_two', (0.3, -3.3, 1.6), (0, 1.6, 1.1), lens=32, fstop=4)); key_cam(c, 231, loc=(0.3, -3.3, 1.6)); key_cam(c, 290, loc=(0.25, -3.0, 1.55)); handheld(c, seed=14)
 c = shot('T5_pop', 301, camera('T5_pop', (DX + 0.55, DY - 1.9, FZ + 1.95), PH_ + Vector((0, 0, 0.05)), lens=55, fstop=2.0)); key_cam(c, 301, loc=(DX + 0.55, DY - 1.9, FZ + 1.95)); key_cam(c, 350, loc=(DX + 0.5, DY - 1.7, FZ + 1.9)); handheld(c, seed=15)
 cams['dbg_side'] = camera('dbg_side', (GX + 2.2, GY - 0.2, FZ + 0.9), (GX, GY, FZ + 0.6), lens=40, fstop=8)
+cams['dbg_34'] = camera('dbg_34', (GX + 0.6, GY - 2.2, FZ + 1.0), (GX, GY, FZ + 0.6), lens=40, fstop=8)
+cams['dbg_front'] = camera('dbg_front', (GX - 1.5, GY - 1.2, FZ + 0.75), (GX, GY, FZ + 0.6), lens=40, fstop=8)
 sc.camera = cams['T1_wide']
 if '--cams' in argv:
     out = arg('--out', '/tmp/stills'); os.makedirs(out, exist_ok=True)

@@ -229,3 +229,39 @@ def sit_pose(c, seat_z, back=0.08, spread=0.06, slump=0.0, flesh=0.06):
 def sit_knees(c, kL, kR):
     for n, k in (('knee_L', kL), ('knee_R', kR)):
         t = c.T[n]; t.location = k + Vector((0, -0.6, 0.15)); t.keyframe_insert('location', frame=1)
+
+def sit_fk(c, seat_z, front_y, flesh=0.08, splay=0.06, f=1, slope=0.0):
+    """Deterministic seated legs (FK): thighs level and forward, shins vertical, hip joints on the cushion, knees just past
+    the cushion's front edge (front_y, in the character's own space; forward is -y). Leg IK is muted. Returns the hips offset
+    and knee points (character space) for hands etc."""
+    rig = c.rig; pb = rig.pose.bones; L = lambda n: pb['mixamorig:' + n]
+    for side in ('Left', 'Right'):
+        for cn in L(side + 'Leg').constraints: cn.mute = True
+    def upd(): bpy.context.view_layer.update()
+    def head(n): upd(); return Vector(L(n).head)        # armature (= character) space
+    res = {}
+    for side, sg in (('Left', 1), ('Right', -1)):
+        up, lo = L(side + 'UpLeg'), L(side + 'Leg')
+        for b in (up, lo): b.rotation_mode = 'XYZ'; b.rotation_euler = (0, 0, 0)
+        hip = head(side + 'UpLeg')
+        best = None
+        for a in [i * 2 for i in range(-70, 71)]:               # thigh: level and pointing forward
+            up.rotation_euler = (math.radians(a), 0, 0); k = head(side + 'Leg'); d = (k - hip)
+            score = abs(d.z + math.sin(math.radians(slope)) * d.length) + 0.5 * max(0, d.y)   # forward (-y), sloping down by `slope` deg
+            if d.y < 0 and (best is None or score < best[0]): best = (score, a)
+        up.rotation_euler = (math.radians(best[1]), 0, math.radians(sg * 4)); knee = head(side + 'Leg')
+        best2 = None
+        for b_ in [i * 2 for i in range(-80, 81)]:              # shin: straight down from the knee
+            lo.rotation_euler = (math.radians(b_), 0, 0); ft = head(side + 'Foot'); d = ft - knee
+            score = abs(d.y) + abs(d.x) * 0.5
+            if d.z < 0 and (best2 is None or score < best2[0]): best2 = (score, b_)
+        lo.rotation_euler = (math.radians(best2[1]), 0, 0)
+        for b in (up, lo): b.keyframe_insert('rotation_euler', frame=f)
+        res[side] = (hip, head(side + 'Leg'), head(side + 'Foot'))
+        print('SITFK', c.name, side, 'thigh', best[1], 'shin', best2[1])
+    s = c.ctrl.scale.x; seat = (seat_z - c.ctrl.location.z) / s
+    hipz = res['Left'][0].z; kneey = min(res['Left'][1].y, res['Right'][1].y)
+    off = Vector((0, front_y - 0.04 - kneey, seat + flesh - hipz))
+    kL, kR = res['Left'][1] + off, res['Right'][1] + off
+    print('SITFK', c.name, 'offset', tuple(round(v, 3) for v in off), 'ankle z', round(res['Left'][2].z + off.z, 3), 'rest ankle z', round(c.footL.z, 3), 'dangle', round(res['Left'][2].z + off.z - c.footL.z, 3))
+    return off, kL, kR

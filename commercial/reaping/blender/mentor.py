@@ -9,7 +9,7 @@ world_hdri(os.path.join(PH, 'fireplace_4k.hdr'), strength=0.7, rot_deg=arg('--hr
 sc.view_settings.look = 'AgX - Medium High Contrast'
 g = plane('catcher', 12, 12, (0, 0, 0)); g.is_shadow_catcher = True
 CH = Vector((0.0, 1.3, 0.0))
-ph('ArmChair_01', tuple(CH), 0.0, 1.0)
+ph('ArmChair_01', tuple(CH), 0.0, 0.82)
 SEATZ = seat_top(CH.x, CH.y - 0.05)
 G = load('giga', (CH.x, CH.y - 0.02, 0.0), face(0, -1), 1.08)
 SEAT = 0.44
@@ -17,14 +17,13 @@ sh_m = mat('shaker', (0.06, 0.06, 0.07), 0.35); lid = mat('lid', (0.9, 0.2, 0.2)
 shaker = cyl('shaker', 0.042, 0.19, (0, 0, 0), sh_m); cap = cyl('shaker_lid', 0.044, 0.05, (0, 0, 0.12), lid); cap.parent = shaker
 lab = plane('shaker_label', 0.08, 0.06, (0, -0.0425, 0.0), rot=(math.pi / 2, 0, 0), m=image_mat('shlab', os.path.join(TEX, 'shaker_label.png'), rough=0.5)); lab.parent = shaker
 TOTAL = 90; sc.frame_start, sc.frame_end = 1, TOTAL
-base, kL, kR = sit_pose(G, SEATZ, back=float(arg('--back', -0.04)), spread=0.05, slump=0.05, flesh=0.12)
+off, kL, kR = sit_fk(G, SEATZ, front_y=-0.25, flesh=0.1, slope=float(arg('--slope', 19)))
 for f in range(1, TOTAL + 1, 2):
     br = math.sin(f * 0.12)
     lift = min(1.0, max(0.0, (f - 40) / 10)) * (1 - min(1.0, max(0.0, (f - 70) / 12)))   # the little toast on "Be me."
-    p = dict(base); p['spine'] = 0.05 + 0.02 * br; p['lean'] = 0.06; p['twist'] = 0.05
-    p['hand_L'] = kL + Vector((0.12, 0.12, 0.12)); p['hand_R'] = Vector((-0.26 + 0.08 * lift, -0.25 - 0.18 * lift, base['hips'].z + G.hip.z + 0.12 + 0.36 * lift))
-    p['look'] = G.headp + Vector((0.15, -2.0, -0.25 + 0.2 * lift)); G.key(f, p)
-sit_knees(G, kL, kR)
+    G.key(f, {'hips': off, 'spine': 0.05 + 0.02 * br, 'lean': 0.04, 'twist': 0.05,
+              'hand_L': kL + Vector((0.1, 0.1, 0.1)), 'hand_R': Vector((-0.26 + 0.08 * lift, kR.y + 0.15 - 0.2 * lift, kR.z + 0.12 + 0.36 * lift)),
+              'look': G.headp + Vector((0.15, -2.0, -0.25 + 0.2 * lift)), 'nosafe': True})
 cn = shaker.constraints.new('COPY_LOCATION'); cn.target = G.rig; cn.subtarget = 'mixamorig:RightHand'; shaker.location = (0, 0, 0.02)
 cn.use_offset = True
 lamp('lamp_key', 'AREA', (-1.5, -0.8, 1.9), tuple(CH + Vector((0, 0, 1.1))), energy=140, color=(1.0, 0.72, 0.45), size=0.8)
