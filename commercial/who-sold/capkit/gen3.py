@@ -21,7 +21,7 @@ S={
 }
 GEST={ # interview key -> (shot length, anim cues, gestures [(name, t0, dur, amp)])   battle time; the line starts at ~0.5
  'giga':  (7.0, [],                     [('talk',0.5,4.5,1.0),('present',1.7,1.3,1.0),('wide',3.2,1.4,0.9)]),
- 'wojak': (7.5, [(0.2,0,'lose')],       [('talk',0.5,4.6,0.5),('tilt',1.0,1.4,0.8),('shake',3.2,1.6,0.8)]),
+ 'wojak': (7.5, [],                     [('talk',0.5,4.6,0.5),('tilt',0.9,1.4,0.8),('lookdown',2.3,1.2,0.9),('shake',3.5,1.4,0.8)]),
  'whale': (7.0, [],                     [('talk',0.5,4.5,0.6),('stop',1.0,1.5,0.9),('shake',3.4,1.4,0.6)]),
  'pepe':  (7.0, [],                     [('talk',0.5,4.5,1.3),('present',1.3,1.4,1.0),('stop',2.8,1.0,0.8),('wide',3.9,1.0,0.9)]),
  'bonk':  (8.0, [(1.7,0,'attack1')],    [('nod',5.6,1.6,0.8)]),
