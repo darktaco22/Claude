@@ -62,13 +62,13 @@ def interview(key, card, role, line, count, extra_vo=(), **kw):
     lt = gfx.lower_third(card, role, G + f'lt_{key}.png'); d = vdur(line)
     ov = [(lt, 0.5, 0.5 + min(4.2, d + 1.0), 'slide')]; sfx = [(S.whoosh(0.35), 0.45, 0.25)]
     if count:
-        tb = 0.25 + d - 0.9; ov.append((gfx.phone_banner(count, G + f'ph_{count}.png'), tb, None, 'drop')); sfx.append((S.buzz(2), tb, 0.55))
+        tb = 0.25 + d - 0.9; ov.append((gfx.phone_banner(count, G + f'ph_{count}.png'), tb, None, 'drop')); sfx.append((S.beep(2, 0.35), tb, 0.5))
     return beat('iv_' + key, clip(shot(key), 0.0), vo=(line,) + tuple(extra_vo), overlays=ov, sfx=sfx, vf=DOC, **kw)
 def build():
     # ---- cold open
     c1 = gfx.card(['The following is a true story.'], G + 'c_true1.png'); c2 = gfx.card(['The following is a true story.', '', 'Some names have been changed.', 'Mostly to Pepe.'], G + 'c_true2.png')
     beat('open', BLACK, dur=3.9, overlays=[(c1, 0.25, 1.6, 'fade'), (c2, 1.6, 3.7, 'none')], sfx=[(S.typewriter(30), 0.25, 0.5), (S.typewriter(42), 1.6, 0.5)])
-    sl = gfx.slam('NEVER SELL.', G + 'slam_never.png', size=230)
+    sl = gfx.slam('NEVER SELL\nTHE GAME.', G + 'slam_never.png', size=230)
     d1 = vdur('n01'); beat('mine', clip(shot('mine'), 0.0), vo=('n01',), tail=1.3, vf=NIGHT, overlays=[(sl, 0.25 + d1 + 0.25, None, 'pop')], sfx=[(S.boom(2.5), 0.25 + d1 + 0.25, 0.8)], speed_cap=2.0)
     beat('order', still(gfx.order_ticket(G + 'order.png')), vo=('n02',), tail=0.9, sfx=[(S.shutter(), 0.05, 0.6), (S.riser(1.6), -1.6, 0.5)])
     beat('title', still(gfx.title(G + 'title.png')), dur=2.6, sfx=[(S.boom(3.0), 0.0, 1.0)])
@@ -95,21 +95,22 @@ def build():
     # ---- the evidence
     beat('cctv', clip(HERO + 'casino.mp4', 0.4), vo=('n09', 'n10'), gap=0.35, tail=0.7, vf=CCTV, overlays=[(gfx.cctv_overlay(G + 'cctv.png'), 0.0, None, 'none')], speed_cap=1.15, sfx=[(S.shutter(), 0.05, 0.5)])
     interview('troll', 'TROLL', 'Confessed. Repeatedly.', 'troll1', 46, extra_vo=('n11',))
-    beat('phone', still(gfx.phone_full(G + 'phone.png')), vo=('n12',), tail=1.1, overlays=[], sfx=[(S.buzz(3), 0.2, 0.7), (S.buzz(2), -1.3, 0.7)])
+    beat('phone', still(gfx.phone_full(G + 'phone.png')), vo=('n12',), tail=1.1, overlays=[], sfx=[(S.beep(4, 0.45), 0.2, 0.7), (S.beep(3, 0.45), -1.5, 0.7)])
     # ---- the reveal
     d13 = vdur('n13'); beat('trace', clip(shot('basement2'), 0.0), vo=('n13',), tail=0.9, vf=NIGHT, speed_cap=3.0, sfx=[(S.riser(3.0), 0.25 + d13 - 3.0, 0.6), (S.boom(2.0), 0.25 + d13 + 0.1, 0.7)])
     AUD.append(('mark', 'reveal', T[0]))
-    ltm = gfx.lower_third('MOM', 'Mother. Thought it was the microwave.', G + 'lt_mom.png'); dm = vdur('mom1')
+    beat('pause', still(gfx.pause_menu(G + 'pause.png')), dur=2.4, sfx=[(S.tick(), 0.9, 0.9)])
+    ltm = gfx.lower_third('THE NARRATOR', 'Narrator. Had a reservation.', G + 'lt_nar.png'); dm = vdur('n13b')
     thr = frame_of(shot('basement2'), str(probe(shot('basement2')) - 0.15), G + 'throne.png')
-    beat('mom', still(thr), vo=('mom1',), lead=0.9, tail=0.9, vf=DOC, overlays=[(ltm, 0.9 + dm * 0.45, None, 'slide')])
+    beat('confess', still(thr), vo=('n13b',), lead=0.9, tail=0.9, vf=DOC, overlays=[(ltm, 0.9 + dm * 0.45, None, 'slide')])
     AUD.append(('mark', 'after', T[0]))
-    beat('micro', still(gfx.microwave(G + 'micro.png')), dur=2.3, sfx=[(S.beep(3, 0.55), 0.3, 0.8)])
+    beat('resv', still(gfx.reservation(G + 'resv.png')), dur=2.3, sfx=[(S.beep(1, 0.5), 0.3, 0.8)])
     beat('peas', clip(HERO + 'basement.mp4', 5.6), vo=('n14',), tail=0.9, vf=DOC, speed_cap=1.15)
     # ---- where are they now
     EP = [('wojak', 'WOJAK', ['was cleared of all charges.', 'He is still crying.', 'Doctors say it is unrelated.']),
           ('whale', 'THE WHALE', ['now owns this documentary.']),
-          ('basement', 'MOM', ['was sentenced to nothing.', 'She is your mom.']),
-          ('mine', 'DIAMOND HANDS MINE', ['reopened on Monday.', 'The button has been moved higher.'])]
+          ('basement', 'THE NARRATOR', ['was banned from ranked for life.', 'Says the pasta was worth it.']),
+          ('mine', 'DIAMOND HANDS MINE', ['reopened on Monday.', 'Dinner is now post-match.'])]
     for k, nm, ls in EP:
         bg = G + f'epbg_{k}.png'; src = shot(k) if os.path.exists(shot(k)) else HERO + 'basement.mp4'; frame_of(src, 1.5, bg)
         ep = gfx.epilogue(nm, ls, G + f'ep_{k}.png'); n = sum(len(x) for x in ls)
@@ -145,7 +146,7 @@ def mix(total):
     a1 = int((title_t + 3.0) * SR); b1 = int(rv * SR)
     pn = S.piano_line((b1 - a1) / SR, S.MINOR); addto(bed, a1, pn, 0.55)
     hb = S.heartbeat((b1 - a1) / SR, 46); g = np.linspace(0.15, 0.6, len(hb)); addto(bed, a1, hb * g, 0.5)
-    # the reveal: music drops out completely for the Mom line, then resolves in major
+    # the reveal: music drops out completely for the confession, then resolves in major
     gate = np.ones(n); s0 = int((rv - 0.15) * SR); s1 = int(af * SR); gate[s0:s1] = 0.0
     k = int(0.25 * SR); gate = np.convolve(gate, np.ones(k) / k, 'same'); bed *= gate
     a2 = int((af + 0.2) * SR); mj = S.piano_line((n - a2) / SR, S.MAJOR, step=1.9, start=0.2); addto(bed, a2, mj, 0.6)

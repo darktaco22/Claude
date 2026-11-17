@@ -44,11 +44,11 @@ def title(path):
     d.text((540,760),'A MEME ROYALE ORIGINAL DOCUMENTARY',font=F('med',34),fill=(190,190,195,255),anchor='mm')
     d.text((540,960),'WHO SOLD?',font=F('bebas',262),fill=(255,255,255,255),anchor='mm')
     d.rectangle((250,1108,830,1118),fill=RED)
-    d.text((540,1180),'ONE RULE.  ONE BUTTON.  ONE SUSPECT TOO MANY.',font=F('med',32),fill=(190,190,195,255),anchor='mm')
+    d.text((540,1180),'ONE RULE.  ONE THROWN MATCH.  ONE SUSPECT TOO MANY.',font=F('med',32),fill=(190,190,195,255),anchor='mm')
     im.save(path); return path
 def slam(text,path,size=260,color=(255,255,255,255),y=960):
     im=new(); d=ImageDraw.Draw(im)
-    d.text((540,y),text,font=F('bebas',size),fill=color,anchor='mm',stroke_width=10,stroke_fill=(0,0,0,255)); im.save(path); return path
+    d.multiline_text((540,y),text,font=F('bebas',size),fill=color,anchor='mm',align='center',spacing=int(size*0.02),stroke_width=10,stroke_fill=(0,0,0,255)); im.save(path); return path
 def tag(text,path,xy=(60,150)):
     im=new(); d=ImageDraw.Draw(im); f=F('bold',34); w=d.textlength(text,font=f)
     d.rectangle((xy[0],xy[1],xy[0]+w+44,xy[1]+62),fill=(0,0,0,170)); d.text((xy[0]+22,xy[1]+31),text,font=f,fill=(255,255,255,235),anchor='lm'); im.save(path); return path
@@ -113,14 +113,14 @@ def evidence_board(photos,path):
     for a,b in [(0,1),(1,3),(3,2),(2,4),(4,5),(5,1),(0,3),(2,5)]:
         d.line((centers[a],centers[b]),fill=(190,20,26,255),width=7)
     for c in centers: d.ellipse((c[0]-16,c[1]-16,c[0]+16,c[1]+16),fill=(200,24,30,255),outline=(90,10,12,255),width=3)
-    for (x,y,t,rot) in [(442,640,'IT IS ALL\nCONNECTED',-7),(442,1230,'MOM???',6),(442,1690,'WAKE UP',-4)]:
+    for (x,y,t,rot) in [(442,640,'IT IS ALL\nCONNECTED',-7),(442,1230,'WHOSE\nALARM?',6),(442,1690,'WAKE UP',-4)]:
         n=Image.new('RGBA',(196,120),(250,226,90,255)); nd=ImageDraw.Draw(n); nd.multiline_text((98,60),t,font=F('marker',30 if '\n' in t else 36),fill=(30,30,34,255),anchor='mm',align='center')
         n=n.rotate(rot,expand=True,resample=Image.BICUBIC); im.alpha_composite(n,(x,y-90))
     im.save(path); return path
 def cctv_overlay(path):
     im=new(); d=ImageDraw.Draw(im)
     for y in range(0,H,6): d.line((0,y,W,y),fill=(0,0,0,46),width=2)
-    d.text((60,150),'CAM 03  DEGEN CASINO',font=F('mono',38),fill=(255,255,255,235)); d.text((60,206),'FRI 14  03:14:07 AM',font=F('mono',38),fill=(255,255,255,235))
+    d.text((60,150),'MATCH REPLAY   GRAND FINAL',font=F('mono',38),fill=(255,255,255,235)); d.text((60,206),'ROUND 3   0:03 LEFT',font=F('mono',38),fill=(255,255,255,235))
     d.ellipse((930,150,966,186),fill=(230,30,30,255)); d.text((1010,168),'REC',font=F('mono',34),fill=(255,255,255,235),anchor='rm') if False else None
     d.text((916,168),'REC',font=F('mono',34),fill=(255,255,255,235),anchor='rm')
     d.ellipse((330,820,750,1240),outline=(235,30,30,255),width=10); d.line((760,820,900,700),fill=(235,30,30,255),width=10)
@@ -138,7 +138,7 @@ def endcard(path,logo='/home/user/Claude/commercial/kid/logo.png'):
     d.text((540,1180),'THIS DOCUMENTARY IS BARELY ABOUT',font=F('bebas',74),fill=(255,205,50,255),anchor='mm'); d.rectangle((390,1250,690,1258),fill=RED)
     d.text((540,1350),'PC + MOBILE',font=F('bold',46),fill=(235,235,240,255),anchor='mm')
     d.text((540,1440),'memeroyale.imaginestudio.fun',font=F('med',44),fill=(235,235,240,255),anchor='mm'); d.text((540,1510),'@MemeRoyaleGames',font=F('med',42),fill=(255,205,50,255),anchor='mm')
-    d.text((540,1720),'No moms were charged in the making of this film.',font=F('type',30),fill=(150,150,156,255),anchor='mm'); im.save(path); return path
+    d.text((540,1720),'No pasta was wasted in the making of this film.',font=F('type',30),fill=(150,150,156,255),anchor='mm'); im.save(path); return path
 if __name__=='__main__':
     lower_third('GIGACHAD','Witness. Did not skip arm day.',G+'t_lt.png'); title(G+'t_title.png'); phone_banner(12,G+'t_ph.png'); phone_full(G+'t_phone.png'); order_ticket(G+'t_order.png'); newspaper(G+'t_news.png')
     evidence_board([('/root/road/cap/t3/f_0001.png',n) for n in ['GIGA','DUCKS','CART','THE MOON','WOJAK','???']],G+'t_board.png'); cctv_overlay(G+'t_cctv.png'); epilogue('WOJAK',['was cleared of all charges.','He is still crying.','Doctors say it is unrelated.'],G+'t_epi.png'); endcard(G+'t_end.png')
@@ -161,3 +161,72 @@ def microwave(path):
     im.alpha_composite(body,(90,500)); d=ImageDraw.Draw(im)
     d.text((540,1330),'MICROWAVE',font=F('bebas',120),fill=(255,255,255,255),anchor='mm'); d.text((540,1420),'(not a financial instrument)',font=F('type',38),fill=(190,190,196,255),anchor='mm')
     im.save(path); return path
+
+
+# ---------------- v2 props: the match was thrown, not the money ----------------
+DJ='/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'
+def phone_banner(count,path):
+    """lock-screen alarm notification (the running gag): Dinner alarm, snoozed N times"""
+    im=new(); x0,y0,x1,y1=70,250,1010,440
+    sh=new(); ImageDraw.Draw(sh).rounded_rectangle((x0,y0+10,x1,y1+10),radius=46,fill=(0,0,0,140)); im=Image.alpha_composite(im,sh.filter(ImageFilter.GaussianBlur(14))); d=ImageDraw.Draw(im)
+    d.rounded_rectangle((x0,y0,x1,y1),radius=46,fill=(242,242,247,245))
+    d.rounded_rectangle((x0+30,y0+38,x0+144,y0+152),radius=28,fill=(255,149,0,255))
+    cx,cy=x0+87,y0+97; d.ellipse((cx-34,cy-30,cx+34,cy+38),outline=(255,255,255,255),width=8); d.line((cx,cy+4,cx,cy-16),fill=(255,255,255,255),width=7); d.line((cx,cy+4,cx+14,cy+12),fill=(255,255,255,255),width=7)
+    d.ellipse((cx-44,cy-42,cx-16,cy-14),fill=(255,255,255,255)); d.ellipse((cx+16,cy-42,cx+44,cy-14),fill=(255,255,255,255))
+    d.text((x0+176,y0+62),'ALARM  -  DINNER 6:00 PM',font=F('black',44),fill=(20,20,22,255),anchor='lm')
+    d.text((x0+176,y0+128),f'Snoozed ({count})',font=F('med',42),fill=(90,90,96,255),anchor='lm')
+    d.text((x1-34,y0+150),'now',font=F('med',32),fill=(130,130,136,255),anchor='rm'); im.save(path); return path
+def phone_full(path,count=47):
+    im=new((6,6,10,255)); d=ImageDraw.Draw(im)
+    d.rounded_rectangle((150,260,930,1700),radius=90,fill=(18,18,24,255),outline=(70,70,80,255),width=6)
+    d.rounded_rectangle((180,300,900,1660),radius=64,fill=(10,22,48,255))
+    d.text((540,480),'5:58',font=F('med',170),fill=(255,255,255,255),anchor='mm'); d.text((540,600),'Friday, the fourteenth',font=F('med',36),fill=(200,205,220,255),anchor='mm')
+    y=760
+    for t,s2,col in [('ALARM  -  DINNER 6:00 PM',f'Snoozed ({count})',(255,149,0,255)),('RESERVATION','Table for one. Do not be late.',(52,120,246,255)),('RESERVATION','Your table is getting cold.',(52,120,246,255))]:
+        d.rounded_rectangle((210,y,870,y+170),radius=36,fill=(242,242,247,240)); d.rounded_rectangle((232,y+34,334,y+136),radius=24,fill=col)
+        d.ellipse((260,y+62,306,y+108),outline=(255,255,255,255),width=7); d.line((283,y+85,283,y+72),fill=(255,255,255,255),width=6); d.line((283,y+85,293,y+92),fill=(255,255,255,255),width=6)
+        d.text((360,y+58),t,font=F('black',34),fill=(20,20,22,255),anchor='lm'); d.text((360,y+114),s2,font=F('med',28),fill=(90,90,96,255),anchor='lm'); y+=196
+    im.save(path); return path
+def order_ticket(path):
+    """the scoreboard: a lead thrown away"""
+    im=new((8,10,16,255)); d=ImageDraw.Draw(im)
+    d.rectangle((0,0,W,170),fill=(22,26,40,255)); d.text((540,92),'GRAND FINAL',font=F('bebas',120),fill=(255,205,50,255),anchor='mm')
+    d.text((540,380),'DEFEAT',font=F('bebas',300),fill=(214,30,38,255),anchor='mm',stroke_width=6,stroke_fill=(60,6,8,255))
+    y=560
+    for nm,sc,col,res in [('DIAMOND HANDS MINE','0',(60,140,255,255),'(was winning by a mile)'),('TEAM MID','1',(150,150,160,255),'(did nothing)')]:
+        d.rounded_rectangle((90,y,990,y+210),radius=26,fill=(20,24,36,255),outline=col,width=6); d.text((140,y+78),nm,font=F('bebas',92),fill=(255,255,255,255),anchor='lm')
+        d.text((140,y+155),res,font=F('type',40),fill=(170,174,190,255),anchor='lm'); d.text((930,y+105),sc,font=F('bebas',190),fill=col,anchor='rm'); y+=250
+    d.text((540,1090),'ROUND 3    0:03 REMAINING',font=F('mono',44),fill=(200,205,220,255),anchor='mm')
+    d.text((540,1170),'MVP:   nobody',font=F('type',52),fill=(200,205,220,255),anchor='mm')
+    st=Image.new('RGBA',(700,260),(0,0,0,0)); sd=ImageDraw.Draw(st); sd.rounded_rectangle((8,8,691,251),radius=18,outline=(214,30,38,235),width=16); sd.text((350,134),'SOLD',font=F('bebas',230),fill=(214,30,38,235),anchor='mm')
+    st=st.rotate(-12,expand=True,resample=Image.BICUBIC); st=st.resize((int(st.width*0.72),int(st.height*0.72)),Image.LANCZOS); im.alpha_composite(st,(300,1250)); im.save(path); return path
+def pause_menu(path):
+    """match-stats panel in the game's purple/gold style: the thrower did nothing (cards played 0)"""
+    im=new((10,8,22,255)); d=ImageDraw.Draw(im)
+    d.rounded_rectangle((70,150,1010,330),radius=34,fill=(36,20,84,255),outline=(120,86,200,255),width=5)
+    d.text((540,240),'TheNarrator',font=F('bebas',120),fill=(255,255,255,255),anchor='mm')
+    P=(44,24,104,255); GOLD=(244,196,60,255)
+    d.rounded_rectangle((70,500,1010,1330),radius=40,fill=P,outline=GOLD,width=6)
+    d.text((540,580),'MATCH STATS',font=F('bebas',96),fill=GOLD,anchor='mm')
+    y=700
+    for k,v,hot in [('CARDS PLAYED','0',True),('COPIUM SPENT','0',True),('TOWER DMG','0',True),('TIME SPENT AFK','4:57',True)]:
+        d.rounded_rectangle((130,y,950,y+140),radius=24,fill=(24,12,66,255),outline=(100,74,180,255),width=3)
+        d.text((180,y+70),k,font=F('bebas',70),fill=(210,206,235,255),anchor='lm'); d.text((900,y+70),v,font=F('bebas',110),fill=(255,90,90,255) if hot else (255,255,255,255),anchor='rm'); y+=160
+    d.text((540,1440),'COPIUM',font=F('bebas',70),fill=(210,206,235,255),anchor='mm')
+    for i in range(10):
+        x=110+i*86; d.rounded_rectangle((x,1480,x+74,1550),radius=14,fill=(168,92,255,255),outline=(220,190,255,255),width=3)
+    d.text((540,1600),'10 / 10  (UNSPENT)',font=F('mono',46),fill=(255,255,255,255),anchor='mm')
+    d.text((540,1700),'TIME LEFT 0:03',font=F('mono',40),fill=(160,166,184,255),anchor='mm'); im.save(path); return path
+def reservation(path):
+    im=new((14,12,12,255)); c=Image.new('RGBA',(840,1060),(242,236,218,255)); d=ImageDraw.Draw(c)
+    d.rectangle((24,24,815,1035),outline=(120,36,36,255),width=6)
+    d.text((420,150),'BELLA NOTTE',font=F('serif',96),fill=(110,28,28,255),anchor='mm'); d.text((420,236),'T R A T T O R I A',font=F('med',34),fill=(110,28,28,255),anchor='mm'); d.line((120,290,720,290),fill=(110,28,28,255),width=3)
+    d.text((420,370),'RESERVATION CONFIRMED',font=F('bold',40),fill=(40,40,44,255),anchor='mm')
+    y=470
+    for k,v in [('NAME','The Narrator'),('PARTY','1'),('DATE','Fri. the 14th'),('TIME','6:00 PM')]:
+        d.text((110,y),k,font=F('type',40),fill=(100,96,88,255)); d.text((730,y),v,font=F('type',46),fill=(20,20,22,255),anchor='ra'); d.line((110,y+66,730,y+66),fill=(190,184,166,255),width=2); y+=104
+    d.text((420,930),'Late tables are given away.',font=F('type',32),fill=(120,115,100,255),anchor='mm')
+    d.text((420,985),'(Spaghetti is non-refundable.)',font=F('type',30),fill=(120,115,100,255),anchor='mm')
+    c=c.rotate(-3,expand=True,resample=Image.BICUBIC); sh=new(); sh.paste((0,0,0,170),(0,0),Image.new('L',(1,1),0)) if False else None
+    shd=Image.new('RGBA',c.size,(0,0,0,0)); shd.paste((0,0,0,150),(0,0),c.split()[3]); im.alpha_composite(shd.filter(ImageFilter.GaussianBlur(22)),((W-c.width)//2+14,330+22)); im.alpha_composite(c,((W-c.width)//2,330))
+    d=ImageDraw.Draw(im); d.text((540,1560),'EXHIBIT Z',font=F('bebas',150),fill=(255,255,255,255),anchor='mm'); d.text((540,1660),'(it was the reservation)',font=F('type',40),fill=(190,190,196,255),anchor='mm'); im.save(path); return path
