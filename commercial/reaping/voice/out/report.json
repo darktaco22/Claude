@@ -1,0 +1,121 @@
+{
+ "host1": {
+  "role": "whale",
+  "text": "Wojak!",
+  "dur": 0.92,
+  "score": 1.0,
+  "heard": " Wojak."
+ },
+ "host2": {
+  "role": "whale",
+  "text": "Any volunteers?",
+  "dur": 1.32,
+  "score": 1.0,
+  "heard": " Any volunteers?"
+ },
+ "pepe1": {
+  "role": "pepe",
+  "text": "I volunteer.",
+  "dur": 0.92,
+  "score": 1.0,
+  "heard": " I volunteer."
+ },
+ "pepe2": {
+  "role": "pepe",
+  "text": "Him.",
+  "dur": 0.56,
+  "score": 1.0,
+  "heard": " him"
+ },
+ "giga1": {
+  "role": "giga",
+  "text": "My advice? Be me.",
+  "dur": 1.82,
+  "score": 1.0,
+  "heard": " My advice, be me."
+ },
+ "pop1": {
+  "role": "troll",
+  "text": "Wojak! How are you feeling?",
+  "dur": 1.86,
+  "score": 1.0,
+  "heard": " Wojak, how are you feeling?"
+ },
+ "wojak1": {
+  "role": "wojak",
+  "text": "Bad.",
+  "dur": 0.68,
+  "score": 1.0,
+  "heard": " Bad."
+ },
+ "pop2": {
+  "role": "troll",
+  "text": "Incredible.",
+  "dur": 0.86,
+  "score": 1.0,
+  "heard": " Incredible."
+ },
+ "host3": {
+  "role": "whale",
+  "text": "Ladies and gentlemen... your victor!",
+  "dur": 2.08,
+  "score": 1.0,
+  "heard": " Ladies and gentlemen, your victor."
+ },
+ "wojak2": {
+  "role": "wojak",
+  "text": "Can I go home now?",
+  "dur": 1.2,
+  "score": 1.0,
+  "heard": " Can I go home now?"
+ },
+ "host4": {
+  "role": "whale",
+  "text": "And next year's tribute is...",
+  "dur": 1.4,
+  "score": 1.0,
+  "heard": " And next year's tribute is..."
+ },
+ "aww_narrator": {
+  "role": "narrator",
+  "text": "Awwwww.",
+  "dur": 1.24,
+  "score": 1.0,
+  "heard": "(not checked)"
+ },
+ "aww_giga": {
+  "role": "giga",
+  "text": "Awwwww.",
+  "dur": 0.9,
+  "score": 1.0,
+  "heard": "(not checked)"
+ },
+ "aww_whale": {
+  "role": "whale",
+  "text": "Awwwww.",
+  "dur": 2.08,
+  "score": 1.0,
+  "heard": "(not checked)"
+ },
+ "aww_bonk": {
+  "role": "bonk",
+  "text": "Awwwww.",
+  "dur": 0.9,
+  "score": 1.0,
+  "heard": "(not checked)"
+ },
+ "aww_mom": {
+  "role": "mom",
+  "text": "Awwwww.",
+  "dur": 1.18,
+  "score": 1.0,
+  "heard": "(not checked)"
+ },
+ "aww_pepe": {
+  "role": "pepe",
+  "text": "Awwwww.",
+  "dur": 1.04,
+  "score": 1.0,
+  "heard": "(not checked)"
+ }
+}
