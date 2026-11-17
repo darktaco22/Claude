@@ -39,3 +39,20 @@ S.update({
  'victory': dict(arena='parking', T=9.0, people=[], cam=None, hud=True, me_name='WOJAK', opp='EVERYONE ELSE', frames=380,
                  js=[(0.2, "D.drop(b,0,'wojak',9,21);"), (1.0, "m.finish({winner:0, why:'hq'});")]),
 })
+# --- v2 battle shots: a smoothed side-on two-shot that tracks the fighters' midpoint (both in frame, eye level)
+def duo(cards, side=1, dist=6.2, h=1.7, look=1.05, fov=44, lead=0.0):
+    return ("(()=>{let mx=null,mz=null; return (k,cam,b)=>{const es=[...b.ents.values()].filter(e=>e.kind==='unit'&&%s.includes(e.card)&&!e.dead);"
+            "if(es.length){const x=es.reduce((s,e)=>s+e.x,0)/es.length, z=es.reduce((s,e)=>s+e.z,0)/es.length; mx=mx==null?x:mx+(x-mx)*0.08; mz=mz==null?z:mz+(z-mz)*0.08;}"
+            "if(mx==null) return false; cam.fov=%s; cam.position.set(mx+%s*%s, %s, mz+%s); cam.lookAt(mx, %s, mz+%s);}})()"
+            % (json.dumps(cards), fov, side, dist, h, lead, look, lead))
+import json
+S.update({
+ 'clashA': dict(arena='parking', T=8.0, people=[], cam=duo(['bonk', 'troll', 'chillguy']),
+                js=[(0.1, "D.drop(b,0,'bonk',8.6,19.0); D.drop(b,1,'troll',8.8,13.2); D.drop(b,0,'chillguy',9.6,19.6);")]),
+ 'clashB': dict(arena='parking', T=8.0, people=[], cam=duo(['whale', 'popcat', 'pepe'], side=-1),
+                js=[(0.1, "D.drop(b,0,'whale',9.2,19.0); D.drop(b,1,'popcat',9.0,13.2); D.drop(b,1,'pepe',8.2,12.6);")]),
+ 'standoff2': dict(arena='parking', T=7.0, people=[('wojak', 8.0, 17.4, PI / 2), ('giga', 10.0, 17.4, -PI / 2)],
+                   cam="D.dolly([9,1.75,24.0],[9,1.75,23.0],[9,1.25,17.4],[9,1.25,17.4],30,30)",
+                   cues=[(0.9, 1, 'emote'), (3.0, 1, 'walk')], moves="window.MOVE(1,3.0,3.4,6.5,0.3,0,%s);" % (PI / 2),
+                   gests=[(1, 'tilt', 2.2, 0.9, 0.8), (0, 'sob', 3.2, 3.2, 0.9)]),
+})
