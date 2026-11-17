@@ -150,7 +150,7 @@ def setup(f):
             elif s.get('phone'):
                 if obj.name.startswith('RIG-'):             # the crew still inside the hovering ship must not show from above
                     pos = obj.matrix_world.translation
-                    inside = pos.z > 15.0 and pos.y > -8.3 and abs(pos.x) < 3.6
+                    inside = pos.z > 18.9 and pos.y > -8.3 and abs(pos.x) < 3.6
                     for member in [obj] + list(obj.children_recursive):
                         member.hide_render = inside
                     ring = bpy.data.objects.get('ring-' + obj.name[4:])

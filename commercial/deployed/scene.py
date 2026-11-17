@@ -146,6 +146,23 @@ def unwrap(previous, wanted):
     return wanted
 
 
+def _pos_at(actor, frame):
+    keys = sorted(actor.loc, key=lambda key: key[0])
+    if not keys:
+        return None
+    if frame <= keys[0][0]:
+        return keys[0][1]
+    for (f0, p0), (f1, p1) in zip(keys, keys[1:]):
+        if f0 <= frame <= f1:
+            u = 0.0 if f1 == f0 else (frame - f0) / (f1 - f0)
+            return tuple(p0[n] + (p1[n] - p0[n]) * u for n in range(3))
+    return keys[-1][1]
+
+
+def _visible(actor, a):
+    return any(on <= a and (off is None or a < off) for on, flag, off in actor.vis)
+
+
 ONE_SHOT = ('attack', 'emote', 'hit', 'die', 'ready')
 ONE_SHOT_NAMES = ('attack1', 'attack2', 'attack3', 'emote', 'hit', 'die', 'ready')
 LOOPS = ('idle', 'walk', 'run')
@@ -214,6 +231,13 @@ class Actor:
     def go(self, a, target, speed=1.4, clip='walk', then='idle'):
         """Walk to `target` (world coordinates) from the current position; returns the arrival time."""
         target = Vector(target)
+        f = F(a)
+        if self.loc and self.loc[-1][0] > f:                 # an earlier walk is still under way: carry on from where it really is, never jump to its end
+            current = _pos_at(self, f)
+            self.loc = [k for k in self.loc if k[0] <= f]
+            self.rot = [k for k in self.rot if k[0] <= f]
+            self.items = [item for item in self.items if item[0] <= a]
+            self.pos = Vector(current)
         dist = (target - self.pos).length
         self.hold(a)
         self.put(a + 0.2, head=heading(target.x - self.pos.x, target.y - self.pos.y))
@@ -953,23 +977,6 @@ MATCH_STATE = monitor.State(MATCH)
 EYE_OF = {'cupsey': 0.95, 'ket': 1.3, 'chillguy': 1.35, 'chillhouse': 1.1, 'dope': 0.95, 'lmao': 1.3, 'pudgy': 1.0}      # eye height of each character (all are about 1.45 m tall; the egg's face sits low)
 
 
-def _pos_at(actor, frame):
-    keys = actor.loc
-    if not keys:
-        return None
-    if frame <= keys[0][0]:
-        return keys[0][1]
-    for (f0, p0), (f1, p1) in zip(keys, keys[1:]):
-        if f0 <= frame <= f1:
-            u = 0.0 if f1 == f0 else (frame - f0) / (f1 - f0)
-            return tuple(p0[n] + (p1[n] - p0[n]) * u for n in range(3))
-    return keys[-1][1]
-
-
-def _visible(actor, a):
-    return any(on <= a and (off is None or a < off) for on, flag, off in actor.vis)
-
-
 def seat(card, a):
     """Ship-local position of a card's character at match animation time a: where its actor really stands then."""
     for actor in ALL:
@@ -978,7 +985,7 @@ def seat(card, a):
         if actor.vis and not _visible(actor, a):
             continue
         p = _pos_at(actor, F(a + 1.8))                                # where it stands once the shot is under way (it may be on its way)
-        if p is not None and p[2] > 15.0 and p[1] > -8.3 and abs(p[0]) < 3.6:
+        if p is not None and p[2] > 18.9 and p[1] > -8.3 and abs(p[0]) < 3.6:
             print('SEAT', card, round(a - PRE, 1), actor.label, round(-p[0], 2), round(-p[1], 2))
             return (-p[0], -p[1])
     print('SEAT-OLD', card, round(a - PRE, 1), seat_old(card, a))
@@ -1157,23 +1164,23 @@ def ramp_shot(i, hold=0.4, tail=0.15):
 FALL_SLOW = 0.6                                                # the fall plays at three quarters speed
 
 
-def play_seq(i, chase_for=2.6, drag=1.8, hold=0.95, line=None, line_at='drag', lead=0.25, who=None):
+def play_seq(i, chase_for=2.6, drag=1.8, hold=0.95, line=None, line_at='drag', lead=0.25, who=None, lines=()):
     """One real play: the drag on the phone, the jump off the ramp, the (slightly slow) fall and the follow of the new unit.
-    `line` is a recorded line that starts `lead` seconds into the shot named by `line_at` (drag, ramp, fall, land)."""
+    `lines` are (line id, shot, lead) triples: the line starts `lead` seconds into the shot (drag, ramp, fall, land)."""
     entry = jump_of(i)
     T = M(entry[0]['t'])
-    if line and line_at == 'drag':
-        say_now(line, lead, who)
+    todo = list(lines) + ([(line, line_at, lead)] if line else [])
+    def due(where):
+        for item in [x for x in todo if x[1] == where]:
+            say_now(item[0], item[2], who)
+    due('drag')
     phone(f'phone_{i}', T + 0.2, a_start=T - drag)
-    if line and line_at == 'ramp':
-        say_now(line, lead, who)
+    due('ramp')
     ramp_shot(i, hold)
-    if line and line_at == 'fall':
-        say_now(line, lead, who)
+    due('fall')
     fall_cam(i, entry[3], speed=FALL_SLOW)
     spawn_id = SPAWN_ID.get(entry[0]['t'])
-    if line and line_at == 'land':
-        say_now(line, lead, who)
+    due('land')
     if spawn_id is not None and chase_for > 0.3:
         chase(f'chase_{i}', max(CUT + 0.5, entry[3] + chase_for), spawn_id)
 
@@ -1187,45 +1194,38 @@ def battle(name, match_t, dur, cx, cz, dist=11.0, high=8.0, lens=28, drift=(1.5,
          hand=('INVESTIGATION', 0.3), fstop=5.0, shake=0.25)
 
 
-# ---- B. the first twenty seconds, the illegal drag (17.97) and the first jumps: LMAO 19.67, Ket 22.2, Chill Guy 25.53
+# ---- the match is a real one with the game's own rules: the Thumb plays like the game's own bot (defends, never stacks a push)
+# plays (match time): 0 dope 10.0, 1 chillhouse 12.8, 2 ket 16.5, 3 lmao 20.1, 4 airdrop 26.3, 5 dope 33.1, 7 ket 61.1, 11 pudgy 80.8, 19 airdrop 135.3 (on our side),
+# 23 chillguy 150.8, 28 chillguy 171.9; their left tower falls 50.5, the right one 93.7, overdose 120.0, the Thumb wins 2-0 at the buzzer
 event('match_start', M(0.0))
 say('a_fight', M(0.15))
 phone('phone_fight', M(3.0), a_start=M(0.0))
 beat('s06', sarge, [sarge_face(-1, 46, 3.4, name='sarge_go')], a_at=M(3.1), pad=0.25)
+play_seq(1, chase_for=2.4, lines=[('s07', 'drag', 0.3), ('h01', 'land', 0.5)])             # Chillhouse (12.8): "Chillhouse! Five Copium!" / "Sorry. I'm a house."
 say_now('e04', 1.2)                                                  # the drag onto the enemy side starts 1.4 s into this shot
 phone('phone_illegal', M(18.95), a_start=M(15.7))
 beat('s08', sarge, [sarge_face(1, 52, 3.8, name='sarge_river')], a_at=CUT + 0.2, pad=0.3)
-play_seq(0, chase_for=2.0)                                          # LMAO
-play_seq(1, chase_for=1.4, line='k04', line_at='land', lead=0.2)    # Ket: "He's a toucher."
-play_seq(2, chase_for=1.8, line='c04', line_at='drag', lead=0.3)    # Chill Guy: "Finally. I soak hits..."
-battle('battle_1', 29.5, 3.4, 2.4, 19.7)
+play_seq(3, chase_for=2.4, line='k07', line_at='drag', lead=0.3)    # LMAO (20.1): "Units keep fighting after they jump. Remember?"
+play_seq(4, chase_for=0.0, line='k06', line_at='fall', lead=0.3)    # an airdrop on the push (26.3): "Free coins. For the lawn."
+play_seq(5, chase_for=2.4, line='k03', line_at='drag', lead=0.3)    # Dope (33.1): "Two Copium. The cheap one."
 print('B ENDS', round(CUT - PRE, 2), 'film', round(FILM, 1))
 
-# ---- C. Dope (37.3) and our left tower falls (43.1)
-play_seq(4, chase_for=1.6, line='k03', line_at='drag', lead=0.3)    # Dope: "Two Copium. The cheap one."
-say_now('s10', 1.7)
-shot('tower_front', M(44.0), (2.6, 32.6, 3.8), (3.5, 25.2, 2.4), 30, p1=(4.6, 31.4, 3.4), space='game', shake=0.8, hand=('HANDYCAM_RUN', 0.25), a_start=M(41.2), fstop=4.0)
-say_now('c03', 1.0)
-phone('phone_down1', M(46.2), a_start=M(43.0))
+# ---- C. their left tower falls (50.5); the egg is never picked
+say_now('s12', 0.8)
+shot('enemy_tower', M(52.0), (1.0, 17.5, 3.0), (3.5, 6.5, 2.3), 32, p1=(2.2, 16.4, 2.8), space='game', hand=('INVESTIGATION', 0.4), shake=0.5, fstop=4.0, a_start=M(48.4))
+beat('e11', cupsey_a, [lface('cupsey', CUT, 1, 44, name='egg_never')], a_at=CUT + 0.15, pad=0.2)
+beat('s21', sarge, [sarge_face(-1, 50, 3.6, name='sarge_sit')], a_at=CUT + 0.15, pad=0.3)
+play_seq(7, chase_for=2.4, line='k04', line_at='land', lead=0.3)    # Ket (61.1): "He's a toucher."
+battle('battle_1', 64.8, 3.4, 13.5, 17.5)
+play_seq(11, chase_for=2.4)                                         # Pudgy (80.8)
+beat('s22', sarge, [sarge_face(1, 52, 3.8, name='sarge_defend')], a_at=CUT + 0.15, pad=0.3)
 print('C ENDS', round(CUT - PRE, 2), 'film', round(FILM, 1))
 
-# ---- D. Cupsey, the healer (54.43); their right tower (83.4) and left tower (91.17)
-at(51.6)
-beat('e05', cupsey_a, [lface('cupsey', CUT, 1, 44, name='egg_healer')], a_at=CUT + 0.15, pad=0.2)
-beat('s09', sarge, [sarge_face(-1, 50, 3.6, name='sarge_heal')], a_at=CUT + 0.15, pad=0.3)
-play_seq(6, chase_for=2.2)                                          # Cupsey
-battle('battle_2', 64.5, 3.4, 4.0, 17.0)
-say_now('s12', 0.7)
-shot('enemy_tower', M(85.2), (8.5, 17.8, 3.0), (14.5, 6.5, 2.3), 34, p1=(9.5, 17.0, 2.8), space='game', hand=('INVESTIGATION', 0.4), shake=0.5, fstop=4.0, a_start=M(82.4))
-beat('e06', cupsey_a, [lface('cupsey', CUT, -1, 44, name='egg_who')], a_at=CUT + 0.15, pad=0.2)
-play_seq(10, chase_for=1.6, line='k07', line_at='drag', lead=0.3)   # LMAO (86.73): "Units keep fighting after they jump. Remember?"
-beat('s13', sarge, [sarge_face(-1, 50, 3.6, name='sarge_rotate')], a_at=CUT + 0.15, pad=0.25)
-say_now('s20', 0.6)
-phone('phone_down2', M(93.8), a_start=M(90.7))
-battle('battle_4', 104.8, 3.4, 4.5, 16.3)
-print('D ENDS', round(CUT - PRE, 2), 'film', round(FILM, 1))
-
-# ---- E. COPIUM OVERDOSE (120.0), the rotation (Cupsey 141.1, Chillhouse 144.8), the airdrop on our own side (149.8)
+# ---- D. their right tower (93.7), then COPIUM OVERDOSE (120.0)
+say_now('s20', 1.0)
+shot('enemy_tower2', M(95.2), (12.0, 17.5, 3.0), (14.5, 6.5, 2.3), 32, p1=(13.0, 16.4, 2.8), space='game', hand=('INVESTIGATION', 0.4), shake=0.5, fstop=4.0, a_start=M(92.0))
+phone('phone_down2', M(98.0), a_start=M(94.2))
+battle('battle_2', 106.6, 3.4, 13.4, 17.3)
 at(118.6)
 say('a_overdose', M(119.6))
 event('overdose', M(120.0))
@@ -1233,26 +1233,22 @@ say('s14', M(121.8))
 phone('phone_overdose', M(124.5), a_start=M(118.6))
 beat('e07', cupsey_a, [lface('cupsey', CUT, 1, 44, name='egg_good')], a_at=CUT + 0.15, pad=0.2)
 beat('k08', ket_a, [lface('ket', CUT, -1, 46, name='ket_dragger')], a_at=CUT + 0.15, pad=0.3)
-battle('battle_5', 133.5, 3.0, 5.9, 11.0)
-beat('e08', cupsey_a, [lface('cupsey', CUT, 1, 44, name='egg_three')], a_at=CUT + 0.15, pad=0.2)
-play_seq(16, chase_for=1.4)                                         # Cupsey's third jump (141.13)
-beat('c05', chill_a, [lface('chillguy', CUT, 1, 44, name='chill_rot')], a_at=CUT + 0.15, pad=0.2)
-play_seq(17, chase_for=1.8, line='s07', line_at='drag', lead=0.3)   # Chillhouse (144.83): "Chillhouse! Five Copium! He can afford you!"
-say_now('h01', 0.3)
-battle('battle_6', 147.0, 2.4, 6.5, 8.5)
-beat('e09', cupsey_a, [lface('cupsey', CUT, -1, 44, name='egg_still')], a_at=CUT + 0.15, pad=0.2)
-play_seq(19, chase_for=0.0, drag=1.3, line='s11', line_at='drag', lead=0.2)   # the airdrop crate (149.8), dropped on our own side
-say_now('k06', 1.2)
-shot('coins_on_us', M(156.0), (9.5, 23.0, 3.2), (2.9, 19.3, 1.5), 28, p1=(8.0, 22.0, 3.0), space='game', hand=('INVESTIGATION', 0.3), fstop=4.0, a_start=M(150.8))
-beat('s15', sarge, [sarge_face(1, 50, 3.6, name='sarge_stop')], a_at=CUT + 0.15, pad=0.25)
+battle('battle_3', 126.4, 3.4, 13.6, 16.3)
+print('D ENDS', round(CUT - PRE, 2), 'film', round(FILM, 1))
+
+# ---- E. the airdrop on our own side (135.3), a rotation, Chill Guy (150.8)
+play_seq(19, chase_for=0.0, lines=[('s11', 'drag', 0.2), ('k06', 'fall', 1.0)])      # the airdrop crate dropped on our own side (a gag)
+beat('s15', sarge, [sarge_face(-1, 50, 3.6, name='sarge_stack')], a_at=CUT + 0.15, pad=0.3)
+battle('battle_4', 145.6, 3.2, 4.7, 15.4)
+play_seq(23, chase_for=2.0, line='c04', line_at='drag', lead=0.3)   # Chill Guy (150.8): "Finally. I soak hits..."
 print('E ENDS', round(CUT - PRE, 2), 'film', round(FILM, 1))
 
-# ---- F. twenty seconds left, the last jump (Pudgy 175.7), time out and the victory
+# ---- F. twenty seconds left, the last jump (Chill Guy 171.9), time out and the victory
 at(158.9)
 say_now('s16', 0.2)
 phone('phone_twenty', M(162.3), a_start=M(158.9))
-battle('battle_7', 168.0, 3.2, 7.6, 6.3)
-play_seq(25, chase_for=1.8)                                         # Pudgy
+battle('battle_5', 165.4, 3.2, 13.6, 11.7)
+play_seq(28, chase_for=1.8)                                         # Chill Guy (171.9)
 print('F ENDS', round(CUT - PRE, 2), 'film', round(FILM, 1))
 
 # ---- G. time out and victory, back on the ship
@@ -1294,7 +1290,7 @@ for _k in range(int(M(0.0) * 10) - 460, int(M(184.0) * 10)):
         if not _visible(actor, _a):
             continue
         p = _pos_at(actor, F(_a))
-        if p is not None and p[2] > 15.0 and p[1] > -8.3 and abs(p[0]) < 3.6:
+        if p is not None and p[2] > 18.9 and p[1] > -8.3 and abs(p[0]) < 3.6:
             _in.append((actor, p))
     for _i in range(len(_in)):
         for _j in range(_i + 1, len(_in)):

@@ -114,6 +114,21 @@
   "sub": "Left tower's down!",
   "who": "sarge"
  },
+ "e11": {
+  "dur": 1.02,
+  "sub": "Why am I never picked?",
+  "who": "egg"
+ },
+ "s21": {
+  "dur": 1.579,
+  "sub": "Nobody's hurt. Sit.",
+  "who": "sarge"
+ },
+ "s22": {
+  "dur": 1.785,
+  "sub": "Defend first. Then push.",
+  "who": "sarge"
+ },
  "c03": {
   "dur": 1.414,
   "sub": "He was dragging.",
@@ -140,8 +155,8 @@
   "who": "ket"
  },
  "s12": {
-  "dur": 1.68,
-  "sub": "Their right tower is down!",
+  "dur": 1.589,
+  "sub": "Their left tower is down!",
   "who": "sarge"
  },
  "e06": {
@@ -160,8 +175,8 @@
   "who": "sarge"
  },
  "s20": {
-  "dur": 2.266,
-  "sub": "Second tower down! Two towers to one!",
+  "dur": 2.291,
+  "sub": "Second tower down! Two towers to none!",
   "who": "sarge"
  },
  "s14": {
@@ -195,8 +210,8 @@
   "who": "egg"
  },
  "s15": {
-  "dur": 2.424,
-  "sub": "Units stay. Cards rotate. Stop thinking!",
+  "dur": 2.492,
+  "sub": "Don't stack a push. Three cards, then defend.",
   "who": "sarge"
  },
  "s16": {
@@ -210,23 +225,23 @@
   "who": "house"
  },
  "s17": {
-  "dur": 1.637,
-  "sub": "Time! Two towers to one!",
+  "dur": 1.635,
+  "sub": "Time! Two towers to none!",
   "who": "sarge"
  },
  "k09": {
-  "dur": 1.212,
-  "sub": "He won by mashing.",
+  "dur": 1.707,
+  "sub": "He defended. Then he pushed.",
   "who": "ket"
  },
  "e10": {
-  "dur": 1.153,
-  "sub": "That's not a strategy.",
+  "dur": 1.038,
+  "sub": "That's a strategy.",
   "who": "egg"
  },
  "s18": {
-  "dur": 0.948,
-  "sub": "It's a rhythm.",
+  "dur": 1.097,
+  "sub": "That's the game.",
   "who": "sarge"
  },
  "c06": {
