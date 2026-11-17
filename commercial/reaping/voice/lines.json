@@ -1,0 +1,31 @@
+{
+ "settings": {
+  "whale":  {"exaggeration": 0.55, "cfg_weight": 0.55, "temperature": 0.8},
+  "pepe":   {"exaggeration": 0.6, "cfg_weight": 0.45, "temperature": 0.7},
+  "giga":   {"exaggeration": 0.5, "cfg_weight": 0.5, "temperature": 0.8},
+  "troll":  {"exaggeration": 0.9, "cfg_weight": 0.35, "temperature": 0.8},
+  "wojak":  {"exaggeration": 0.75, "cfg_weight": 0.4, "temperature": 0.8},
+  "narrator": {"exaggeration": 0.5, "cfg_weight": 0.5, "temperature": 0.8},
+  "bonk":   {"exaggeration": 0.6, "cfg_weight": 0.5, "temperature": 0.8},
+  "mom":    {"exaggeration": 0.6, "cfg_weight": 0.45, "temperature": 0.8}
+ },
+ "lines": [
+  ["host1", "whale", "Wojak!"],
+  ["host2", "whale", "Any volunteers?"],
+  ["pepe1", "pepe", "I volunteer."],
+  ["pepe2", "pepe", "Him."],
+  ["giga1", "giga", "My advice? Be me."],
+  ["pop1", "troll", "Wojak! How are you feeling?"],
+  ["wojak1", "wojak", "Bad."],
+  ["pop2", "troll", "Incredible."],
+  ["host3", "whale", "Ladies and gentlemen... your victor!"],
+  ["wojak2", "wojak", "Can I go home now?"],
+  ["host4", "whale", "And next year's tribute is..."],
+  ["aww_narrator", "narrator", "Awwwww."],
+  ["aww_giga", "giga", "Awwwww."],
+  ["aww_whale", "whale", "Awwwww."],
+  ["aww_bonk", "bonk", "Awwwww."],
+  ["aww_mom", "mom", "Awwwww."],
+  ["aww_pepe", "pepe", "Awwwww."]
+ ]
+}
