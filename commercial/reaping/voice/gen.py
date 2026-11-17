@@ -20,8 +20,8 @@ for key, role, txt in J['lines']:
         wav = m.generate(txt, audio_prompt_path=str(here / 'refs' / f'{role}.wav'), **c)
         d = wav.shape[-1] / m.sr
         if not qc: best, bs, bh = wav, 1.0, '(not checked)'; break
-        tmp = out / 'tmp.wav'; ta.save(str(tmp), wav, m.sr)
-        segs, _ = asr.transcribe(str(tmp), language='en'); hyp = ' '.join(s.text for s in segs)
+        a16 = ta.functional.resample(wav.detach().cpu().float(), m.sr, 16000).squeeze(0).numpy().astype('float32')
+        segs, _ = asr.transcribe(a16, language='en'); hyp = ' '.join(s.text for s in segs)
         sc = difflib.SequenceMatcher(None, norm(txt), norm(hyp)).ratio()
         ok = sc >= 0.9 and d <= 0.11 * len(txt) + 1.6 and float(wav.abs().max()) < 0.99
         print(key, seed, round(d, 2), round(sc, 3), 'OK' if ok else 'no', '|', hyp, flush=True)
@@ -29,5 +29,4 @@ for key, role, txt in J['lines']:
         if ok: break
     ta.save(str(f), best, m.sr); report[key] = dict(role=role, text=txt, dur=round(best.shape[-1] / m.sr, 2), score=round(bs, 3), heard=bh)
     json.dump(report, open(rp, 'w'), indent=1); print('SAVED', key, f'{time.time()-t0:.0f}s', flush=True)
-(out / 'tmp.wav').unlink(missing_ok=True)
 print('REAPING-VOICE-DONE', len(list(out.glob('*.wav'))))
