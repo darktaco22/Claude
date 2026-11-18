@@ -40,6 +40,12 @@ The user asked for characters that earlier films rarely used:
 - Inserts with `look_offset` can put the camera inside the subject (the solver looks through the subject): give inserts
   an explicit `distance`.
 
-## State
-- Animatic v1 reviewed; fixes applied (framing, fill light, mat, rooftop). Animatic v2 rendering.
-- Next: review v2, then render 3219 frames (≈3100 3D frames at 67 % / 6 samples) with worker sessions, `finish_all.sh`.
+## State (2026-11-18, polish pass)
+- v1 film (edit 2292f1afb0) sent. The user asked for bug fixes, better rigging and prop placement (Slerf's shades on his eyes).
+- Polish edit **50dff5a2ee**: skin-glued props (`glue()`), fitted wraparound shades, IK blocks/push in the dojo fight, Alon's
+  IK arm holding a card that curls in its insert, cleaned cameras and staging (see the commit log and PLAYBOOK lessons).
+- Re-render: frames listed in `reuse_50dff5a2ee.txt` (10 untouched shots, 452 frames) are copied from
+  `frames_jpg/2292f1afb0`; 2657 frames are rendered by 8 workers on `claude/memetrix-w1..w8`, ranges
+  121-661, 662-1071, 1072-1437, 1438-1829, 1830-2204, 2205-2536, 2537-2896, 2897-3229 (`render_worker.sh` skips reused frames).
+- Then: collect, copy the reused frames in, `W=~/mx_work ./finish_all.sh`, review, send.
+- Afterwards (pending the user's OK): delete the claude/memetrix-w* branches and archive the workers.

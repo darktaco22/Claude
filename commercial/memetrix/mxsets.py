@@ -12,7 +12,7 @@ import os
 import sys
 
 import bpy
-from mathutils import Vector
+from mathutils import Matrix, Vector
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, '..', 'deployed'))
@@ -145,7 +145,7 @@ def build_basement():
     stairs = material('stairs', (0.35, 0.22, 0.12), rough=0.8)
     for k in range(8):                                                       # the stairs up to Mom (light spills down them)
         box(f'stair{k}', (1.6, 0.45, 0.3), o + Vector((-8.6, 6.8 - k * 0.45, 0.15 + k * 0.3)), stairs, col)
-    prop('basement', 'gaming_chair', col, o + Vector((0, 0, 0)), 180, 1.0)            # Anon wakes up here
+    prop('basement', 'gaming_chair', col, o + Vector((0.3, 2.3, 0)), 160, 1.0)        # behind Slerf (at 0,0 it blocked his shots)
     prop('basement', 'crt_tv', col, o + Vector((3.2, 2.2, 0)), 200, 1.0)              # Mensa's console
     screen('rain_crt', 0.62, 0.48, o + Vector((3.05, 1.72, 1.32)), (math.radians(90), 0, math.radians(200)), col, 3.0)
     prop('basement', 'pizza_stack', col, o + Vector((4.6, 3.0, 0)), 0, 1.0)
@@ -265,6 +265,8 @@ def candle(name, colour, col, size=1.0, trail=0.0):
     if trail:
         streak_m = material(f'streak_{colour}', glow, rough=0.5, emit=glow, strength=3.0)
         streak = cylinder(name + '_trail', 0.02 * size, trail, (0, 0, -trail / 2 - 0.09 * size), streak_m, col, parent=holder, verts=8)
+        streak.data.transform(Matrix.Translation((0, 0, -trail / 2)))      # origin at the candle end: scale z grows it backwards
+        streak.location.z = -0.09 * size
         streak.visible_shadow = False
     return holder
 
@@ -305,6 +307,11 @@ def bent_card(name, col, art=None):
     bend.deform_method = 'BEND'
     bend.deform_axis = 'Y'
     bend.angle = 0.0
+    pivot = bpy.data.objects.new(name + '_bend_pivot', None)   # a Y bend bends along the pivot's X: turn the pivot 90 degrees
+    col.objects.link(pivot)                                     # so the card curls along its length (across its width barely
+    pivot.parent = obj                                          # reads from the front, and X/Z bends do nothing to a flat card)
+    pivot.rotation_euler = (0, 0, math.pi / 2)
+    bend.origin = pivot
     obj.rotation_euler = (math.pi / 2, 0, 0)
     return obj
 
@@ -415,7 +422,7 @@ def build_rooftop():
         c.objects.unlink(ring)
     col.objects.link(ring)
     ring.data.materials.append(pad)
-    for name, size, off in (('h_l', (0.35, 3.2, 0.01), (-1.0, 0, 0.005)), ('h_r', (0.35, 3.2, 0.01), (1.0, 0, 0.005)), ('h_m', (2.0, 0.35, 0.01), (0, 0, 0.005))):
+    for name, size, off in (('h_l', (0.35, 3.2, 0.01), (-1.0, 0, 0.005)), ('h_r', (0.35, 3.2, 0.01), (1.0, 0, 0.005)), ('h_m', (1.65, 0.35, 0.01), (0, 0, 0.005))):
         box(name, size, o + Vector(off), pad, col)
     # the city: towers all round, tops between 25 m below and 40 m above the roof; streets glow far below
     for k in range(140):

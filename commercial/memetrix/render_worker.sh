@@ -12,7 +12,11 @@ cd "$HERE"
 EH=$(sha1sum edl.json | cut -c1-10)             # frames are filed under the edit they were rendered for, so frames of another version can never be mixed in
 export OUT="$W/frames_$EH"; mkdir -p "$OUT"
 echo "EDIT $EH (frames go to frames_jpg/$EH)"
-LIST="$W/part_${A}_${B}_$EH.txt"; [ -f "$LIST" ] || seq "$A" "$B" | tr '\n' ' ' > "$LIST"
+LIST="$W/part_${A}_${B}_$EH.txt"
+if [ ! -f "$LIST" ]; then                       # frames listed in reuse_<hash>.txt are kept from an earlier render: skip them
+  if [ -f "reuse_$EH.txt" ]; then seq "$A" "$B" | grep -vxF -f <(tr ' ' '\n' < "reuse_$EH.txt" | grep .) | tr '\n' ' ' > "$LIST"
+  else seq "$A" "$B" | tr '\n' ' ' > "$LIST"; fi
+fi
 export SCALE=${SCALE:-67} SAMPLES=${SAMPLES:-6}
 OUTJ="$HERE/frames_jpg/$EH"; mkdir -p "$OUTJ"
 
@@ -30,7 +34,7 @@ PY
   if [ -z "$NOPUSH" ]; then
     (cd "$REPO"; BR=$(git rev-parse --abbrev-ref HEAD); git add commercial/memetrix/frames_jpg/$EH
      git commit -qm "Memetrix: frames $A-$B (partial)" || true
-     for i in 1 2 3 4 5; do git pull -q --rebase origin "$BR" && git push -q origin "HEAD:$BR" && break; sleep $((i * 5)); done) || true
+     for i in 1 2 3 4 5; do { ! git ls-remote --exit-code -q origin "refs/heads/$BR" >/dev/null || git pull -q --rebase origin "$BR"; } && git push -q origin "HEAD:$BR" && break; sleep $((i * 5)); done) || true
   fi
 }
 
