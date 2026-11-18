@@ -18,7 +18,10 @@ sc = bpy.context.scene
 sc.render.resolution_percentage = int(os.environ.get('SCALE', '25'))
 sc.cycles.samples = int(os.environ.get('SAMPLES', '8'))
 tiles = []
+ONLY = set(filter(None, os.environ.get('ONLY', '').split(',')))      # ONLY=s05_0,fight_arc: just these shots
 for i, s in enumerate(R.E['shots']):
+    if ONLY and s['name'] not in ONLY:
+        continue
     for j, u in enumerate((0.08, 0.5, 0.92)):
         t = s['t0'] + (s['t1'] - s['t0']) * u
         f = int(t * R.FPS) + 1

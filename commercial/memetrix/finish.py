@@ -441,7 +441,11 @@ put('fx', game('spell_pump'), EV['take'] - 0.2, 0.3)
 whoosh(EV['take'] + 1.5, 1.2, 0.35)
 for k in range(3):
     put('fx', game('swing'), EV[f'swing{k}'], 0.4)
-put('fx', game('punch_heavy'), EV['fall'], 0.45)
+for k in range(2):                                                      # Slerf's paw blocks swings one and two
+    put('fx', game('tower_hit'), EV[f'swing{k}'] + 0.12, 0.25)
+if 'push' in EV:
+    put('fx', game('punch_heavy'), EV['push'], 0.45)                    # the lazy push lands
+put('fx', game('house_stomp'), EV['fall'], 0.35)                        # Anon hits the mat
 whoosh(EV['card_bend'], 1.4, 0.12)
 put('fx', game('emote_pop'), EV['cookie'], 0.35)
 put('fx', game('tower_shot'), EV['fire'], 0.45)
