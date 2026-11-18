@@ -222,7 +222,8 @@ def blur(a, r):
 
 
 def zoom(a, z, cx=W / 2, cy=H / 2):
-    """Scale about a point (z > 1 pushes in)."""
+    """Scale about a point (z > 1 pushes in; never below 1, the crop must stay inside the picture)."""
+    z = max(1.0, z)
     w, h = W / z, H / z
     box = (cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2)
     return arr(to_im(a).resize((W, H), Image.BILINEAR, box=box))
