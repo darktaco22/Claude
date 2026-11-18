@@ -30,7 +30,7 @@ PY
   if [ -z "$NOPUSH" ]; then
     (cd "$REPO"; BR=$(git rev-parse --abbrev-ref HEAD); git add commercial/deployed/frames_jpg/$EH
      git commit -qm "Deployed: frames $A-$B (partial)" || true
-     for i in 1 2 3 4 5; do git pull -q --rebase origin "$BR" && git push -q origin "HEAD:$BR" && break; sleep $((i * 5)); done) || true
+     for i in 1 2 3 4 5; do { ! git ls-remote --exit-code -q origin "refs/heads/$BR" >/dev/null || git pull -q --rebase origin "$BR"; } && git push -q origin "HEAD:$BR" && break; sleep $((i * 5)); done) || true
   fi
 }
 
