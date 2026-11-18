@@ -47,5 +47,8 @@ The user asked for characters that earlier films rarely used:
 - Re-render: frames listed in `reuse_50dff5a2ee.txt` (10 untouched shots, 452 frames) are copied from
   `frames_jpg/2292f1afb0`; 2657 frames are rendered by 8 workers on `claude/memetrix-w1..w8`, ranges
   121-661, 662-1071, 1072-1437, 1438-1829, 1830-2204, 2205-2536, 2537-2896, 2897-3229 (`render_worker.sh` skips reused frames).
+- Titles (finish.py, 2D, no re-render): 11 s opening (terminal, dive through three depths of code with zoom blur, chrome
+  title slam with sweep, flare and shake, burn to embers) and a 14 s closing (nine cast cards with stills, logo scan-build,
+  tagline, call to action). The film is shifted by PRE = 6 s in the finish; output 2:34.5.
 - Then: collect, copy the reused frames in, `W=~/mx_work ./finish_all.sh`, review, send.
 - Afterwards (pending the user's OK): delete the claude/memetrix-w* branches and archive the workers.
