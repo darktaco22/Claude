@@ -40,6 +40,11 @@ The user asked for characters that earlier films rarely used:
 - Inserts with `look_offset` can put the camera inside the subject (the solver looks through the subject): give inserts
   an explicit `distance`.
 
-## State
-- Animatic v1 reviewed; fixes applied (framing, fill light, mat, rooftop). Animatic v2 rendering.
-- Next: review v2, then render 3219 frames (≈3100 3D frames at 67 % / 6 samples) with worker sessions, `finish_all.sh`.
+## State (2026-11-18 04:45 UTC)
+- Animatics v1 and v2 reviewed and fixed; production look tested (~30 s a frame at 67 %, 8 samples, MB + haze).
+- Full render of edit **2292f1afb0** started on 8 worker sessions (tag `memetrix-render`), each pushing JPEGs to its own
+  branch `claude/memetrix-w1` … `-w8`: 121-508, 509-897, 898-1285, 1286-1674, 1675-2063, 2064-2451, 2452-2840, 2841-3229.
+  Frames 1-120 are the 2D opening (drawn by the finish).
+- Next: when all report WORKER-DONE, fetch the eight branches, copy `commercial/memetrix/frames_jpg/2292f1afb0/` together,
+  run `W=~/mx_work ./finish_all.sh` (background, timeout 7200000), review a contact sheet, commit the MP4, send it.
+- Afterwards (the user's standing cleanup rule from DEPLOYED): delete the claude/memetrix-w* branches and archive the workers.
