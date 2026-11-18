@@ -23,6 +23,13 @@ Before any Blender scene or render task, read `commercial/tools/PLAYBOOK.md` and
 the lessons and reusable tools from earlier renders (lighting, lenses, camera shake, scanned assets, fire). When a
 render teaches something new, add it there in the same commit.
 
+## Cameras: cinematic shots, Blender only
+
+The user wants Blender kept (no Unreal Engine) and better cinematography in every future render. Plan shots with
+`commercial/tools/cine.py` (shot sizes, angles, moves, thirds, over-the-shoulder, rack focus) and run `cine.solve()` on
+each shot. Follow "Camera language" in the playbook: varied sizes and angles, no jump cuts, 180-degree rule, motivated
+moves (push on big moments, arc for depth, low angle for heroes).
+
 ## Work in progress
 
 "The Final" (2-minute film): state, render plan and next steps are in `commercial/final/HANDOFF.md`. Read it before

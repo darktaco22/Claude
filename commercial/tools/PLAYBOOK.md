@@ -25,6 +25,30 @@ render teaches something, so the next session starts from here.
   HANDYCAM_RUN for chaos. Synthetic sine shake looks mechanical.
 - **Finish (2D).** Bloom, light halation, vignette, grain, letterbox. Text needs a shadow and must avoid bright sky.
 
+## Camera language (`cine.py`; the user asked for more cinematic camera work, Nov 18)
+Earlier films mostly used eye-level A-to-B slides with a fixed look point. Plan every shot with `cine.py` instead:
+- **Describe shots as data** (`subject`, `size`, `angle`, `bearing`, `move`, `frame`, `lens`, `fstop`) in the EDL, and
+  place the camera per frame with `cine.place(cam, shot, u, t, where, scene)`. `where(name, t)` returns feet position and
+  heading from the scene's own animation, so moving characters stay framed.
+- **Run `cine.solve()` on every shot when the EDL is built** (never per frame). It finds trees, walls or other
+  characters between the lens and the face, or near objects covering more than 5 % of the frame, and swings the angle.
+  Read its notes: a swing of 45 degrees or more can turn a face to profile; restage instead.
+- **Vary the grammar.** Sizes change two steps between cuts (WS → MCU, not MS → MLS) or the angle changes 30+ degrees,
+  otherwise it's a jump cut (`check_rules`). Keep dialogue on one side of the 180-degree line (`dialogue()` coverage).
+- **Meaning of angles.** Low and pushing in = power, a big moment (`hero`). High = small or defeated. Dutch 5–12 degrees
+  = chaos or unease, never for calm talk. Dolly zoom = realisation, once per film at most. Arc = reveal depth, and it
+  gives parallax that makes toy-scale sets read as real.
+- **Composition.** Eyes on the upper third, the character on the left or right third looking *into* the empty side
+  (look room); moving characters get lead room (`move: track` does it automatically).
+- **Lenses.** Over-the-shoulder shots come from well behind the near character on a long lens (the solver keeps the
+  speaker at MCU size); near head soft at the frame edge, about a quarter of the frame. Close-ups 65–90 mm f/1.8–2.0.
+- **Focus.** `place()` focuses on the surface the lens sees (a ray cast), not the head centre: at f/1.8 the 20 cm
+  difference is visibly soft. Use a rack focus (`focus: ["rack", a, b, u0, u1]`) to pass attention between characters.
+- **Ease.** Moves default to smootherstep (no jolt at cut points). `settle` lands with a ~1 % overshoot, good for snap
+  reactions. Keep the recorded handheld (`shakify`) on top at 0.3–0.5.
+- Review: `cine_demo.jpg` shows each preset. Before a full render, render the animatic and look at start / middle / end of
+  every shot.
+
 ## Learned from Blender Studio's production guides
 - Light the **key shot** of a sequence first (usually the wide), then derive close-ups from it.
 - Only four light types: key, key-soft, fill, rim. Keep one colour per type per sequence (`lightrig.MOODS`) so shots

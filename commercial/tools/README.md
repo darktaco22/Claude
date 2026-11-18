@@ -7,6 +7,7 @@ rebuild the library with `blender -b -P assets.py -- build ../comeback/models ..
 
 | File | What it gives | Source / licence |
 |---|---|---|
+| `cine.py`, `cine_test.py`, `cine_demo.py` | Camera language as data: shot sizes (ECU-EWS), angles, bearings, moves (push, pull, arc, crane, pedestal, track with lead room, dolly zoom, reveal), rule-of-thirds framing, dutch, rack focus, real over-the-shoulder, dialogue coverage on one side of the 180-degree line, presets (`hero`, `reaction`, `establish`, `chaos`, `vertigo`). `solve()` swings a shot around anything blocking the subject or cluttering the lens; `check_rules()` flags jump cuts and line crossings. 0 failures in `cine_test.py`; `cine_demo.jpg` shows every preset at start/middle/end | own code, after standard film grammar |
 | `shake_data.py`, `shakify.py` | Real recorded handheld camera shake (9 recordings). `shakify.apply(cam, 'INVESTIGATION', frame)` | Camera Shakify by Ian Hubert and Nathan Vegdahl; shake data is CC0. The add-on itself needs Blender 4.4, so `shakify.py` reads the data directly. |
 | `polyhaven.py` | Download and load photo-scanned models, HDRI skies and ground materials. `pick()` filters the variants. | Poly Haven, all CC0 |
 | `scatter.py` | Geometry-nodes scatter of instances over a surface (grass, flowers, rocks) | own code |
