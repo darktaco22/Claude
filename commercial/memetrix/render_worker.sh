@@ -12,7 +12,11 @@ cd "$HERE"
 EH=$(sha1sum edl.json | cut -c1-10)             # frames are filed under the edit they were rendered for, so frames of another version can never be mixed in
 export OUT="$W/frames_$EH"; mkdir -p "$OUT"
 echo "EDIT $EH (frames go to frames_jpg/$EH)"
-LIST="$W/part_${A}_${B}_$EH.txt"; [ -f "$LIST" ] || seq "$A" "$B" | tr '\n' ' ' > "$LIST"
+LIST="$W/part_${A}_${B}_$EH.txt"
+if [ ! -f "$LIST" ]; then                       # frames listed in reuse_<hash>.txt are kept from an earlier render: skip them
+  if [ -f "reuse_$EH.txt" ]; then seq "$A" "$B" | grep -vxF -f <(tr ' ' '\n' < "reuse_$EH.txt" | grep .) | tr '\n' ' ' > "$LIST"
+  else seq "$A" "$B" | tr '\n' ' ' > "$LIST"; fi
+fi
 export SCALE=${SCALE:-67} SAMPLES=${SAMPLES:-6}
 OUTJ="$HERE/frames_jpg/$EH"; mkdir -p "$OUTJ"
 

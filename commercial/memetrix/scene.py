@@ -424,11 +424,25 @@ if not DRY:
     glue(RED_ANON, A['anon'], [bone_world(A['anon'], zarm)], radius=0.05)
     COOKIE = mxsets.cookie('cookie', PROPS)
     CARD = mxsets.bent_card('card', PROPS, os.path.join(HERE, 'pack', 'cards', 'marketcrash.webp'))
-    abones = [b.name for b in A['alon'].arm.data.bones]
-    ahand = next((b for b in ('mixamorig:RightHand', 'mixamorig:LeftHand') if b in abones), abones[-1])
+    # Alon holds the card up in front of his chest: the card rides his body (lean pivot), an IK arm puts his wrist at its
+    # lower edge (his rig has no hand bones; the forearm tail is the wrist). Influence keyed with the basement scene.
+    al = A['alon']
+    al_rig = al.rig.location.copy()
+    al_sh = bone_world(al, 'mixamorig:RightArm') - al_rig
+    ALON_GRIP = Vector((al_sh.x * 0.3, al_sh.y - 0.27, al_sh.z - 0.12))
+    al_tgt = bpy.data.objects.new('ik_alon_Right', None)
+    sc.collection.objects.link(al_tgt)
+    al_tgt.parent = al.tilt_obj
+    al_tgt.location = ALON_GRIP
+    al_con = al.arm.pose.bones['mixamorig:RightForeArm'].constraints.new('IK')
+    al_con.name = 'IK'
+    al_con.target = al_tgt
+    al_con.chain_count = 2
+    al_con.influence = 0.0
+    CARD.parent = al.tilt_obj
+    CARD.matrix_parent_inverse.identity()
+    CARD.location = ALON_GRIP + Vector((0.0, -0.03, 0.10))
     CARD.rotation_euler = (math.radians(90), 0, 0)
-    CARD.location = bone_world(A['alon'], ahand) + Vector((0.0, -0.06, -0.12))
-    glue(CARD, A['alon'], [bone_world(A['alon'], ahand)], radius=0.05)
     COOKIE.location = A['bome'].rig.location + Vector((0.45, -0.35, 1.0))     # held out in front, rides the book's bob
     glue(COOKIE, A['bome'], [COOKIE.location.copy()], radius=0.15)
     COOKIE['actor'] = 'bome'
@@ -579,7 +593,7 @@ anon.cut(a, DOJO + Vector((-1.3, 0, 0)), 90)
 slerf.cut(a, DOJO + Vector((1.3, 0, 0)), 270)
 line('n02', [cine.establish('anon', 22)], 'DOJO', pad=0.5, lead=0.3)
 line('a05', [cine.vertigo('anon', 40)], 'DOJO', pad=0.4)
-line('s07', [S('slerf', size='MCU', angle='low', bearing=-20, lens=50, frame='left', fstop=2.2)], 'DOJO')
+line('s07', [S('slerf', size='MS', angle='low', bearing=-20, lens=50, frame='left', fstop=2.2)], 'DOJO')
 FIGHT = ANIM
 STRIKE_X = 1.3 - 1.35                                          # Anon steps in to striking distance (1.35 m centre to centre:
                                                                # at 0.95 his bag went into Slerf's belly on every swing)
@@ -625,7 +639,7 @@ if not DRY:
         animate(A['slerf'].arm, f'pose.bones["mixamorig:{side}ForeArm"].constraints["IK"].influence',
                 [(F(a_), v) for a_, v in ik['inf']], 'BEZIER')
 shot('fight_track', 1.5, cine.chaos('anon', 28), 'DOJO')
-shot('fight_arc', 1.7, S('anon', size='WS', bearing=120, lens=32, frame='center', move='arc', amount=120, fstop=4.0, angle=18,
+shot('fight_arc', 1.7, S('anon', size='WS', bearing=70, lens=32, frame='center', move='arc', amount=80, fstop=4.0, angle=24,
                          look_offset=(0.67, 0, -0.3), **{'with': ['slerf']}), 'DOJO')
 shot('fight_fall', 1.4, S('anon', size='WS', angle='high', bearing=80, lens=35, frame='center', fstop=3.2), 'DOJO')
 line('s08', [S('anon', size='WS', angle='high', bearing=150, lens=35, frame='left', fstop=2.8, eye=0.35),
@@ -636,6 +650,7 @@ a = ANIM
 ALON_AT = BASE + Vector((-2.6, 5.4, 0))
 BOME_AT = BASE + Vector((-5.9, 5.2, 0.35))
 alon.cut(a, ALON_AT, 160)
+ALON_IN = a
 bome.cut(a, BOME_AT, 170)
 anon.cut(a, BASE + Vector((-2.2, 2.4, 0)), 0)
 for k in range(40):                                            # the book floats, bobbing gently
@@ -701,7 +716,8 @@ anon.play(FIRE2 + 0.2, 'win', 0.8)
 STOP = []
 for k in range(7):
     start = ROOF + Vector((0.22 + 0.04 * (k - 3), 7.35, 0.98 + 0.03 * k))
-    hang = ROOF + Vector((0.3 * (k - 3), 5.6 + 0.15 * (k % 2), 1.0 + 0.12 * (k % 3)))
+    hx = (-1.3, -0.95, -0.6, 0.0, 0.6, 0.95, 1.3)[k]                        # a ring around him: the middle one hangs over his
+    hang = ROOF + Vector((hx, 5.6 + 0.15 * (k % 2), 1.85 if k == 3 else 0.85 + 0.15 * (k % 3)))   # head, none crosses his face
     STOP.append((start, hang, FIRE2 + 0.3 + k * 0.04))
 shot('freeze_ots', 1.9, S('jean', over='anon', size='MS', lens=50, frame=(-1 / 3, 1 / 3), fstop=4.0), 'ROOFTOP')
 TURN_GREEN = ANIM
@@ -722,6 +738,7 @@ if not DRY:
         animate(c, 'location', [(F(0), (0, 0, -50)), (F(t_on) - 0.02, (0, 0, -50)), (F(t_on), tuple(start)), (F(t_off), tuple(end)),
                                 (F(t_off) + 0.02, (0, 0, -50))])
         proj_objs.append(c.name)
+        animate(bpy.data.objects[f'proj{k}_trail'], 'scale', [(F(t_on), (1, 1, 0.02)), (F(t_on + 0.3), (1, 1, 1))], 'LINEAR')
     for k, (start, hang, t_on) in enumerate(STOP):
         for colour in ('red', 'green'):
             c = mxsets.candle(f'stop{k}_{colour}', colour, PROPS, size=2.6, trail=0.0)
@@ -736,7 +753,10 @@ if not DRY:
                 keys = [(F(0), (0, 0, -50)), (F(t_g) - 0.02, (0, 0, -50)), (F(t_g), tuple(hang)), (F(t_g + 0.5), tuple(hang)),
                         (F(t_g + 0.9), tuple(drop))]
             animate(c, 'location', keys)
-    animate(CARD, 'modifiers["bend"].angle', [(F(BEND + 0.6), 0.0), (F(BEND + 2.0), math.radians(160))], 'BEZIER')
+    animate(CARD, 'modifiers["bend"].angle', [(F(BEND + 0.15), 0.0), (F(BEND + 1.1), math.radians(160))], 'BEZIER')  # in the insert
+    A['alon'].arm.animation_data.action = bpy.data.actions.new('alon_ik_influence')
+    animate(A['alon'].arm, 'pose.bones["mixamorig:RightForeArm"].constraints["IK"].influence',
+            [(F(ALON_IN - 0.05), 0.0), (F(ALON_IN), 1.0), (F(BEND + 8.0), 1.0), (F(BEND + 8.4), 0.0)], 'LINEAR')
     show('cookie', [(0, False), (COOKIE_T, True)])
     show('card', [(0, False), (BEND - 6.0, True), (BEND + 8.0, False)])
     for actor in A.values():
@@ -795,7 +815,7 @@ def film_of(a):
     return None
 
 
-EVENTS = {'take': TAKE + 0.45, 'fight': FIGHT, 'fall': FIGHT + 3.55, 'push': FIGHT + 2.72, 'card_bend': BEND + 0.6, 'cookie': COOKIE_T, 'fire': FIRE + 0.3,
+EVENTS = {'take': TAKE + 0.45, 'fight': FIGHT, 'fall': FIGHT + 3.55, 'push': FIGHT + 2.72, 'card_bend': BEND + 0.15, 'cookie': COOKIE_T, 'fire': FIRE + 0.3,
           'bullet_time': BT, 'fire2': FIRE2 + 0.3, 'turn_green': TURN_GREEN + 0.6, 'drop': TURN_GREEN + 1.3}
 EVENTS.update({f'swing{k}': FIGHT + 0.9 * k + 0.25 for k in range(3)})
 EVENTS = {k: film_of(v) for k, v in EVENTS.items()}
