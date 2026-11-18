@@ -325,7 +325,7 @@ def attach(obj, armature, bone, world_point, world_rot=None):
 
 
 # ---------------------------------------------------------------- the rooftop (inside the Memetrix, night)
-def window_material(name, seed):
+def window_material(name, seed, dims=(1, 1, 1)):
     """Office tower facade: a grid of windows, some lit warm, some cold, most dark."""
     mat = bpy.data.materials.new(name)
     mat.use_nodes = True
@@ -333,21 +333,34 @@ def window_material(name, seed):
     bsdf = nt.nodes['Principled BSDF']
     bsdf.inputs['Base Color'].default_value = (0.02, 0.025, 0.025, 1)
     bsdf.inputs['Roughness'].default_value = 0.4
-    coord = nt.nodes.new('ShaderNodeNewGeometry')                 # world position: windows keep their size on every tower
+    coord = nt.nodes.new('ShaderNodeTexCoord')
+    metric = nt.nodes.new('ShaderNodeVectorMath')                  # object coords (-1..1) to metres on this tower
+    metric.operation = 'MULTIPLY'
+    metric.inputs[1].default_value = tuple(dims)                    # the box helper is a unit cube (-0.5..0.5) scaled to size
+    sep = nt.nodes.new('ShaderNodeSeparateXYZ')
+    across = nt.nodes.new('ShaderNodeMath')                        # across the face (x on one pair of faces, y on the other)
+    across.operation = 'ADD'
+    comb = nt.nodes.new('ShaderNodeCombineXYZ')
     mapping = nt.nodes.new('ShaderNodeMapping')
     mapping.inputs['Location'].default_value = (seed * 3.7, seed * 1.3, 0)
     brick = nt.nodes.new('ShaderNodeTexBrick')
     brick.offset = 0.0
     brick.squash = 1.0
-    brick.inputs['Scale'].default_value = 0.28
-    brick.inputs['Mortar Size'].default_value = 0.35
+    brick.inputs['Scale'].default_value = 0.9
+    brick.inputs['Mortar Size'].default_value = 0.12
     brick.inputs['Bias'].default_value = 0.55
     brick.inputs['Color1'].default_value = (1.0, 0.82, 0.55, 1)
     brick.inputs['Color2'].default_value = (0.0, 0.0, 0.0, 1)
     brick.inputs['Mortar'].default_value = (0.0, 0.0, 0.0, 1)
     brick.inputs['Brick Width'].default_value = 1.0
     brick.inputs['Row Height'].default_value = 1.4
-    nt.links.new(coord.outputs['Position'], mapping.inputs['Vector'])
+    nt.links.new(coord.outputs['Object'], metric.inputs[0])
+    nt.links.new(metric.outputs[0], sep.inputs[0])
+    nt.links.new(sep.outputs['X'], across.inputs[0])
+    nt.links.new(sep.outputs['Y'], across.inputs[1])
+    nt.links.new(across.outputs[0], comb.inputs['X'])
+    nt.links.new(sep.outputs['Z'], comb.inputs['Y'])
+    nt.links.new(comb.outputs[0], mapping.inputs['Vector'])
     nt.links.new(mapping.outputs['Vector'], brick.inputs['Vector'])
     nt.links.new(brick.outputs['Color'], bsdf.inputs['Emission Color'])
     bsdf.inputs['Emission Strength'].default_value = 2.2
@@ -364,7 +377,7 @@ def build_rooftop():
     add_bump(roof, 60.0, 0.35)
     box('roof', (34, 34, 1.0), o + Vector((0, 0, -0.5)), roof, col)
     walls = material('tower_wall', (0.05, 0.06, 0.06), rough=0.6)
-    box('tower', (34, 34, 160), o + Vector((0, 0, -81)), window_material('tower_win', 0), col)
+    box('tower', (34, 34, 160), o + Vector((0, 0, -81)), window_material('tower_win', 0, (34, 34, 160)), col)
     parapet = material('parapet', (0.32, 0.32, 0.30), rough=0.9)
     for name, size, off in (('par_n', (34, 0.5, 1.1), (0, 16.75, 0.55)), ('par_s', (34, 0.5, 1.1), (0, -16.75, 0.55)),
                             ('par_e', (0.5, 34, 1.1), (16.75, 0, 0.55)), ('par_w', (0.5, 34, 1.1), (-16.75, 0, 0.55))):
@@ -405,13 +418,13 @@ def build_rooftop():
     for name, size, off in (('h_l', (0.35, 3.2, 0.01), (-1.0, 0, 0.005)), ('h_r', (0.35, 3.2, 0.01), (1.0, 0, 0.005)), ('h_m', (2.0, 0.35, 0.01), (0, 0, 0.005))):
         box(name, size, o + Vector(off), pad, col)
     # the city: towers all round, tops between 25 m below and 40 m above the roof; streets glow far below
-    for k in range(70):
+    for k in range(140):
         ang = rnd.uniform(0, math.tau)
-        dist = rnd.uniform(45, 260)
-        w, d = rnd.uniform(14, 34), rnd.uniform(14, 34)
-        top = rnd.uniform(-25, 40) * (1.0 if dist > 70 else 0.5)
+        dist = rnd.uniform(70, 420)
+        w, d = rnd.uniform(14, 30), rnd.uniform(14, 30)
+        top = rnd.uniform(-70, 8) if dist < 200 else rnd.uniform(-40, 60)       # near: below us; far: a few taller towers
         centre = o + Vector((math.cos(ang) * dist, math.sin(ang) * dist, (top - 200) / 2))
-        b = box(f'city{k}', (w, d, top + 200), centre, window_material(f'win{k}', k + 1), col)
+        b = box(f'city{k}', (w, d, top + 200), centre, window_material(f'win{k}', k + 1, (w, d, top + 200)), col)
         b.rotation_euler = (0, 0, rnd.uniform(0, math.pi))
         if rnd.random() < 0.3:
             sphere(f'cbeacon{k}', 0.4, centre + Vector((0, 0, (top + 200) / 2 + 0.6)), beacon, col)
