@@ -96,7 +96,8 @@ def setup(f):
         q = cam.rotation_quaternion @ Euler(drot, 'XYZ').to_quaternion()
         cam.rotation_quaternion = q
         cam.location = pos + q.to_matrix() @ Vector(dloc)
-    sc.render.use_motion_blur = os.environ.get('MB', '1') != '0'
+    # no blur on a shot's first frame: the shutter would straddle the cut and smear the previous set's pose into it
+    sc.render.use_motion_blur = os.environ.get('MB', '1') != '0' and (t - s['t0']) * FPS > 0.5
     return s
 
 

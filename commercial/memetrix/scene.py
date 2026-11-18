@@ -149,7 +149,7 @@ class Actor:
         self.pos, self.H = Vector(pos), H
         self.keys.append([a, *self.pos, H, 1])
         if clip:
-            self.play(a, clip)
+            self.play(a, clip, hard=True)
 
     def hold(self, a):
         self.keys.append([a, *self.pos, self.H, 0])
@@ -175,8 +175,8 @@ class Actor:
             self.play(arrive, then)
         return arrive
 
-    def play(self, a, clip, speed=1.0):
-        self.items.append((a, clip if clip in self.clips else 'idle', speed))
+    def play(self, a, clip, speed=1.0, hard=False):
+        self.items.append((a, clip if clip in self.clips else 'idle', speed, hard))
 
     def lean(self, a, deg):
         self.tilts.append((a, deg))
@@ -231,12 +231,12 @@ class Actor:
         clean = []
         for it in items:
             if clean and abs(it[0] - clean[-1][0]) < 1e-6:
-                clean[-1] = it
+                clean[-1] = it[:3] + (it[3] or clean[-1][3],)
             elif clean and it[1] == clean[-1][1] and it[1] not in ONE_SHOT:
                 continue
             else:
                 clean.append(it)
-        for index, (a, name, speed) in enumerate(clean):
+        for index, (a, name, speed, hard) in enumerate(clean):
             f0 = F(a)
             f1 = F(clean[index + 1][0]) if index + 1 < len(clean) else F(end)
             if f1 - f0 < 1:
@@ -251,7 +251,7 @@ class Actor:
             strip.extrapolation = 'HOLD_FORWARD'
             strip.blend_type = 'REPLACE'
             strip.use_auto_blend = False
-            strip.blend_in = 3 if index else 0
+            strip.blend_in = 0 if hard or not index else 3
 
 
 names = list(CAST)
@@ -280,27 +280,178 @@ def face_point(actor, eye):
     return loc if hit else origin + Vector((0, 2.75, 0))
 
 
+def skin(actor):
+    """The actor's skinned body mesh (the one the armature deforms)."""
+    return next(o for o in actor.rig.children_recursive if o.type == 'MESH' and any(m.type == 'ARMATURE' for m in o.modifiers))
+
+
+def glue(obj, actor, anchors, radius=0.05):
+    """Pin a prop to the deformed skin, not to a bone: parent it to three skin vertices (one near each anchor point,
+    or, with a single anchor, three spread out around it). Bones lie about where the surface is on cartoon rigs
+    (Slerf's face slides off the head bone in the emote; zcat and alon have no hand weights at all)."""
+    body = skin(actor)
+    bpy.context.view_layer.update()
+    dg = bpy.context.evaluated_depsgraph_get()
+    ev = body.evaluated_get(dg)
+    mw_body = body.matrix_world
+    pts = [mw_body @ v.co for v in ev.data.vertices]
+    assert len(pts) == len(body.data.vertices), 'skin topology changed by a modifier'
+    if len(anchors) >= 3:
+        picks = [min(range(len(pts)), key=lambda i: (pts[i] - Vector(p)).length) for p in anchors[:3]]
+    else:
+        c = Vector(anchors[0])
+        near = sorted(range(len(pts)), key=lambda i: (pts[i] - c).length)
+        r = radius
+        cand = [i for i in near if (pts[i] - c).length < r]
+        while len(cand) < 12:
+            r *= 1.5
+            cand = [i for i in near if (pts[i] - c).length < r]
+        a = cand[0]
+        b = max(cand, key=lambda i: (pts[i] - pts[a]).length)
+        cc = max(cand, key=lambda i: (pts[b] - pts[a]).cross(pts[i] - pts[a]).length)
+        picks = [a, b, cc]
+    keep = obj.matrix_world.copy()
+    obj.parent = body
+    obj.parent_type = 'VERTEX_3'
+    obj.parent_vertices = picks
+    obj.matrix_parent_inverse.identity()
+    obj.matrix_basis.identity()
+    bpy.context.view_layer.update()
+    frame = obj.matrix_world.copy()                     # the three vertices' frame, as Blender builds it
+    obj.matrix_parent_inverse = frame.inverted()
+    obj.matrix_basis = keep
+    bpy.context.view_layer.update()
+    err = (obj.matrix_world.translation - keep.translation).length
+    print('GLUE', obj.name, 'to', body.name, picks, 'error %.4f m' % err)
+    return obj
+
+
+def surface_y(actor, x, z, reach=4.0):
+    """How far forward (-Y) the body surface comes at rig-relative (x, z), bind pose, facing -Y. None if nothing there."""
+    origin = Vector((actor.rig.location.x + x, actor.rig.location.y - 3.0, actor.rig.location.z + z))
+    hit, loc, *_ = sc.ray_cast(bpy.context.evaluated_depsgraph_get(), origin, Vector((0, 1, 0)), distance=reach)
+    return loc.y if hit else None
+
+
+def fitted_shades(actor, name, centre_z, sep, lens_w, lens_h):
+    """Big wraparound shades fitted to a face: each lens centred on an eye (rig-relative x = +-sep, z = centre_z),
+    laid along the curve of the cheek just clear of the skin (a flat lens in front of a sloth's snout floats 10 cm off
+    the eye and the eye shows past it at three-quarter angles); a bridge over the snout and temples back into the head. Measured eye positions, never guessed (see tools/PLAYBOOK.md)."""
+    bpy.context.view_layer.update()
+    lens_m = mxsets.material('shades_lens', (0.005, 0.005, 0.007), rough=0.04, metal=0.4)
+    frame_m = mxsets.material('shades_frame', (0.02, 0.02, 0.022), rough=0.3, metal=0.8)
+    rx, ry, rz = actor.rig.location
+    parts = []
+    inner, outer = {}, {}
+    for s in (-1, 1):
+        cx = s * sep
+        # the face curves back from the snout to the temple: fit a line to the front of each column under the lens and
+        # lay the lens along it (wraparound), just clear of the skin, instead of floating it in front of the snout
+        cols = []
+        for u in (-0.8, -0.4, 0.0, 0.4, 0.8):
+            x = cx + u * lens_w / 2
+            ys = [surface_y(actor, x, centre_z + v * lens_h / 2) for v in (-0.6, -0.3, 0.0, 0.3, 0.6)]
+            ys = [y for y in ys if y is not None]
+            if ys:
+                cols.append((x, min(ys)))
+        mx_ = sum(x for x, _ in cols) / len(cols)
+        my_ = sum(y for _, y in cols) / len(cols)
+        b = sum((x - mx_) * (y - my_) for x, y in cols) / sum((x - mx_) ** 2 for x, _ in cols)
+        b = max(-0.9, min(0.9, b))
+        c = min(y - (my_ + b * (x - mx_)) for x, y in cols)            # every column stays behind the lens
+        loc = Vector((rx + cx, my_ + b * (cx - mx_) + c - 0.022, rz + centre_z))
+        yaw = math.atan(b)
+        across = Vector((math.cos(yaw), math.sin(yaw), 0))
+        lens = mxsets.sphere(f'{name}_lens{s}', 1.0, loc, lens_m, PROPS, scale=(lens_w / 2, 0.018, lens_h / 2))
+        rim = mxsets.sphere(f'{name}_rim{s}', 1.0, loc + Vector((-math.sin(yaw), math.cos(yaw), 0)) * 0.006, frame_m, PROPS,
+                            scale=(lens_w / 2 + 0.012, 0.012, lens_h / 2 + 0.012))
+        for o in (lens, rim):
+            o.rotation_euler = (0, 0, yaw)
+        parts += [lens, rim]
+        print(f'SHADES lens {s}: wrap {math.degrees(yaw):.0f} deg, {(my_ + b * (cx - mx_)) - loc.y:.3f} m off the skin')
+        inner[s] = loc - across * (s * lens_w / 2) + Vector((0, 0, lens_h * 0.18))
+        outer[s] = loc + across * (s * lens_w / 2) + Vector((0, 0.01, lens_h * 0.18))
+    snout = surface_y(actor, 0.0, centre_z + lens_h * 0.18) or inner[1].y
+    top = Vector((rx, min(snout - 0.012, inner[1].y), inner[1].z))
+    rods = [(inner[-1], top), (top, inner[1])]
+    for s in (-1, 1):
+        rods.append((outer[s], outer[s] + Vector((s * 0.02, 0.22, 0.01))))
+    for k, (p0, p1) in enumerate(rods):
+        d = p1 - p0
+        rod = mxsets.cylinder(f'{name}_rod{k}', 0.007, d.length, (p0 + p1) / 2, frame_m, PROPS, verts=10)
+        rod.rotation_mode = 'QUATERNION'
+        rod.rotation_quaternion = d.to_track_quat('Z', 'Y')
+        parts.append(rod)
+    holder = bpy.data.objects.new(name, None)
+    PROPS.objects.link(holder)
+    holder.location = (rx, inner[1].y, rz + centre_z)
+    bpy.context.view_layer.update()
+    for o in parts:
+        mw = o.matrix_world.copy()
+        o.parent = holder
+        o.matrix_world = mw
+        o.visible_shadow = False
+    return holder
+
+
 # props on bones: posed at the origin in bind pose first
 if not DRY:
     for k, actor in enumerate(A.values()):                     # spread out, or the face ray hits whoever stands in front
         actor.rig.location = (k * 6.0, 0, -50)
         actor.rig.rotation_euler = (0, 0, 0)
-    for n in ('slerf', 'jean', 'tri1', 'tri2', 'tri3'):
-        shades = mxsets.sunglasses('shades_' + n, PROPS, width=0.24 if n == 'slerf' else 0.2)
+    bpy.context.view_layer.update()
+    sl = A['slerf'].rig.location                                  # eyes measured on a front grid: z 1.255, x +-0.155
+    shades = fitted_shades(A['slerf'], 'shades_slerf', centre_z=1.272, sep=0.155, lens_w=0.20, lens_h=0.13)
+    glue(shades, A['slerf'], [face_point(A['slerf'], 1.26) + Vector((x, 0, 0)) for x in (-0.15, 0.15)] +
+         [sl + Vector((0, surface_y(A['slerf'], 0, 1.42) - sl.y, 1.42))])
+    for n in ('jean', 'tri1', 'tri2', 'tri3'):
+        shades = mxsets.sunglasses('shades_' + n, PROPS, width=0.2)
         p = face_point(A[n], cine.EYES[n] + 0.02) + Vector((0, -0.03, 0))
-        mxsets.attach(shades, A[n].arm, 'mixamorig:Head', p)
+        shades.location = p
+        r = A[n].rig.location
+        glue(shades, A[n], [Vector((r.x + x, surface_y(A[n], x, cine.EYES[n]) or p.y, r.z + cine.EYES[n])) for x in (-0.05, 0.05)] +
+             [Vector((r.x, surface_y(A[n], 0, cine.EYES[n] + 0.1) or p.y, r.z + cine.EYES[n] + 0.1))])
     RED_SLERF = mxsets.candle('candle_red_s', 'red', PROPS)
     GREEN_SLERF = mxsets.candle('candle_green_s', 'green', PROPS)
-    mxsets.attach(RED_SLERF, A['slerf'].arm, 'mixamorig:RightHand', bone_world(A['slerf'], 'mixamorig:RightHand') + Vector((0, -0.08, 0.05)))
-    mxsets.attach(GREEN_SLERF, A['slerf'].arm, 'mixamorig:LeftHand', bone_world(A['slerf'], 'mixamorig:LeftHand') + Vector((0, -0.08, 0.05)))
+    for c_, bone in ((RED_SLERF, 'mixamorig:RightHand'), (GREEN_SLERF, 'mixamorig:LeftHand')):
+        hand = bone_world(A['slerf'], bone)
+        c_.location = hand + Vector((0, -0.08, 0.05))
+        glue(c_, A['slerf'], [hand], radius=0.06)
     zbones = [b.name for b in A['anon'].arm.data.bones]
     zarm = next((b for b in ('mixamorig:RightHand', 'mixamorig:RightForeArm', 'mixamorig:RightArm') if b in zbones), zbones[-1])
     RED_ANON = mxsets.candle('candle_red_a', 'red', PROPS)
-    mxsets.attach(RED_ANON, A['anon'].arm, zarm, bone_world(A['anon'], zarm) + Vector((0, -0.12, 0.0)))
+    RED_ANON.location = bone_world(A['anon'], zarm) + Vector((0, -0.12, 0.0))
+    glue(RED_ANON, A['anon'], [bone_world(A['anon'], zarm)], radius=0.05)
     COOKIE = mxsets.cookie('cookie', PROPS)
     CARD = mxsets.bent_card('card', PROPS, os.path.join(HERE, 'pack', 'cards', 'marketcrash.webp'))
+    abones = [b.name for b in A['alon'].arm.data.bones]
+    ahand = next((b for b in ('mixamorig:RightHand', 'mixamorig:LeftHand') if b in abones), abones[-1])
+    CARD.rotation_euler = (math.radians(90), 0, 0)
+    CARD.location = bone_world(A['alon'], ahand) + Vector((0.0, -0.06, -0.12))
+    glue(CARD, A['alon'], [bone_world(A['alon'], ahand)], radius=0.05)
+    COOKIE.location = A['bome'].rig.location + Vector((0.45, -0.35, 1.0))     # held out in front, rides the book's bob
+    glue(COOKIE, A['bome'], [COOKIE.location.copy()], radius=0.15)
     COOKIE['actor'] = 'bome'
     CARD['actor'] = 'alon'
+# Slerf's training rig: each paw can follow an IK target (empties on his lean pivot, so they lean with him). Influence 0
+# leaves the clip alone; keyed up to 1 for the blocks and the push in the dojo fight.
+SLERF_IK = {}
+if not DRY:
+    sl_rig = A['slerf'].rig.location.copy()
+    for side, sx in (('Right', -1), ('Left', 1)):
+        shoulder = bone_world(A['slerf'], f'mixamorig:{side}Arm') - sl_rig
+        hand = bone_world(A['slerf'], f'mixamorig:{side}Hand') - sl_rig
+        tgt = bpy.data.objects.new(f'ik_slerf_{side}', None)
+        sc.collection.objects.link(tgt)
+        tgt.parent = A['slerf'].tilt_obj
+        tgt.location = hand
+        con = A['slerf'].arm.pose.bones[f'mixamorig:{side}ForeArm'].constraints.new('IK')
+        con.name = 'IK'
+        con.target = tgt
+        con.chain_count = 2
+        con.influence = 0.0
+        SLERF_IK[side] = dict(tgt=tgt, shoulder=shoulder, hand=hand, reach=(hand - shoulder).length, sx=sx, keys=[], inf=[])
+
 VIS = []                     # (object name, [(a, visible)])
 
 
@@ -362,11 +513,11 @@ shot('anon_screen', 1.6, S('anon', size='MCU', bearing=8, angle=4, move='push', 
 line('a01', [S('anon', size='CU', bearing=-25, lens=75, frame='right', fstop=1.8, move='push', amount=0.06)], 'FLOOR')
 michi.walk(ANIM - 1.5, FLOOR + Vector((-3.0, -2.9, 0)), speed=1.3)
 line('m01', [S('michi', size='WS', bearing=-40, lens=35, frame='left', fstop=2.8, move='track'),
-             S('michi', over='anon', size='MCU', lens=60, frame=(1 / 3, 1 / 3), fstop=2.4)], 'FLOOR', weights=[1, 1.2])
+             S('michi', size='MCU', bearing=-30, lens=60, frame='left', fstop=2.4)], 'FLOOR', weights=[1, 1.2])
 anon.face(ANIM - 1.2, michi)
 michi.face(ANIM - 1.2, anon)
 line('a02', [cine.reaction('anon', 85)], 'FLOOR')
-line('m02', [S('michi', over='anon', size='MCU', lens=60, frame=(1 / 3, 1 / 3), fstop=2.4, move='push', amount=0.12)], 'FLOOR')
+line('m02', [S('michi', size='MCU', bearing=-22, lens=70, frame='left', fstop=2.2, move='push', amount=0.12)], 'FLOOR')
 
 # ---------------------------------------------------------------- 2. the choice, under the bull
 a = ANIM
@@ -375,8 +526,8 @@ slerf.cut(a, SLERF_AT, 180)
 anon.cut(a, FLOOR + Vector((0, 2.2, 0)), 0)
 michi.cut(a, FLOOR + Vector((-1.4, 0.4, 0)), 15)
 anon.walk(a, FLOOR + Vector((0, 5.7, 0)), speed=1.6)
-shot('aisle_walk', 3.0, S('anon', size='MS', bearing=165, lens=35, frame='center', move='track', fstop=2.8, angle=10, lead=False), 'FLOOR')
-shot('slerf_reveal', 1.8, S('slerf', size='WS', angle='low', bearing=10, lens=28, frame='center', move='push', amount=0.2, fstop=4.0), 'FLOOR')
+shot('aisle_walk', 3.0, S('anon', size='WS', bearing=160, lens=35, frame='center', move='track', fstop=2.8, angle=12, lead=False), 'FLOOR')
+shot('slerf_reveal', 1.8, S('slerf', size='WS', angle='low', bearing=40, lens=28, frame='center', move='push', amount=0.2, fstop=4.0), 'FLOOR')
 line('s01', [S('slerf', over='anon', size='MS', lens=50, frame=(-1 / 3, 1 / 3), fstop=2.4),
              S('slerf', size='MCU', angle='low', bearing=12, lens=65, frame='left', move='push', amount=0.18, fstop=2.0)], 'FLOOR', weights=[1, 1.4])
 line('a03', [S('anon', size='CU', bearing=25, lens=70, frame='right', fstop=2.0)], 'FLOOR')
@@ -385,15 +536,15 @@ slerf.play(ANIM, 'emote', 0.6)                                  # the paws come 
 CANDLES_ON = ANIM
 line('s03', [S('slerf', size='MS', bearing=-30, angle='low', lens=40, frame='center', move='arc', amount=50, fstop=2.8),
              S('slerf', size='MS', bearing=-8, angle=-6, lens=45, frame='center', fstop=2.4, move='push', amount=0.12),
-             S('slerf', over='anon', size='MCU', lens=70, frame=(-1 / 3, 1 / 3), fstop=2.0, move='push', amount=0.12)], 'FLOOR',
+             S('slerf', size='MCU', bearing=35, lens=70, frame='left', fstop=2.0, move='push', amount=0.12)], 'FLOOR',
      weights=[1.2, 1.2, 1.2])
 line('a04', [S('anon', size='CU', bearing=30, lens=75, frame='right', dutch=6, fstop=1.8)], 'FLOOR')
 line('s04', [S('slerf', size='WS', bearing=90, lens=35, frame='left', fstop=4.0, look_offset=(0, -1.0, 0))], 'FLOOR', pad=0.45)
 TAKE = ANIM
 anon.play(TAKE, 'attack1', 0.7)
-shot('take_red', 1.2, S('anon', size='MCU', bearing=-45, lens=60, frame='right', fstop=2.0, move='push', amount=0.2), 'FLOOR')
+shot('take_red', 1.2, S('anon', size='MS', bearing=-45, lens=45, frame='right', fstop=2.0, move='push', amount=0.2), 'FLOOR')
 anon.play(ANIM, 'emote', 0.9)
-shot('swallow', 1.5, S('anon', size='CU', bearing=0, lens=85, frame='center', fstop=1.8, move='dolly_zoom', amount=-0.35), 'FLOOR',
+shot('swallow', 1.5, S('anon', size='MCU', bearing=0, lens=60, frame='center', fstop=2.0, move='dolly_zoom', amount=-0.2), 'FLOOR',
      glitch='rain_out')
 if not DRY:
     show('candle_red_s', [(0, False), (CANDLES_ON, True), (TAKE + 0.45, False)])
@@ -405,22 +556,22 @@ a = ANIM
 anon.cut(a, BASE + Vector((0.2, -1.3, 0)), 160, clip='die')
 anon.play(a, 'die', 0.25)
 slerf.cut(a, BASE + Vector((0.6, 0.4, 0)), 200)
-mensa.cut(a, BASE + Vector((2.6, 1.0, 0)), 20)
+mensa.cut(a, BASE + Vector((2.5, 0.72, 0)), 20)                       # 30 cm back from the screens
 farter.cut(a, BASE + Vector((4.4, 2.0, 0)), 200)
 michi.cut(a, BASE + Vector((-1.6, 0.6, 0)), 140)
 shot('wake_bird', 2.4, S('anon', distance=3.6, angle='bird', bearing=0, lens=28, frame='center', move='arc', amount=-40, fstop=5.6, eye=0.25, clutter_max=0.3),
      'BASEMENT', glitch='rain_in')
 anon.play(ANIM - 0.3, 'ready', 0.8)
-line('s05', [S('slerf', size='MS', angle=-15, bearing=15, lens=32, frame='left', fstop=3.2),
+line('s05', [S('slerf', size='MS', angle=5, bearing=0, lens=35, frame='center', fstop=3.2),
              S('anon', size='MCU', angle='high', bearing=10, lens=50, frame='right', fstop=2.4)], 'BASEMENT', weights=[1.3, 1])
 line('mo1', [S('slerf', distance=4.0, bearing=-40, lens=24, frame='right', fstop=5.6, look_offset=(-9.2, 6.0, 1.0), move='push', amount=0.1)], 'BASEMENT')
 slerf.turn(ANIM, 240)
-line('s06', [S('slerf', size='MCU', bearing=40, lens=60, frame='left', fstop=2.2)], 'BASEMENT', pad=0.3)
+line('s06', [S('slerf', size='MCU', bearing=-20, lens=60, frame='right', fstop=2.2)], 'BASEMENT', pad=0.3)
 mensa.play(ANIM, 'idle', 1.4)
 line('n01', [S('mensa', size='MS', bearing=150, lens=40, frame='left', fstop=2.8, move='push', amount=0.15),
-             S('mensa', size='CU', bearing=-35, lens=70, frame='right', fstop=2.0)], 'BASEMENT', weights=[1.2, 1])
+             S('mensa', size='CU', bearing=-80, lens=70, frame='right', fstop=2.0)], 'BASEMENT', weights=[1.2, 1])
 farter.play(ANIM, 'emote', 0.8)
-line('f01', [S('farter', size='MCU', bearing=0, lens=50, frame='center', fstop=2.4, move='push', amount=0.1)], 'BASEMENT', pad=0.35)
+line('f01', [S('farter', size='MS', bearing=0, lens=50, frame='center', fstop=2.4, move='push', amount=0.1)], 'BASEMENT', pad=0.35)
 
 # ---------------------------------------------------------------- 4. the training program
 a = ANIM
@@ -430,20 +581,54 @@ line('n02', [cine.establish('anon', 22)], 'DOJO', pad=0.5, lead=0.3)
 line('a05', [cine.vertigo('anon', 40)], 'DOJO', pad=0.4)
 line('s07', [S('slerf', size='MCU', angle='low', bearing=-20, lens=50, frame='left', fstop=2.2)], 'DOJO')
 FIGHT = ANIM
+STRIKE_X = 1.3 - 1.35                                          # Anon steps in to striking distance (1.35 m centre to centre:
+                                                               # at 0.95 his bag went into Slerf's belly on every swing)
+anon.walk(FIGHT - 0.95, DOJO + Vector((STRIKE_X, 0, 0)), speed=2.2, clip='walk', then=None)
 anon.play(FIGHT, 'attack1', 1.2)
 anon.play(FIGHT + 0.9, 'attack2', 1.2)
 anon.play(FIGHT + 1.8, 'attack3', 1.2)
 slerf.play(FIGHT, 'idle', 0.4)
 slerf.hold(FIGHT)
-slerf.walk(FIGHT + 0.6, DOJO + Vector((1.3, 0.6, 0)), speed=0.25, clip='walk', then='idle')       # one slow sidestep
-anon.hold(FIGHT + 2.6)
-anon.play(FIGHT + 2.7, 'hit', 1.0)
-anon.play(FIGHT + 3.3, 'die', 1.0)
+anon.hold(FIGHT + 2.72)                                         # the push lands: he goes down as he slides back 1.1 m
+anon.play(FIGHT + 2.72, 'die', 1.8)                             # ('hit' then 'die' popped him upright between the two;
+                                                                # at 1.0x the clip staggers 1.5 s before he drops)
+anon.pos = DOJO + Vector((STRIKE_X - 1.1, 0, 0))
+anon.keys.append([FIGHT + 3.35, *anon.pos, anon.H, 0])
+slerf.hold(FIGHT + 2.35)                                        # one slow step in for the push
+slerf.pos = DOJO + Vector((1.0, 0, 0))
+slerf.keys.append([FIGHT + 2.7, *slerf.pos, slerf.H, 0])
+# Slerf, bored: blocks swing one with the right paw, swing two with the left, leans out of swing three, then one lazy push
+slerf.lean(FIGHT + 1.85, 0)
+slerf.lean(FIGHT + 2.1, -16)
+slerf.lean(FIGHT + 2.4, -16)
+slerf.lean(FIGHT + 2.65, 4)
+slerf.lean(FIGHT + 3.0, 0)
+if not DRY:
+    def paw(side, where_, fwd, up=0.05, inward=0.35):
+        ik = SLERF_IK[side]
+        sh = ik['shoulder']
+        return Vector((sh.x * inward, sh.y - fwd * ik['reach'], sh.z + up))
+
+    def block(side, contact):
+        ik = SLERF_IK[side]
+        ik['keys'] += [(contact - 0.3, paw(side, 0, 0.9)), (contact + 0.5, paw(side, 0, 0.9))]
+        ik['inf'] += [(contact - 0.28, 0.0), (contact - 0.08, 1.0), (contact + 0.22, 1.0), (contact + 0.55, 0.0)]
+    block('Right', FIGHT + 0.25)
+    block('Left', FIGHT + 1.15)
+    R_ = SLERF_IK['Right']
+    R_['keys'] += [(FIGHT + 2.3, paw('Right', 0, 0.45, up=0.0)), (FIGHT + 2.55, paw('Right', 0, 0.4, up=-0.05, inward=0.5)),
+                   (FIGHT + 2.72, paw('Right', 0, 0.98, up=-0.12, inward=0.2)), (FIGHT + 3.0, paw('Right', 0, 0.98, up=-0.12, inward=0.2))]
+    R_['inf'] += [(FIGHT + 2.3, 0.0), (FIGHT + 2.5, 1.0), (FIGHT + 3.0, 1.0), (FIGHT + 3.45, 0.0)]
+    A['slerf'].arm.animation_data.action = bpy.data.actions.new('slerf_ik_influence')   # its own action, on top of the NLA clips
+    for side, ik in SLERF_IK.items():
+        animate(ik['tgt'], 'location', [(F(a_), tuple(v)) for a_, v in ik['keys']], 'BEZIER')
+        animate(A['slerf'].arm, f'pose.bones["mixamorig:{side}ForeArm"].constraints["IK"].influence',
+                [(F(a_), v) for a_, v in ik['inf']], 'BEZIER')
 shot('fight_track', 1.5, cine.chaos('anon', 28), 'DOJO')
-shot('fight_arc', 1.7, S('anon', size='WS', bearing=0, lens=32, frame='center', move='arc', amount=120, fstop=4.0, angle=6,
-                         look_offset=(1.3, 0, -0.3)), 'DOJO')
-shot('fight_fall', 1.4, S('anon', size='MS', angle='high', bearing=80, lens=35, frame='center', fstop=3.2, eye=0.4), 'DOJO')
-line('s08', [S('anon', size='MS', angle='high', bearing=150, lens=35, frame='left', fstop=2.8, eye=0.35),
+shot('fight_arc', 1.7, S('anon', size='WS', bearing=120, lens=32, frame='center', move='arc', amount=120, fstop=4.0, angle=18,
+                         look_offset=(0.67, 0, -0.3), **{'with': ['slerf']}), 'DOJO')
+shot('fight_fall', 1.4, S('anon', size='WS', angle='high', bearing=80, lens=35, frame='center', fstop=3.2), 'DOJO')
+line('s08', [S('anon', size='WS', angle='high', bearing=150, lens=35, frame='left', fstop=2.8, eye=0.35),
              S('slerf', size='MCU', angle='low', bearing=20, lens=55, frame='right', fstop=2.0)], 'DOJO', weights=[1, 1.2])
 
 # ---------------------------------------------------------------- 5. the waiting room and the book
@@ -460,7 +645,7 @@ anon.cut(a, BASE + Vector((-2.4, 4.0, 0)), 0)
 anon.face(a, alon, 0.01)
 shot('waiting_room', 1.4, S('alon', size='WS', bearing=200, lens=28, frame='left', fstop=4.0, look_offset=(0.1, -0.8, 0)), 'BASEMENT')
 CARD_AT = ALON_AT + Vector((0.12, -0.42, 0.82))
-line('k01', [S('alon', size='MCU', bearing=-25, lens=60, frame='right', fstop=2.0)], 'BASEMENT')
+line('k01', [S('alon', size='MCU', bearing=45, lens=60, frame='right', fstop=2.0)], 'BASEMENT')
 line('a06', [S('anon', size='CU', bearing=30, lens=70, frame='left', fstop=2.0)], 'BASEMENT')
 BEND = ANIM
 line('k02', [S('alon', distance=1.2, bearing=-10, lens=85, frame='center', fstop=4.0, look_offset=(0.12, -0.42, -0.56), focus=0.9),
@@ -494,14 +679,15 @@ BT_FILM = 5.2
 BT_SPEED = 0.08
 anon.play(BT, 'hit', 0.12)
 anon.lean(BT, 0)
-anon.lean(BT + 0.30, -62)
-anon.lean(BT + BT_FILM * BT_SPEED + 0.25, -62)
+anon.lean(BT + 0.30, -52)
+anon.lean(BT + BT_FILM * BT_SPEED + 0.25, -52)
 anon.lean(BT + BT_FILM * BT_SPEED + 0.6, 0)
-shot('bullet_time', BT_FILM, S('anon', size='MLS', angle='low', bearing=60, lens=30, frame='center', move='arc', amount=300, fstop=4.0,
-                                  ease='smooth', eye=0.9), 'ROOFTOP', speed=BT_SPEED, hand=None, bullet=True)
+anon.play(BT + BT_FILM * BT_SPEED + 0.6, 'idle')                 # the slowed 'hit' clip would run ~8 s past the dodge
+shot('bullet_time', BT_FILM, S('anon', size='WS', angle='low', bearing=60, lens=30, frame='center', move='arc', amount=300, fstop=4.0,
+                                  ease='smooth', eye=0.8), 'ROOFTOP', speed=BT_SPEED, hand=None, bullet=True)
 PROJ = []
 for k in range(7):                                                     # red candles from Jeanphil's hand, past Anon's leaned body
-    start = ROOF + Vector((0.15 * (k - 3), 7.6, 1.2 + 0.05 * k))
+    start = ROOF + Vector((0.22 + 0.04 * (k - 3), 7.35, 0.98 + 0.03 * k))
     end = ROOF + Vector((0.5 * (k - 3) * 0.6, -6.0, 1.05 + 0.12 * (k % 3)))
     t_on = FIRE + 0.35 + k * 0.03
     PROJ.append((start, end, t_on, t_on + 1.15))
@@ -514,7 +700,7 @@ jean.play(FIRE2, 'attack2', 1.0)
 anon.play(FIRE2 + 0.2, 'win', 0.8)
 STOP = []
 for k in range(7):
-    start = ROOF + Vector((0.15 * (k - 3), 7.6, 1.2 + 0.05 * k))
+    start = ROOF + Vector((0.22 + 0.04 * (k - 3), 7.35, 0.98 + 0.03 * k))
     hang = ROOF + Vector((0.3 * (k - 3), 5.6 + 0.15 * (k % 2), 1.0 + 0.12 * (k % 3)))
     STOP.append((start, hang, FIRE2 + 0.3 + k * 0.04))
 shot('freeze_ots', 1.9, S('jean', over='anon', size='MS', lens=50, frame=(-1 / 3, 1 / 3), fstop=4.0), 'ROOFTOP')
@@ -550,10 +736,7 @@ if not DRY:
                 keys = [(F(0), (0, 0, -50)), (F(t_g) - 0.02, (0, 0, -50)), (F(t_g), tuple(hang)), (F(t_g + 0.5), tuple(hang)),
                         (F(t_g + 0.9), tuple(drop))]
             animate(c, 'location', keys)
-    CARD.location = CARD_AT
-    CARD.rotation_euler = (math.radians(90), 0, math.radians(-20))
     animate(CARD, 'modifiers["bend"].angle', [(F(BEND + 0.6), 0.0), (F(BEND + 2.0), math.radians(160))], 'BEZIER')
-    COOKIE.location = BOME_AT + Vector((0.45, -0.35, 1.0))
     show('cookie', [(0, False), (COOKIE_T, True)])
     show('card', [(0, False), (BEND - 6.0, True), (BEND + 8.0, False)])
     for actor in A.values():
@@ -573,6 +756,16 @@ if not DRY:
         animate(obj, 'scale', samples[1:], 'CONSTANT')
 
 # ================================================================ solve every shot against the built scene
+if not DRY:
+    for s_ in SHOTS:
+        if s_['name'] == 'k02_0':
+            a_mid = s_['a0'] + (s_['t1'] - s_['t0']) * 0.5
+            sc.frame_set(int(F(a_mid)))
+            feet, head = make_where({n: sorted(x.keys, key=lambda k: k[0]) for n, x in A.items()})('alon', a_mid)
+            card_at = CARD.matrix_world.translation
+            s_['cam']['look_offset'] = list(card_at - cine.eye_point('alon', feet, head))
+            print('CARD at', tuple(round(v, 2) for v in card_at), 'offset', [round(v, 2) for v in s_['cam']['look_offset']])
+
 tracks = {n: actor.keys for n, actor in A.items()}
 tracks = {n: sorted(k, key=lambda x: x[0]) for n, k in tracks.items()}
 where = make_where(tracks)
@@ -602,7 +795,7 @@ def film_of(a):
     return None
 
 
-EVENTS = {'take': TAKE + 0.45, 'fight': FIGHT, 'fall': FIGHT + 3.3, 'card_bend': BEND + 0.6, 'cookie': COOKIE_T, 'fire': FIRE + 0.3,
+EVENTS = {'take': TAKE + 0.45, 'fight': FIGHT, 'fall': FIGHT + 3.55, 'push': FIGHT + 2.72, 'card_bend': BEND + 0.6, 'cookie': COOKIE_T, 'fire': FIRE + 0.3,
           'bullet_time': BT, 'fire2': FIRE2 + 0.3, 'turn_green': TURN_GREEN + 0.6, 'drop': TURN_GREEN + 1.3}
 EVENTS.update({f'swing{k}': FIGHT + 0.9 * k + 0.25 for k in range(3)})
 EVENTS = {k: film_of(v) for k, v in EVENTS.items()}

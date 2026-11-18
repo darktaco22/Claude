@@ -325,14 +325,15 @@ def solve(shot, where, scene, t0=0.0, t1=1.0, samples=7, ignore=()):
     aspect = aspect_of(scene)
 
     limit = shot.get('clutter_max', 0.08)
-    skip = tuple(n for n in (shot['subject'], shot.get('over')) if n)
+    partners = tuple(shot.get('with', ()))                  # two-shots: the other actor belongs in the frame, not an obstacle
+    skip = tuple(n for n in (shot['subject'], shot.get('over')) if n) + partners
 
     def clear(candidate):
         for i in range(samples):
             u = i / (samples - 1)
             t = t0 + (t1 - t0) * u
             pos, look, lens, roll, frame, dist = rig(candidate, u, t, where, aspect)
-            obj = blocker(scene, pos, look, skip=(candidate['subject'],))
+            obj = blocker(scene, pos, look, skip=(candidate['subject'],) + partners)
             if obj is not None and obj.name not in ignore:
                 return obj.name
             covered = clutter(scene, pos, aim(pos, look, lens, roll, frame, aspect), lens, aspect, dist, where(candidate['subject'], t)[0][2],

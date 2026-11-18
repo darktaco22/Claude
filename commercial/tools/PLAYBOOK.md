@@ -147,6 +147,20 @@ those topics with my own code.
   slid the character between sets for 7 s (he vanished from three shots). `Actor.finish` now takes the last key strictly
   earlier. Scan tracks for same-time cuts before rendering.
 - Check the finished film at one frame every 2-4 s before calling it done; the animatic only samples start/middle/end.
+- **Glue props to the skin, not to bones** (`glue()` in `memetrix/scene.py`: vertex parent to three skin vertices). On the
+  game's cartoon rigs the face and paws drift off the head and hand bones during emotes (the shades slid onto Slerf's
+  forehead), and some meshes (zcat, alon) have no hand weights at all, so a hand-bone prop floats. When setting a vertex
+  parent, set `matrix_parent_inverse` from the three vertices' frame; assigning `matrix_world` alone lands it ~1 m off.
+- **Fit glasses to the face's depth, not just its eye height.** A sloth's snout sticks out 10 cm past its eyes; a flat lens
+  in front of the snout floats off the eye and the eye shows past it at three-quarter angles. Ray-cast columns under each
+  lens and lay the lens along the cheek (wraparound). Check at 3/4 views, not only front-on.
+- **No motion blur on a shot's first frame**: the shutter straddles the cut and smears the previous set's pose in. Cuts
+  also switch clips hard (no 3-frame NLA blend from the old set's pose).
+- **A slowed clip runs on**: 'hit' at 0.12x for bullet time lasted ~8 s and left the hero bent over in later shots. Play
+  `idle` once the slow beat ends.
+- **Fights need contact**: put the fighters at striking distance (here 0.95 m centre to centre), drive the defender's
+  blocks and push with IK targets (empties on his lean pivot, IK influence keyed in an action on top of the NLA clips),
+  and move the struck character with the blow. Two-shots pass `with=[partner]` so the solver does not call him a wall.
 - Full 1080p, 12 samples, haze and motion blur cost ~4 min a frame on 4 cores (≈200 CPU-hours for 2 min). Measure each
   effect at the real render size before deciding (`NOHAZE`, `MB` switches in `render_edl.py`).
 

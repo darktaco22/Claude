@@ -145,7 +145,7 @@ def build_basement():
     stairs = material('stairs', (0.35, 0.22, 0.12), rough=0.8)
     for k in range(8):                                                       # the stairs up to Mom (light spills down them)
         box(f'stair{k}', (1.6, 0.45, 0.3), o + Vector((-8.6, 6.8 - k * 0.45, 0.15 + k * 0.3)), stairs, col)
-    prop('basement', 'gaming_chair', col, o + Vector((0, 0, 0)), 180, 1.0)            # Anon wakes up here
+    prop('basement', 'gaming_chair', col, o + Vector((0.3, 2.3, 0)), 160, 1.0)        # behind Slerf (at 0,0 it blocked his shots)
     prop('basement', 'crt_tv', col, o + Vector((3.2, 2.2, 0)), 200, 1.0)              # Mensa's console
     screen('rain_crt', 0.62, 0.48, o + Vector((3.05, 1.72, 1.32)), (math.radians(90), 0, math.radians(200)), col, 3.0)
     prop('basement', 'pizza_stack', col, o + Vector((4.6, 3.0, 0)), 0, 1.0)
