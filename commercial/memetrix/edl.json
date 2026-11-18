@@ -4,8 +4,9 @@
 "events": {
 "take": 51.402,
 "fight": 82.607,
-"fall": 85.907,
-"card_bend": 99.86,
+"fall": 86.157,
+"push": 85.327,
+"card_bend": 99.41,
 "cookie": 106.188,
 "fire": 114.109,
 "bullet_time": 114.809,
@@ -332,13 +333,10 @@
 "set": "FLOOR",
 "cam": {
 "subject": "michi",
-"over": "anon",
 "size": "MCU",
+"bearing": -30,
 "lens": 60,
-"frame": [
-0.3333333333333333,
-0.3333333333333333
-],
+"frame": "left",
 "fstop": 2.4
 },
 "hand": [
@@ -378,18 +376,13 @@
 "set": "FLOOR",
 "cam": {
 "subject": "michi",
-"over": "anon",
 "size": "MCU",
-"lens": 60,
-"frame": [
-0.3333333333333333,
-0.3333333333333333
-],
-"fstop": 2.4,
+"bearing": -22,
+"lens": 70,
+"frame": "left",
+"fstop": 2.2,
 "move": "push",
-"amount": 0.12,
-"over_x": 1.05,
-"over_up": 0.1
+"amount": 0.12
 },
 "hand": [
 "INVESTIGATION",
@@ -405,13 +398,13 @@
 "set": "FLOOR",
 "cam": {
 "subject": "anon",
-"size": "MS",
-"bearing": 165,
+"size": "WS",
+"bearing": 160,
 "lens": 35,
 "frame": "center",
 "move": "track",
 "fstop": 2.8,
-"angle": 10,
+"angle": 12,
 "lead": false
 },
 "hand": [
@@ -429,8 +422,8 @@
 "cam": {
 "subject": "slerf",
 "size": "WS",
-"angle": -15.0,
-"bearing": 20,
+"angle": "low",
+"bearing": 40,
 "lens": 28,
 "frame": "center",
 "move": "push",
@@ -584,13 +577,10 @@
 "set": "FLOOR",
 "cam": {
 "subject": "slerf",
-"over": "anon",
 "size": "MCU",
+"bearing": 35,
 "lens": 70,
-"frame": [
--0.3333333333333333,
-0.3333333333333333
-],
+"frame": "left",
 "fstop": 2.0,
 "move": "push",
 "amount": 0.12
@@ -656,9 +646,9 @@
 "set": "FLOOR",
 "cam": {
 "subject": "anon",
-"size": "MCU",
+"size": "MS",
 "bearing": -55,
-"lens": 60,
+"lens": 45,
 "frame": "right",
 "fstop": 2.0,
 "move": "push",
@@ -679,13 +669,13 @@
 "set": "FLOOR",
 "cam": {
 "subject": "anon",
-"size": "CU",
+"size": "MCU",
 "bearing": 45,
-"lens": 85,
+"lens": 60,
 "frame": "center",
-"fstop": 1.8,
+"fstop": 2.0,
 "move": "dolly_zoom",
-"amount": -0.35,
+"amount": -0.2,
 "angle": 0.0
 },
 "hand": [
@@ -730,10 +720,10 @@
 "cam": {
 "subject": "slerf",
 "size": "MS",
-"angle": -15.0,
-"bearing": -30,
-"lens": 32,
-"frame": "left",
+"angle": 5.0,
+"bearing": 10,
+"lens": 35,
+"frame": "center",
 "fstop": 3.2
 },
 "hand": [
@@ -800,9 +790,9 @@
 "cam": {
 "subject": "slerf",
 "size": "MCU",
-"bearing": 60,
+"bearing": 10,
 "lens": 60,
-"frame": "left",
+"frame": "right",
 "fstop": 2.2,
 "angle": 0.0
 },
@@ -843,11 +833,10 @@
 "cam": {
 "subject": "mensa",
 "size": "CU",
-"bearing": -45,
+"bearing": -80,
 "lens": 70,
 "frame": "right",
-"fstop": 2.0,
-"angle": 0.0
+"fstop": 2.0
 },
 "hand": [
 "INVESTIGATION",
@@ -863,7 +852,7 @@
 "set": "BASEMENT",
 "cam": {
 "subject": "farter",
-"size": "MCU",
+"size": "MS",
 "bearing": 0,
 "lens": 50,
 "frame": "center",
@@ -931,7 +920,7 @@
 "set": "DOJO",
 "cam": {
 "subject": "slerf",
-"size": "MCU",
+"size": "MS",
 "angle": "low",
 "bearing": -20,
 "lens": 50,
@@ -976,17 +965,20 @@
 "cam": {
 "subject": "anon",
 "size": "WS",
-"bearing": 10,
+"bearing": 70,
 "lens": 32,
 "frame": "center",
 "move": "arc",
-"amount": 120,
+"amount": 80,
 "fstop": 4.0,
-"angle": 26.0,
+"angle": 24,
 "look_offset": [
-1.3,
+0.67,
 0,
 -0.3
+],
+"with": [
+"slerf"
 ]
 },
 "hand": [
@@ -1003,13 +995,12 @@
 "set": "DOJO",
 "cam": {
 "subject": "anon",
-"size": "MS",
+"size": "WS",
 "angle": "high",
 "bearing": 80,
 "lens": 35,
 "frame": "center",
-"fstop": 3.2,
-"eye": 0.4
+"fstop": 3.2
 },
 "hand": [
 "INVESTIGATION",
@@ -1025,7 +1016,7 @@
 "set": "DOJO",
 "cam": {
 "subject": "anon",
-"size": "MS",
+"size": "WS",
 "angle": "high",
 "bearing": 150,
 "lens": 35,
@@ -1095,7 +1086,7 @@
 "cam": {
 "subject": "alon",
 "size": "MCU",
-"bearing": -25,
+"bearing": 45,
 "lens": 60,
 "frame": "right",
 "fstop": 2.0
@@ -1140,9 +1131,9 @@
 "frame": "center",
 "fstop": 4.0,
 "look_offset": [
-0.12,
--0.42,
--0.56
+0.0645751953125,
+-0.30629777908325195,
+-0.44623154401779175
 ],
 "focus": 0.9,
 "angle": 0.0
@@ -1367,16 +1358,16 @@
 "set": "ROOFTOP",
 "cam": {
 "subject": "anon",
-"size": "MLS",
+"size": "WS",
 "angle": -5.0,
-"bearing": 50,
+"bearing": 40,
 "lens": 30,
 "frame": "center",
 "move": "arc",
 "amount": 300,
 "fstop": 4.0,
 "ease": "smooth",
-"eye": 0.9
+"eye": 0.8
 },
 "hand": null,
 "bullet": true
@@ -1769,11 +1760,43 @@
 1
 ],
 [
-85.207,
+81.657,
 398.70001220703125,
 0.0,
 0.0,
 90,
+0
+],
+[
+81.857,
+398.70001220703125,
+0.0,
+0.0,
+90.0,
+0
+],
+[
+82.42518181818181,
+399.95001220703125,
+0.0,
+0.0,
+90.0,
+0
+],
+[
+85.327,
+399.95001220703125,
+0.0,
+0.0,
+90.0,
+0
+],
+[
+85.957,
+398.8500061035156,
+0.0,
+0.0,
+90.0,
 0
 ],
 [
@@ -1915,7 +1938,7 @@
 0
 ],
 [
-83.207,
+84.957,
 401.29998779296875,
 0.0,
 0.0,
@@ -1923,19 +1946,11 @@
 0
 ],
 [
-83.407,
-401.29998779296875,
+85.307,
+401.0,
 0.0,
 0.0,
-0.0,
-0
-],
-[
-85.80700004768372,
-401.29998779296875,
-0.6000000238418579,
-0.0,
-0.0,
+270,
 0
 ]
 ],
@@ -2032,8 +2047,8 @@
 ],
 [
 53.652,
-202.60000610351562,
-1.0,
+202.5,
+0.7200000286102295,
 0.0,
 20,
 1
@@ -2532,28 +2547,24 @@
 "anon_screen: rain_anon blocked the view; moved bearing +30, angle +0",
 "a01_0: rain_anon blocked the view; moved bearing -30, angle +0",
 "m01_0: foreground clutter (15% of frame) blocked the view; moved bearing -10, angle +10",
-"m02_0: zcat blocked the view; near head moved to x=1.05, camera up 0.1 m",
-"slerf_reveal: zcat blocked the view; moved bearing +10, angle +0",
 "s01_1: foreground clutter (45% of frame) blocked the view; moved bearing +20, angle +0",
 "s02_0: zcat blocked the view; moved bearing +30, angle +0",
 "s03_0: zcat blocked the view; moved bearing -30, angle +0",
 "s03_1: zcat blocked the view; moved bearing -20, angle +0",
 "a04_0: slerf blocked the view; moved bearing +10, angle +0",
-"take_red: foreground clutter (14% of frame) blocked the view; moved bearing -10, angle +0",
+"take_red: foreground clutter (10% of frame) blocked the view; moved bearing -10, angle +0",
 "swallow: slerf blocked the view; moved bearing +45, angle +0",
-"s05_0: body.001 blocked the view; moved bearing -45, angle +0",
+"s05_0: foreground clutter (45% of frame) blocked the view; moved bearing +10, angle +0",
 "mo1_0: foreground clutter (27% of frame) blocked the view; moved bearing -30, angle +0",
-"s06_0: michi blocked the view; moved bearing +20, angle +0",
-"n01_1: foreground clutter (31% of frame) blocked the view; moved bearing -10, angle +0",
+"s06_0: foreground clutter (62% of frame) blocked the view; moved bearing +30, angle +0",
 "n02_0: foreground clutter (16% of frame) blocked the view; moved bearing +10, angle +0",
 "a05_0: slerf blocked the view; moved bearing +10, angle +0",
-"fight_arc: slerf blocked the view; moved bearing +10, angle +20",
 "waiting_room: base_back blocked the view; moved bearing +45, angle +0",
 "k02_0: zcat blocked the view; moved bearing -10, angle +0",
 "b01_0: foreground clutter (32% of frame) blocked the view; moved bearing +30, angle +0",
 "b02_0: body.012 blocked the view; moved bearing +20, angle +0",
-"fire: proj4_body blocked the view; moved bearing -10, angle +0",
-"bullet_time: roof blocked the view; moved bearing -10, angle +10",
+"fire: foreground clutter (10% of frame) blocked the view; moved bearing -10, angle +0",
+"bullet_time: roof blocked the view; moved bearing -20, angle +10",
 "freeze_insert: jeanphil blocked the view; moved bearing +20, angle +0",
 "final_hero: jeanphil blocked the view; moved bearing +30, angle +10"
 ]
