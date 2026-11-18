@@ -37,6 +37,16 @@ SIZES = {
     'EWS': (1.6, 2.6),                                   # body small in the place
 }
 ANGLES = {'eye': 0.0, 'low': -15.0, 'worm': -45.0, 'high': 25.0, 'bird': 80.0}
+EYES = {}                                                # character name -> eye height in metres (else 0.92 x height)
+EYE_FWD = {}                                             # character name -> how far the face sits in front of the feet (m)
+FRAME_SCALE = 1.0                                        # >1 frames every size wider (cartoon casts with big heads)
+
+
+def eye_point(name, feet, heading, height=1.7):
+    """Where a character's eyes are: above the feet, and forward along its facing for long-bodied characters."""
+    h = math.radians(heading)
+    fwd = EYE_FWD.get(name, 0.0)
+    return Vector(feet) + Vector((math.sin(h) * fwd, math.cos(h) * fwd, EYES.get(name, 0.92 * height)))
 THIRDS = {'left': (-1 / 3, 1 / 3), 'right': (1 / 3, 1 / 3), 'center': (0.0, 1 / 3), 'low_left': (-1 / 3, 0.0),
           'low_right': (1 / 3, 0.0)}
 
@@ -107,8 +117,9 @@ def rig(shot, u, t, where, aspect):
     name = shot['subject']
     feet, heading = where(name, t)
     height = shot.get('height', 1.7)
-    eye_h = shot.get('eye', 0.92 * height)
-    eye = Vector(feet) + Vector((0, 0, eye_h))
+    eye = eye_point(name, feet, heading, height)
+    if 'eye' in shot:
+        eye.z = Vector(feet).z + shot['eye']
     if 'look_offset' in shot:
         eye += Vector(shot['look_offset'])
     if shot.get('fixed_heading') is not None:
@@ -116,7 +127,7 @@ def rig(shot, u, t, where, aspect):
     lens0 = shot.get('lens', 50.0)
     lens = lens0
     frame = frame_point(shot.get('frame'))
-    dist0 = shot.get('distance') or distance_for(shot.get('size', 'MS'), height, lens0, aspect, frame[1])
+    dist0 = shot.get('distance') or distance_for(shot.get('size', 'MS'), height, lens0, aspect, frame[1]) * shot.get('scale', FRAME_SCALE)
     bearing = shot.get('bearing', 30.0)
     elevation = elevation_of(shot.get('angle', 'eye'))
     roll = shot.get('dutch', 0.0)
@@ -156,15 +167,15 @@ def rig(shot, u, t, where, aspect):
     if 'dutch1' in shot:
         roll = roll + (shot['dutch1'] - roll) * k
     if shot.get('over'):                                 # over-the-shoulder: long lens from well behind the other character
-        o_feet, _ = where(shot['over'], t)
-        o_eye = Vector(o_feet) + Vector((0, 0, 0.92 * shot.get('over_height', height)))
+        o_feet, o_head = where(shot['over'], t)
+        o_eye = eye_point(shot['over'], o_feet, o_head, shot.get('over_height', height))
         back = o_eye - eye
         gap = back.length
         back.z = 0
         back.normalize()
         # far enough back that the near head is a soft shape, not a wall; the lens keeps the subject at its size
         d = gap + shot.get('over_back', 2.4) * (1 - (amount if move == 'push' else 0.0) * k)
-        lens = lens0 * d / distance_for(shot.get('size', 'MCU'), height, lens0, aspect, frame[1])
+        lens = lens0 * d / (distance_for(shot.get('size', 'MCU'), height, lens0, aspect, frame[1]) * shot.get('scale', FRAME_SCALE))
         side = back.cross(Vector((0, 0, 1))) * (1 if frame[0] <= 0 else -1)
         want = shot.get('over_x', 0.92) * (1 if frame[0] <= 0 else -1)      # near head centre close to the far edge
         best = None
@@ -208,12 +219,29 @@ def _depsgraph():
     return bpy.context.evaluated_depsgraph_get()
 
 
-def blocker(scene, pos, point, slack=0.45):
-    """The object between the camera and a subject's eyes, or None. Anything closer than `slack` to the eyes is the subject."""
+def owner(obj):
+    """The character an object belongs to: the 'actor' custom property on it or a parent (set by the scene builder)."""
+    while obj is not None:
+        if 'actor' in obj:
+            return obj['actor']
+        obj = obj.parent
+    return None
+
+
+def blocker(scene, pos, point, slack=0.45, skip=()):
+    """The object between the camera and a subject's eyes, or None. Anything closer than `slack` to the eyes is the subject;
+    objects owned by a name in `skip` (the subject itself, its props) are looked through."""
     direction = point - pos
-    hit, location, _, _, obj, _ = scene.ray_cast(_depsgraph(), pos, direction.normalized(), distance=direction.length)
-    if hit and (point - location).length > slack:
-        return obj
+    length = direction.length
+    direction.normalize()
+    start = pos.copy()
+    for _ in range(8):
+        hit, location, _, _, obj, _ = scene.ray_cast(_depsgraph(), start, direction, distance=length - (start - pos).length)
+        if not hit or (point - location).length <= slack:
+            return None
+        if owner(obj) not in skip:
+            return obj
+        start = location + direction * 0.01
     return None
 
 
@@ -226,7 +254,7 @@ def project(pos, q, point, lens, aspect):
     return (local.x / -local.z / math.tan(fov_h / 2), local.y / -local.z / math.tan(fov_v / 2), -local.z)
 
 
-def clutter(scene, pos, q, lens, aspect, subject_distance, floor_z=0.0, cols=16, rows=9):
+def clutter(scene, pos, q, lens, aspect, subject_distance, floor_z=0.0, cols=16, rows=9, skip=()):
     """Fraction of the frame covered by things much nearer than the subject (trees, heads, posts in the lens).
     The ground under everyone is ignored."""
     fov_h, fov_v = fovs(lens, aspect)
@@ -238,8 +266,8 @@ def clutter(scene, pos, q, lens, aspect, subject_distance, floor_z=0.0, cols=16,
             x = (i + 0.5) / cols * 2 - 1
             y = (j + 0.5) / rows * 2 - 1
             ray = q @ Vector((x * math.tan(fov_h / 2), y * math.tan(fov_v / 2), -1.0))
-            hit, loc, normal, *_ = scene.ray_cast(dg, pos, ray.normalized(), distance=near)
-            if hit and not (normal.z > 0.9 and loc.z < floor_z + 0.05):
+            hit, loc, normal, _, obj, _ = scene.ray_cast(dg, pos, ray.normalized(), distance=near)
+            if hit and not (normal.z > 0.9 and loc.z < floor_z + 0.05) and owner(obj) not in skip:
                 hits += 1
     return hits / (cols * rows)
 
@@ -249,8 +277,8 @@ def focus_distance(shot, u, t, where, pos, scene=None):
     height = shot.get('height', 1.7)
 
     def dist_to(name):
-        feet, _ = where(name, t)
-        point = Vector(feet) + Vector((0, 0, 0.92 * height))
+        feet, head = where(name, t)
+        point = eye_point(name, feet, head, height)
         if scene is None:
             return (point - pos).length - 0.12
         return surface_distance(scene, pos, point)
@@ -286,17 +314,19 @@ def solve(shot, where, scene, t0=0.0, t1=1.0, samples=7, ignore=()):
     Run once per shot when building the EDL, never per frame (the camera would jump)."""
     aspect = aspect_of(scene)
 
-    limit = shot.get('clutter_max', 0.45 if shot.get('over') else 0.05)
+    limit = shot.get('clutter_max', 0.08)
+    skip = tuple(n for n in (shot['subject'], shot.get('over')) if n)
 
     def clear(candidate):
         for i in range(samples):
             u = i / (samples - 1)
             t = t0 + (t1 - t0) * u
             pos, look, lens, roll, frame, dist = rig(candidate, u, t, where, aspect)
-            obj = blocker(scene, pos, look)
+            obj = blocker(scene, pos, look, skip=(candidate['subject'],))
             if obj is not None and obj.name not in ignore:
                 return obj.name
-            covered = clutter(scene, pos, aim(pos, look, lens, roll, frame, aspect), lens, aspect, dist, where(candidate['subject'], t)[0][2])
+            covered = clutter(scene, pos, aim(pos, look, lens, roll, frame, aspect), lens, aspect, dist, where(candidate['subject'], t)[0][2],
+                              skip=skip)
             if covered > limit:
                 return f'foreground clutter ({covered:.0%} of frame)'
         return None
@@ -304,6 +334,13 @@ def solve(shot, where, scene, t0=0.0, t1=1.0, samples=7, ignore=()):
     first = clear(shot)
     if first is None:
         return dict(shot), 'clear'
+    if shot.get('over'):                                   # over-the-shoulder: move further off the near character's head
+        for over_x in (1.05, 1.2, 1.4, 1.65, 1.9, 2.2):
+            for up in (0.1, 0.3):
+                candidate = dict(shot, over_x=over_x, over_up=up)
+                if clear(candidate) is None:
+                    return candidate, f'{first} blocked the view; near head moved to x={over_x}, camera up {up} m'
+        return dict(shot), f'BLOCKED by {first} at every tried offset: restage or hide it'
     base_b = shot.get('bearing', 30.0)
     base_e = elevation_of(shot.get('angle', 'eye'))
     for lift in (0, 10, 20):
@@ -362,6 +399,8 @@ def check_rules(shots):
     order = list(SIZES)
     for i in range(1, len(shots)):
         p, c = shots[i - 1], shots[i]
+        if p.get('over') or c.get('over'):
+            continue                                       # an over-the-shoulder is its own setup (camera behind the other)
         if p.get('subject') == c.get('subject') and p.get('size') == c.get('size') and abs(p.get('bearing', 30) - c.get('bearing', 30)) < 30:
             notes.append(f'shot {i}: jump cut - same subject and size from within 30 degrees; change size two steps or move 30+ degrees')
         if p.get('subject') == c.get('subject') and p.get('size') in order and c.get('size') in order:

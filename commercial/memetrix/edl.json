@@ -1,0 +1,2555 @@
+{
+"fps": 24,
+"title": 5.0,
+"events": {
+"take": 51.402,
+"fight": 82.607,
+"fall": 85.907,
+"card_bend": 99.86,
+"cookie": 106.188,
+"fire": 113.709,
+"bullet_time": 114.409,
+"fire2": 124.459,
+"turn_green": 126.659,
+"drop": 127.359,
+"swing0": 82.857,
+"swing1": 83.757,
+"swing2": 84.657
+},
+"cue_rows": [
+{
+"id": "a01",
+"f": 9.7,
+"dur": 1.598,
+"who": "anon",
+"sub": "I haven't slept since the halving."
+},
+{
+"id": "m01",
+"f": 11.648,
+"dur": 2.378,
+"who": "michi",
+"sub": "Anon. He has been looking for you."
+},
+{
+"id": "a02",
+"f": 14.376,
+"dur": 0.579,
+"who": "anon",
+"sub": "Who?"
+},
+{
+"id": "m02",
+"f": 15.305,
+"dur": 3.647,
+"who": "michi",
+"sub": "The one who has been holding since the first candle."
+},
+{
+"id": "s01",
+"f": 24.102,
+"dur": 6.144,
+"who": "slerf",
+"sub": "What if... I told you... the chart... is not real."
+},
+{
+"id": "a03",
+"f": 30.596,
+"dur": 2.869,
+"who": "anon",
+"sub": "Sir, could you talk a little faster? Gas fees are going up."
+},
+{
+"id": "s02",
+"f": 33.815,
+"dur": 0.937,
+"who": "slerf",
+"sub": "No."
+},
+{
+"id": "s03",
+"f": 35.302,
+"dur": 9.533,
+"who": "slerf",
+"sub": "Red candle... you see how deep the dip goes. Green candle... you go back to believing... number go up."
+},
+{
+"id": "a04",
+"f": 45.185,
+"dur": 1.105,
+"who": "anon",
+"sub": "Can I take both?"
+},
+{
+"id": "s04",
+"f": 46.64,
+"dur": 3.862,
+"who": "slerf",
+"sub": "That's... called... a wick."
+},
+{
+"id": "s05",
+"f": 56.152,
+"dur": 4.593,
+"who": "slerf",
+"sub": "Welcome... to the basement... of the real."
+},
+{
+"id": "mo1",
+"f": 61.095,
+"dur": 2.134,
+"who": "mom",
+"sub": "Honey! Are your little friends staying for dinner?"
+},
+{
+"id": "s06",
+"f": 63.579,
+"dur": 3.272,
+"who": "slerf",
+"sub": "No thank you, Mrs. Anon! We already ate, it was lovely, have a good night!"
+},
+{
+"id": "n01",
+"f": 67.251,
+"dur": 5.677,
+"who": "mensa",
+"sub": "I don't even see the code anymore. All I see is frog, cat, frog, dog, frog, frog, hippo."
+},
+{
+"id": "f01",
+"f": 73.278,
+"dur": 2.835,
+"who": "farter",
+"sub": "Between you and me? Ignorance is bullish."
+},
+{
+"id": "n02",
+"f": 76.763,
+"dur": 1.345,
+"who": "mensa",
+"sub": "Loading the trading program."
+},
+{
+"id": "a05",
+"f": 78.708,
+"dur": 1.269,
+"who": "anon",
+"sub": "I know candlesticks."
+},
+{
+"id": "s07",
+"f": 80.477,
+"dur": 1.88,
+"who": "slerf",
+"sub": "Show... me."
+},
+{
+"id": "s08",
+"f": 87.307,
+"dur": 5.111,
+"who": "slerf",
+"sub": "You think... that's leverage... you're trading?"
+},
+{
+"id": "k01",
+"f": 94.168,
+"dur": 3.68,
+"who": "alon",
+"sub": "Don't try to read the chart. That's impossible. Only realise the truth."
+},
+{
+"id": "a06",
+"f": 98.198,
+"dur": 0.812,
+"who": "anon",
+"sub": "What truth?"
+},
+{
+"id": "k02",
+"f": 99.36,
+"dur": 1.247,
+"who": "alon",
+"sub": "There is no chart."
+},
+{
+"id": "b01",
+"f": 103.207,
+"dur": 1.431,
+"who": "bome",
+"sub": "So. You're not the One."
+},
+{
+"id": "b02",
+"f": 104.988,
+"dur": 2.477,
+"who": "bome",
+"sub": "You're the one percent. Of holders. Cookie?"
+},
+{
+"id": "j01",
+"f": 110.265,
+"dur": 1.667,
+"who": "jean",
+"sub": "Mister... Anon."
+},
+{
+"id": "t01",
+"f": 112.332,
+"dur": 0.777,
+"who": "tri",
+"sub": "Sell."
+},
+{
+"id": "m03",
+"f": 120.709,
+"dur": 1.857,
+"who": "michi",
+"sub": "Anon! How did you do that?"
+},
+{
+"id": "a08",
+"f": 122.916,
+"dur": 0.993,
+"who": "anon",
+"sub": "Diamond hands."
+},
+{
+"id": "j02",
+"f": 127.759,
+"dur": 1.457,
+"who": "jean",
+"sub": "He's... bullish."
+},
+{
+"id": "a09",
+"f": 129.716,
+"dur": 1.409,
+"who": "anon",
+"sub": "No. I'm just not selling."
+}
+],
+"end": 134.125,
+"last": 3219,
+"shots": [
+{
+"name": "floor_establish",
+"t0": 5.0,
+"t1": 8.0,
+"a0": 5.0,
+"s0": 1.0,
+"set": "FLOOR",
+"cam": {
+"subject": "anon",
+"size": "EWS",
+"angle": 38,
+"bearing": 200,
+"move": "crane",
+"amount": -22,
+"lens": 24,
+"frame": "center",
+"fstop": 8.0
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+},
+{
+"name": "anon_screen",
+"t0": 8.0,
+"t1": 9.6,
+"a0": 8.0,
+"s0": 1.0,
+"set": "FLOOR",
+"cam": {
+"subject": "anon",
+"size": "MCU",
+"bearing": 38,
+"angle": 4.0,
+"move": "push",
+"amount": 0.15,
+"lens": 50,
+"frame": "center",
+"fstop": 2.0,
+"clutter_max": 0.5
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+},
+{
+"name": "a01_0",
+"t0": 9.6,
+"t1": 11.548,
+"a0": 9.6,
+"s0": 1.0,
+"set": "FLOOR",
+"cam": {
+"subject": "anon",
+"size": "CU",
+"bearing": -55,
+"lens": 75,
+"frame": "right",
+"fstop": 1.8,
+"move": "push",
+"amount": 0.06,
+"angle": 0.0
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+},
+{
+"name": "m01_0",
+"t0": 11.548,
+"t1": 12.788,
+"a0": 11.548,
+"s0": 1.0,
+"set": "FLOOR",
+"cam": {
+"subject": "michi",
+"size": "WS",
+"bearing": -50,
+"lens": 35,
+"frame": "left",
+"fstop": 2.8,
+"move": "track",
+"angle": 10.0
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+},
+{
+"name": "m01_1",
+"t0": 12.788,
+"t1": 14.276,
+"a0": 12.788,
+"s0": 1.0,
+"set": "FLOOR",
+"cam": {
+"subject": "michi",
+"over": "anon",
+"size": "MCU",
+"lens": 60,
+"frame": [
+0.3333333333333333,
+0.3333333333333333
+],
+"fstop": 2.4
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+},
+{
+"name": "a02_0",
+"t0": 14.276,
+"t1": 15.205,
+"a0": 14.276,
+"s0": 1.0,
+"set": "FLOOR",
+"cam": {
+"subject": "anon",
+"size": "CU",
+"bearing": -20,
+"move": "push",
+"amount": 0.08,
+"lens": 85,
+"frame": "right",
+"ease": "settle",
+"fstop": 1.8
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+},
+{
+"name": "m02_0",
+"t0": 15.205,
+"t1": 19.202,
+"a0": 15.205,
+"s0": 1.0,
+"set": "FLOOR",
+"cam": {
+"subject": "michi",
+"over": "anon",
+"size": "MCU",
+"lens": 60,
+"frame": [
+0.3333333333333333,
+0.3333333333333333
+],
+"fstop": 2.4,
+"move": "push",
+"amount": 0.12,
+"over_x": 1.05,
+"over_up": 0.1
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+},
+{
+"name": "aisle_walk",
+"t0": 19.202,
+"t1": 22.202,
+"a0": 19.202,
+"s0": 1.0,
+"set": "FLOOR",
+"cam": {
+"subject": "anon",
+"size": "MS",
+"bearing": 165,
+"lens": 35,
+"frame": "center",
+"move": "track",
+"fstop": 2.8,
+"angle": 10,
+"lead": false
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+},
+{
+"name": "slerf_reveal",
+"t0": 22.202,
+"t1": 24.002,
+"a0": 22.202,
+"s0": 1.0,
+"set": "FLOOR",
+"cam": {
+"subject": "slerf",
+"size": "WS",
+"angle": -15.0,
+"bearing": 20,
+"lens": 28,
+"frame": "center",
+"move": "push",
+"amount": 0.2,
+"fstop": 4.0
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+},
+{
+"name": "s01_0",
+"t0": 24.002,
+"t1": 26.7078,
+"a0": 24.002,
+"s0": 1.0,
+"set": "FLOOR",
+"cam": {
+"subject": "slerf",
+"over": "anon",
+"size": "MS",
+"lens": 50,
+"frame": [
+-0.3333333333333333,
+0.3333333333333333
+],
+"fstop": 2.4
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+},
+{
+"name": "s01_1",
+"t0": 26.7078,
+"t1": 30.496,
+"a0": 26.7078,
+"s0": 1.0,
+"set": "FLOOR",
+"cam": {
+"subject": "slerf",
+"size": "MCU",
+"angle": -15.0,
+"bearing": 32,
+"lens": 65,
+"frame": "left",
+"move": "push",
+"amount": 0.18,
+"fstop": 2.0
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+},
+{
+"name": "a03_0",
+"t0": 30.496,
+"t1": 33.715,
+"a0": 30.496,
+"s0": 1.0,
+"set": "FLOOR",
+"cam": {
+"subject": "anon",
+"size": "CU",
+"bearing": 25,
+"lens": 70,
+"frame": "right",
+"fstop": 2.0
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+},
+{
+"name": "s02_0",
+"t0": 33.715,
+"t1": 35.202,
+"a0": 33.715,
+"s0": 1.0,
+"set": "FLOOR",
+"cam": {
+"subject": "slerf",
+"size": "CU",
+"bearing": 30,
+"lens": 85,
+"frame": "center",
+"fstop": 1.8,
+"angle": 0.0
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+},
+{
+"name": "s03_0",
+"t0": 35.202,
+"t1": 38.4963,
+"a0": 35.202,
+"s0": 1.0,
+"set": "FLOOR",
+"cam": {
+"subject": "slerf",
+"size": "MS",
+"bearing": -60,
+"angle": -15.0,
+"lens": 40,
+"frame": "center",
+"move": "arc",
+"amount": 50,
+"fstop": 2.8
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+},
+{
+"name": "s03_1",
+"t0": 38.4963,
+"t1": 41.7907,
+"a0": 38.4963,
+"s0": 1.0,
+"set": "FLOOR",
+"cam": {
+"subject": "slerf",
+"size": "MS",
+"bearing": -28,
+"angle": -6.0,
+"lens": 45,
+"frame": "center",
+"fstop": 2.4,
+"move": "push",
+"amount": 0.12
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+},
+{
+"name": "s03_2",
+"t0": 41.7907,
+"t1": 45.085,
+"a0": 41.7907,
+"s0": 1.0,
+"set": "FLOOR",
+"cam": {
+"subject": "slerf",
+"over": "anon",
+"size": "MCU",
+"lens": 70,
+"frame": [
+-0.3333333333333333,
+0.3333333333333333
+],
+"fstop": 2.0,
+"move": "push",
+"amount": 0.12
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+},
+{
+"name": "a04_0",
+"t0": 45.085,
+"t1": 46.54,
+"a0": 45.085,
+"s0": 1.0,
+"set": "FLOOR",
+"cam": {
+"subject": "anon",
+"size": "CU",
+"bearing": 40,
+"lens": 75,
+"frame": "right",
+"dutch": 6,
+"fstop": 1.8,
+"angle": 0.0
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+},
+{
+"name": "s04_0",
+"t0": 46.54,
+"t1": 50.952,
+"a0": 46.54,
+"s0": 1.0,
+"set": "FLOOR",
+"cam": {
+"subject": "slerf",
+"size": "WS",
+"bearing": 90,
+"lens": 35,
+"frame": "left",
+"fstop": 4.0,
+"look_offset": [
+0,
+-1.0,
+0
+]
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+},
+{
+"name": "take_red",
+"t0": 50.952,
+"t1": 52.152,
+"a0": 50.952,
+"s0": 1.0,
+"set": "FLOOR",
+"cam": {
+"subject": "anon",
+"size": "MCU",
+"bearing": -55,
+"lens": 60,
+"frame": "right",
+"fstop": 2.0,
+"move": "push",
+"amount": 0.2,
+"angle": 0.0
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+},
+{
+"name": "swallow",
+"t0": 52.152,
+"t1": 53.652,
+"a0": 52.152,
+"s0": 1.0,
+"set": "FLOOR",
+"cam": {
+"subject": "anon",
+"size": "CU",
+"bearing": 45,
+"lens": 85,
+"frame": "center",
+"fstop": 1.8,
+"move": "dolly_zoom",
+"amount": -0.35,
+"angle": 0.0
+},
+"hand": [
+"INVESTIGATION",
+0.3
+],
+"glitch": "rain_out"
+},
+{
+"name": "wake_bird",
+"t0": 53.652,
+"t1": 56.052,
+"a0": 53.652,
+"s0": 1.0,
+"set": "BASEMENT",
+"cam": {
+"subject": "anon",
+"distance": 3.6,
+"angle": "bird",
+"bearing": 0,
+"lens": 28,
+"frame": "center",
+"move": "arc",
+"amount": -40,
+"fstop": 5.6,
+"eye": 0.25,
+"clutter_max": 0.3
+},
+"hand": [
+"INVESTIGATION",
+0.3
+],
+"glitch": "rain_in"
+},
+{
+"name": "s05_0",
+"t0": 56.052,
+"t1": 58.8459,
+"a0": 56.052,
+"s0": 1.0,
+"set": "BASEMENT",
+"cam": {
+"subject": "slerf",
+"size": "MS",
+"angle": -22.0,
+"bearing": 100,
+"lens": 28,
+"frame": "left",
+"fstop": 3.2
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+},
+{
+"name": "s05_1",
+"t0": 58.8459,
+"t1": 60.995,
+"a0": 58.8459,
+"s0": 1.0,
+"set": "BASEMENT",
+"cam": {
+"subject": "anon",
+"size": "MCU",
+"angle": "high",
+"bearing": 10,
+"lens": 50,
+"frame": "right",
+"fstop": 2.4
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+},
+{
+"name": "mo1_0",
+"t0": 60.995,
+"t1": 63.479,
+"a0": 60.995,
+"s0": 1.0,
+"set": "BASEMENT",
+"cam": {
+"subject": "slerf",
+"distance": 4.0,
+"bearing": -70,
+"lens": 24,
+"frame": "right",
+"fstop": 5.6,
+"look_offset": [
+-9.2,
+6.0,
+1.0
+],
+"move": "push",
+"amount": 0.1,
+"angle": 0.0
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+},
+{
+"name": "s06_0",
+"t0": 63.479,
+"t1": 67.151,
+"a0": 63.479,
+"s0": 1.0,
+"set": "BASEMENT",
+"cam": {
+"subject": "slerf",
+"size": "MCU",
+"bearing": 60,
+"lens": 60,
+"frame": "left",
+"fstop": 2.2,
+"angle": 0.0
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+},
+{
+"name": "n01_0",
+"t0": 67.151,
+"t1": 70.4385,
+"a0": 67.151,
+"s0": 1.0,
+"set": "BASEMENT",
+"cam": {
+"subject": "mensa",
+"size": "MS",
+"bearing": 150,
+"lens": 40,
+"frame": "left",
+"fstop": 2.8,
+"move": "push",
+"amount": 0.15
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+},
+{
+"name": "n01_1",
+"t0": 70.4385,
+"t1": 73.178,
+"a0": 70.4385,
+"s0": 1.0,
+"set": "BASEMENT",
+"cam": {
+"subject": "mensa",
+"size": "CU",
+"bearing": -45,
+"lens": 70,
+"frame": "right",
+"fstop": 2.0,
+"angle": 0.0
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+},
+{
+"name": "f01_0",
+"t0": 73.178,
+"t1": 76.463,
+"a0": 73.178,
+"s0": 1.0,
+"set": "BASEMENT",
+"cam": {
+"subject": "farter",
+"size": "MCU",
+"bearing": 0,
+"lens": 50,
+"frame": "center",
+"fstop": 2.4,
+"move": "push",
+"amount": 0.1
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+},
+{
+"name": "n02_0",
+"t0": 76.463,
+"t1": 78.608,
+"a0": 76.463,
+"s0": 1.0,
+"set": "DOJO",
+"cam": {
+"subject": "anon",
+"size": "EWS",
+"angle": 35.0,
+"bearing": 50,
+"move": "crane",
+"amount": -25,
+"lens": 22,
+"frame": "center",
+"fstop": 8.0
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+},
+{
+"name": "a05_0",
+"t0": 78.608,
+"t1": 80.377,
+"a0": 78.608,
+"s0": 1.0,
+"set": "DOJO",
+"cam": {
+"subject": "anon",
+"size": "MCU",
+"bearing": 10,
+"move": "dolly_zoom",
+"amount": -0.45,
+"lens": 40,
+"frame": "center",
+"fstop": 2.8,
+"angle": 0.0
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+},
+{
+"name": "s07_0",
+"t0": 80.377,
+"t1": 82.607,
+"a0": 80.377,
+"s0": 1.0,
+"set": "DOJO",
+"cam": {
+"subject": "slerf",
+"size": "MCU",
+"angle": "low",
+"bearing": -20,
+"lens": 50,
+"frame": "left",
+"fstop": 2.2
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+},
+{
+"name": "fight_track",
+"t0": 82.607,
+"t1": 84.107,
+"a0": 82.607,
+"s0": 1.0,
+"set": "DOJO",
+"cam": {
+"subject": "anon",
+"size": "MLS",
+"angle": "low",
+"bearing": 60,
+"move": "track",
+"lens": 28,
+"dutch": 8,
+"frame": "left",
+"fstop": 4.0
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+},
+{
+"name": "fight_arc",
+"t0": 84.107,
+"t1": 85.807,
+"a0": 84.107,
+"s0": 1.0,
+"set": "DOJO",
+"cam": {
+"subject": "anon",
+"size": "WS",
+"bearing": 10,
+"lens": 32,
+"frame": "center",
+"move": "arc",
+"amount": 120,
+"fstop": 4.0,
+"angle": 26.0,
+"look_offset": [
+1.3,
+0,
+-0.3
+]
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+},
+{
+"name": "fight_fall",
+"t0": 85.807,
+"t1": 87.207,
+"a0": 85.807,
+"s0": 1.0,
+"set": "DOJO",
+"cam": {
+"subject": "anon",
+"size": "MS",
+"angle": "high",
+"bearing": 80,
+"lens": 35,
+"frame": "center",
+"fstop": 3.2,
+"eye": 0.4
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+},
+{
+"name": "s08_0",
+"t0": 87.207,
+"t1": 89.6893,
+"a0": 87.207,
+"s0": 1.0,
+"set": "DOJO",
+"cam": {
+"subject": "anon",
+"size": "MS",
+"angle": "high",
+"bearing": 150,
+"lens": 35,
+"frame": "left",
+"fstop": 2.8,
+"eye": 0.35
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+},
+{
+"name": "s08_1",
+"t0": 89.6893,
+"t1": 92.668,
+"a0": 89.6893,
+"s0": 1.0,
+"set": "DOJO",
+"cam": {
+"subject": "slerf",
+"size": "MCU",
+"angle": "low",
+"bearing": 20,
+"lens": 55,
+"frame": "right",
+"fstop": 2.0
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+},
+{
+"name": "waiting_room",
+"t0": 92.668,
+"t1": 94.068,
+"a0": 92.668,
+"s0": 1.0,
+"set": "BASEMENT",
+"cam": {
+"subject": "alon",
+"size": "WS",
+"bearing": 245,
+"lens": 28,
+"frame": "left",
+"fstop": 4.0,
+"look_offset": [
+0.1,
+-0.8,
+0
+],
+"angle": 0.0
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+},
+{
+"name": "k01_0",
+"t0": 94.068,
+"t1": 98.098,
+"a0": 94.068,
+"s0": 1.0,
+"set": "BASEMENT",
+"cam": {
+"subject": "alon",
+"size": "MCU",
+"bearing": -25,
+"lens": 60,
+"frame": "right",
+"fstop": 2.0
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+},
+{
+"name": "a06_0",
+"t0": 98.098,
+"t1": 99.26,
+"a0": 98.098,
+"s0": 1.0,
+"set": "BASEMENT",
+"cam": {
+"subject": "anon",
+"size": "CU",
+"bearing": 40,
+"lens": 70,
+"frame": "left",
+"fstop": 2.0,
+"angle": 0.0
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+},
+{
+"name": "k02_0",
+"t0": 99.26,
+"t1": 100.5708,
+"a0": 99.26,
+"s0": 1.0,
+"set": "BASEMENT",
+"cam": {
+"subject": "alon",
+"distance": 1.2,
+"bearing": -20,
+"lens": 85,
+"frame": "center",
+"fstop": 4.0,
+"look_offset": [
+0.12,
+-0.42,
+-0.56
+],
+"focus": 0.9,
+"angle": 0.0
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+},
+{
+"name": "k02_1",
+"t0": 100.5708,
+"t1": 101.507,
+"a0": 100.5708,
+"s0": 1.0,
+"set": "BASEMENT",
+"cam": {
+"subject": "alon",
+"size": "CU",
+"bearing": -50,
+"lens": 75,
+"frame": "right",
+"fstop": 1.8,
+"move": "push",
+"amount": 0.08
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+},
+{
+"name": "book_reveal",
+"t0": 101.507,
+"t1": 103.107,
+"a0": 101.507,
+"s0": 1.0,
+"set": "BASEMENT",
+"cam": {
+"subject": "bome",
+"size": "MS",
+"bearing": 10,
+"lens": 40,
+"frame": "center",
+"move": "crane",
+"amount": -12,
+"fstop": 2.8
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+},
+{
+"name": "b01_0",
+"t0": 103.107,
+"t1": 104.888,
+"a0": 103.107,
+"s0": 1.0,
+"set": "BASEMENT",
+"cam": {
+"subject": "bome",
+"size": "MCU",
+"bearing": -10,
+"lens": 60,
+"frame": "right",
+"fstop": 2.2,
+"angle": 0.0
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+},
+{
+"name": "b02_0",
+"t0": 104.888,
+"t1": 106.2556,
+"a0": 104.888,
+"s0": 1.0,
+"set": "BASEMENT",
+"cam": {
+"subject": "anon",
+"size": "CU",
+"bearing": 60,
+"lens": 75,
+"frame": "left",
+"fstop": 1.8,
+"angle": 0.0
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+},
+{
+"name": "b02_1",
+"t0": 106.2556,
+"t1": 107.965,
+"a0": 106.2556,
+"s0": 1.0,
+"set": "BASEMENT",
+"cam": {
+"subject": "bome",
+"size": "MCU",
+"bearing": -25,
+"lens": 60,
+"frame": "right",
+"fstop": 2.2,
+"move": "push",
+"amount": 0.1
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+},
+{
+"name": "agents_wide",
+"t0": 107.965,
+"t1": 110.165,
+"a0": 107.965,
+"s0": 1.0,
+"set": "ROOFTOP",
+"cam": {
+"subject": "anon",
+"size": "EWS",
+"angle": 28,
+"bearing": 180,
+"lens": 24,
+"frame": "center",
+"fstop": 6.0,
+"move": "crane",
+"amount": -10
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+},
+{
+"name": "j01_0",
+"t0": 110.165,
+"t1": 112.232,
+"a0": 110.165,
+"s0": 1.0,
+"set": "ROOFTOP",
+"cam": {
+"subject": "jean",
+"size": "MCU",
+"angle": "low",
+"bearing": 0,
+"lens": 60,
+"frame": "center",
+"move": "push",
+"amount": 0.2,
+"fstop": 2.0
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+},
+{
+"name": "t01_0",
+"t0": 112.232,
+"t1": 113.409,
+"a0": 112.232,
+"s0": 1.0,
+"set": "ROOFTOP",
+"cam": {
+"subject": "anon",
+"size": "WS",
+"bearing": 0,
+"lens": 24,
+"frame": "center",
+"fstop": 4.0,
+"angle": 12,
+"look_offset": [
+0,
+3.0,
+0.2
+]
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+},
+{
+"name": "fire",
+"t0": 113.409,
+"t1": 114.409,
+"a0": 113.409,
+"s0": 1.0,
+"set": "ROOFTOP",
+"cam": {
+"subject": "jean",
+"size": "MS",
+"bearing": -25,
+"lens": 40,
+"frame": "right",
+"fstop": 2.8,
+"angle": "low"
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+},
+{
+"name": "bullet_time",
+"t0": 114.409,
+"t1": 119.609,
+"a0": 114.409,
+"s0": 0.08,
+"set": "ROOFTOP",
+"cam": {
+"subject": "anon",
+"size": "MLS",
+"angle": -5.0,
+"bearing": 50,
+"lens": 30,
+"frame": "center",
+"move": "arc",
+"amount": 300,
+"fstop": 4.0,
+"ease": "smooth",
+"eye": 0.9
+},
+"hand": null,
+"bullet": true
+},
+{
+"name": "after_dodge",
+"t0": 119.609,
+"t1": 120.609,
+"a0": 114.825,
+"s0": 1.0,
+"set": "ROOFTOP",
+"cam": {
+"subject": "anon",
+"size": "MS",
+"bearing": 20,
+"lens": 40,
+"frame": "center",
+"fstop": 2.8
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+},
+{
+"name": "m03_0",
+"t0": 120.609,
+"t1": 122.816,
+"a0": 115.825,
+"s0": 1.0,
+"set": "ROOFTOP",
+"cam": {
+"subject": "michi",
+"size": "MCU",
+"bearing": -30,
+"lens": 60,
+"frame": "right",
+"fstop": 2.0
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+},
+{
+"name": "a08_0",
+"t0": 122.816,
+"t1": 124.159,
+"a0": 118.032,
+"s0": 1.0,
+"set": "ROOFTOP",
+"cam": {
+"subject": "anon",
+"size": "MS",
+"angle": "low",
+"bearing": 25,
+"move": "push",
+"amount": 0.2,
+"lens": 45,
+"frame": "center",
+"fstop": 2.2
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+},
+{
+"name": "freeze_ots",
+"t0": 124.159,
+"t1": 126.059,
+"a0": 119.375,
+"s0": 1.0,
+"set": "ROOFTOP",
+"cam": {
+"subject": "jean",
+"over": "anon",
+"size": "MS",
+"lens": 50,
+"frame": [
+-0.3333333333333333,
+0.3333333333333333
+],
+"fstop": 4.0
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+},
+{
+"name": "freeze_insert",
+"t0": 126.059,
+"t1": 127.659,
+"a0": 121.275,
+"s0": 1.0,
+"set": "ROOFTOP",
+"cam": {
+"subject": "anon",
+"size": "MCU",
+"bearing": 20,
+"lens": 40,
+"frame": "center",
+"fstop": 5.6,
+"look_offset": [
+0,
+1.5,
+-0.2
+],
+"move": "arc",
+"amount": 25,
+"angle": 0.0
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+},
+{
+"name": "j02_0",
+"t0": 127.659,
+"t1": 129.616,
+"a0": 122.875,
+"s0": 1.0,
+"set": "ROOFTOP",
+"cam": {
+"subject": "jean",
+"size": "CU",
+"bearing": 15,
+"lens": 85,
+"frame": "left",
+"dutch": -8,
+"fstop": 1.8
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+},
+{
+"name": "a09_0",
+"t0": 129.616,
+"t1": 131.525,
+"a0": 124.832,
+"s0": 1.0,
+"set": "ROOFTOP",
+"cam": {
+"subject": "anon",
+"size": "CU",
+"bearing": -20,
+"lens": 75,
+"frame": "right",
+"fstop": 1.8,
+"move": "push",
+"amount": 0.12,
+"ease": "settle"
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+},
+{
+"name": "final_hero",
+"t0": 131.525,
+"t1": 134.125,
+"a0": 126.741,
+"s0": 1.0,
+"set": "ROOFTOP",
+"cam": {
+"subject": "anon",
+"size": "MLS",
+"angle": -5.0,
+"bearing": 30,
+"lens": 28,
+"frame": "center",
+"move": "pull",
+"amount": 0.6,
+"fstop": 4.0
+},
+"hand": [
+"INVESTIGATION",
+0.3
+]
+}
+],
+"cues": [
+[
+"a01",
+9.7
+],
+[
+"m01",
+11.648
+],
+[
+"a02",
+14.376
+],
+[
+"m02",
+15.305
+],
+[
+"s01",
+24.102
+],
+[
+"a03",
+30.596
+],
+[
+"s02",
+33.815
+],
+[
+"s03",
+35.302
+],
+[
+"a04",
+45.185
+],
+[
+"s04",
+46.64
+],
+[
+"s05",
+56.152
+],
+[
+"mo1",
+61.095
+],
+[
+"s06",
+63.579
+],
+[
+"n01",
+67.251
+],
+[
+"f01",
+73.278
+],
+[
+"n02",
+76.763
+],
+[
+"a05",
+78.708
+],
+[
+"s07",
+80.477
+],
+[
+"s08",
+87.307
+],
+[
+"k01",
+94.168
+],
+[
+"a06",
+98.198
+],
+[
+"k02",
+99.36
+],
+[
+"b01",
+103.207
+],
+[
+"b02",
+104.988
+],
+[
+"j01",
+110.265
+],
+[
+"t01",
+112.332
+],
+[
+"m03",
+120.709
+],
+[
+"a08",
+122.916
+],
+[
+"j02",
+127.759
+],
+[
+"a09",
+129.716
+]
+],
+"tracks": {
+"anon": [
+[
+0.0,
+0.0,
+0.0,
+-100.0,
+180,
+1
+],
+[
+5.0,
+0.0,
+-2.25,
+0.0,
+0,
+1
+],
+[
+13.076,
+0.0,
+-2.25,
+0.0,
+0,
+0
+],
+[
+13.426,
+0.0,
+-2.25,
+0.0,
+-102.22512441544963,
+0
+],
+[
+19.201999999999998,
+0.0,
+2.200000047683716,
+0.0,
+0,
+1
+],
+[
+19.201999999999998,
+0.0,
+2.200000047683716,
+0.0,
+0,
+0
+],
+[
+19.401999999999997,
+0.0,
+2.200000047683716,
+0.0,
+0.0,
+0
+],
+[
+21.589499829701005,
+0.0,
+5.699999809265137,
+0.0,
+0.0,
+0
+],
+[
+53.652,
+200.1999969482422,
+-1.2999999523162842,
+0.0,
+160,
+1
+],
+[
+76.463,
+398.70001220703125,
+0.0,
+0.0,
+90,
+1
+],
+[
+85.207,
+398.70001220703125,
+0.0,
+0.0,
+90,
+0
+],
+[
+92.668,
+197.8000030517578,
+2.4000000953674316,
+0.0,
+0,
+1
+],
+[
+92.668,
+197.60000610351562,
+4.0,
+0.0,
+0,
+1
+],
+[
+92.668,
+197.60000610351562,
+4.0,
+0.0,
+0,
+0
+],
+[
+92.67800000000001,
+197.60000610351562,
+4.0,
+0.0,
+-8.130591395070919,
+0
+],
+[
+101.20700000000002,
+197.60000610351562,
+4.0,
+0.0,
+-8.130591395070919,
+0
+],
+[
+101.40700000000002,
+197.60000610351562,
+4.0,
+0.0,
+-92.86240250084923,
+0
+],
+[
+102.70700000000002,
+195.60000610351562,
+3.9000000953674316,
+0.0,
+-92.86240250084923,
+0
+],
+[
+102.94738341134115,
+195.60000610351562,
+3.9000000953674316,
+0.0,
+-92.86240250084923,
+0
+],
+[
+103.05700000000002,
+195.60000610351562,
+3.9000000953674316,
+0.0,
+-49.08562302075745,
+0
+],
+[
+107.96500000000002,
+2000.0,
+4.199999809265137,
+0.0,
+0,
+1
+]
+],
+"slerf": [
+[
+0.0,
+0.0,
+0.0,
+-100.0,
+180,
+1
+],
+[
+19.201999999999998,
+0.0,
+7.400000095367432,
+0.0,
+180,
+1
+],
+[
+53.652,
+200.60000610351562,
+0.4000000059604645,
+0.0,
+200,
+1
+],
+[
+63.479,
+200.60000610351562,
+0.4000000059604645,
+0.0,
+200,
+0
+],
+[
+63.829,
+200.60000610351562,
+0.4000000059604645,
+0.0,
+240,
+0
+],
+[
+76.463,
+401.29998779296875,
+0.0,
+0.0,
+270,
+1
+],
+[
+82.607,
+401.29998779296875,
+0.0,
+0.0,
+270,
+0
+],
+[
+83.207,
+401.29998779296875,
+0.0,
+0.0,
+270,
+0
+],
+[
+83.407,
+401.29998779296875,
+0.0,
+0.0,
+0.0,
+0
+],
+[
+85.80700004768372,
+401.29998779296875,
+0.6000000238418579,
+0.0,
+0.0,
+0
+]
+],
+"michi": [
+[
+0.0,
+0.0,
+0.0,
+-100.0,
+180,
+1
+],
+[
+5.0,
+-6.5,
+-9.0,
+0.0,
+20,
+1
+],
+[
+10.048,
+-6.5,
+-9.0,
+0.0,
+20,
+0
+],
+[
+10.248,
+-6.5,
+-9.0,
+0.0,
+29.845932336353997,
+0
+],
+[
+13.076,
+-3.0,
+-2.9000000953674316,
+0.0,
+29.845932336353997,
+0
+],
+[
+13.426,
+-3.0,
+-2.9000000953674316,
+0.0,
+77.77487558455039,
+0
+],
+[
+15.657831018397612,
+-3.0,
+-2.9000000953674316,
+0.0,
+29.845932336353997,
+0
+],
+[
+19.201999999999998,
+-1.399999976158142,
+0.4000000059604645,
+0.0,
+15,
+1
+],
+[
+53.652,
+198.39999389648438,
+0.6000000238418579,
+0.0,
+140,
+1
+],
+[
+107.96500000000002,
+1997.199951171875,
+1.399999976158142,
+0.0,
+30,
+1
+]
+],
+"mensa": [
+[
+0.0,
+0.0,
+0.0,
+-100.0,
+180,
+1
+],
+[
+53.652,
+202.60000610351562,
+1.0,
+0.0,
+20,
+1
+]
+],
+"farter": [
+[
+0.0,
+0.0,
+0.0,
+-100.0,
+180,
+1
+],
+[
+53.652,
+204.39999389648438,
+2.0,
+0.0,
+200,
+1
+]
+],
+"alon": [
+[
+0.0,
+0.0,
+0.0,
+-100.0,
+180,
+1
+],
+[
+92.668,
+197.39999389648438,
+5.400000095367432,
+0.0,
+160,
+1
+]
+],
+"bome": [
+[
+0.0,
+0.0,
+0.0,
+-100.0,
+180,
+1
+],
+[
+92.668,
+194.10000610351562,
+5.199999809265137,
+0.3499999940395355,
+170,
+1
+],
+[
+92.668,
+194.10000610351562,
+5.199999809265137,
+0.3499999940395355,
+170.0,
+0
+],
+[
+93.168,
+194.10000610351562,
+5.199999809265137,
+0.4126661468097342,
+172.87655323162522,
+0
+],
+[
+93.668,
+194.10000610351562,
+5.199999809265137,
+0.42790780450979116,
+175.0488259088474,
+0
+],
+[
+94.168,
+194.10000610351562,
+5.199999809265137,
+0.3841903844582419,
+175.98496991962432,
+0
+],
+[
+94.668,
+194.10000610351562,
+5.199999809265137,
+0.3145983585759473,
+175.4557845609541,
+0
+],
+[
+95.168,
+194.10000610351562,
+5.199999809265137,
+0.27179758462632775,
+173.59083286462374,
+0
+],
+[
+95.668,
+194.10000610351562,
+5.199999809265137,
+0.28817883503505654,
+170.8467200483592,
+0
+],
+[
+96.168,
+194.10000610351562,
+5.199999809265137,
+0.3513451060782835,
+167.8953006338623,
+0
+],
+[
+96.668,
+194.10000610351562,
+5.199999809265137,
+0.4134934231474678,
+165.45918502815243,
+0
+],
+[
+97.168,
+194.10000610351562,
+5.199999809265137,
+0.42759117890714243,
+164.13481929400942,
+0
+],
+[
+97.668,
+194.10000610351562,
+5.199999809265137,
+0.38296947285887606,
+164.24645435202117,
+0
+],
+[
+98.168,
+194.10000610351562,
+5.199999809265137,
+0.31339712253750984,
+165.76675804657765,
+0
+],
+[
+98.668,
+194.10000610351562,
+5.199999809265137,
+0.27152509563421623,
+168.32350701080645,
+0
+],
+[
+99.168,
+194.10000610351562,
+5.199999809265137,
+0.28904130732601296,
+171.2907199285269,
+0
+],
+[
+99.668,
+194.10000610351562,
+5.199999809265137,
+0.35268983781722646,
+173.94191959231273,
+0
+],
+[
+100.168,
+194.10000610351562,
+5.199999809265137,
+0.4143027481636652,
+175.62799986064843,
+0
+],
+[
+100.668,
+194.10000610351562,
+5.199999809265137,
+0.4272526161634777,
+175.9361494797403,
+0
+],
+[
+101.168,
+194.10000610351562,
+5.199999809265137,
+0.3817392398899845,
+174.79092267574094,
+0
+],
+[
+101.668,
+194.10000610351562,
+5.199999809265137,
+0.3122062351276582,
+172.47271091145055,
+0
+],
+[
+102.168,
+194.10000610351562,
+5.199999809265137,
+0.27127479363300405,
+169.54909327722913,
+0
+],
+[
+102.668,
+194.10000610351562,
+5.199999809265137,
+0.2899210142978014,
+166.73587333466378,
+0
+],
+[
+103.168,
+194.10000610351562,
+5.199999809265137,
+0.3540338090640807,
+164.72182544017,
+0
+],
+[
+103.668,
+194.10000610351562,
+5.199999809265137,
+0.41509389304010397,
+164.00005876069577,
+0
+],
+[
+104.168,
+194.10000610351562,
+5.199999809265137,
+0.42689221199970484,
+164.74728695186943,
+0
+],
+[
+104.668,
+194.10000610351562,
+5.199999809265137,
+0.3805000333719307,
+166.7805624919974,
+0
+],
+[
+105.168,
+194.10000610351562,
+5.199999809265137,
+0.31102603304269477,
+169.6020686158928,
+0
+],
+[
+105.668,
+194.10000610351562,
+5.199999809265137,
+0.2710467493898836,
+172.52100222095984,
+0
+],
+[
+106.168,
+194.10000610351562,
+5.199999809265137,
+0.290817707233304,
+174.82270655930972,
+0
+],
+[
+106.668,
+194.10000610351562,
+5.199999809265137,
+0.3553766398415735,
+175.94364413416923,
+0
+],
+[
+107.168,
+194.10000610351562,
+5.199999809265137,
+0.41586663409858204,
+175.6093703331481,
+0
+],
+[
+107.668,
+194.10000610351562,
+5.199999809265137,
+0.42651006831189575,
+173.9017270409427,
+0
+],
+[
+108.168,
+194.10000610351562,
+5.199999809265137,
+0.37925220366214496,
+171.23880489162678,
+0
+],
+[
+108.668,
+194.10000610351562,
+5.199999809265137,
+0.3098568499578896,
+168.2725801000096,
+0
+],
+[
+109.168,
+194.10000610351562,
+5.199999809265137,
+0.2708410273791727,
+165.72928794578527,
+0
+],
+[
+109.668,
+194.10000610351562,
+5.199999809265137,
+0.29173113261300804,
+164.23161504872266,
+0
+],
+[
+110.168,
+194.10000610351562,
+5.199999809265137,
+0.35671795049487526,
+164.14624396719105,
+0
+],
+[
+110.668,
+194.10000610351562,
+5.199999809265137,
+0.4166207528641579,
+165.49407651936994,
+0
+],
+[
+111.168,
+194.10000610351562,
+5.199999809265137,
+0.42610629314247794,
+167.94511628918232,
+0
+],
+[
+111.668,
+194.10000610351562,
+5.199999809265137,
+0.3779961035560685,
+170.8992632579777,
+0
+],
+[
+112.168,
+194.10000610351562,
+5.199999809265137,
+0.30869901643314135,
+173.6332392183176,
+0
+]
+],
+"jean": [
+[
+0.0,
+0.0,
+0.0,
+-100.0,
+180,
+1
+],
+[
+107.96500000000002,
+2000.0,
+8.0,
+0.0,
+180,
+1
+]
+],
+"tri1": [
+[
+0.0,
+0.0,
+0.0,
+-100.0,
+180,
+1
+],
+[
+107.96500000000002,
+1996.800048828125,
+6.400000095367432,
+0.0,
+124.50852298766841,
+1
+]
+],
+"tri2": [
+[
+0.0,
+0.0,
+0.0,
+-100.0,
+180,
+1
+],
+[
+107.96500000000002,
+2003.199951171875,
+6.400000095367432,
+0.0,
+-124.50852298766841,
+1
+]
+],
+"tri3": [
+[
+0.0,
+0.0,
+0.0,
+-100.0,
+180,
+1
+],
+[
+107.96500000000002,
+2000.0,
+-3.5,
+0.0,
+0.0,
+1
+],
+[
+108.46500000000002,
+2000.0,
+-3.5,
+0.0,
+0.0,
+0
+],
+[
+108.66500000000002,
+2000.0,
+-3.5,
+0.0,
+0.0,
+0
+],
+[
+110.54000000000002,
+2000.0,
+-2.0,
+0.0,
+0.0,
+0
+]
+]
+},
+"eyes": {
+"anon": 1.24,
+"slerf": 1.3,
+"michi": 1.3,
+"mensa": 1.42,
+"farter": 1.42,
+"alon": 1.38,
+"bome": 1.45,
+"jean": 1.47,
+"tri1": 1.48,
+"tri2": 1.48,
+"tri3": 1.48
+},
+"eye_fwd": {
+"mensa": 0.35,
+"anon": 0.08
+},
+"frame_scale": 1.35,
+"notes": [
+"anon_screen: rain_anon blocked the view; moved bearing +30, angle +0",
+"a01_0: rain_anon blocked the view; moved bearing -30, angle +0",
+"m01_0: foreground clutter (15% of frame) blocked the view; moved bearing -10, angle +10",
+"m02_0: zcat blocked the view; near head moved to x=1.05, camera up 0.1 m",
+"slerf_reveal: zcat blocked the view; moved bearing +10, angle +0",
+"s01_1: foreground clutter (45% of frame) blocked the view; moved bearing +20, angle +0",
+"s02_0: zcat blocked the view; moved bearing +30, angle +0",
+"s03_0: zcat blocked the view; moved bearing -30, angle +0",
+"s03_1: zcat blocked the view; moved bearing -20, angle +0",
+"a04_0: slerf blocked the view; moved bearing +10, angle +0",
+"take_red: foreground clutter (16% of frame) blocked the view; moved bearing -10, angle +0",
+"swallow: slerf blocked the view; moved bearing +45, angle +0",
+"s05_0: michi blocked the view; moved bearing +30, angle +0",
+"mo1_0: foreground clutter (27% of frame) blocked the view; moved bearing -30, angle +0",
+"s06_0: michi blocked the view; moved bearing +20, angle +0",
+"n01_1: foreground clutter (31% of frame) blocked the view; moved bearing -10, angle +0",
+"n02_0: foreground clutter (16% of frame) blocked the view; moved bearing +10, angle +0",
+"a05_0: slerf blocked the view; moved bearing +10, angle +0",
+"fight_arc: slerf blocked the view; moved bearing +10, angle +20",
+"waiting_room: base_back blocked the view; moved bearing +45, angle +0",
+"a06_0: card blocked the view; moved bearing +10, angle +0",
+"k02_0: zcat blocked the view; moved bearing -10, angle +0",
+"b01_0: foreground clutter (32% of frame) blocked the view; moved bearing +30, angle +0",
+"b02_0: body.012 blocked the view; moved bearing +20, angle +0",
+"bullet_time: roof blocked the view; moved bearing -10, angle +10",
+"freeze_insert: jeanphil blocked the view; moved bearing +20, angle +0",
+"final_hero: jeanphil blocked the view; moved bearing +30, angle +10"
+]
+}
