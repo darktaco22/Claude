@@ -50,5 +50,7 @@ The user asked for characters that earlier films rarely used:
 - Titles (finish.py, 2D, no re-render): 11 s opening (terminal, dive through three depths of code with zoom blur, chrome
   title slam with sweep, flare and shake, burn to embers) and a 14 s closing (nine cast cards with stills, logo scan-build,
   tagline, call to action). The film is shifted by PRE = 6 s in the finish; output 2:34.5.
-- Then: collect, copy the reused frames in, `W=~/mx_work ./finish_all.sh`, review, send.
+- DONE 2026-11-18 19:xx: all 3109 frames of 50dff5a2ee collected (workers w1, w4-w10), finished to
+  `commercial/output/meme-royale-memetrix.mp4` (2:34.5, 1080p).
+- (old note) Then: collect, copy the reused frames in, `W=~/mx_work ./finish_all.sh`, review, send.
 - Afterwards (pending the user's OK): delete the claude/memetrix-w* branches and archive the workers.
