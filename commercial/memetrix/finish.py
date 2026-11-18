@@ -123,6 +123,28 @@ def grade(a, world):
     return bloom(np.clip(a, 0, 1), 0.75, 0.32)
 
 
+def lens(a, f):
+    """Anamorphic streaks and halation on highlights, chromatic aberration toward the edges, grain that follows brightness."""
+    hi = np.clip((a.max(axis=2, keepdims=True) - 0.7) / 0.3, 0, 1) * a
+    small = Image.fromarray((np.clip(hi, 0, 1) * 255).astype(np.uint8)).resize((W // 8, H // 8), Image.BILINEAR)
+    sm = np.asarray(small, np.float32) / 255.0
+    k = np.exp(-np.abs(np.arange(-40, 41)) / 12.0)
+    k /= k.sum()
+    horiz = np.stack([np.apply_along_axis(lambda r: np.convolve(r, k, 'same'), 1, sm[..., c]) for c in range(3)], 2)
+    horiz = np.asarray(Image.fromarray((np.clip(horiz, 0, 1) * 255).astype(np.uint8)).resize((W, H), Image.BILINEAR), np.float32) / 255.0
+    a = a + horiz * np.array([0.35, 0.55, 1.0], np.float32) * 0.45                               # blue anamorphic streak
+    halo = np.asarray(Image.fromarray((np.clip(hi, 0, 1) * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(6)), np.float32) / 255.0
+    a = a + halo * np.array([1.0, 0.35, 0.2], np.float32) * 0.18                                 # red halation
+    r = np.roll(a[..., 0], 2, axis=1) * (RR > 0.6) + a[..., 0] * (RR <= 0.6)
+    b = np.roll(a[..., 2], -2, axis=1) * (RR > 0.6) + a[..., 2] * (RR <= 0.6)
+    a = np.stack([r, a[..., 1], b], 2)
+    lum = a.mean(axis=2, keepdims=True)
+    grain = np.random.default_rng(f).normal(0, 1, (H // 2, W // 2, 1)).astype(np.float32)
+    grain = np.asarray(Image.fromarray(((grain[..., 0] * 0.25 + 0.5).clip(0, 1) * 255).astype(np.uint8)).resize((W, H), Image.BILINEAR),
+                       np.float32)[..., None] / 255.0 - 0.5
+    return a + grain * 0.05 * (0.4 + 0.6 * (1 - lum))
+
+
 def rain_array(t, amount=1.0):
     return np.asarray(RAIN.frame(t), np.float32) / 255.0 * amount
 
@@ -265,7 +287,7 @@ def frame(f):
                 flash = 0.35 * (1 - (t - EV[key]) / 0.4)
         a = a * (1 - flash) + np.array([0.6, 1.0, 0.65], np.float32) * flash
         a = a * VIG * ease((t - TITLE) / 0.25) * ease((T_CARD - t) / 0.3)
-        a = a + np.random.default_rng(f).normal(0, 0.008, (H, W, 1)).astype(np.float32)
+        a = lens(a, f)
         a[:BAR] = 0
         a[H - BAR:] = 0
         im = Image.fromarray((np.clip(a, 0, 1) * 255).astype(np.uint8)).convert('RGBA')

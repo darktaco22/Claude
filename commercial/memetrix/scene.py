@@ -50,6 +50,8 @@ sc.cycles.device = 'CPU'
 sc.cycles.samples = 8
 sc.cycles.use_denoising = True
 sc.cycles.max_bounces = 4
+sc.cycles.volume_bounces = 0
+sc.cycles.volume_step_rate = 4.0
 sc.render.resolution_x, sc.render.resolution_y = 1920, 1080
 sc.render.fps = FPS
 sc.view_settings.view_transform = 'AgX'
@@ -82,6 +84,11 @@ fill.data.energy = 0.0
 fill.parent = cam
 fill.location = (0.5, 0.35, 0.0)
 sc.collection.objects.link(fill)
+rim = bpy.data.objects.new('rimlight', bpy.data.lights.new('rimlight', 'AREA'))
+rim.data.size = 1.0
+rim.data.energy = 0.0
+sc.collection.objects.link(rim)
+sc.render.motion_blur_shutter = 0.45
 
 
 def F(a):
@@ -133,6 +140,7 @@ class Actor:
             self.arm.animation_data_create()
         self.keys = []                       # [a, x, y, z, H, step]
         self.tilts = []                      # (a, degrees)
+        self.talks = []                      # (a0, a1): speaking, the body nods and sways a little
         self.items = []                      # (a, clip, speed)
         self.pos, self.H = Vector((0, 0, -100)), 180.0
 
@@ -194,8 +202,26 @@ class Actor:
             rot[i] = (rot[i][0], (0, 0, z))
         animate(self.rig, 'location', loc)
         animate(self.rig, 'rotation_euler', rot)
-        if self.tilts:
-            animate(self.tilt_obj, 'rotation_euler', [(F(a), (math.radians(d), 0, 0)) for a, d in self.tilts], 'BEZIER')
+        if self.tilts or self.talks:
+            tilts = sorted(self.tilts) or [(0.0, 0.0)]
+
+            def lean_at(t):
+                if t <= tilts[0][0]:
+                    return tilts[0][1]
+                for (t0, d0), (t1, d1) in zip(tilts, tilts[1:]):
+                    if t < t1:
+                        return d0 + (d1 - d0) * (t - t0) / (t1 - t0)
+                return tilts[-1][1]
+            samples = {a: (math.radians(d), 0.0, 0.0) for a, d in tilts}
+            for a0, a1 in self.talks:
+                steps = int((a1 - a0 + 0.6) * 6)
+                for k in range(steps + 1):
+                    t = a0 - 0.3 + k / 6
+                    env = min(1.0, max(0.0, (t - a0 + 0.3) / 0.3), max(0.0, (a1 + 0.3 - t) / 0.3))
+                    nod = 2.2 * math.sin(2 * math.pi * 1.6 * t + a0) * env
+                    sway = 1.4 * math.sin(2 * math.pi * 0.7 * t + 2 * a0) * env
+                    samples[t] = (math.radians(lean_at(t) + nod), math.radians(sway), 0.0)
+            animate(self.tilt_obj, 'rotation_euler', [(F(a), v) for a, v in samples.items()], 'BEZIER')
         if not self.arm:
             return
         items = sorted(self.items, key=lambda it: it[0])
@@ -247,14 +273,14 @@ def face_point(actor, eye):
     """The front of the face at eye height in bind pose (ray cast from in front, the rigs face -Y)."""
     bpy.context.view_layer.update()
     origin = Vector((actor.rig.location.x, actor.rig.location.y - 3.0, actor.rig.location.z + eye))
-    hit, loc, *_ = sc.ray_cast(bpy.context.evaluated_depsgraph_get(), origin, Vector((0, 1, 0)), distance=6.0)
+    hit, loc, *_ = sc.ray_cast(bpy.context.evaluated_depsgraph_get(), origin, Vector((0, 1, 0)), distance=4.0)
     return loc if hit else origin + Vector((0, 2.75, 0))
 
 
 # props on bones: posed at the origin in bind pose first
 if not DRY:
-    for actor in A.values():
-        actor.rig.location = (0, 0, 0)
+    for k, actor in enumerate(A.values()):                     # spread out, or the face ray hits whoever stands in front
+        actor.rig.location = (k * 6.0, 0, -50)
         actor.rig.rotation_euler = (0, 0, 0)
     for n in ('slerf', 'jean', 'tri1', 'tri2', 'tri3'):
         shades = mxsets.sunglasses('shades_' + n, PROPS, width=0.24 if n == 'slerf' else 0.2)
@@ -269,7 +295,7 @@ if not DRY:
     RED_ANON = mxsets.candle('candle_red_a', 'red', PROPS)
     mxsets.attach(RED_ANON, A['anon'].arm, zarm, bone_world(A['anon'], zarm) + Vector((0, -0.12, 0.0)))
     COOKIE = mxsets.cookie('cookie', PROPS)
-    CARD = mxsets.bent_card('card', PROPS)
+    CARD = mxsets.bent_card('card', PROPS, os.path.join(HERE, 'pack', 'cards', 'marketcrash.webp'))
     COOKIE['actor'] = 'bome'
     CARD['actor'] = 'alon'
 VIS = []                     # (object name, [(a, visible)])
@@ -303,6 +329,10 @@ def line(line_id, cams, where_set, lead=0.1, pad=0.25, weights=None, actor=None,
     """A recorded line with its shots. The line starts `lead` into the first shot; the shots share line + pad."""
     dur = VO[line_id]['dur']
     CUES.append((line_id, round(FILM + lead, 4)))
+    speakers = {'tri': ['tri1', 'tri2', 'tri3'], 'mom': []}.get(VO[line_id]['who'], [VO[line_id]['who']])
+    for who in speakers:
+        if who in A:
+            A[who].talks.append((ANIM + lead, ANIM + lead + dur))
     total = lead + dur + pad
     weights = weights or [1] * len(cams)
     for i, c in enumerate(cams):
@@ -378,7 +408,7 @@ michi.cut(a, BASE + Vector((-1.6, 0.6, 0)), 140)
 shot('wake_bird', 2.4, S('anon', distance=3.6, angle='bird', bearing=0, lens=28, frame='center', move='arc', amount=-40, fstop=5.6, eye=0.25, clutter_max=0.3),
      'BASEMENT', glitch='rain_in')
 anon.play(ANIM - 0.3, 'ready', 0.8)
-line('s05', [S('slerf', size='MS', angle=-22, bearing=70, lens=28, frame='left', fstop=3.2),
+line('s05', [S('slerf', size='MS', angle=-15, bearing=15, lens=32, frame='left', fstop=3.2),
              S('anon', size='MCU', angle='high', bearing=10, lens=50, frame='right', fstop=2.4)], 'BASEMENT', weights=[1.3, 1])
 line('mo1', [S('slerf', distance=4.0, bearing=-40, lens=24, frame='right', fstop=5.6, look_offset=(-9.2, 6.0, 1.0), move='push', amount=0.1)], 'BASEMENT')
 slerf.turn(ANIM, 240)
@@ -448,7 +478,8 @@ jean.cut(a, ROOF + Vector((0, 8.0, 0)), 180)
 for t_, (x, y) in zip(tris, ((-3.2, 6.4), (3.2, 6.4), (0.0, -3.5))):
     t_.cut(a, ROOF + Vector((x, y, 0)), heading_to((x, y), (0, 4.2)))
 tris[2].walk(a + 0.5, ROOF + Vector((0.0, -2.0, 0)), speed=0.8)
-shot('agents_wide', 2.2, S('anon', size='EWS', angle=28, bearing=180, lens=24, frame='center', fstop=6.0, move='crane', amount=-10), 'ROOFTOP')
+shot('agents_wide', 2.6, S('anon', size='EWS', angle=4, bearing=200, lens=20, frame='center', fstop=8.0, move='crane', amount=6,
+                           look_offset=(0, 2.0, 1.2)), 'ROOFTOP')
 line('j01', [S('jean', size='MCU', angle='low', bearing=0, lens=60, frame='center', move='push', amount=0.2, fstop=2.0)], 'ROOFTOP', pad=0.3)
 line('t01', [S('anon', size='WS', bearing=0, lens=24, frame='center', fstop=4.0, angle=12, look_offset=(0, 3.0, 0.2))], 'ROOFTOP', pad=0.3)
 FIRE = ANIM
@@ -487,7 +518,7 @@ shot('freeze_ots', 1.9, S('jean', over='anon', size='MS', lens=50, frame=(-1 / 3
 TURN_GREEN = ANIM
 shot('freeze_insert', 1.6, S('anon', size='MCU', bearing=0, lens=40, frame='center', fstop=5.6, look_offset=(0, 1.5, -0.2), move='arc',
                              amount=25), 'ROOFTOP')
-line('j02', [S('jean', size='CU', bearing=15, lens=85, frame='left', dutch=-8, fstop=1.8)], 'ROOFTOP', pad=0.4)
+line('j02', [S('jean', size='MCU', angle=-10, bearing=20, lens=70, frame='left', dutch=-8, fstop=2.0)], 'ROOFTOP', pad=0.4)
 line('a09', [S('anon', size='CU', bearing=-20, lens=75, frame='right', fstop=1.8, move='push', amount=0.12, ease='settle')], 'ROOFTOP', pad=0.4)
 shot('final_hero', 2.6, S('anon', size='MLS', angle='low', bearing=0, lens=28, frame='center', move='pull', amount=0.6, fstop=4.0), 'ROOFTOP')
 END_FILM = FILM
@@ -497,14 +528,14 @@ END_A = ANIM
 if not DRY:
     proj_objs = []
     for k, (start, end, t_on, t_off) in enumerate(PROJ):
-        c = mxsets.candle(f'proj{k}', 'red', PROPS, size=1.4)
+        c = mxsets.candle(f'proj{k}', 'red', PROPS, size=2.6, trail=1.6)
         c.rotation_euler = (math.radians(90), 0, 0)
         animate(c, 'location', [(F(0), (0, 0, -50)), (F(t_on) - 0.02, (0, 0, -50)), (F(t_on), tuple(start)), (F(t_off), tuple(end)),
                                 (F(t_off) + 0.02, (0, 0, -50))])
         proj_objs.append(c.name)
     for k, (start, hang, t_on) in enumerate(STOP):
         for colour in ('red', 'green'):
-            c = mxsets.candle(f'stop{k}_{colour}', colour, PROPS, size=1.4)
+            c = mxsets.candle(f'stop{k}_{colour}', colour, PROPS, size=2.6, trail=0.0)
             c.rotation_euler = (math.radians(90), 0, 0)
             t_hang = t_on + 0.45
             if colour == 'red':
@@ -528,10 +559,14 @@ if not DRY:
         obj = bpy.data.objects.get(name)
         if obj is None:
             continue
+        base = tuple(obj.scale)                                    # keep the object's own size (the card is 16 x 22 cm)
+
+        def sized(on):
+            return base if on else tuple(v * 1e-4 for v in base)
         samples = []
         for a_, on in steps:
-            samples.append((F(a_) - 0.02, samples[-1][1] if samples else ((1, 1, 1) if on else (1e-4, 1e-4, 1e-4))))
-            samples.append((F(a_), (1, 1, 1) if on else (1e-4, 1e-4, 1e-4)))
+            samples.append((F(a_) - 0.02, samples[-1][1] if samples else sized(on)))
+            samples.append((F(a_), sized(on)))
         animate(obj, 'scale', samples[1:], 'CONSTANT')
 
 # ================================================================ solve every shot against the built scene

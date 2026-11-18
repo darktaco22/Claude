@@ -46,7 +46,14 @@ if os.environ.get('SAMPLES'):
     sc.cycles.samples = int(os.environ['SAMPLES'])
 LIGHTS = {name: bpy.data.collections.get('L_' + name) for name in ('FLOOR', 'BASEMENT', 'DOJO', 'ROOFTOP')}
 FILL = bpy.data.objects.get('camfill')
+RIM = bpy.data.objects.get('rimlight')
+RIM_LOOK = {'FLOOR': (650.0, (0.55, 1.0, 0.65)), 'BASEMENT': (350.0, (0.6, 0.75, 1.0)), 'DOJO': (500.0, (0.4, 0.9, 1.0)),
+            'ROOFTOP': (800.0, (0.6, 1.0, 0.75))}                                     # behind the subject, opposite the lens
 FILL_POWER = {'FLOOR': 35.0, 'BASEMENT': 25.0, 'DOJO': 8.0, 'ROOFTOP': 30.0}          # a soft light beside the lens so faces read
+if os.environ.get('NOHAZE'):
+    for obj in bpy.data.objects:
+        if obj.name.startswith('haze_'):
+            obj.hide_render = True
 RAIN = [mat.node_tree.nodes['rain'] for mat in bpy.data.materials if mat.use_nodes and 'rain' in mat.node_tree.nodes]
 
 
@@ -70,6 +77,18 @@ def setup(f):
     if FILL is not None:
         FILL.data.energy = s.get('fill', FILL_POWER.get(s['set'], 20.0))
     pos = cine.place(cam, s['cam'], u, a, where, sc)
+    if RIM is not None:
+        feet, head = where(s['cam']['subject'], a)
+        eye = cine.eye_point(s['cam']['subject'], feet, head)
+        away = eye - pos
+        away.z = 0
+        away.normalize()
+        power, colour = RIM_LOOK.get(s['set'], (400.0, (1, 1, 1)))
+        RIM.location = eye + away * 1.6 + Vector((0, 0, 0.9))
+        RIM.rotation_mode = 'QUATERNION'
+        RIM.rotation_quaternion = (eye - RIM.location).to_track_quat('-Z', 'Y')
+        RIM.data.energy = s.get('rim', power) * (1.0 if s['cam'].get('size') not in ('EWS',) else 0.0)
+        RIM.data.color = colour
     hand = s.get('hand')
     if hand:
         k = hand[1] * min(1.0, 50.0 / cam.data.lens)
@@ -77,7 +96,7 @@ def setup(f):
         q = cam.rotation_quaternion @ Euler(drot, 'XYZ').to_quaternion()
         cam.rotation_quaternion = q
         cam.location = pos + q.to_matrix() @ Vector(dloc)
-    sc.render.use_motion_blur = bool(os.environ.get('MB')) and bool(s.get('bullet'))
+    sc.render.use_motion_blur = os.environ.get('MB', '1') != '0'
     return s
 
 

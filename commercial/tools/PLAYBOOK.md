@@ -132,6 +132,20 @@ those topics with my own code.
 - Text between camera and subject: characters standing in a row block a front close-up of the row behind. Put the bench in a
   line along a wall and shoot it from the aisle.
 
+## Learned from "The Memetrix" (see `commercial/memetrix/HANDOFF.md`)
+- **Measure eye heights** on an orthographic height-grid render of the cast (`face.py` pattern in the handoff); guesses were
+  20 cm off. Long-bodied characters need `cine.EYE_FWD`, big cartoon heads `cine.FRAME_SCALE` ~1.35, or close-ups crop faces.
+- **Attach props to faces with the cast spread apart.** With every character at the origin, the face ray hit whoever stood in
+  front and the sunglasses ended up a metre away.
+- **Show/hide by scale keys must keep the object's own scale**: keying (1,1,1) blew a 16 cm card up to 1 m.
+- **Atmosphere objects need `cine_ignore`**: the solver treated a haze box as a wall and swung shots for nothing.
+- Card art from the game is `.webp` (`assets/cards/<id>.webp`); a missing texture renders plain white without an error.
+- Over-the-shoulder past bulky characters (sloth, book, big hair) fills the lens: use clean singles for them.
+- A soft fill beside the lens (`camfill`) and a rim light opposite it, placed per frame from the shot's subject, lift a
+  dark set to a film look more than any other change.
+- Full 1080p, 12 samples, haze and motion blur cost ~4 min a frame on 4 cores (≈200 CPU-hours for 2 min). Measure each
+  effect at the real render size before deciding (`NOHAZE`, `MB` switches in `render_edl.py`).
+
 ## Edit and story
 - Write the script first, record narration, then cut shots to the measured line durations.
 - Speed ramps: 0.3–0.5× on impacts only. One joke per shot. Hold the last beat longer than feels natural.

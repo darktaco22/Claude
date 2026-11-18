@@ -208,7 +208,7 @@ def surface_distance(scene, pos, point, slack=0.45):
     the centre of a head is ~0.2 m behind what the lens sees, which at f/2 and 85 mm is visibly soft."""
     direction = point - pos
     length = direction.length
-    hit, location, *_ = scene.ray_cast(_depsgraph(), pos, direction.normalized(), distance=length + slack)
+    hit, location, _, _ = first_hit(scene, pos, direction.normalized(), length + slack)
     if hit and (location - pos).length > length - slack:
         return (location - pos).length
     return length - 0.12
@@ -228,21 +228,32 @@ def owner(obj):
     return None
 
 
+def first_hit(scene, origin, direction, distance, skip=()):
+    """scene.ray_cast that looks through atmosphere (objects with a 'cine_ignore' property: haze, dust) and through
+    objects owned by a character named in `skip`. Returns (hit, location, normal, obj)."""
+    start = origin.copy()
+    travelled = 0.0
+    for _ in range(12):
+        hit, loc, normal, _, obj, _ = scene.ray_cast(_depsgraph(), start, direction, distance=distance - travelled)
+        if not hit:
+            return False, None, None, None
+        if not obj.get('cine_ignore') and owner(obj) not in skip:
+            return True, loc, normal, obj
+        travelled += (loc - start).length + 0.01
+        start = loc + direction * 0.01
+    return False, None, None, None
+
+
 def blocker(scene, pos, point, slack=0.45, skip=()):
     """The object between the camera and a subject's eyes, or None. Anything closer than `slack` to the eyes is the subject;
     objects owned by a name in `skip` (the subject itself, its props) are looked through."""
     direction = point - pos
     length = direction.length
     direction.normalize()
-    start = pos.copy()
-    for _ in range(8):
-        hit, location, _, _, obj, _ = scene.ray_cast(_depsgraph(), start, direction, distance=length - (start - pos).length)
-        if not hit or (point - location).length <= slack:
-            return None
-        if owner(obj) not in skip:
-            return obj
-        start = location + direction * 0.01
-    return None
+    hit, location, _, obj = first_hit(scene, pos, direction, length, skip)
+    if not hit or (point - location).length <= slack:
+        return None
+    return obj
 
 
 def project(pos, q, point, lens, aspect):
@@ -260,14 +271,13 @@ def clutter(scene, pos, q, lens, aspect, subject_distance, floor_z=0.0, cols=16,
     fov_h, fov_v = fovs(lens, aspect)
     near = subject_distance * 0.55
     hits = 0
-    dg = _depsgraph()
     for i in range(cols):
         for j in range(rows):
             x = (i + 0.5) / cols * 2 - 1
             y = (j + 0.5) / rows * 2 - 1
             ray = q @ Vector((x * math.tan(fov_h / 2), y * math.tan(fov_v / 2), -1.0))
-            hit, loc, normal, _, obj, _ = scene.ray_cast(dg, pos, ray.normalized(), distance=near)
-            if hit and not (normal.z > 0.9 and loc.z < floor_z + 0.05) and owner(obj) not in skip:
+            hit, loc, normal, obj = first_hit(scene, pos, ray.normalized(), near, skip)
+            if hit and not (normal.z > 0.9 and loc.z < floor_z + 0.05):
                 hits += 1
     return hits / (cols * rows)
 

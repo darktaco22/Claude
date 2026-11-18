@@ -125,6 +125,8 @@ def build_floor():
     light('floor_top', 'AREA', o + Vector((0, 2, 8.6)), 900, (0.75, 1.0, 0.8), lit, size=10)
     light('floor_glow_back', 'AREA', o + Vector((0, 13.5, 3.5)), 1600, (0.25, 1.0, 0.35), lit, size=12, rot=(math.radians(-90), 0, 0))
     light('floor_glow_anon', 'AREA', o + Vector((0, 0.1, 1.9)), 60, (0.35, 1.0, 0.45), lit, size=1.2, rot=(math.radians(-80), 0, 0))
+    haze('haze_floor', o + Vector((0, 1, 4.5)), (27, 29, 8.8), 0.006, (0.8, 1.0, 0.85), col)
+    dust('dust_floor', o + Vector((0, 2, 1.6)), (8, 12, 2.4), 500, (0.7, 1.0, 0.75), col, 2)
     light('floor_bull', 'SPOT', o + Vector((0, 6, 7.5)), 2500, (0.85, 1.0, 0.8), lit, rot=(math.radians(-35), 0, 0), spot=math.radians(35))
     return col
 
@@ -160,6 +162,8 @@ def build_basement():
     for name, off in (('bulb_a', (0.5, 1.5, 4.4)), ('bulb_b', (-5.5, 6.0, 4.4))):
         sphere(name, 0.08, o + Vector(off), bulb, col)
         light('L_' + name, 'POINT', o + Vector(off) - Vector((0, 0, 0.12)), 260, (1.0, 0.72, 0.42), lit, size=0.08)
+    dust('dust_base', o + Vector((0, 2.5, 1.5)), (12, 9, 3.0), 500, (1.0, 0.85, 0.6), col, 3)
+    haze('haze_base', o + Vector((0, 0, 2.5)), (19.5, 17.5, 4.9), 0.004, (1.0, 0.9, 0.8), col)
     light('base_crt', 'AREA', o + Vector((2.9, 1.4, 1.3)), 40, (0.3, 1.0, 0.45), lit, size=0.6, rot=(math.radians(90), 0, math.radians(200)))
     light('base_window', 'AREA', o + Vector((6, -8.5, 4.2)), 300, (0.6, 0.75, 1.0), lit, size=2.0, rot=(math.radians(60), 0, 0))
     light('base_stairs', 'SPOT', o + Vector((-8.6, 9.5, 4.8)), 900, (1.0, 0.85, 0.65), lit, rot=(math.radians(-60), 0, 0), spot=math.radians(50))
@@ -197,6 +201,43 @@ def build_dojo():
     return col
 
 
+def haze(name, centre, size, density, colour, col):
+    """A box of thin fog so lights draw beams. Renderer can drop it (NOHAZE=1)."""
+    mat = bpy.data.materials.new(name + '_m')
+    mat.use_nodes = True
+    nt = mat.node_tree
+    nt.nodes.clear()
+    vol = nt.nodes.new('ShaderNodeVolumePrincipled')
+    vol.inputs['Density'].default_value = density
+    vol.inputs['Color'].default_value = (*colour, 1)
+    vol.inputs['Anisotropy'].default_value = 0.45
+    out = nt.nodes.new('ShaderNodeOutputMaterial')
+    nt.links.new(vol.outputs[0], out.inputs['Volume'])
+    obj = box(name, size, centre, mat, col)
+    obj.visible_shadow = False
+    obj['cine_ignore'] = True
+    return obj
+
+
+def dust(name, centre, size, count, colour, col, seed=1):
+    """Floating motes near the lens: tiny faintly glowing specks (bokeh with shallow focus). One mesh, vertex-instanced."""
+    import random
+    rnd = random.Random(seed)
+    mesh = bpy.data.meshes.new(name)
+    pts = [tuple(centre[i] + rnd.uniform(-size[i] / 2, size[i] / 2) for i in range(3)) for _ in range(count)]
+    mesh.from_pydata(pts, [], [])
+    cloud = bpy.data.objects.new(name, mesh)
+    col.objects.link(cloud)
+    speck_m = material(name + '_m', colour, rough=0.5, emit=colour, strength=0.25)
+    speck = sphere(name + '_speck', 0.0022, (0, 0, 0), speck_m, col)
+    speck.parent = cloud
+    cloud.instance_type = 'VERTS'
+    cloud['cine_ignore'] = True
+    speck['cine_ignore'] = True
+    speck.visible_shadow = False
+    return cloud
+
+
 def world():
     """Dark world: the sets carry their own light. The dojo's sun and sky card do the bright look."""
     w = bpy.data.worlds.new('mx_world')
@@ -209,8 +250,9 @@ def world():
 
 
 # ---------------------------------------------------------------- hand props
-def candle(name, colour, col, size=1.0):
-    """A chart candle: body plus wick, faintly glowing. Origin at the body's centre."""
+def candle(name, colour, col, size=1.0, trail=0.0):
+    """A chart candle: body plus wick, faintly glowing. Origin at the body's centre. `trail` (m) adds a fading glow streak
+    behind it along local -Y (projectiles fly along +Y of their own frame once rotated)."""
     glow = (0.95, 0.12, 0.1) if colour == 'red' else (0.1, 0.95, 0.25)
     body_m = material(f'candle_{colour}', glow, rough=0.25, emit=glow, strength=0.6)
     wick_m = material(f'wick_{colour}', tuple(c * 0.6 for c in glow), rough=0.4)
@@ -220,6 +262,10 @@ def candle(name, colour, col, size=1.0):
     wick = cylinder(name + '_wick', 0.006 * size, 0.32 * size, (0, 0, 0), wick_m, col, parent=holder, verts=8)
     for part in (body, wick):
         part.visible_shadow = False
+    if trail:
+        streak_m = material(f'streak_{colour}', glow, rough=0.5, emit=glow, strength=3.0)
+        streak = cylinder(name + '_trail', 0.02 * size, trail, (0, 0, -trail / 2 - 0.09 * size), streak_m, col, parent=holder, verts=8)
+        streak.visible_shadow = False
     return holder
 
 
@@ -287,13 +333,13 @@ def window_material(name, seed):
     bsdf = nt.nodes['Principled BSDF']
     bsdf.inputs['Base Color'].default_value = (0.02, 0.025, 0.025, 1)
     bsdf.inputs['Roughness'].default_value = 0.4
-    coord = nt.nodes.new('ShaderNodeTexCoord')
+    coord = nt.nodes.new('ShaderNodeNewGeometry')                 # world position: windows keep their size on every tower
     mapping = nt.nodes.new('ShaderNodeMapping')
     mapping.inputs['Location'].default_value = (seed * 3.7, seed * 1.3, 0)
     brick = nt.nodes.new('ShaderNodeTexBrick')
     brick.offset = 0.0
     brick.squash = 1.0
-    brick.inputs['Scale'].default_value = 0.6
+    brick.inputs['Scale'].default_value = 0.28
     brick.inputs['Mortar Size'].default_value = 0.35
     brick.inputs['Bias'].default_value = 0.55
     brick.inputs['Color1'].default_value = (1.0, 0.82, 0.55, 1)
@@ -301,7 +347,7 @@ def window_material(name, seed):
     brick.inputs['Mortar'].default_value = (0.0, 0.0, 0.0, 1)
     brick.inputs['Brick Width'].default_value = 1.0
     brick.inputs['Row Height'].default_value = 1.4
-    nt.links.new(coord.outputs['Object'], mapping.inputs['Vector'])
+    nt.links.new(coord.outputs['Position'], mapping.inputs['Vector'])
     nt.links.new(mapping.outputs['Vector'], brick.inputs['Vector'])
     nt.links.new(brick.outputs['Color'], bsdf.inputs['Emission Color'])
     bsdf.inputs['Emission Strength'].default_value = 2.2
@@ -314,7 +360,7 @@ def build_rooftop():
     col = collection('ROOFTOP')
     lit = collection('L_ROOFTOP')
     o = ORIGIN['ROOFTOP']
-    roof = material('roof_gravel', (0.16, 0.17, 0.16), rough=0.95)
+    roof = material('roof_gravel', (0.07, 0.075, 0.07), rough=0.95)
     add_bump(roof, 60.0, 0.35)
     box('roof', (34, 34, 1.0), o + Vector((0, 0, -0.5)), roof, col)
     walls = material('tower_wall', (0.05, 0.06, 0.06), rough=0.6)
@@ -371,7 +417,7 @@ def build_rooftop():
             sphere(f'cbeacon{k}', 0.4, centre + Vector((0, 0, (top + 200) / 2 + 0.6)), beacon, col)
     street = material('street_glow', (1.0, 0.6, 0.3), emit=(1.0, 0.55, 0.25), strength=1.2)
     plane('streets', 900, 900, o + Vector((0, 0, -200)), street, col)
-    sky = material('rooftop_sky', (0.0, 0.0, 0.0), emit=(0.06, 0.12, 0.09), strength=1.0)
+    sky = material('rooftop_sky', (0.0, 0.0, 0.0), emit=(0.015, 0.04, 0.03), strength=1.0)
     bpy.ops.mesh.primitive_uv_sphere_add(radius=700, location=o, segments=32, ring_count=16)
     dome = bpy.context.active_object
     dome.name = 'rooftop_dome'
@@ -380,9 +426,10 @@ def build_rooftop():
     col.objects.link(dome)
     dome.data.materials.append(sky)
     dome.visible_shadow = False
+    haze('haze_roof', o + Vector((0, 0, 6)), (80, 80, 14), 0.004, (0.75, 1.0, 0.85), col)
     # light: cold moon from behind the agents, warm city bounce from below the parapet, a soft top so faces read
     light('moon', 'SUN', o + Vector((0, 0, 50)), 1.2, (0.7, 0.95, 0.85), lit, rot=(math.radians(55), 0, math.radians(160)))
     light('city_bounce', 'AREA', o + Vector((0, -20, -2)), 6000, (1.0, 0.7, 0.45), lit, size=30, rot=(math.radians(-70), 0, 0))
-    light('roof_top', 'AREA', o + Vector((0, 2, 9)), 1400, (0.7, 1.0, 0.8), lit, size=12)
+    light('roof_top', 'AREA', o + Vector((0, 2, 9)), 600, (0.7, 1.0, 0.8), lit, size=12)
     light('roof_rim', 'AREA', o + Vector((0, 14, 4)), 2500, (0.5, 1.0, 0.7), lit, size=8, rot=(math.radians(-100), 0, 0))
     return col

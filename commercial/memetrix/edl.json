@@ -7,11 +7,11 @@
 "fall": 85.907,
 "card_bend": 99.86,
 "cookie": 106.188,
-"fire": 113.709,
-"bullet_time": 114.409,
-"fire2": 124.459,
-"turn_green": 126.659,
-"drop": 127.359,
+"fire": 114.109,
+"bullet_time": 114.809,
+"fire2": 124.859,
+"turn_green": 127.059,
+"drop": 127.759,
 "swing0": 82.857,
 "swing1": 83.757,
 "swing2": 84.657
@@ -187,49 +187,49 @@
 },
 {
 "id": "j01",
-"f": 110.265,
+"f": 110.665,
 "dur": 1.667,
 "who": "jean",
 "sub": "Mister... Anon."
 },
 {
 "id": "t01",
-"f": 112.332,
+"f": 112.732,
 "dur": 0.777,
 "who": "tri",
 "sub": "Sell."
 },
 {
 "id": "m03",
-"f": 120.709,
+"f": 121.109,
 "dur": 1.857,
 "who": "michi",
 "sub": "Anon! How did you do that?"
 },
 {
 "id": "a08",
-"f": 122.916,
+"f": 123.316,
 "dur": 0.993,
 "who": "anon",
 "sub": "Diamond hands."
 },
 {
 "id": "j02",
-"f": 127.759,
+"f": 128.159,
 "dur": 1.457,
 "who": "jean",
 "sub": "He's... bullish."
 },
 {
 "id": "a09",
-"f": 129.716,
+"f": 130.116,
 "dur": 1.409,
 "who": "anon",
 "sub": "No. I'm just not selling."
 }
 ],
-"end": 134.125,
-"last": 3219,
+"end": 134.525,
+"last": 3229,
 "shots": [
 {
 "name": "floor_establish",
@@ -730,9 +730,9 @@
 "cam": {
 "subject": "slerf",
 "size": "MS",
-"angle": -22.0,
-"bearing": 100,
-"lens": 28,
+"angle": -15.0,
+"bearing": -30,
+"lens": 32,
 "frame": "left",
 "fstop": 3.2
 },
@@ -1115,11 +1115,10 @@
 "cam": {
 "subject": "anon",
 "size": "CU",
-"bearing": 40,
+"bearing": 30,
 "lens": 70,
 "frame": "left",
-"fstop": 2.0,
-"angle": 0.0
+"fstop": 2.0
 },
 "hand": [
 "INVESTIGATION",
@@ -1264,20 +1263,25 @@
 {
 "name": "agents_wide",
 "t0": 107.965,
-"t1": 110.165,
+"t1": 110.565,
 "a0": 107.965,
 "s0": 1.0,
 "set": "ROOFTOP",
 "cam": {
 "subject": "anon",
 "size": "EWS",
-"angle": 28,
-"bearing": 180,
-"lens": 24,
+"angle": 4,
+"bearing": 200,
+"lens": 20,
 "frame": "center",
-"fstop": 6.0,
+"fstop": 8.0,
 "move": "crane",
-"amount": -10
+"amount": 6,
+"look_offset": [
+0,
+2.0,
+1.2
+]
 },
 "hand": [
 "INVESTIGATION",
@@ -1286,9 +1290,9 @@
 },
 {
 "name": "j01_0",
-"t0": 110.165,
-"t1": 112.232,
-"a0": 110.165,
+"t0": 110.565,
+"t1": 112.632,
+"a0": 110.565,
 "s0": 1.0,
 "set": "ROOFTOP",
 "cam": {
@@ -1309,9 +1313,9 @@
 },
 {
 "name": "t01_0",
-"t0": 112.232,
-"t1": 113.409,
-"a0": 112.232,
+"t0": 112.632,
+"t1": 113.809,
+"a0": 112.632,
 "s0": 1.0,
 "set": "ROOFTOP",
 "cam": {
@@ -1335,19 +1339,19 @@
 },
 {
 "name": "fire",
-"t0": 113.409,
-"t1": 114.409,
-"a0": 113.409,
+"t0": 113.809,
+"t1": 114.809,
+"a0": 113.809,
 "s0": 1.0,
 "set": "ROOFTOP",
 "cam": {
 "subject": "jean",
 "size": "MS",
-"bearing": -25,
+"bearing": -35,
 "lens": 40,
 "frame": "right",
 "fstop": 2.8,
-"angle": "low"
+"angle": -15.0
 },
 "hand": [
 "INVESTIGATION",
@@ -1356,9 +1360,9 @@
 },
 {
 "name": "bullet_time",
-"t0": 114.409,
-"t1": 119.609,
-"a0": 114.409,
+"t0": 114.809,
+"t1": 120.009,
+"a0": 114.809,
 "s0": 0.08,
 "set": "ROOFTOP",
 "cam": {
@@ -1379,9 +1383,9 @@
 },
 {
 "name": "after_dodge",
-"t0": 119.609,
-"t1": 120.609,
-"a0": 114.825,
+"t0": 120.009,
+"t1": 121.009,
+"a0": 115.225,
 "s0": 1.0,
 "set": "ROOFTOP",
 "cam": {
@@ -1399,9 +1403,9 @@
 },
 {
 "name": "m03_0",
-"t0": 120.609,
-"t1": 122.816,
-"a0": 115.825,
+"t0": 121.009,
+"t1": 123.216,
+"a0": 116.225,
 "s0": 1.0,
 "set": "ROOFTOP",
 "cam": {
@@ -1419,9 +1423,9 @@
 },
 {
 "name": "a08_0",
-"t0": 122.816,
-"t1": 124.159,
-"a0": 118.032,
+"t0": 123.216,
+"t1": 124.559,
+"a0": 118.432,
 "s0": 1.0,
 "set": "ROOFTOP",
 "cam": {
@@ -1442,9 +1446,9 @@
 },
 {
 "name": "freeze_ots",
-"t0": 124.159,
-"t1": 126.059,
-"a0": 119.375,
+"t0": 124.559,
+"t1": 126.459,
+"a0": 119.775,
 "s0": 1.0,
 "set": "ROOFTOP",
 "cam": {
@@ -1465,9 +1469,9 @@
 },
 {
 "name": "freeze_insert",
-"t0": 126.059,
-"t1": 127.659,
-"a0": 121.275,
+"t0": 126.459,
+"t1": 128.059,
+"a0": 121.675,
 "s0": 1.0,
 "set": "ROOFTOP",
 "cam": {
@@ -1493,19 +1497,20 @@
 },
 {
 "name": "j02_0",
-"t0": 127.659,
-"t1": 129.616,
-"a0": 122.875,
+"t0": 128.059,
+"t1": 130.016,
+"a0": 123.275,
 "s0": 1.0,
 "set": "ROOFTOP",
 "cam": {
 "subject": "jean",
-"size": "CU",
-"bearing": 15,
-"lens": 85,
+"size": "MCU",
+"angle": -10,
+"bearing": 20,
+"lens": 70,
 "frame": "left",
 "dutch": -8,
-"fstop": 1.8
+"fstop": 2.0
 },
 "hand": [
 "INVESTIGATION",
@@ -1514,9 +1519,9 @@
 },
 {
 "name": "a09_0",
-"t0": 129.616,
-"t1": 131.525,
-"a0": 124.832,
+"t0": 130.016,
+"t1": 131.925,
+"a0": 125.232,
 "s0": 1.0,
 "set": "ROOFTOP",
 "cam": {
@@ -1537,9 +1542,9 @@
 },
 {
 "name": "final_hero",
-"t0": 131.525,
-"t1": 134.125,
-"a0": 126.741,
+"t0": 131.925,
+"t1": 134.525,
+"a0": 127.141,
 "s0": 1.0,
 "set": "ROOFTOP",
 "cam": {
@@ -1658,27 +1663,27 @@
 ],
 [
 "j01",
-110.265
+110.665
 ],
 [
 "t01",
-112.332
+112.732
 ],
 [
 "m03",
-120.709
+121.109
 ],
 [
 "a08",
-122.916
+123.316
 ],
 [
 "j02",
-127.759
+128.159
 ],
 [
 "a09",
-129.716
+130.116
 ]
 ],
 "tracks": {
@@ -2534,9 +2539,9 @@
 "s03_0: zcat blocked the view; moved bearing -30, angle +0",
 "s03_1: zcat blocked the view; moved bearing -20, angle +0",
 "a04_0: slerf blocked the view; moved bearing +10, angle +0",
-"take_red: foreground clutter (16% of frame) blocked the view; moved bearing -10, angle +0",
+"take_red: foreground clutter (14% of frame) blocked the view; moved bearing -10, angle +0",
 "swallow: slerf blocked the view; moved bearing +45, angle +0",
-"s05_0: michi blocked the view; moved bearing +30, angle +0",
+"s05_0: body.001 blocked the view; moved bearing -45, angle +0",
 "mo1_0: foreground clutter (27% of frame) blocked the view; moved bearing -30, angle +0",
 "s06_0: michi blocked the view; moved bearing +20, angle +0",
 "n01_1: foreground clutter (31% of frame) blocked the view; moved bearing -10, angle +0",
@@ -2544,10 +2549,10 @@
 "a05_0: slerf blocked the view; moved bearing +10, angle +0",
 "fight_arc: slerf blocked the view; moved bearing +10, angle +20",
 "waiting_room: base_back blocked the view; moved bearing +45, angle +0",
-"a06_0: card blocked the view; moved bearing +10, angle +0",
 "k02_0: zcat blocked the view; moved bearing -10, angle +0",
 "b01_0: foreground clutter (32% of frame) blocked the view; moved bearing +30, angle +0",
 "b02_0: body.012 blocked the view; moved bearing +20, angle +0",
+"fire: proj4_body blocked the view; moved bearing -10, angle +0",
 "bullet_time: roof blocked the view; moved bearing -10, angle +10",
 "freeze_insert: jeanphil blocked the view; moved bearing +20, angle +0",
 "final_hero: jeanphil blocked the view; moved bearing +30, angle +10"
