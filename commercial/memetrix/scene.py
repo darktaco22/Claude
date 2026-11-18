@@ -187,7 +187,10 @@ class Actor:
         for i, k in enumerate(keys):
             f = F(k[0])
             if k[5] and i:                                  # a cut: hold the old place up to just before
-                prev = keys[i - 1]
+                j = i - 1                                   # (the last key strictly earlier: two cuts at one moment must not
+                while j > 0 and keys[j][0] >= k[0] - 1e-6:  #  hand the second one's 'before' to the first one's target)
+                    j -= 1
+                prev = keys[j]
                 loc.append((f - 0.02, (prev[1], prev[2], prev[3])))
                 rot.append((f - 0.02, (0, 0, math.radians(180 - prev[4]))))
             loc.append((f, (k[1], k[2], k[3])))

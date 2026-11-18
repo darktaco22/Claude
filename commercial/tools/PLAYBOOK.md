@@ -143,6 +143,10 @@ those topics with my own code.
 - Over-the-shoulder past bulky characters (sloth, book, big hair) fills the lens: use clean singles for them.
 - A soft fill beside the lens (`camfill`) and a rim light opposite it, placed per frame from the shot's subject, lift a
   dark set to a film look more than any other change.
+- **Two scene-change (cut) keys at the same moment**: the "hold until now" key of the second overwrote the first, and Blender
+  slid the character between sets for 7 s (he vanished from three shots). `Actor.finish` now takes the last key strictly
+  earlier. Scan tracks for same-time cuts before rendering.
+- Check the finished film at one frame every 2-4 s before calling it done; the animatic only samples start/middle/end.
 - Full 1080p, 12 samples, haze and motion blur cost ~4 min a frame on 4 cores (≈200 CPU-hours for 2 min). Measure each
   effect at the real render size before deciding (`NOHAZE`, `MB` switches in `render_edl.py`).
 
