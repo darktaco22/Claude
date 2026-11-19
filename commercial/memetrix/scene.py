@@ -11,7 +11,7 @@ import os
 import sys
 
 import bpy
-from mathutils import Matrix, Vector
+from mathutils import Matrix, Quaternion, Vector
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -259,7 +259,7 @@ class Actor:
             strip.extrapolation = 'HOLD_FORWARD'
             strip.blend_type = 'REPLACE'
             strip.use_auto_blend = False
-            strip.blend_in = 0 if hard or not index else (6 if name == 'die' else 3)
+            strip.blend_in = 0 if hard or not index else (6 if name == 'die' else 10 if name.startswith('present') else 3)
 
 
 names = list(CAST)
@@ -458,11 +458,52 @@ if not DRY:
         obj.location = anchor + Vector((0, 0, up))
         glue(obj, actor, [anchor], radius=0.04, only=only)
 
-    SL_POSE = 'attack1@0.3'                                       # Slerf: right paw forward at 0.93 m, left out to the side
-    P = posed(A['slerf'], 'attack1', 0.3)
-    SL_RED = paw_top(P, -1, 0.5, 1.4, only=bone_verts(A['slerf'], 'mixamorig:RightHand'))
-    SL_GREEN = paw_top(P, 1, 0.4, 1.4, only=bone_verts(A['slerf'], 'mixamorig:LeftHand'))
-    SL_RED, SL_GREEN = SL_GREEN, SL_RED                            # red on the left paw, held out to the side at 0.82 m: Anon
+    # Slerf presents the candles with both fists held out evenly: none of his clips does that, so build the pose: his idle
+    # body, the right arm from his punch (attack1 at 25 %) and the left arm its mirror image (local quaternion w, x, -y, -z)
+    sl = A['slerf']
+    def pose_of(act, f):
+        sl.arm.animation_data.action = act
+        a0, a1 = act.frame_range
+        sc.frame_set(int(round(a0 + (a1 - a0) * f)))
+        return {pb.name: (pb.location.copy(), pb.rotation_quaternion.copy()) for pb in sl.arm.pose.bones}
+    base_p = pose_of(sl.clips['idle'], 0.1)
+    punch_p = pose_of(sl.clips['attack1'], 0.25)
+    pres = {}
+    for nm, (l_, q_) in base_p.items():
+        pres[nm] = (l_, q_)
+    for nm, (l_, q_) in punch_p.items():
+        if 'Right' in nm and any(k in nm for k in ('Shoulder', 'Arm', 'Hand')):
+            pres[nm] = (base_p[nm][0], q_)
+            mirror = nm.replace('Right', 'Left')
+            if mirror in pres:
+                pres[mirror] = (base_p[mirror][0], Quaternion((q_.w, q_.x, -q_.y, -q_.z)))
+    for nm in list(pres):                                          # square the body up: no twist or side lean in the spine
+        if any(k in nm for k in ('Hips', 'Spine', 'Neck', 'Head')):
+            l_, q_ = pres[nm]
+            pres[nm] = (Vector((0, l_.y, l_.z)), Quaternion((q_.w, q_.x, 0, 0)).normalized())
+    act = bpy.data.actions.new('slerf:present')
+    for nm, (l_, q_) in pres.items():
+        for path, vals in (('location', l_), ('rotation_quaternion', q_)):
+            for idx, v_ in enumerate(vals):
+                fc = act.fcurves.new(f'pose.bones["{nm}"].{path}', index=idx, action_group=nm)
+                fc.keyframe_points.insert(1, v_)
+                fc.keyframe_points.insert(2, v_)
+    sl.clips['present'] = act
+    SL_POSE = 'present@0.5'
+    P = posed(A['slerf'], 'present', 0.5)
+    def fist_top(P, only):                                         # the top of the fist, over its centre
+        pts = [P[i] for i in only]
+        c = sum(pts, Vector()) / len(pts)
+        near = [p for p in pts if (p.x - c.x) ** 2 + (p.y - c.y) ** 2 < 0.07 ** 2]
+        return max(near or pts, key=lambda p: p.z)
+    SL_RED = fist_top(P, bone_verts(A['slerf'], 'mixamorig:RightHand'))
+    SL_GREEN = fist_top(P, bone_verts(A['slerf'], 'mixamorig:LeftHand'))
+    SL_RED, SL_GREEN = SL_GREEN, SL_RED                            # red on his left fist, green on his right
+    bpy.context.view_layer.update()                                # the green one mirrors the red one's spot on the other fist
+    lw = sl.arm.matrix_world @ sl.arm.pose.bones['mixamorig:LeftHand'].head - sl.rig.location
+    rw = sl.arm.matrix_world @ sl.arm.pose.bones['mixamorig:RightHand'].head - sl.rig.location
+    off = SL_RED - lw
+    SL_GREEN = rw + Vector((-off.x, off.y, off.z))                 # (the mesh's hand weights differ left and right)
     CS = 1.5                                                       # held candles 50 % bigger, standing ON the paw (centred on it
     STAND = 0.085 * CS + 0.015                                     # they sank into the fist and hid behind the gauntlet)
     place(mxsets.candle('candle_red_s', 'red', PROPS, size=CS), A['slerf'], SL_RED, STAND, bone_verts(A['slerf'], 'mixamorig:LeftHand'))
@@ -475,7 +516,7 @@ if not DRY:
     AN_RF = bone_verts(A['anon'], 'mixamorig:RightForeArm', 0.3)
     AN_REACH = paw_fwd(P, AN_RF)
     RED_ANON = mxsets.candle('candle_red_a', 'red', PROPS, size=CS)
-    place(RED_ANON, A['anon'], AN_REACH, STAND - 0.06, AN_RF)      # gripped low in his paw, at Slerf's candle height
+    place(RED_ANON, A['anon'], AN_REACH, SL_RED.z + STAND - AN_REACH.z, AN_RF)   # in his paw, at Slerf's candle height
     AN_DIAMOND = 'win@0.25'                                       # Anon: both paws up
     P = posed(A['anon'], 'win', 0.25)
     gem_m = bpy.data.materials.new('diamond')
@@ -682,7 +723,7 @@ line('s01', [S('slerf', size='MS', bearing=-65, lens=50, frame='center', fstop=2
 line('a03', [S('anon', size='CU', bearing=25, lens=70, frame='right', fstop=2.0)], 'FLOOR')
 line('s02', [S('slerf', size='CU', bearing=0, lens=85, frame='center', fstop=1.8)], 'FLOOR', pad=0.45)
 CANDLES_ON = ANIM                                                # the paws come out with a candle on each
-slerf.play(CANDLES_ON, 'attack1@0.3')
+slerf.play(CANDLES_ON - 0.2, 'present@0.5')                       # both fists come forward, a candle on each
 line('s03', [S('slerf', size='MS', bearing=-30, angle='low', lens=40, frame='center', move='arc', amount=50, fstop=2.8),
              S('slerf', size='MS', bearing=-8, angle=-6, lens=45, frame='center', fstop=2.4, move='push', amount=0.12),
              S('slerf', size='MS', bearing=55, lens=55, frame='center', fstop=2.4, move='push', amount=0.1, **{'with': ['anon']})], 'FLOOR',
@@ -694,9 +735,12 @@ TAKE = ANIM
 # Anon faces +Y: his local (x, y) is (-x, -y) in the world)
 SL_RED_W = SLERF_AT + (SL_RED if not DRY else Vector((-0.84, -0.74, 0.93)))
 AN_R = AN_REACH if not DRY else Vector((-0.47, -0.83, 1.0))
-TAKE_AT = Vector((SL_RED_W.x + AN_R.x, SL_RED_W.y + AN_R.y + 0.02, 0))
+H_TAKE = -35.0                                                   # he comes in from outside Slerf's left fist, angled, so his bag
+r_ = math.radians(180 - H_TAKE)                                  # passes beside the arm (straight on it hit the fist)
+paw_w = Vector((AN_R.x * math.cos(r_) - AN_R.y * math.sin(r_), AN_R.x * math.sin(r_) + AN_R.y * math.cos(r_), 0))
+TAKE_AT = Vector((SL_RED_W.x - paw_w.x, SL_RED_W.y - paw_w.y, 0))
 anon.walk(TAKE - 1.3, TAKE_AT, speed=1.4, then='idle')
-anon.turn(TAKE - 0.35, 0, 0.3)
+anon.turn(TAKE - 0.35, H_TAKE, 0.3)
 anon.play(TAKE, AN_TAKE if not DRY else 'attack1')
 shot('take_red', 1.4, S('anon', distance=2.6, bearing=95, lens=35, frame='center', fstop=3.5, look_offset=(0.0, 0.55, -0.3),
                          **{'with': ['slerf']}), 'FLOOR')
@@ -708,7 +752,7 @@ MOUTH_L = Vector((-0.05, -0.03, 1.07))                           # under the sno
 shot('swallow', 1.6, S('anon', lens=45, frame='center', fstop=4.0),
      'FLOOR', glitch='rain_out')
 if not DRY:
-    print('TAKE at', tuple(round(v, 2) for v in TAKE_AT), 'anon candle centre z', round(AN_R.z + STAND - 0.06, 2), 'slerf candle centre z', round(SL_RED_W.z + STAND, 2))
+    print('TAKE at', tuple(round(v, 2) for v in TAKE_AT), 'anon candle centre z', round(SL_RED.z + STAND, 2), 'slerf candle centre z', round(SL_RED_W.z + STAND, 2))
     show('candle_red_s', [(0, False), (CANDLES_ON + 0.1, True), (TAKE + 0.22, False)])
     show('candle_red_a', [(0, False), (TAKE + 0.22, True), (SWALLOW, False)])
     show('candle_green_s', [(0, False), (CANDLES_ON + 0.1, True), (ANIM, False)])
@@ -1040,7 +1084,7 @@ if not DRY:
     dg = bpy.context.evaluated_depsgraph_get()
     mouth = None
     for dz in (1.07, 1.05, 1.09, 1.03):
-        o_ = Vector(feet) + fwd * 2.0 + Vector((0, 0, dz))
+        o_ = Vector(feet) + fwd * 0.85 + Vector((0, 0, dz))                     # (from 2 m it hit Slerf)
         hit, loc, nrm, _, obj, _ = sc.ray_cast(dg, o_, -fwd, distance=3.0)
         if hit and cine.owner(obj) == 'anon':
             mouth = loc
@@ -1144,12 +1188,23 @@ if not DRY:
             c = ph.matrix_world.translation.copy()
             n = (ph.matrix_world.to_quaternion() @ Vector((0, -1, 0))).normalized()   # out of the screen
             s_['cam']['look_offset'] = list(c - cine.eye_point('farter', feet, head))
-            s_['cam']['cam_at'] = list(c + n * 0.42 + Vector((0, 0, 0.05)))
-            s_['cam']['cam_at1'] = list(c + n * 0.30 + Vector((0, 0, 0.03)))
+            s_['cam']['cam_at'] = list(c + n * 0.40 + Vector((0, 0, 0.20)))      # above his glove, looking down at the screen
+            s_['cam']['cam_at1'] = list(c + n * 0.30 + Vector((0, 0, 0.15)))
             s_['cam']['lens'] = 40
+        if s_['name'] == 'cookie_take':                           # side-on to the hand-over, on the side away from the book
+            feet, head = make_where({n: sorted(x.keys, key=lambda k: k[0]) for n, x in A.items()})('anon', s_['a0'] + 0.5)
+            mid = (Vector((ANON_CK_AT.x, ANON_CK_AT.y, 0)) + Vector((glove.x, glove.y, 0))) / 2
+            d_ = (Vector((glove.x, glove.y, 0)) - Vector((ANON_CK_AT.x, ANON_CK_AT.y, 0))).normalized()
+            perp = Vector((-d_.y, d_.x, 0))
+            if (mid + perp - Vector((BOME_AT.x, BOME_AT.y, 0))).length < (mid - perp - Vector((BOME_AT.x, BOME_AT.y, 0))).length:
+                perp = -perp
+            look = mid + Vector((0, 0, BASE.z + 0.95))
+            s_['cam']['look_offset'] = list(look - cine.eye_point('anon', feet, head))
+            s_['cam']['cam_at'] = list(look + perp * 2.3 + Vector((0, 0, 0.25)))
+            s_['cam']['cam_at1'] = list(look + perp * 2.0 + Vector((0, 0, 0.2)))
         if s_['name'] == 'swallow':                               # close on the bag's mouth, a little to his left, easing in
             feet, head = make_where({n: sorted(x.keys, key=lambda k: k[0]) for n, x in A.items()})('anon', s_['a0'] + 0.5)
-            s_['cam']['look_offset'] = list(EAT_MOUTH + Vector((0, 0, -0.06)) - cine.eye_point('anon', feet, head))
+            s_['cam']['look_offset'] = list(EAT_MOUTH + Vector((0, 0, 0.02)) - cine.eye_point('anon', feet, head))
             s_['cam']['cam_at'] = list(EAT_MOUTH + EAT_FWD * 0.95 + EAT_SIDE * 0.32 + Vector((0, 0, -0.02)))
             s_['cam']['cam_at1'] = list(EAT_MOUTH + EAT_FWD * 0.72 + EAT_SIDE * 0.22 + Vector((0, 0, -0.03)))
         if s_['name'] == 'k02_0':
