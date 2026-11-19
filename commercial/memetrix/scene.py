@@ -11,7 +11,7 @@ import os
 import sys
 
 import bpy
-from mathutils import Vector
+from mathutils import Matrix, Vector
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -176,7 +176,8 @@ class Actor:
         return arrive
 
     def play(self, a, clip, speed=1.0, hard=False):
-        self.items.append((a, clip if clip in self.clips else 'idle', speed, hard))
+        base = clip.split('@')[0]
+        self.items.append((a, clip if base in self.clips else 'idle', speed, hard))
 
     def lean(self, a, deg):
         self.tilts.append((a, deg))
@@ -232,7 +233,7 @@ class Actor:
         for it in items:
             if clean and abs(it[0] - clean[-1][0]) < 1e-6:
                 clean[-1] = it[:3] + (it[3] or clean[-1][3],)
-            elif clean and it[1] == clean[-1][1] and it[1] not in ONE_SHOT:
+            elif clean and it[1] == clean[-1][1] and it[1].split('@')[0] not in ONE_SHOT:
                 continue
             else:
                 clean.append(it)
@@ -241,17 +242,24 @@ class Actor:
             f1 = F(clean[index + 1][0]) if index + 1 < len(clean) else F(end)
             if f1 - f0 < 1:
                 continue
-            action = self.clips[name]
+            base, _, frac = name.partition('@')
+            action = self.clips[base]
             a0, a1 = action.frame_range
             track = self.arm.animation_data.nla_tracks.new()
             strip = track.strips.new(f'{name}_{index}', int(f0), action)
-            strip.scale = (FPS / 30.0) / speed
-            length = (a1 - a0) * strip.scale
-            strip.repeat = 1.0 if name in ONE_SHOT else max(0.01, (f1 - f0) / max(1e-6, length))
+            if frac:                                               # a held pose: half a frame of the clip stretched over the span
+                hf = a0 + (a1 - a0) * float(frac)
+                strip.action_frame_start, strip.action_frame_end = hf, hf + 0.5
+                strip.scale = max(1.0, (f1 - f0 + 2) / 0.5)
+                strip.repeat = 1.0
+            else:
+                strip.scale = (FPS / 30.0) / speed
+                length = (a1 - a0) * strip.scale
+                strip.repeat = 1.0 if base in ONE_SHOT else max(0.01, (f1 - f0) / max(1e-6, length))
             strip.extrapolation = 'HOLD_FORWARD'
             strip.blend_type = 'REPLACE'
             strip.use_auto_blend = False
-            strip.blend_in = 0 if hard or not index else 3
+            strip.blend_in = 0 if hard or not index else (6 if name == 'die' else 3)
 
 
 names = list(CAST)
@@ -285,7 +293,7 @@ def skin(actor):
     return next(o for o in actor.rig.children_recursive if o.type == 'MESH' and any(m.type == 'ARMATURE' for m in o.modifiers))
 
 
-def glue(obj, actor, anchors, radius=0.05):
+def glue(obj, actor, anchors, radius=0.05, only=None):
     """Pin a prop to the deformed skin, not to a bone: parent it to three skin vertices (one near each anchor point,
     or, with a single anchor, three spread out around it). Bones lie about where the surface is on cartoon rigs
     (Slerf's face slides off the head bone in the emote; zcat and alon have no hand weights at all)."""
@@ -296,6 +304,8 @@ def glue(obj, actor, anchors, radius=0.05):
     mw_body = body.matrix_world
     pts = [mw_body @ v.co for v in ev.data.vertices]
     assert len(pts) == len(body.data.vertices), 'skin topology changed by a modifier'
+    if only is not None:                                    # far-away stand-ins for vertices outside the allowed set
+        pts = [p if i in only else p + Vector((0, 0, 1000)) for i, p in enumerate(pts)]
     if len(anchors) >= 3:
         picks = [min(range(len(pts)), key=lambda i: (pts[i] - Vector(p)).length) for p in anchors[:3]]
     else:
@@ -411,17 +421,131 @@ if not DRY:
         r = A[n].rig.location
         glue(shades, A[n], [Vector((r.x + x, surface_y(A[n], x, cine.EYES[n]) or p.y, r.z + cine.EYES[n])) for x in (-0.05, 0.05)] +
              [Vector((r.x, surface_y(A[n], 0, cine.EYES[n] + 0.1) or p.y, r.z + cine.EYES[n] + 0.1))])
-    RED_SLERF = mxsets.candle('candle_red_s', 'red', PROPS)
-    GREEN_SLERF = mxsets.candle('candle_green_s', 'green', PROPS)
-    for c_, bone in ((RED_SLERF, 'mixamorig:RightHand'), (GREEN_SLERF, 'mixamorig:LeftHand')):
-        hand = bone_world(A['slerf'], bone)
-        c_.location = hand + Vector((0, -0.08, 0.05))
-        glue(c_, A['slerf'], [hand], radius=0.06)
-    zbones = [b.name for b in A['anon'].arm.data.bones]
-    zarm = next((b for b in ('mixamorig:RightHand', 'mixamorig:RightForeArm', 'mixamorig:RightArm') if b in zbones), zbones[-1])
+    # props in the paws, placed on the measured paw of the pose the character holds when it matters (the characters' own
+    # clips, held: forcing their arms with IK twisted Slerf's gauntlets into his face and Anon's paws into his body)
+    def posed(actor, clip, frac):
+        act = actor.clips[clip]
+        actor.arm.animation_data.action = act
+        a0, a1 = act.frame_range
+        sc.frame_set(int(round(a0 + (a1 - a0) * frac)))
+        bpy.context.view_layer.update()
+        body = skin(actor)
+        ev = body.evaluated_get(bpy.context.evaluated_depsgraph_get())
+        return [body.matrix_world @ v.co - actor.rig.location for v in ev.data.vertices]
+
+    def bone_verts(actor, bone, wmin=0.5):
+        body = skin(actor)
+        gi = body.vertex_groups[bone].index
+        return {v.index for v in body.data.vertices for g in v.groups if g.group == gi and g.weight >= wmin}
+
+    def paw_top(P, side, zmin=0.0, zmax=9.0, xmin=0.0, only=None):
+        cand = [p for i, p in enumerate(P) if zmin < p.z < zmax and (p.x * side) > xmin and (only is None or i in only)]
+        ex = max(cand, key=lambda p: p.x * side)
+        region = [p for p in cand if (p - ex).length < 0.16]
+        return max(region, key=lambda p: p.z)
+
+    def paw_fwd(P, only):
+        cand = [p for i, p in enumerate(P) if i in only]
+        tip = min(cand, key=lambda p: p.y)
+        return max((p for p in cand if (p - tip).length < 0.12), key=lambda p: p.z)
+
+    def place(obj, actor, local, up, only=None):
+        anchor = actor.rig.location + local
+        obj.location = anchor + Vector((0, 0, up))
+        glue(obj, actor, [anchor], radius=0.04, only=only)
+
+    SL_POSE = 'attack1@0.3'                                       # Slerf: right paw forward at 0.93 m, left out to the side
+    P = posed(A['slerf'], 'attack1', 0.3)
+    SL_RED = paw_top(P, -1, 0.5, 1.4, only=bone_verts(A['slerf'], 'mixamorig:RightHand'))
+    SL_GREEN = paw_top(P, 1, 0.4, 1.4, only=bone_verts(A['slerf'], 'mixamorig:LeftHand'))
+    SL_RED, SL_GREEN = SL_GREEN, SL_RED                            # red on the left paw, held out to the side at 0.82 m: Anon
+    place(mxsets.candle('candle_red_s', 'red', PROPS), A['slerf'], SL_RED, 0.0, bone_verts(A['slerf'], 'mixamorig:LeftHand'))
+    place(mxsets.candle('candle_green_s', 'green', PROPS), A['slerf'], SL_GREEN, 0.0, bone_verts(A['slerf'], 'mixamorig:RightHand'))
+    # (takes it from the side, clear of Slerf's body: from the front his bag pushed into Slerf's fist)
+    # (centred on the top of the paw: gripped in the fist, not balanced on it)
+    A['slerf'].arm.animation_data.action = None
+    AN_TAKE = 'attack2@0.4'                                       # Anon: right paw punched a metre forward (measured on the
+    P = posed(A['anon'], 'attack2', 0.4)                          # forearm's vertices; the 'reach' of attack1 was the bag tipping)
+    AN_RF = bone_verts(A['anon'], 'mixamorig:RightForeArm', 0.3)
+    AN_REACH = paw_fwd(P, AN_RF)
     RED_ANON = mxsets.candle('candle_red_a', 'red', PROPS)
-    RED_ANON.location = bone_world(A['anon'], zarm) + Vector((0, -0.12, 0.0))
-    glue(RED_ANON, A['anon'], [bone_world(A['anon'], zarm)], radius=0.05)
+    place(RED_ANON, A['anon'], AN_REACH, 0.0, AN_RF)
+    AN_DIAMOND = 'win@0.25'                                       # Anon: both paws up
+    P = posed(A['anon'], 'win', 0.25)
+    gem_m = bpy.data.materials.new('diamond')
+    gem_m.use_nodes = True
+    g = gem_m.node_tree.nodes['Principled BSDF']
+    g.inputs['Base Color'].default_value = (0.85, 0.97, 1.0, 1)
+    g.inputs['Roughness'].default_value = 0.0
+    g.inputs['IOR'].default_value = 2.4
+    g.inputs['Transmission Weight'].default_value = 1.0
+    g.inputs['Emission Color'].default_value = (0.6, 0.95, 1.0, 1)
+    g.inputs['Emission Strength'].default_value = 3.0
+    for side, sx in (('Right', -1), ('Left', 1)):
+        top = paw_top(P, sx, 0.8, 1.8, 0.2, only=bone_verts(A['anon'], f'mixamorig:{side}ForeArm', 0.3))
+        bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=1, radius=0.06, location=(0, 0, 0))
+        gem = bpy.context.active_object
+        gem.name = f'diamond_{side}'
+        gem.scale = (1, 1, 1.4)
+        for c in list(gem.users_collection):
+            c.objects.unlink(gem)
+        PROPS.objects.link(gem)
+        gem.data.materials.append(gem_m)
+        gem.visible_shadow = False
+        place(gem, A['anon'], top, 0.08, bone_verts(A['anon'], f'mixamorig:{side}ForeArm', 0.3))
+        print('DIAMOND', side, tuple(round(v, 2) for v in top))
+    # Anon takes the cookie with a short reach (paw forward at about 1 m high)
+    P = posed(A['anon'], 'attack2', 0.1)
+    AN_CK = paw_fwd(P, AN_RF)
+    COOKIE_A = mxsets.cookie('cookie_a', PROPS)
+    COOKIE_A.rotation_euler = (math.radians(70), 0, 0)
+    place(COOKIE_A, A['anon'], AN_CK, 0.04, AN_RF)
+    # Bome: the cookie on his right glove (the book's gloves stick out sideways; he turns to offer it)
+    P = posed(A['bome'], 'idle', 0.1)
+    BM_RH = bone_verts(A['bome'], 'mixamorig:RightHand', 0.4)
+    BM_G = paw_top(P, -1, 0.5, 2.0, 0.4, only=BM_RH)
+    A['bome'].arm.animation_data.action = None
+    # Farter holds his phone up to his face (left hand forward at 1 m in a held attack pose); the screen faces his eyes
+    P = posed(A['farter'], 'attack1', 0.3)
+    FL = bone_verts(A['farter'], 'mixamorig:LeftHand', 0.4)
+    FH = sum((P[i] for i in FL), Vector()) / len(FL)
+    eye_f = Vector((0, -0.12, cine.EYES['farter']))
+    look = (eye_f - FH).normalized()
+    phone = bpy.data.objects.new('phone', None)
+    PROPS.objects.link(phone)
+    case_m = mxsets.material('phone_case', (0.03, 0.03, 0.035), rough=0.3, metal=0.5)
+    scr_m = mxsets.image_material('phone_screen', os.path.join(HERE, 'pack', 'props', 'phone_chart.png'), emit=2.2)
+    mxsets.box('phone_body', (0.085, 0.012, 0.17), (0, 0, 0), case_m, PROPS, parent=phone, bevel=0.006)
+    scr = mxsets.plane('phone_glass', 0.076, 0.152, (0, -0.0065, 0), scr_m, PROPS, parent=phone, rot=(math.radians(90), 0, 0))
+    pl = bpy.data.objects.new('phone_light', bpy.data.lights.new('phone_light', 'AREA'))
+    pl.data.size = 0.12
+    pl.data.color = (0.3, 1.0, 0.45)
+    pl.data.energy = 6.0
+    sc.collection.objects.link(pl)
+    pl.parent = phone
+    pl.location = (0, -0.02, 0)
+    pl.rotation_euler = (math.radians(90), 0, 0)
+    phone.rotation_mode = 'QUATERNION'
+    phone.rotation_quaternion = (-look).to_track_quat('Y', 'Z')        # the screen side (-Y) faces his eyes
+    place(phone, A['farter'], FH + Vector((0, 0, 0.0)), 0.06, FL)
+    A['farter'].arm.animation_data.action = None
+    print('PHONE at', tuple(round(v, 2) for v in FH), 'BOME glove', tuple(round(v, 2) for v in BM_G), 'ANON cookie reach', tuple(round(v, 2) for v in AN_CK))
+    P = posed(A['anon'], 'attack2', 0.7)                          # Anon: right paw up at the bag's mouth for the swallow
+    AN_MOUTH_PAW = paw_fwd(P, AN_RF)
+    # the spine bend for the dodge: which way is back (the rig faces -Y: back is +Y)
+    A['anon'].arm.animation_data.action = None
+    pb = A['anon'].arm.pose.bones['mixamorig:Spine1']
+    pb.rotation_mode = 'QUATERNION'
+    h0 = bone_world(A['anon'], 'mixamorig:Head')
+    bpy.context.view_layer.update()
+    head0 = A['anon'].arm.matrix_world @ A['anon'].arm.pose.bones['mixamorig:Head'].head
+    pb.rotation_quaternion = (math.cos(0.25), math.sin(0.25), 0, 0)
+    bpy.context.view_layer.update()
+    head1 = A['anon'].arm.matrix_world @ A['anon'].arm.pose.bones['mixamorig:Head'].head
+    pb.rotation_quaternion = (1, 0, 0, 0)
+    BEND_SIGN = 1.0 if head1.y > head0.y else -1.0
+    print('PAWS slerf red', tuple(round(v, 2) for v in SL_RED), 'green', tuple(round(v, 2) for v in SL_GREEN),
+          'anon reach', tuple(round(v, 2) for v in AN_REACH), 'mouth paw', tuple(round(v, 2) for v in AN_MOUTH_PAW), 'bend sign', BEND_SIGN)
     COOKIE = mxsets.cookie('cookie', PROPS)
     CARD = mxsets.bent_card('card', PROPS, os.path.join(HERE, 'pack', 'cards', 'marketcrash.webp'))
     # Alon holds the card up in front of his chest: the card rides his body (lean pivot), an IK arm puts his wrist at its
@@ -443,8 +567,9 @@ if not DRY:
     CARD.matrix_parent_inverse.identity()
     CARD.location = ALON_GRIP + Vector((0.0, -0.03, 0.10))
     CARD.rotation_euler = (math.radians(90), 0, 0)
-    COOKIE.location = A['bome'].rig.location + Vector((0.45, -0.35, 1.0))     # held out in front, rides the book's bob
-    glue(COOKIE, A['bome'], [COOKIE.location.copy()], radius=0.15)
+    P = posed(A['bome'], 'idle', 0.1)
+    place(COOKIE, A['bome'], BM_G, 0.025, BM_RH)                                 # on top of his right glove
+    A['bome'].arm.animation_data.action = None
     COOKIE['actor'] = 'bome'
     CARD['actor'] = 'alon'
 # Slerf's training rig: each paw can follow an IK target (empties on his lean pivot, so they lean with him). Influence 0
@@ -465,6 +590,10 @@ if not DRY:
         con.chain_count = 2
         con.influence = 0.0
         SLERF_IK[side] = dict(tgt=tgt, shoulder=shoulder, hand=hand, reach=(hand - shoulder).length, sx=sx, keys=[], inf=[])
+
+ANON_MOUTH = Vector((0, -0.51, 1.10))                             # the bag's mouth hole, rig-local (measured: front at -0.51)
+if not DRY:
+    A['alon'].arm.animation_data.action = bpy.data.actions.new('alon_ik_influence')
 
 VIS = []                     # (object name, [(a, visible)])
 
@@ -542,28 +671,41 @@ michi.cut(a, FLOOR + Vector((-1.4, 0.4, 0)), 15)
 anon.walk(a, FLOOR + Vector((0, 5.7, 0)), speed=1.6)
 shot('aisle_walk', 3.0, S('anon', size='WS', bearing=160, lens=35, frame='center', move='track', fstop=2.8, angle=12, lead=False), 'FLOOR')
 shot('slerf_reveal', 1.8, S('slerf', size='WS', angle='low', bearing=40, lens=28, frame='center', move='push', amount=0.2, fstop=4.0), 'FLOOR')
-line('s01', [S('slerf', over='anon', size='MS', lens=50, frame=(-1 / 3, 1 / 3), fstop=2.4),
+line('s01', [S('slerf', size='MS', bearing=-65, lens=50, frame='center', fstop=2.4, **{'with': ['anon']}),
              S('slerf', size='MCU', angle='low', bearing=12, lens=65, frame='left', move='push', amount=0.18, fstop=2.0)], 'FLOOR', weights=[1, 1.4])
 line('a03', [S('anon', size='CU', bearing=25, lens=70, frame='right', fstop=2.0)], 'FLOOR')
 line('s02', [S('slerf', size='CU', bearing=0, lens=85, frame='center', fstop=1.8)], 'FLOOR', pad=0.45)
-slerf.play(ANIM, 'emote', 0.6)                                  # the paws come out with the candles
-CANDLES_ON = ANIM
+CANDLES_ON = ANIM                                                # the paws come out with a candle on each
+slerf.play(CANDLES_ON, 'attack1@0.3')
 line('s03', [S('slerf', size='MS', bearing=-30, angle='low', lens=40, frame='center', move='arc', amount=50, fstop=2.8),
              S('slerf', size='MS', bearing=-8, angle=-6, lens=45, frame='center', fstop=2.4, move='push', amount=0.12),
-             S('slerf', size='MCU', bearing=35, lens=70, frame='left', fstop=2.0, move='push', amount=0.12)], 'FLOOR',
+             S('slerf', size='MS', bearing=55, lens=55, frame='center', fstop=2.4, move='push', amount=0.1, **{'with': ['anon']})], 'FLOOR',
      weights=[1.2, 1.2, 1.2])
 line('a04', [S('anon', size='CU', bearing=30, lens=75, frame='right', dutch=6, fstop=1.8)], 'FLOOR')
 line('s04', [S('slerf', size='WS', bearing=90, lens=35, frame='left', fstop=4.0, look_offset=(0, -1.0, 0))], 'FLOOR', pad=0.45)
 TAKE = ANIM
-anon.play(TAKE, 'attack1', 0.7)
-shot('take_red', 1.2, S('anon', size='MS', bearing=-45, lens=45, frame='right', fstop=2.0, move='push', amount=0.2), 'FLOOR')
-anon.play(ANIM, 'emote', 0.9)
-shot('swallow', 1.5, S('anon', size='MCU', bearing=0, lens=60, frame='center', fstop=2.0, move='dolly_zoom', amount=-0.2), 'FLOOR',
-     glitch='rain_out')
+# Anon steps to where his reaching right paw meets the red candle on Slerf's right paw (Slerf faces -Y: rig = world axes;
+# Anon faces +Y: his local (x, y) is (-x, -y) in the world)
+SL_RED_W = SLERF_AT + (SL_RED if not DRY else Vector((-0.84, -0.74, 0.93)))
+AN_R = AN_REACH if not DRY else Vector((-0.47, -0.83, 1.0))
+TAKE_AT = Vector((SL_RED_W.x + AN_R.x, SL_RED_W.y + AN_R.y + 0.02, 0))
+anon.walk(TAKE - 1.3, TAKE_AT, speed=1.4, then='idle')
+anon.turn(TAKE - 0.35, 0, 0.3)
+anon.play(TAKE, AN_TAKE if not DRY else 'attack1')
+shot('take_red', 1.4, S('anon', distance=2.6, bearing=95, lens=35, frame='center', fstop=3.5, look_offset=(0.0, 0.55, -0.3),
+                         **{'with': ['slerf']}), 'FLOOR')
+anon.play(TAKE + 0.9, 'idle')
+slerf.play(TAKE + 0.9, 'idle')
+SWALLOW = ANIM
+anon.play(SWALLOW, 'idle@0.3', hard=True)
+MOUTH_L = Vector((-0.05, -0.03, 1.07))                           # under the snout, measured on a front grid of the idle pose
+shot('swallow', 1.6, S('anon', distance=1.25, bearing=14, lens=40, frame='center', fstop=4.0, eye=0.98, move='push', amount=0.2),
+     'FLOOR', glitch='rain_out')
 if not DRY:
-    show('candle_red_s', [(0, False), (CANDLES_ON, True), (TAKE + 0.45, False)])
-    show('candle_red_a', [(0, False), (TAKE + 0.45, True), (ANIM - 0.4, False)])
-    show('candle_green_s', [(0, False), (CANDLES_ON, True), (ANIM, False)])
+    print('TAKE at', tuple(round(v, 2) for v in TAKE_AT), 'anon candle centre z', round(AN_R.z, 2), 'slerf candle centre z', round(SL_RED_W.z, 2))
+    show('candle_red_s', [(0, False), (CANDLES_ON + 0.1, True), (TAKE + 0.22, False)])
+    show('candle_red_a', [(0, False), (TAKE + 0.22, True), (SWALLOW, False)])
+    show('candle_green_s', [(0, False), (CANDLES_ON + 0.1, True), (ANIM, False)])
 
 # ---------------------------------------------------------------- 3. the basement of the real
 a = ANIM
@@ -578,14 +720,19 @@ shot('wake_bird', 2.4, S('anon', distance=3.6, angle='bird', bearing=0, lens=28,
 anon.play(ANIM - 0.3, 'ready', 0.8)
 line('s05', [S('slerf', size='MS', angle=5, bearing=0, lens=35, frame='center', fstop=3.2),
              S('anon', size='MCU', angle='high', bearing=10, lens=50, frame='right', fstop=2.4)], 'BASEMENT', weights=[1.3, 1])
-line('mo1', [S('slerf', distance=4.0, bearing=-40, lens=24, frame='right', fstop=5.6, look_offset=(-9.2, 6.0, 1.0), move='push', amount=0.1)], 'BASEMENT')
+line('mo1', [S('slerf', distance=5.8, fixed_heading=90, bearing=0, angle=-6, lens=26, frame='center', fstop=5.6,
+                 look_offset=(-10.3, 2.55, 1.55), move='push', amount=0.12)],
+     'BASEMENT')                                                 # up the stairs to Mom's lit door
 slerf.turn(ANIM, 240)
 line('s06', [S('slerf', size='MCU', bearing=-20, lens=60, frame='right', fstop=2.2)], 'BASEMENT', pad=0.3)
 mensa.play(ANIM, 'idle', 1.4)
 line('n01', [S('mensa', size='MS', bearing=150, lens=40, frame='left', fstop=2.8, move='push', amount=0.15),
              S('mensa', size='CU', bearing=-80, lens=70, frame='right', fstop=2.0)], 'BASEMENT', weights=[1.2, 1])
-farter.play(ANIM, 'emote', 0.8)
-line('f01', [S('farter', size='MS', bearing=0, lens=50, frame='center', fstop=2.4, move='push', amount=0.1)], 'BASEMENT', pad=0.35)
+farter.play(ANIM - 0.6, 'attack1@0.3')                          # Farter, apart from the others, staring at his phone
+shot('phone_insert', 1.5, S('farter', distance=1.35, bearing=155, angle=20, lens=45, frame='center', fstop=2.8, move='push', amount=0.2),
+     'BASEMENT')                                                 # over his shoulder: the chart that only goes up
+line('f01', [S('farter', size='MCU', bearing=35, lens=55, frame='right', fstop=2.0, move='push', amount=0.12)], 'BASEMENT', pad=0.35,
+     lead=0.25)
 
 # ---------------------------------------------------------------- 4. the training program
 a = ANIM
@@ -608,6 +755,10 @@ anon.play(FIGHT + 2.72, 'die', 1.8)                             # ('hit' then 'd
                                                                 # at 1.0x the clip staggers 1.5 s before he drops)
 anon.pos = DOJO + Vector((STRIKE_X - 1.1, 0, 0))
 anon.keys.append([FIGHT + 3.35, *anon.pos, anon.H, 0])
+LIE_DROP = 0.27                                                  # lying on his back the tail propped him 34 cm off the mat:
+anon.keys.append([FIGHT + 3.6, *anon.pos, anon.H, 0])            # lower him onto it while the tail is swung out flat (below)
+anon.pos = anon.pos - Vector((0, 0, LIE_DROP))
+anon.keys.append([FIGHT + 3.95, *anon.pos, anon.H, 0])
 slerf.hold(FIGHT + 2.35)                                        # one slow step in for the push
 slerf.pos = DOJO + Vector((1.0, 0, 0))
 slerf.keys.append([FIGHT + 2.7, *slerf.pos, slerf.H, 0])
@@ -633,7 +784,6 @@ if not DRY:
     R_['keys'] += [(FIGHT + 2.3, paw('Right', 0, 0.45, up=0.0)), (FIGHT + 2.55, paw('Right', 0, 0.4, up=-0.05, inward=0.5)),
                    (FIGHT + 2.72, paw('Right', 0, 0.98, up=-0.12, inward=0.2)), (FIGHT + 3.0, paw('Right', 0, 0.98, up=-0.12, inward=0.2))]
     R_['inf'] += [(FIGHT + 2.3, 0.0), (FIGHT + 2.5, 1.0), (FIGHT + 3.0, 1.0), (FIGHT + 3.45, 0.0)]
-    A['slerf'].arm.animation_data.action = bpy.data.actions.new('slerf_ik_influence')   # its own action, on top of the NLA clips
     for side, ik in SLERF_IK.items():
         animate(ik['tgt'], 'location', [(F(a_), tuple(v)) for a_, v in ik['keys']], 'BEZIER')
         animate(A['slerf'].arm, f'pose.bones["mixamorig:{side}ForeArm"].constraints["IK"].influence',
@@ -647,15 +797,13 @@ line('s08', [S('anon', size='WS', angle='high', bearing=150, lens=35, frame='lef
 
 # ---------------------------------------------------------------- 5. the waiting room and the book
 a = ANIM
+LIE_END = a
 ALON_AT = BASE + Vector((-2.6, 5.4, 0))
 BOME_AT = BASE + Vector((-5.9, 5.2, 0.35))
 alon.cut(a, ALON_AT, 160)
 ALON_IN = a
 bome.cut(a, BOME_AT, 170)
 anon.cut(a, BASE + Vector((-2.2, 2.4, 0)), 0)
-for k in range(40):                                            # the book floats, bobbing gently
-    t = a + k * 0.5
-    bome.keys.append([t, BOME_AT.x, BOME_AT.y, BOME_AT.z + 0.08 * math.sin(k * 0.9), 170 + 6 * math.sin(k * 0.5), 0])
 anon.cut(a, BASE + Vector((-2.4, 4.0, 0)), 0)
 anon.face(a, alon, 0.01)
 shot('waiting_room', 1.4, S('alon', size='WS', bearing=200, lens=28, frame='left', fstop=4.0, look_offset=(0.1, -0.8, 0)), 'BASEMENT')
@@ -669,9 +817,40 @@ anon.walk(ANIM - 0.3, BASE + Vector((-4.4, 3.9, 0)), speed=1.3)
 anon.face(ANIM + 1.2, bome)
 shot('book_reveal', 1.6, S('bome', size='MS', bearing=10, lens=40, frame='center', move='crane', amount=-12, fstop=2.8), 'BASEMENT')
 line('b01', [S('bome', size='MCU', bearing=-40, lens=60, frame='right', fstop=2.2)], 'BASEMENT')
-COOKIE_T = ANIM + 1.3
+OFFER = ANIM + 1.0                                              # "...Cookie?": the glove with the cookie comes round to Anon
 line('b02', [S('anon', size='CU', bearing=40, lens=75, frame='left', fstop=1.8),
-             S('bome', size='MCU', bearing=-25, lens=60, frame='right', fstop=2.2, move='push', amount=0.1)], 'BASEMENT', pad=0.5, weights=[0.8, 1])
+             S('bome', size='MS', bearing=-70, lens=40, frame='center', fstop=2.8, move='push', amount=0.1, **{'with': ['anon']})],
+     'BASEMENT', pad=0.3, weights=[0.7, 1])
+COOKIE_T = ANIM + 0.45
+shot('cookie_take', 1.6, S('anon', distance=3.0, bearing=90, lens=35, frame='center', fstop=4.0, look_offset=(0, 0.3, -0.2),
+                           **{'with': ['bome']}), 'BASEMENT')
+# geometry: Bome turns so his right glove points at Anon and sinks to Anon's reach; Anon steps to the glove
+G = BM_G if not DRY else Vector((-0.97, -0.1, 1.1))
+AC = AN_CK if not DRY else Vector((-0.1, -0.4, 1.0))
+anon_here = Vector((BASE.x - 4.4, BASE.y + 3.9, 0))
+v = (anon_here - Vector((BOME_AT.x, BOME_AT.y, 0))).normalized()
+phi = math.atan2(-v.y, -v.x)                                     # rig rotation that turns local -X (his right glove) onto v
+H_OFFER = 180 - math.degrees(phi)
+z_offer = max(-0.1, (AC.z + 0.04) - (G.z + 0.025))
+glove = Vector((BOME_AT.x + G.x * math.cos(phi) - G.y * math.sin(phi), BOME_AT.y + G.x * math.sin(phi) + G.y * math.cos(phi), z_offer + G.z))
+H_A = heading_to(anon_here, glove)
+pa = math.radians(180 - H_A)
+paw = Vector((AC.x * math.cos(pa) - AC.y * math.sin(pa), AC.x * math.sin(pa) + AC.y * math.cos(pa), 0))
+ANON_CK_AT = Vector((glove.x - paw.x, glove.y - paw.y, 0))
+for k in range(int((OFFER - a) / 0.5)):                          # the book floats, bobbing gently, until he offers
+    t = a + k * 0.5
+    bome.keys.append([t, BOME_AT.x, BOME_AT.y, BOME_AT.z + 0.08 * math.sin(k * 0.9), 170 + 6 * math.sin(k * 0.5), 0])
+bome.keys.append([OFFER, BOME_AT.x, BOME_AT.y, BOME_AT.z, 170, 0])
+bome.keys.append([OFFER + 0.6, BOME_AT.x, BOME_AT.y, BASE.z + z_offer, H_OFFER, 0])
+bome.pos, bome.H = Vector((BOME_AT.x, BOME_AT.y, BASE.z + z_offer)), H_OFFER
+bome.play(OFFER, 'idle@0.1')
+anon.walk(OFFER + 0.2, ANON_CK_AT, speed=1.2, then='idle')
+anon.turn(COOKIE_T - 0.4, H_A, 0.2)
+anon.play(COOKIE_T - 0.1, 'attack2@0.1')
+anon.play(COOKIE_T + 0.9, 'idle')
+if not DRY:
+    print('COOKIE offer: bome H', round(H_OFFER), 'sinks to', round(z_offer, 2), 'glove', tuple(round(x_, 2) for x_ in glove),
+          'anon at', tuple(round(x_, 2) for x_ in ANON_CK_AT), 'facing', round(H_A))
 
 # ---------------------------------------------------------------- 6. the agents, on the rooftop (the bullet-time dodge)
 a = ANIM
@@ -692,36 +871,47 @@ shot('fire', 1.0, S('jean', size='MS', bearing=-25, lens=40, frame='right', fsto
 BT = ANIM
 BT_FILM = 5.2
 BT_SPEED = 0.08
-anon.play(BT, 'hit', 0.12)
+BULLET_Z = [float(z) for z in os.environ.get('BULLET_Z', '1.57,1.63,1.59,1.67,1.58,1.64,1.61').split(',')]
+anon.play(BT, 'ready', 0.15)
+LEAN = 16
 anon.lean(BT, 0)
-anon.lean(BT + 0.30, -52)
-anon.lean(BT + BT_FILM * BT_SPEED + 0.25, -52)
-anon.lean(BT + BT_FILM * BT_SPEED + 0.6, 0)
+anon.lean(BT + 0.14, -LEAN)                                       # fully back before the first candle arrives (BT + 0.19)
+anon.lean(BT + 0.40, -LEAN)
+anon.lean(BT + 0.75, 0)
 anon.play(BT + BT_FILM * BT_SPEED + 0.6, 'idle')                 # the slowed 'hit' clip would run ~8 s past the dodge
-shot('bullet_time', BT_FILM, S('anon', size='WS', angle='low', bearing=60, lens=30, frame='center', move='arc', amount=300, fstop=4.0,
-                                  ease='smooth', eye=0.8), 'ROOFTOP', speed=BT_SPEED, hand=None, bullet=True)
+shot('bullet_time', BT_FILM, S('anon', distance=2.9, angle=-4, bearing=63, lens=24, frame='center', move='arc', amount=180, fstop=4.0,
+                                  ease='smooth', eye=1.0), 'ROOFTOP', speed=BT_SPEED, hand=None, bullet=True)
 PROJ = []
-for k in range(7):                                                     # red candles from Jeanphil's hand, past Anon's leaned body
-    start = ROOF + Vector((0.22 + 0.04 * (k - 3), 7.35, 0.98 + 0.03 * k))
-    end = ROOF + Vector((0.5 * (k - 3) * 0.6, -6.0, 1.05 + 0.12 * (k % 3)))
-    t_on = FIRE + 0.35 + k * 0.03
-    PROJ.append((start, end, t_on, t_on + 1.15))
+PROJ_AT = []
+BULLET_V = 10.0                                                        # m/s of animation time (0.8 m/s on screen in bullet time)
+for k in range(7):                                                     # fired at the end of the shot of Jeanphil, they reach Anon
+    start = ROOF + Vector((0.22 + 0.03 * (k - 3), 7.3, 1.35 + 0.015 * k))       # between BT + 0.19 and BT + 0.31, just over
+    at = ROOF + Vector((0.07 * (k - 3), 4.2, BULLET_Z[k]))                     # his leaned-back bag (heights checked on the mesh)
+    end = start + (at - start) * ((start.y - (ROOF.y - 6.0)) / (start.y - at.y))
+    t_on = FIRE + 0.84 + k * 0.035                                   # staggered: they read one by one
+    PROJ.append((start, end, t_on, t_on + (start - end).length / BULLET_V))
+    PROJ_AT.append(at)
 shot('after_dodge', 1.0, S('anon', size='MS', bearing=20, lens=40, frame='center', fstop=2.8), 'ROOFTOP')
 line('m03', [S('michi', size='MCU', bearing=-30, lens=60, frame='right', fstop=2.0)], 'ROOFTOP')
-line('a08', [cine.hero('anon', 45)], 'ROOFTOP')
+A08 = ANIM                                                       # "Diamond hands.": both paws up, a diamond in each
+anon.play(A08, AN_DIAMOND if not DRY else 'win')
+line('a08', [S('anon', size='MS', angle=-8, bearing=0, lens=45, frame='center', fstop=2.8, move='push', amount=0.1)], 'ROOFTOP')
 # second barrage: he lifts a paw, the candles stop in the air, turn green and drop
 FIRE2 = ANIM
+if not DRY:
+    show('diamond_Right', [(0, False), (A08 + 0.15, True)])
+    show('diamond_Left', [(0, False), (A08 + 0.15, True)])
 jean.play(FIRE2, 'attack2', 1.0)
 anon.play(FIRE2 + 0.2, 'win', 0.8)
 STOP = []
 for k in range(7):
-    start = ROOF + Vector((0.22 + 0.04 * (k - 3), 7.35, 0.98 + 0.03 * k))
-    hx = (-1.3, -0.95, -0.6, 0.0, 0.6, 0.95, 1.3)[k]                        # a ring around him: the middle one hangs over his
-    hang = ROOF + Vector((hx, 5.6 + 0.15 * (k % 2), 1.85 if k == 3 else 0.85 + 0.15 * (k % 3)))   # head, none crosses his face
+    start = ROOF + Vector((0.22 + 0.03 * (k - 3), 7.3, 1.35 + 0.015 * k))
+    hx = (-1.0, -0.7, -0.4, 0.0, 0.4, 0.7, 1.0)[k]                         # a wall of candles 1.6 m in front of him, the middle one
+    hang = ROOF + Vector((hx, 5.8 + 0.12 * (k % 2), 1.95 if k == 3 else 0.9 + 0.22 * (k % 3)))    # high: drops clear of him
     STOP.append((start, hang, FIRE2 + 0.3 + k * 0.04))
 shot('freeze_ots', 1.9, S('jean', over='anon', size='MS', lens=50, frame=(-1 / 3, 1 / 3), fstop=4.0), 'ROOFTOP')
 TURN_GREEN = ANIM
-shot('freeze_insert', 1.6, S('anon', size='MCU', bearing=0, lens=40, frame='center', fstop=5.6, look_offset=(0, 1.5, -0.2), move='arc',
+shot('freeze_insert', 1.6, S('anon', size='MS', bearing=70, lens=35, frame='center', fstop=5.6, look_offset=(0, 0.8, -0.1), move='arc',
                              amount=25), 'ROOFTOP')
 line('j02', [S('jean', size='MCU', angle=-10, bearing=20, lens=70, frame='left', dutch=-8, fstop=2.0)], 'ROOFTOP', pad=0.4)
 line('a09', [S('anon', size='CU', bearing=-20, lens=75, frame='right', fstop=1.8, move='push', amount=0.12, ease='settle')], 'ROOFTOP', pad=0.4)
@@ -733,15 +923,31 @@ END_A = ANIM
 if not DRY:
     proj_objs = []
     for k, (start, end, t_on, t_off) in enumerate(PROJ):
-        c = mxsets.candle(f'proj{k}', 'red', PROPS, size=2.6, trail=1.6)
+        c = mxsets.candle(f'proj{k}', 'red', PROPS, size=1.5, trail=0.8)
         c.rotation_euler = (math.radians(90), 0, 0)
         animate(c, 'location', [(F(0), (0, 0, -50)), (F(t_on) - 0.02, (0, 0, -50)), (F(t_on), tuple(start)), (F(t_off), tuple(end)),
                                 (F(t_off) + 0.02, (0, 0, -50))])
         proj_objs.append(c.name)
         animate(bpy.data.objects[f'proj{k}_trail'], 'scale', [(F(t_on), (1, 1, 0.02)), (F(t_on + 0.3), (1, 1, 1))], 'LINEAR')
+    flash_m = mxsets.material('muzzle', (1.0, 0.5, 0.3), emit=(1.0, 0.45, 0.25), strength=25.0)
+    for name_, t_fl in (('muzzle1', PROJ[0][2]), ('muzzle2', STOP[0][2])):     # a flash at Jeanphil's hand as each barrage leaves
+        fl = mxsets.sphere(name_, 0.05, tuple(PROJ[3][0]), flash_m, PROPS)
+        fll = bpy.data.objects.new(name_ + '_light', bpy.data.lights.new(name_ + '_light', 'POINT'))
+        fll.data.color = (1.0, 0.45, 0.25)
+        fll.data.shadow_soft_size = 0.1
+        sc.collection.objects.link(fll)
+        fll.parent = fl
+        fll.data.animation_data_create()
+        fa = bpy.data.actions.new(name_ + '_light_energy')
+        fll.data.animation_data.action = fa
+        fc = fa.fcurves.new('energy')
+        for f_, v_ in ((F(t_fl) - 0.5, 0.0), (F(t_fl), 600.0), (F(t_fl + 0.1), 0.0)):
+            fc.keyframe_points.insert(f_, v_)
+        fl.visible_shadow = False
+        animate(fl, 'scale', [(F(0), (0, 0, 0)), (F(t_fl) - 0.5, (0, 0, 0)), (F(t_fl) + 0.5, (1.4, 1.4, 1.4)), (F(t_fl + 0.12), (0, 0, 0))], 'LINEAR')
     for k, (start, hang, t_on) in enumerate(STOP):
         for colour in ('red', 'green'):
-            c = mxsets.candle(f'stop{k}_{colour}', colour, PROPS, size=2.6, trail=0.0)
+            c = mxsets.candle(f'stop{k}_{colour}', colour, PROPS, size=1.3, trail=0.0)
             c.rotation_euler = (math.radians(90), 0, 0)
             t_hang = t_on + 0.45
             if colour == 'red':
@@ -754,13 +960,147 @@ if not DRY:
                         (F(t_g + 0.9), tuple(drop))]
             animate(c, 'location', keys)
     animate(CARD, 'modifiers["bend"].angle', [(F(BEND + 0.15), 0.0), (F(BEND + 1.1), math.radians(160))], 'BEZIER')  # in the insert
-    A['alon'].arm.animation_data.action = bpy.data.actions.new('alon_ik_influence')
     animate(A['alon'].arm, 'pose.bones["mixamorig:RightForeArm"].constraints["IK"].influence',
             [(F(ALON_IN - 0.05), 0.0), (F(ALON_IN), 1.0), (F(BEND + 8.0), 1.0), (F(BEND + 8.4), 0.0)], 'LINEAR')
-    show('cookie', [(0, False), (COOKIE_T, True)])
+    show('cookie', [(0, False), (OFFER - 3.5, True), (COOKIE_T + 0.15, False)])
+    show('cookie_a', [(0, False), (COOKIE_T + 0.15, True), (COOKIE_T + 1.6, False)])
     show('card', [(0, False), (BEND - 6.0, True), (BEND + 8.0, False)])
     for actor in A.values():
         actor.finish(END_A + 2.0)
+    # the fall: his tail curls straight down under him; swing it out flat along the mat (a hook on the tail, pivoting at its
+    # root, weighted from root to tip) while the rig lowers him onto the mat
+    an = A['anon']
+    body = skin(an)
+    tail = {v.index: min(1.0, max(0.0, (v.co.y - 0.24) / 0.22)) ** 1.2 for v in body.data.vertices if v.co.y > 0.24 and v.co.z < 0.75}
+    vg = body.vertex_groups.new(name='tail_hook')
+    for i_, w_ in tail.items():
+        vg.add([i_], w_, 'REPLACE')
+    sc.frame_set(int(F(FIGHT + 4.5)))
+    ev = body.evaluated_get(bpy.context.evaluated_depsgraph_get())
+    co = [v.co.copy() for v in ev.data.vertices]
+    root_ = [co[i_] for i_, w_ in tail.items() if w_ < 0.12]
+    tip_ = [co[i_] for i_, w_ in tail.items() if w_ > 0.9]
+    rest_ = [co[i_] for i_ in range(len(co)) if i_ not in tail]
+    base = sum(root_, Vector()) / len(root_)
+    tipc = sum(tip_, Vector()) / len(tip_)
+    centre = sum(rest_, Vector()) / len(rest_)
+    out = base - centre
+    out.z = 0
+    out.normalize()
+    target = (out + Vector((0, 0, 0.75))).normalized()
+    q = (tipc - base).normalized().rotation_difference(target)
+    hook_e = bpy.data.objects.new('tail_hook', None)
+    sc.collection.objects.link(hook_e)
+    hook_e.parent = body.parent                                    # (parented to the mesh it deforms made a dependency cycle
+    hook_e.matrix_parent_inverse = body.matrix_parent_inverse.copy()   # and stretched the tail into a rod)
+    assert (body.matrix_basis - Matrix.Identity(4)).to_3x3().median_scale < 1e-6 and body.matrix_basis.translation.length < 1e-6, \
+        'the skin has its own transform: compose it into the hook'
+    hook_e.location = base
+    hook_e.rotation_mode = 'QUATERNION'
+    hk = body.modifiers.new('tail_hook', 'HOOK')
+    hk.object = hook_e
+    hk.vertex_group = 'tail_hook'
+    hk.falloff_type = 'NONE'
+    bpy.context.view_layer.update()
+    hk.matrix_inverse = hook_e.matrix_world.inverted() @ body.matrix_world   # identity until the hook turns
+    hk.center = base
+    ident = (1.0, 0.0, 0.0, 0.0)
+    animate(hook_e, 'rotation_quaternion', [(F(0), ident), (F(FIGHT + 3.3), ident), (F(FIGHT + 3.9), tuple(q)),
+                                            (F(LIE_END) - 0.02, tuple(q)), (F(LIE_END), ident)], 'BEZIER')
+    print('TAIL base', tuple(round(v, 2) for v in base), 'tip', tuple(round(v, 2) for v in tipc), 'swing', round(math.degrees(q.angle)), 'deg')
+    # the dodge: Anon's spine bends back (an NLA strip over the clips, blended in and out), peak while the candles pass
+    an = A['anon']
+    bend = bpy.data.actions.new('anon_bend')
+    peak = {'mixamorig:Spine': 22, 'mixamorig:Spine1': 24, 'mixamorig:Spine2': 20, 'mixamorig:Neck': 12}
+    for bname, deg in peak.items():
+        an.arm.pose.bones[bname].rotation_mode = 'QUATERNION'
+        for idx in range(4):
+            fc = bend.fcurves.new(f'pose.bones["{bname}"].rotation_quaternion', index=idx, action_group=bname)
+            for t_, k_ in ((0.0, 0), (0.12, 1), (0.47, 1), (0.67, 0)):
+                ang = math.radians(deg) * k_ * BEND_SIGN / 2
+                q = (math.cos(ang), math.sin(ang), 0, 0)
+                fc.keyframe_points.insert(F(BT + t_), q[idx]).interpolation = 'BEZIER'
+    tr = an.arm.animation_data.nla_tracks.new()
+    st = tr.strips.new('bend', int(F(BT)) - 1, bend)
+    st.blend_type = 'COMBINE'
+    st.extrapolation = 'NOTHING'
+    # the swallow (close-up): the candle rises into frame from below, tips to point at the mouth and slides in
+    w_ = make_where({n: sorted(x.keys, key=lambda k: k[0]) for n, x in A.items()})
+    feet, head = w_('anon', SWALLOW + 0.5)
+    fwd = Vector((math.sin(math.radians(head)), math.cos(math.radians(head)), 0))
+    side = Vector((fwd.y, -fwd.x, 0))                                       # his left (local +x) in the world
+    mouth = Vector(feet) + side * -MOUTH_L.x + fwd * -MOUTH_L.y + Vector((0, 0, MOUTH_L.z))
+    eat = mxsets.candle('candle_eat', 'red', PROPS)
+    eat.rotation_mode = 'QUATERNION'
+    gone = (0, 0, -50)
+    t0_ = SWALLOW + 0.15
+    up = Vector((0, 0, 1)).to_track_quat('Z', 'Y')
+    inward = (-fwd).to_track_quat('Z', 'Y')                                # the candle's top end points into the mouth
+    animate(eat, 'location', [(F(0), gone), (F(t0_) - 0.02, gone), (F(t0_), tuple(mouth + fwd * 0.10 - Vector((0, 0, 0.32)))),
+                              (F(t0_ + 0.45), tuple(mouth + fwd * 0.17)), (F(t0_ + 0.72), tuple(mouth - fwd * 0.04)),
+                              (F(t0_ + 0.74), gone)], 'BEZIER')
+    animate(eat, 'rotation_quaternion', [(F(t0_), tuple(up)), (F(t0_ + 0.25), tuple(up)), (F(t0_ + 0.45), tuple(inward))], 'BEZIER')
+    animate(eat, 'scale', [(F(t0_ + 0.5), (1, 1, 1)), (F(t0_ + 0.72), (0.25, 0.25, 0.25))], 'LINEAR')
+    EAT_IN = t0_ + 0.72
+    eg = bpy.data.objects.new('candle_eat_glow', bpy.data.lights.new('candle_eat_glow', 'POINT'))
+    eg.data.color = (1.0, 0.12, 0.08)
+    eg.data.energy = 14.0
+    eg.data.shadow_soft_size = 0.05
+    sc.collection.objects.link(eg)
+    eg.parent = eat
+    print('SWALLOW mouth', tuple(round(v, 2) for v in mouth))
+    # the candles skim 18 cm over the bent body: measure its top at the peak of the bend
+    body = skin(an)
+    bp = []
+    for tt in (0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45):
+        sc.frame_set(int(F(BT + tt)), subframe=F(BT + tt) % 1)
+        ev = body.evaluated_get(bpy.context.evaluated_depsgraph_get())
+        bp += [body.matrix_world @ v.co for v in ev.data.vertices][::2]
+    rz = {}
+    for k in range(7):
+        x_ = ROOF.x + 0.2 * (k - 3)
+        near = [p.z for p in bp if abs(p.x - x_) < 0.25]
+        top_all = max(p.z for p in bp)
+        rz[k] = (max(near) if near else top_all - 0.2) + 0.22 + 0.12 * (k % 3)
+        PROJ_AT[k] = Vector((x_, ROOF.y + 4.2, rz[k]))
+    print('BENT top', round(max(p.z for p in bp), 2), 'bullet heights', [round(v, 2) for v in rz.values()])
+    # re-aim the first barrage from Jeanphil's posed right hand at each launch (a guessed point floated off the hand)
+    jarm = A['jean'].arm
+    for k, (start, end, t_on, t_off) in enumerate(PROJ):
+        sc.frame_set(int(F(t_on)), subframe=F(t_on) - int(F(t_on)))
+        hand = jarm.matrix_world @ jarm.pose.bones['mixamorig:RightHand'].tail + Vector((0, -0.12, 0))
+        at = PROJ_AT[k]
+        d = (at - hand).normalized()
+        end = hand + d * ((hand.y - (ROOF.y - 6.0)) / max(1e-3, -d.y))
+        t_off = t_on + (end - hand).length / BULLET_V
+        c = bpy.data.objects[f'proj{k}']
+        c.animation_data_clear()
+        c.rotation_mode = 'QUATERNION'
+        c.rotation_quaternion = d.to_track_quat('Z', 'Y')            # candle axis along the flight (trail behind)
+        animate(c, 'location', [(F(0), (0, 0, -50)), (F(t_on) - 0.02, (0, 0, -50)), (F(t_on), tuple(hand)), (F(t_off), tuple(end)),
+                                (F(t_off) + 0.02, (0, 0, -50))])
+        if k == 0:
+            m1 = bpy.data.objects['muzzle1']
+            m1.location = hand
+            print('FIRE hand', tuple(round(v, 2) for v in hand), 'reaches anon at', round(t_on + (hand.y - (ROOF.y + 4.2)) / (-d.y) / BULLET_V - BT, 3), 's after BT')
+    GLOW = {'candle_red_s': (1.0, 0.12, 0.08), 'candle_green_s': (0.15, 1.0, 0.3), 'candle_red_a': (1.0, 0.12, 0.08)}
+    for name, steps in VIS:
+        if name in GLOW:                                           # each candle lights the faces near it in its own colour
+            gl = bpy.data.objects.new(name + '_glow', bpy.data.lights.new(name + '_glow', 'POINT'))
+            gl.data.color = GLOW[name]
+            gl.data.shadow_soft_size = 0.06
+            sc.collection.objects.link(gl)
+            gl.parent = bpy.data.objects[name]
+            gl.location = (0, 0, 0.05)
+            en = []
+            for a_, on in steps:
+                en += [(F(a_) - 0.02, en[-1][1] if en else 0.0), (F(a_), 18.0 if on else 0.0)]
+            gl.data.animation_data_create()
+            act_ = bpy.data.actions.new(name + '_glow_energy')
+            gl.data.animation_data.action = act_
+            fc = act_.fcurves.new('energy')
+            for f_, v_ in en[1:]:
+                fc.keyframe_points.insert(f_, v_).interpolation = 'CONSTANT'
     for name, steps in VIS:
         obj = bpy.data.objects.get(name)
         if obj is None:
@@ -778,6 +1118,11 @@ if not DRY:
 # ================================================================ solve every shot against the built scene
 if not DRY:
     for s_ in SHOTS:
+        if s_['name'] == 'phone_insert':
+            a_mid = s_['a0'] + (s_['t1'] - s_['t0']) * 0.5
+            sc.frame_set(int(F(a_mid)))
+            feet, head = make_where({n: sorted(x.keys, key=lambda k: k[0]) for n, x in A.items()})('farter', a_mid)
+            s_['cam']['look_offset'] = list(bpy.data.objects['phone'].matrix_world.translation - cine.eye_point('farter', feet, head))
         if s_['name'] == 'k02_0':
             a_mid = s_['a0'] + (s_['t1'] - s_['t0']) * 0.5
             sc.frame_set(int(F(a_mid)))
@@ -815,7 +1160,7 @@ def film_of(a):
     return None
 
 
-EVENTS = {'take': TAKE + 0.45, 'fight': FIGHT, 'fall': FIGHT + 3.55, 'push': FIGHT + 2.72, 'card_bend': BEND + 0.15, 'cookie': COOKIE_T, 'fire': FIRE + 0.3,
+EVENTS = {'take': TAKE + 0.45, 'fight': FIGHT, 'fall': FIGHT + 3.55, 'push': FIGHT + 2.72, 'card_bend': BEND + 0.15, 'cookie': COOKIE_T + 0.15, 'fire': FIRE + 0.3,
           'bullet_time': BT, 'fire2': FIRE2 + 0.3, 'turn_green': TURN_GREEN + 0.6, 'drop': TURN_GREEN + 1.3}
 EVENTS.update({f'swing{k}': FIGHT + 0.9 * k + 0.25 for k in range(3)})
 EVENTS = {k: film_of(v) for k, v in EVENTS.items()}

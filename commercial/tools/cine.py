@@ -328,11 +328,29 @@ def solve(shot, where, scene, t0=0.0, t1=1.0, samples=7, ignore=()):
     partners = tuple(shot.get('with', ()))                  # two-shots: the other actor belongs in the frame, not an obstacle
     skip = tuple(n for n in (shot['subject'], shot.get('over')) if n) + partners
 
+    def inside(pos, margin=0.12):
+        """The camera inside (or touching) any character's body: rays up and down both hit the same character's mesh."""
+        import bpy
+        deps = bpy.context.evaluated_depsgraph_get()
+        for direction in (Vector((0, 0, 1)), Vector((1, 0, 0)), Vector((0, 1, 0))):
+            hit_a, _, _, _, obj_a, _ = scene.ray_cast(deps, pos, direction, distance=3.0)
+            hit_b, _, _, _, obj_b, _ = scene.ray_cast(deps, pos, -direction, distance=3.0)
+            if hit_a and hit_b and owner(obj_a) and owner(obj_a) == owner(obj_b):
+                return owner(obj_a)
+        for direction in (Vector((1, 0, 0)), Vector((-1, 0, 0)), Vector((0, 1, 0)), Vector((0, -1, 0)), Vector((0, 0, -1))):
+            hit, _, _, _, obj, _ = scene.ray_cast(deps, pos, direction, distance=margin)
+            if hit and owner(obj):
+                return owner(obj)
+        return None
+
     def clear(candidate):
         for i in range(samples):
             u = i / (samples - 1)
             t = t0 + (t1 - t0) * u
             pos, look, lens, roll, frame, dist = rig(candidate, u, t, where, aspect)
+            who = inside(pos)                                   # partners are looked past, but never stood inside
+            if who:
+                return f'camera inside {who}'
             obj = blocker(scene, pos, look, skip=(candidate['subject'],) + partners)
             if obj is not None and obj.name not in ignore:
                 return obj.name

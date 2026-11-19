@@ -548,8 +548,8 @@ def frame(o):
         a = grade(a, s['set'])
         if s.get('glitch') == 'rain_out':                    # the swallow: the picture breaks into code, then white
             u = (t - s['t0']) / (s['t1'] - s['t0'])
-            a = glitch(a, t, ease((u - 0.35) / 0.5))
-            a = a + ease((u - 0.85) / 0.15)
+            a = glitch(a, t, ease((u - 0.56) / 0.3))              # after the candle is in (it goes in at about u = 0.55)
+            a = a + ease((u - 0.88) / 0.12)
         if s.get('glitch') == 'rain_in':                     # waking up: out of white and code
             u = (t - s['t0']) / (s['t1'] - s['t0'])
             a = glitch(a, t, 1 - ease(u / 0.35)) + (1 - ease(u / 0.12))

@@ -54,7 +54,8 @@ LINES = [  # id, speaker, text as spoken, speed factor, caption
     ('n02', 'mensa', 'Loading the trading program.', 1.0, None),
     ('a05', 'anon', 'I know candlesticks.', 0.95, None),
     ('s07', 'slerf', 'Show / me.', 1.0, 'Show... me.'),
-    ('s08', 'slerf', 'You think / that is leverage / you are trading?', 1.0, "You think... that's leverage... you're trading?"),
+    ('s08', 'slerf', 'You think / PH:ðat ɪz lˈɛvəɹɪdʒ / you are trading?', 1.0, "You think... that's leverage... you're trading?"),
+    # (en-gb says lˈiːvəɹɪdʒ, 'LEE-ver-idge', which reads as 'leave-ridge': spelled out in phonemes with the LEV vowel)
     # --- 5. the waiting room and the book
     ('k01', 'alon', "Don't try to read the chart. That's impossible. Only realise the truth.", 1.0, None),
     ('a06', 'anon', 'What truth?', 1.0, None),
@@ -78,18 +79,21 @@ def trim(audio):
 
 def say(kokoro, text, voice, speed, lang):
     voices = voice if isinstance(voice, tuple) else (voice,)
-    takes = [trim(kokoro.create(text, voice=v, speed=speed, lang=lang)[0]) for v in voices]
+    ph = text.startswith('PH:')                                   # 'PH:' = the piece is given as phonemes (fixed pronunciation)
+    takes = [trim(kokoro.create(text[3:] if ph else text, voice=v, speed=speed, lang=lang, is_phonemes=ph)[0]) for v in voices]
     n = max(len(a) for a in takes)
     mix = sum(np.pad(a, (0, n - len(a))) for a in takes) / (len(takes) ** 0.6)
     return mix.astype(np.float32)
 
 
-def main(kokoro_dir: str, out_dir: str) -> None:
+def main(kokoro_dir: str, out_dir: str, only=None) -> None:
     os.makedirs(out_dir, exist_ok=True)
     kokoro = Kokoro(f'{kokoro_dir}/kokoro-v1.0.onnx', f'{kokoro_dir}/voices-v1.0.bin')
     rate = 24000
-    result = {}
+    result = json.load(open(f'{out_dir}/vo.json')) if only and os.path.exists(f'{out_dir}/vo.json') else {}
     for line_id, who, text, factor, caption in LINES:
+        if only and line_id not in only:
+            continue
         voice, lang, speed = VOICES[who]
         pieces = [p.strip() for p in text.split(' / ')]
         gap = np.zeros(int(PAUSE * rate), np.float32)
@@ -108,4 +112,4 @@ def main(kokoro_dir: str, out_dir: str) -> None:
 
 
 if __name__ == '__main__':
-    main(sys.argv[1], sys.argv[2])
+    main(sys.argv[1], sys.argv[2], sys.argv[3].split(',') if len(sys.argv) > 3 else None)

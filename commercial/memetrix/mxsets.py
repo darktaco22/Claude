@@ -132,6 +132,9 @@ def build_floor():
 
 
 # ---------------------------------------------------------------- Mom's basement (the real world)
+CRT_SCREEN = {}
+
+
 def build_basement():
     col = collection('BASEMENT')
     lit = collection('L_BASEMENT')
@@ -142,12 +145,85 @@ def build_basement():
                             ('base_right', (0.4, 20, 5), (10, 0, 2.5)), ('base_front', (24, 0.4, 5), (0, -9, 2.5)),
                             ('base_ceiling', (24, 20, 0.3), (0, 0, 5.1))):
         box(name, size, o + Vector(off), concrete, col)
-    stairs = material('stairs', (0.35, 0.22, 0.12), rough=0.8)
-    for k in range(8):                                                       # the stairs up to Mom (light spills down them)
-        box(f'stair{k}', (1.6, 0.45, 0.3), o + Vector((-8.6, 6.8 - k * 0.45, 0.15 + k * 0.3)), stairs, col)
+    # the stairs up to Mom: treads with a nosing, painted risers, a worn carpet runner, a closed-in underside, a handrail on
+    # balusters with a newel post, a landing with a rail, a family photo and a light switch on the wall
+    tread_m = material('stair_tread', (0.42, 0.27, 0.15), rough=0.55)
+    add_bump(tread_m, 30.0, 0.15)
+    riser_m = material('stair_riser', (0.82, 0.79, 0.72), rough=0.7)
+    runner_m = material('stair_runner', (0.32, 0.07, 0.06), rough=0.95)
+    add_bump(runner_m, 120.0, 0.3)
+    panel_m = material('stair_panel', (0.78, 0.75, 0.68), rough=0.75)
+    add_bump(panel_m, 6.0, 0.08)
+    rail_m = material('stair_rail', (0.30, 0.18, 0.10), rough=0.4)
+    for k in range(8):
+        yc, zt = 6.8 - k * 0.45, 0.3 + k * 0.3                                # step centre (y), top of the tread (z)
+        box(f'stair{k}', (1.6, 0.45, 0.26), o + Vector((-8.6, yc, zt - 0.17)), riser_m, col)                       # the body
+        box(f'tread{k}', (1.64, 0.49, 0.04), o + Vector((-8.6, yc + 0.02, zt - 0.02)), tread_m, col, bevel=0.008)   # nosing
+        box(f'runner{k}', (0.8, 0.47, 0.012), o + Vector((-8.65, yc + 0.01, zt + 0.006)), runner_m, col)
+        box(f'runner_r{k}', (0.8, 0.012, 0.26), o + Vector((-8.65, yc + 0.236, zt - 0.17)), runner_m, col)
+    box('stair_landing', (1.6, 1.4, 0.3), o + Vector((-8.6, 2.95, 2.25)), riser_m, col)
+    box('landing_top', (1.64, 1.44, 0.04), o + Vector((-8.6, 2.95, 2.38)), tread_m, col, bevel=0.008)
+    import bmesh
+    me = bpy.data.meshes.new('under_stairs')                                  # the side panel closing in the space under them
+    bm = bmesh.new()
+    vs = [bm.verts.new((o.x - 7.79, o.y + yy_, zz_)) for yy_, zz_ in ((7.025, 0.0), (2.25, 0.0), (2.25, 2.1), (3.875, 2.1))]
+    bm.faces.new(vs)
+    bm.to_mesh(me)
+    bm.free()
+    under = bpy.data.objects.new('under_stairs', me)
+    col.objects.link(under)
+    me.materials.append(panel_m)
+    sol = under.modifiers.new('thick', 'SOLIDIFY')
+    sol.thickness = 0.03
+    for k in range(8):                                                       # balusters from each tread up to the rail
+        yc, zt = 6.8 - k * 0.45, 0.3 + k * 0.3
+        cylinder(f'baluster{k}', 0.018, 0.88, o + Vector((-7.88, yc, zt + 0.44)), rail_m, col, verts=8)
+    box('newel', (0.1, 0.1, 1.3), o + Vector((-7.88, 7.05, 0.65)), rail_m, col, bevel=0.01)
+    sphere('newel_cap', 0.07, o + Vector((-7.88, 7.05, 1.33)), rail_m, col)
+    p0, p1 = Vector((-7.88, 7.05, 1.2)), Vector((-7.88, 3.65, 2.1 + 1.18))   # the handrail along the slope, top of the posts
+    rail = cylinder('handrail', 0.03, (p1 - p0).length, o + (p0 + p1) / 2, rail_m, col, verts=12)
+    rail.rotation_mode = 'QUATERNION'
+    rail.rotation_quaternion = (p1 - p0).to_track_quat('Z', 'Y')
+    for k, yy_ in enumerate((3.55, 2.95, 2.35)):                              # the landing rail
+        cylinder(f'landing_post{k}', 0.02, 0.9, o + Vector((-7.88, yy_, 2.85)), rail_m, col, verts=8)
+    box('landing_rail', (0.06, 1.35, 0.06), o + Vector((-7.88, 2.95, 3.3)), rail_m, col)
+    frame_m = material('photo_frame', (0.15, 0.1, 0.07), rough=0.4)
+    photo_m = material('photo', (0.55, 0.45, 0.35), rough=0.6, emit=(0.25, 0.2, 0.15), strength=0.3)
+    for k, (yy_, zz_, w_, h_) in enumerate(((5.2, 2.1, 0.45, 0.35), (4.4, 2.6, 0.3, 0.4), (6.0, 1.7, 0.3, 0.3))):   # family photos
+        box(f'photo_frame{k}', (0.03, w_, h_), o + Vector((-9.78, yy_, zz_)), frame_m, col)
+        box(f'photo{k}', (0.01, w_ - 0.06, h_ - 0.06), o + Vector((-9.76, yy_, zz_)), photo_m, col)
+    plate_m = material('switch_plate', (0.9, 0.88, 0.82), rough=0.4)
+    box('light_switch', (0.015, 0.08, 0.12), o + Vector((-9.79, 3.65, 3.55)), plate_m, col)
+    basket_m = material('basket', (0.75, 0.72, 0.6), rough=0.8)
+    cylinder('laundry_basket', 0.22, 0.28, o + Vector((-8.95, 6.8 - 2 * 0.45, 0.9 + 0.14)), basket_m, col, verts=20)
+    shoe_m = material('shoe', (0.12, 0.12, 0.14), rough=0.6)
+    for k, dx in enumerate((-0.1, 0.1)):
+        box(f'shoe{k}', (0.1, 0.26, 0.09), o + Vector((-8.2 + dx, 7.35, 0.045)), shoe_m, col, rot=(0, 0, math.radians(8 * (k * 2 - 1))))
+    trim = material('door_trim', (0.85, 0.82, 0.74), rough=0.6)
+    for name, size, off in (('door_jamb_a', (0.12, 0.1, 2.1), (-9.74, 2.45, 3.45)), ('door_jamb_b', (0.12, 0.1, 2.1), (-9.74, 3.45, 3.45)),
+                            ('door_head', (0.12, 1.1, 0.1), (-9.74, 2.95, 4.5))):
+        box(name, size, o + Vector(off), trim, col)
+    warm = material('door_glow', (1.0, 0.85, 0.6), emit=(1.0, 0.78, 0.5), strength=6.0)
+    box('door_gap', (0.02, 0.9, 2.0), o + Vector((-9.79, 2.95, 3.4)), warm, col)          # light from Mom's kitchen
+    door = material('door', (0.55, 0.42, 0.3), rough=0.7)
+    box('door_leaf', (0.05, 0.9, 2.0), o + Vector((-9.45, 2.65, 3.4)), door, col, rot=(0, 0, math.radians(-55)))   # ajar
+    light('L_door', 'AREA', o + Vector((-9.6, 2.95, 3.6)), 220, (1.0, 0.8, 0.55), lit, size=0.9, rot=(0, math.radians(-90), 0))
     prop('basement', 'gaming_chair', col, o + Vector((0.3, 2.3, 0)), 160, 1.0)        # behind Slerf (at 0,0 it blocked his shots)
-    prop('basement', 'crt_tv', col, o + Vector((3.2, 2.2, 0)), 200, 1.0)              # Mensa's console
-    screen('rain_crt', 0.62, 0.48, o + Vector((3.05, 1.72, 1.32)), (math.radians(90), 0, math.radians(200)), col, 3.0)
+    tv = prop('basement', 'crt_tv', col, o + Vector((3.2, 2.2, 0)), 20, 1.0)          # Mensa's console, screen toward him
+    bpy.context.view_layer.update()                                                    # (at 200 degrees the screen faced the wall)
+    glass = next(c for c in tv.children_recursive if 'screen' in c.name)
+    body = next(c for c in tv.children_recursive if c.type == 'MESH' and c is not glass)
+    gb = [glass.matrix_world @ Vector(v) for v in glass.bound_box]
+    bb = [body.matrix_world @ Vector(v) for v in body.bound_box]
+    gc = sum(gb, Vector()) / 8
+    out = gc - sum(bb, Vector()) / 8
+    out.z = 0
+    out.normalize()                                                                    # the screen's outward normal
+    gw = max((v - gc).dot(Vector((-out.y, out.x, 0))) for v in gb) * 2
+    gh = max(v.z for v in gb) - min(v.z for v in gb)
+    yaw = math.atan2(out.y, out.x) - math.pi / 2
+    screen('rain_crt', gw * 0.92, gh * 0.9, gc + out * 0.03, (math.radians(90), 0, yaw + math.pi), col, 3.0)
+    CRT_SCREEN.update(centre=gc + out * 0.03, normal=out)
     prop('basement', 'pizza_stack', col, o + Vector((4.6, 3.0, 0)), 0, 1.0)
     prop('basement', 'can_pyramid', col, o + Vector((5.6, 3.6, 0)), 10, 1.0)
     prop('basement', 'laundry_pile', col, o + Vector((-3.5, 3.5, 0)), 0, 1.0)
@@ -164,7 +240,9 @@ def build_basement():
         light('L_' + name, 'POINT', o + Vector(off) - Vector((0, 0, 0.12)), 260, (1.0, 0.72, 0.42), lit, size=0.08)
     dust('dust_base', o + Vector((0, 2.5, 1.5)), (12, 9, 3.0), 500, (1.0, 0.85, 0.6), col, 3)
     haze('haze_base', o + Vector((0, 0, 2.5)), (19.5, 17.5, 4.9), 0.004, (1.0, 0.9, 0.8), col)
-    light('base_crt', 'AREA', o + Vector((2.9, 1.4, 1.3)), 40, (0.3, 1.0, 0.45), lit, size=0.6, rot=(math.radians(90), 0, math.radians(200)))
+    crt_light = light('base_crt', 'AREA', CRT_SCREEN['centre'] + CRT_SCREEN['normal'] * 0.25, 60, (0.3, 1.0, 0.45), lit, size=0.6)
+    crt_light.rotation_mode = 'QUATERNION'
+    crt_light.rotation_quaternion = CRT_SCREEN['normal'].to_track_quat('-Z', 'Y')
     light('base_window', 'AREA', o + Vector((6, -8.5, 4.2)), 300, (0.6, 0.75, 1.0), lit, size=2.0, rot=(math.radians(60), 0, 0))
     light('base_stairs', 'SPOT', o + Vector((-8.6, 9.5, 4.8)), 900, (1.0, 0.85, 0.65), lit, rot=(math.radians(-60), 0, 0), spot=math.radians(50))
     return col
@@ -250,7 +328,7 @@ def world():
 
 
 # ---------------------------------------------------------------- hand props
-def candle(name, colour, col, size=1.0, trail=0.0):
+def candle(name, colour, col, size=1.0, trail=0.0, rings=False):
     """A chart candle: body plus wick, faintly glowing. Origin at the body's centre. `trail` (m) adds a fading glow streak
     behind it along local -Y (projectiles fly along +Y of their own frame once rotated)."""
     glow = (0.95, 0.12, 0.1) if colour == 'red' else (0.1, 0.95, 0.25)
@@ -268,6 +346,20 @@ def candle(name, colour, col, size=1.0, trail=0.0):
         streak.data.transform(Matrix.Translation((0, 0, -trail / 2)))      # origin at the candle end: scale z grows it backwards
         streak.location.z = -0.09 * size
         streak.visible_shadow = False
+    if rings:                                                  # bullet-time shock rings trailing the candle, fainter further back
+        for j, (back, r) in enumerate(((0.3, 0.045), (0.6, 0.065), (0.95, 0.085))):
+            ring_m = material(f'ring_{colour}_{j}', glow, rough=0.3, emit=glow, strength=1.6 - 0.45 * j)
+            bpy.ops.mesh.primitive_torus_add(major_radius=r * size, minor_radius=0.006 * size, location=(0, 0, 0),
+                                             major_segments=32, minor_segments=6)
+            ring = bpy.context.active_object
+            ring.name = f'{name}_ring{j}'
+            for c_ in list(ring.users_collection):
+                c_.objects.unlink(ring)
+            col.objects.link(ring)
+            ring.data.materials.append(ring_m)
+            ring.parent = holder
+            ring.location = (0, 0, -back * size)
+            ring.visible_shadow = False
     return holder
 
 
