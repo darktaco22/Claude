@@ -328,12 +328,12 @@ def world():
 
 
 # ---------------------------------------------------------------- hand props
-def candle(name, colour, col, size=1.0, trail=0.0, rings=False):
+def candle(name, colour, col, size=1.0, trail=0.0, rings=False, glow=0.6):
     """A chart candle: body plus wick, faintly glowing. Origin at the body's centre. `trail` (m) adds a fading glow streak
     behind it along local -Y (projectiles fly along +Y of their own frame once rotated)."""
-    glow = (0.95, 0.12, 0.1) if colour == 'red' else (0.1, 0.95, 0.25)
-    body_m = material(f'candle_{colour}', glow, rough=0.25, emit=glow, strength=0.6)
-    wick_m = material(f'wick_{colour}', tuple(c * 0.6 for c in glow), rough=0.4)
+    glow_c = (0.95, 0.12, 0.1) if colour == 'red' else (0.1, 0.95, 0.25)
+    body_m = material(f'candle_{colour}_{glow}', glow_c, rough=0.25, emit=glow_c, strength=glow)
+    wick_m = material(f'wick_{colour}', tuple(c * 0.6 for c in glow_c), rough=0.4)
     holder = bpy.data.objects.new(name, None)
     col.objects.link(holder)
     body = box(name + '_body', (0.07 * size, 0.07 * size, 0.17 * size), (0, 0, 0), body_m, col, parent=holder, bevel=0.008 * size)
@@ -341,14 +341,14 @@ def candle(name, colour, col, size=1.0, trail=0.0, rings=False):
     for part in (body, wick):
         part.visible_shadow = False
     if trail:
-        streak_m = material(f'streak_{colour}', glow, rough=0.5, emit=glow, strength=3.0)
+        streak_m = material(f'streak_{colour}', glow_c, rough=0.5, emit=glow_c, strength=3.0)
         streak = cylinder(name + '_trail', 0.02 * size, trail, (0, 0, -trail / 2 - 0.09 * size), streak_m, col, parent=holder, verts=8)
         streak.data.transform(Matrix.Translation((0, 0, -trail / 2)))      # origin at the candle end: scale z grows it backwards
         streak.location.z = -0.09 * size
         streak.visible_shadow = False
     if rings:                                                  # bullet-time shock rings trailing the candle, fainter further back
         for j, (back, r) in enumerate(((0.3, 0.045), (0.6, 0.065), (0.95, 0.085))):
-            ring_m = material(f'ring_{colour}_{j}', glow, rough=0.3, emit=glow, strength=1.6 - 0.45 * j)
+            ring_m = material(f'ring_{colour}_{j}', glow_c, rough=0.3, emit=glow_c, strength=1.6 - 0.45 * j)
             bpy.ops.mesh.primitive_torus_add(major_radius=r * size, minor_radius=0.006 * size, location=(0, 0, 0),
                                              major_segments=32, minor_segments=6)
             ring = bpy.context.active_object
@@ -380,6 +380,7 @@ def cookie(name, col):
     holder = bpy.data.objects.new(name, None)
     col.objects.link(holder)
     cylinder(name + '_b', 0.07, 0.02, (0, 0, 0), m, col, parent=holder, verts=24)
+    holder.scale = (1.6, 1.6, 1.6)                                # readable at medium-shot size
     for k in range(5):
         a = k * 2.4
         sphere(f'{name}_c{k}', 0.011, (0.04 * math.cos(a), 0.04 * math.sin(a), 0.01), chip, col, parent=holder)

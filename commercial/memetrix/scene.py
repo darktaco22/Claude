@@ -343,7 +343,7 @@ def surface_y(actor, x, z, reach=4.0):
     return loc.y if hit else None
 
 
-def fitted_shades(actor, name, centre_z, sep, lens_w, lens_h):
+def fitted_shades(actor, name, centre_z, sep, lens_w, lens_h, max_wrap=0.9):
     """Big wraparound shades fitted to a face: each lens centred on an eye (rig-relative x = +-sep, z = centre_z),
     laid along the curve of the cheek just clear of the skin (a flat lens in front of a sloth's snout floats 10 cm off
     the eye and the eye shows past it at three-quarter angles); a bridge over the snout and temples back into the head. Measured eye positions, never guessed (see tools/PLAYBOOK.md)."""
@@ -367,7 +367,7 @@ def fitted_shades(actor, name, centre_z, sep, lens_w, lens_h):
         mx_ = sum(x for x, _ in cols) / len(cols)
         my_ = sum(y for _, y in cols) / len(cols)
         b = sum((x - mx_) * (y - my_) for x, y in cols) / sum((x - mx_) ** 2 for x, _ in cols)
-        b = max(-0.9, min(0.9, b))
+        b = max(-max_wrap, min(max_wrap, b))
         c = min(y - (my_ + b * (x - mx_)) for x, y in cols)            # every column stays behind the lens
         loc = Vector((rx + cx, my_ + b * (cx - mx_) + c - 0.022, rz + centre_z))
         yaw = math.atan(b)
@@ -414,13 +414,17 @@ if not DRY:
     shades = fitted_shades(A['slerf'], 'shades_slerf', centre_z=1.272, sep=0.155, lens_w=0.20, lens_h=0.13)
     glue(shades, A['slerf'], [face_point(A['slerf'], 1.26) + Vector((x, 0, 0)) for x in (-0.15, 0.15)] +
          [sl + Vector((0, surface_y(A['slerf'], 0, 1.42) - sl.y, 1.42))])
-    for n in ('jean', 'tri1', 'tri2', 'tri3'):
-        shades = mxsets.sunglasses('shades_' + n, PROPS, width=0.2)
-        p = face_point(A[n], cine.EYES[n] + 0.02) + Vector((0, -0.03, 0))
-        shades.location = p
+    # the agents' shades, fitted the same way to eyes measured on front and side grids (the old ones sat on Jeanphil's brow
+    # and 10 cm above the triplets' eyes, on plain wood, where nobody could see them)
+    AGENT_EYES = {'jean': (1.465, 0.047, 0.08, 0.052, 0.9), 'tri1': (1.405, 0.105, 0.155, 0.135, 0.3),
+                  'tri2': (1.405, 0.105, 0.155, 0.135, 0.3), 'tri3': (1.405, 0.105, 0.155, 0.135, 0.3)}
+    # (centre z, half separation, lens width, lens height, max wrap slope: the planks' faces are flat)
+    for n, (cz, sep, lw, lh, mw) in AGENT_EYES.items():
+        shades = fitted_shades(A[n], 'shades_' + n, centre_z=cz, sep=sep, lens_w=lw, lens_h=lh, max_wrap=mw)
         r = A[n].rig.location
-        glue(shades, A[n], [Vector((r.x + x, surface_y(A[n], x, cine.EYES[n]) or p.y, r.z + cine.EYES[n])) for x in (-0.05, 0.05)] +
-             [Vector((r.x, surface_y(A[n], 0, cine.EYES[n] + 0.1) or p.y, r.z + cine.EYES[n] + 0.1))])
+        anchors = [Vector((r.x + x, surface_y(A[n], x, cz) or r.y - 0.15, r.z + cz)) for x in (-sep, sep)]
+        anchors.append(Vector((r.x, surface_y(A[n], 0, cz + lh) or r.y - 0.15, r.z + cz + lh)))
+        glue(shades, A[n], anchors)
     # props in the paws, placed on the measured paw of the pose the character holds when it matters (the characters' own
     # clips, held: forcing their arms with IK twisted Slerf's gauntlets into his face and Anon's paws into his body)
     def posed(actor, clip, frac):
@@ -459,8 +463,10 @@ if not DRY:
     SL_RED = paw_top(P, -1, 0.5, 1.4, only=bone_verts(A['slerf'], 'mixamorig:RightHand'))
     SL_GREEN = paw_top(P, 1, 0.4, 1.4, only=bone_verts(A['slerf'], 'mixamorig:LeftHand'))
     SL_RED, SL_GREEN = SL_GREEN, SL_RED                            # red on the left paw, held out to the side at 0.82 m: Anon
-    place(mxsets.candle('candle_red_s', 'red', PROPS), A['slerf'], SL_RED, 0.0, bone_verts(A['slerf'], 'mixamorig:LeftHand'))
-    place(mxsets.candle('candle_green_s', 'green', PROPS), A['slerf'], SL_GREEN, 0.0, bone_verts(A['slerf'], 'mixamorig:RightHand'))
+    CS = 1.5                                                       # held candles 50 % bigger, standing ON the paw (centred on it
+    STAND = 0.085 * CS + 0.015                                     # they sank into the fist and hid behind the gauntlet)
+    place(mxsets.candle('candle_red_s', 'red', PROPS, size=CS), A['slerf'], SL_RED, STAND, bone_verts(A['slerf'], 'mixamorig:LeftHand'))
+    place(mxsets.candle('candle_green_s', 'green', PROPS, size=CS), A['slerf'], SL_GREEN, STAND, bone_verts(A['slerf'], 'mixamorig:RightHand'))
     # (takes it from the side, clear of Slerf's body: from the front his bag pushed into Slerf's fist)
     # (centred on the top of the paw: gripped in the fist, not balanced on it)
     A['slerf'].arm.animation_data.action = None
@@ -468,8 +474,8 @@ if not DRY:
     P = posed(A['anon'], 'attack2', 0.4)                          # forearm's vertices; the 'reach' of attack1 was the bag tipping)
     AN_RF = bone_verts(A['anon'], 'mixamorig:RightForeArm', 0.3)
     AN_REACH = paw_fwd(P, AN_RF)
-    RED_ANON = mxsets.candle('candle_red_a', 'red', PROPS)
-    place(RED_ANON, A['anon'], AN_REACH, 0.0, AN_RF)
+    RED_ANON = mxsets.candle('candle_red_a', 'red', PROPS, size=CS)
+    place(RED_ANON, A['anon'], AN_REACH, STAND - 0.06, AN_RF)      # gripped low in his paw, at Slerf's candle height
     AN_DIAMOND = 'win@0.25'                                       # Anon: both paws up
     P = posed(A['anon'], 'win', 0.25)
     gem_m = bpy.data.materials.new('diamond')
@@ -699,10 +705,10 @@ slerf.play(TAKE + 0.9, 'idle')
 SWALLOW = ANIM
 anon.play(SWALLOW, 'idle@0.3', hard=True)
 MOUTH_L = Vector((-0.05, -0.03, 1.07))                           # under the snout, measured on a front grid of the idle pose
-shot('swallow', 1.6, S('anon', distance=1.25, bearing=14, lens=40, frame='center', fstop=4.0, eye=0.98, move='push', amount=0.2),
+shot('swallow', 1.6, S('anon', lens=45, frame='center', fstop=4.0),
      'FLOOR', glitch='rain_out')
 if not DRY:
-    print('TAKE at', tuple(round(v, 2) for v in TAKE_AT), 'anon candle centre z', round(AN_R.z, 2), 'slerf candle centre z', round(SL_RED_W.z, 2))
+    print('TAKE at', tuple(round(v, 2) for v in TAKE_AT), 'anon candle centre z', round(AN_R.z + STAND - 0.06, 2), 'slerf candle centre z', round(SL_RED_W.z + STAND, 2))
     show('candle_red_s', [(0, False), (CANDLES_ON + 0.1, True), (TAKE + 0.22, False)])
     show('candle_red_a', [(0, False), (TAKE + 0.22, True), (SWALLOW, False)])
     show('candle_green_s', [(0, False), (CANDLES_ON + 0.1, True), (ANIM, False)])
@@ -822,7 +828,7 @@ line('b02', [S('anon', size='CU', bearing=40, lens=75, frame='left', fstop=1.8),
              S('bome', size='MS', bearing=-70, lens=40, frame='center', fstop=2.8, move='push', amount=0.1, **{'with': ['anon']})],
      'BASEMENT', pad=0.3, weights=[0.7, 1])
 COOKIE_T = ANIM + 0.45
-shot('cookie_take', 1.6, S('anon', distance=3.0, bearing=90, lens=35, frame='center', fstop=4.0, look_offset=(0, 0.3, -0.2),
+shot('cookie_take', 1.6, S('anon', distance=2.6, bearing=-55, lens=35, frame='center', fstop=4.0, look_offset=(0, 0.3, -0.2),
                            **{'with': ['bome']}), 'BASEMENT')
 # geometry: Bome turns so his right glove points at Anon and sinks to Anon's reach; Anon steps to the glove
 G = BM_G if not DRY else Vector((-0.97, -0.1, 1.1))
@@ -879,7 +885,7 @@ anon.lean(BT + 0.14, -LEAN)                                       # fully back b
 anon.lean(BT + 0.40, -LEAN)
 anon.lean(BT + 0.75, 0)
 anon.play(BT + BT_FILM * BT_SPEED + 0.6, 'idle')                 # the slowed 'hit' clip would run ~8 s past the dodge
-shot('bullet_time', BT_FILM, S('anon', distance=2.9, angle=-4, bearing=63, lens=24, frame='center', move='arc', amount=180, fstop=4.0,
+shot('bullet_time', BT_FILM, S('anon', distance=2.9, angle=-4, bearing=100, lens=24, frame='center', move='arc', amount=130, fstop=4.0,
                                   ease='smooth', eye=1.0), 'ROOFTOP', speed=BT_SPEED, hand=None, bullet=True)
 PROJ = []
 PROJ_AT = []
@@ -923,7 +929,7 @@ END_A = ANIM
 if not DRY:
     proj_objs = []
     for k, (start, end, t_on, t_off) in enumerate(PROJ):
-        c = mxsets.candle(f'proj{k}', 'red', PROPS, size=1.5, trail=0.8)
+        c = mxsets.candle(f'proj{k}', 'red', PROPS, size=1.5, trail=0.8, glow=3.0)
         c.rotation_euler = (math.radians(90), 0, 0)
         animate(c, 'location', [(F(0), (0, 0, -50)), (F(t_on) - 0.02, (0, 0, -50)), (F(t_on), tuple(start)), (F(t_off), tuple(end)),
                                 (F(t_off) + 0.02, (0, 0, -50))])
@@ -1024,24 +1030,36 @@ if not DRY:
     st = tr.strips.new('bend', int(F(BT)) - 1, bend)
     st.blend_type = 'COMBINE'
     st.extrapolation = 'NOTHING'
-    # the swallow (close-up): the candle rises into frame from below, tips to point at the mouth and slides in
+    # the swallow (close-up): find the bag's mouth hole on the posed mesh (a ray from in front at the snout's height), then the
+    # candle rises into frame, tips to point into the hole and slides in; the camera is placed on that point (below)
     w_ = make_where({n: sorted(x.keys, key=lambda k: k[0]) for n, x in A.items()})
     feet, head = w_('anon', SWALLOW + 0.5)
+    sc.frame_set(int(F(SWALLOW + 0.5)))
     fwd = Vector((math.sin(math.radians(head)), math.cos(math.radians(head)), 0))
-    side = Vector((fwd.y, -fwd.x, 0))                                       # his left (local +x) in the world
-    mouth = Vector(feet) + side * -MOUTH_L.x + fwd * -MOUTH_L.y + Vector((0, 0, MOUTH_L.z))
-    eat = mxsets.candle('candle_eat', 'red', PROPS)
+    side = Vector((fwd.y, -fwd.x, 0))
+    dg = bpy.context.evaluated_depsgraph_get()
+    mouth = None
+    for dz in (1.07, 1.05, 1.09, 1.03):
+        o_ = Vector(feet) + fwd * 2.0 + Vector((0, 0, dz))
+        hit, loc, nrm, _, obj, _ = sc.ray_cast(dg, o_, -fwd, distance=3.0)
+        if hit and cine.owner(obj) == 'anon':
+            mouth = loc
+            break
+    assert mouth is not None, 'no mouth found'
+    EAT_MOUTH, EAT_FWD, EAT_SIDE = mouth, fwd, side
+    eat = mxsets.candle('candle_eat', 'red', PROPS, size=1.5)
     eat.rotation_mode = 'QUATERNION'
     gone = (0, 0, -50)
     t0_ = SWALLOW + 0.15
     up = Vector((0, 0, 1)).to_track_quat('Z', 'Y')
     inward = (-fwd).to_track_quat('Z', 'Y')                                # the candle's top end points into the mouth
-    animate(eat, 'location', [(F(0), gone), (F(t0_) - 0.02, gone), (F(t0_), tuple(mouth + fwd * 0.10 - Vector((0, 0, 0.32)))),
-                              (F(t0_ + 0.45), tuple(mouth + fwd * 0.17)), (F(t0_ + 0.72), tuple(mouth - fwd * 0.04)),
-                              (F(t0_ + 0.74), gone)], 'BEZIER')
-    animate(eat, 'rotation_quaternion', [(F(t0_), tuple(up)), (F(t0_ + 0.25), tuple(up)), (F(t0_ + 0.45), tuple(inward))], 'BEZIER')
-    animate(eat, 'scale', [(F(t0_ + 0.5), (1, 1, 1)), (F(t0_ + 0.72), (0.25, 0.25, 0.25))], 'LINEAR')
-    EAT_IN = t0_ + 0.72
+    animate(eat, 'location', [(F(0), gone), (F(t0_) - 0.02, gone), (F(t0_), tuple(mouth + fwd * 0.16 - Vector((0, 0, 0.42)))),
+                              (F(t0_ + 0.45), tuple(mouth + fwd * 0.22)), (F(t0_ + 0.75), tuple(mouth - fwd * 0.05)),
+                              (F(t0_ + 0.77), gone)], 'BEZIER')
+    animate(eat, 'rotation_quaternion', [(F(t0_), tuple(up)), (F(t0_ + 0.2), tuple(up)), (F(t0_ + 0.45), tuple(inward))], 'BEZIER')
+    animate(eat, 'scale', [(F(t0_ + 0.55), (1, 1, 1)), (F(t0_ + 0.75), (0.2, 0.2, 0.2))], 'LINEAR')
+    print('SWALLOW mouth', tuple(round(v, 3) for v in mouth))
+    EAT_IN = t0_ + 0.75
     eg = bpy.data.objects.new('candle_eat_glow', bpy.data.lights.new('candle_eat_glow', 'POINT'))
     eg.data.color = (1.0, 0.12, 0.08)
     eg.data.energy = 14.0
@@ -1118,11 +1136,22 @@ if not DRY:
 # ================================================================ solve every shot against the built scene
 if not DRY:
     for s_ in SHOTS:
-        if s_['name'] == 'phone_insert':
+        if s_['name'] == 'phone_insert':                          # Farter's view of his screen, over the top of the phone
             a_mid = s_['a0'] + (s_['t1'] - s_['t0']) * 0.5
             sc.frame_set(int(F(a_mid)))
             feet, head = make_where({n: sorted(x.keys, key=lambda k: k[0]) for n, x in A.items()})('farter', a_mid)
-            s_['cam']['look_offset'] = list(bpy.data.objects['phone'].matrix_world.translation - cine.eye_point('farter', feet, head))
+            ph = bpy.data.objects['phone']
+            c = ph.matrix_world.translation.copy()
+            n = (ph.matrix_world.to_quaternion() @ Vector((0, -1, 0))).normalized()   # out of the screen
+            s_['cam']['look_offset'] = list(c - cine.eye_point('farter', feet, head))
+            s_['cam']['cam_at'] = list(c + n * 0.42 + Vector((0, 0, 0.05)))
+            s_['cam']['cam_at1'] = list(c + n * 0.30 + Vector((0, 0, 0.03)))
+            s_['cam']['lens'] = 40
+        if s_['name'] == 'swallow':                               # close on the bag's mouth, a little to his left, easing in
+            feet, head = make_where({n: sorted(x.keys, key=lambda k: k[0]) for n, x in A.items()})('anon', s_['a0'] + 0.5)
+            s_['cam']['look_offset'] = list(EAT_MOUTH + Vector((0, 0, -0.06)) - cine.eye_point('anon', feet, head))
+            s_['cam']['cam_at'] = list(EAT_MOUTH + EAT_FWD * 0.95 + EAT_SIDE * 0.32 + Vector((0, 0, -0.02)))
+            s_['cam']['cam_at1'] = list(EAT_MOUTH + EAT_FWD * 0.72 + EAT_SIDE * 0.22 + Vector((0, 0, -0.03)))
         if s_['name'] == 'k02_0':
             a_mid = s_['a0'] + (s_['t1'] - s_['t0']) * 0.5
             sc.frame_set(int(F(a_mid)))

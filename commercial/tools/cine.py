@@ -127,6 +127,11 @@ def rig(shot, u, t, where, aspect):
     lens0 = shot.get('lens', 50.0)
     lens = lens0
     frame = frame_point(shot.get('frame'))
+    if 'cam_at' in shot:                                   # a fixed camera position (inserts placed by the scene builder)
+        pos = Vector(shot['cam_at'])
+        if 'cam_at1' in shot:
+            pos = pos.lerp(Vector(shot['cam_at1']), ease(u, shot.get('ease', 'smooth')))
+        return pos, eye, lens0, shot.get('dutch', 0.0), frame, (eye - pos).length
     dist0 = shot.get('distance') or distance_for(shot.get('size', 'MS'), height, lens0, aspect, frame[1]) * shot.get('scale', FRAME_SCALE)
     bearing = shot.get('bearing', 30.0)
     elevation = elevation_of(shot.get('angle', 'eye'))
@@ -360,6 +365,8 @@ def solve(shot, where, scene, t0=0.0, t1=1.0, samples=7, ignore=()):
                 return f'foreground clutter ({covered:.0%} of frame)'
         return None
 
+    if 'cam_at' in shot:                                   # placed by hand: nothing to solve
+        return dict(shot), 'clear'
     first = clear(shot)
     if first is None:
         return dict(shot), 'clear'

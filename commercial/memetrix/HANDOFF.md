@@ -40,17 +40,47 @@ The user asked for characters that earlier films rarely used:
 - Inserts with `look_offset` can put the camera inside the subject (the solver looks through the subject): give inserts
   an explicit `distance`.
 
-## State (2026-11-18, polish pass)
-- v1 film (edit 2292f1afb0) sent. The user asked for bug fixes, better rigging and prop placement (Slerf's shades on his eyes).
-- Polish edit **50dff5a2ee**: skin-glued props (`glue()`), fitted wraparound shades, IK blocks/push in the dojo fight, Alon's
-  IK arm holding a card that curls in its insert, cleaned cameras and staging (see the commit log and PLAYBOOK lessons).
-- Re-render: frames listed in `reuse_50dff5a2ee.txt` (10 untouched shots, 452 frames) are copied from
-  `frames_jpg/2292f1afb0`; 2657 frames are rendered by 8 workers on `claude/memetrix-w1..w8`, ranges
-  121-661, 662-1071, 1072-1437, 1438-1829, 1830-2204, 2205-2536, 2537-2896, 2897-3229 (`render_worker.sh` skips reused frames).
-- Titles (finish.py, 2D, no re-render): 11 s opening (terminal, dive through three depths of code with zoom blur, chrome
-  title slam with sweep, flare and shake, burn to embers) and a 14 s closing (nine cast cards with stills, logo scan-build,
-  tagline, call to action). The film is shifted by PRE = 6 s in the finish; output 2:34.5.
-- DONE 2026-11-18 19:xx: all 3109 frames of 50dff5a2ee collected (workers w1, w4-w10), finished to
-  `commercial/output/meme-royale-memetrix.mp4` (2:34.5, 1080p).
-- (old note) Then: collect, copy the reused frames in, `W=~/mx_work ./finish_all.sh`, review, send.
-- Afterwards (pending the user's OK): delete the claude/memetrix-w* branches and archive the workers.
+## State (2026-11-19, polish pass 3 in progress — read this first after a compaction)
+**Sent to the user:** v1 (edit 2292f1afb0) and v2 (edit 50dff5a2ee, 2:34, new titles) = `commercial/output/meme-royale-memetrix.mp4`.
+**User feedback since v2, worked on in scene.py (NOT rendered as a film yet):** the user said "don't render until told; keep finding
+and fixing bugs; before each new hunt show before/after images of what you fixed and wait for confirmation".
+
+### Liked by the user (keep)
+Candle freeze wall on the rooftop, Mom's door seen up the staircase, Slerf holding out both candles.
+
+### Done in code (latest build: `W/scene_v21.blend`, edl backed up as `W/edl_v21.json`; W = /root/mx_work)
+- Props on characters: `posed()`/`paw_top()`/`paw_fwd()`/`place()`/`bone_verts()` in scene.py measure a paw on the clip pose the
+  character holds (`'clip@0.3'` = held pose, supported in Actor.finish) and `glue()` the prop to vertices of that arm only.
+  IK arms were dropped: they twisted Slerf's gauntlets and Anon's paws (only Alon's card IK and Slerf's fight IK remain).
+- Candles: Slerf holds pose `attack1@0.3`; red on his LEFT paw (out to the side), green on the right; candles size 1.5 standing ON
+  the paw (STAND); each held candle has a coloured point light (GLOW dict). Anon steps to TAKE_AT so his `attack2@0.4` punch paw
+  meets the red candle (both centred at 0.96 m).
+- Swallow: close-up placed on the bag's mouth hole found by a ray on the posed mesh (EAT_MOUTH, 49 cm in front of the rig);
+  `candle_eat` rises, tips, slides in; camera = `cam_at`/`cam_at1` (new fixed-camera keys in tools/cine.py). finish.py glitch
+  starts at u 0.56. UNCONFIRMED: user still found it bad at v19; v21 check frames pending.
+- Diamond hands: held `win@0.25`, a diamond glued above each raised paw, shown from A08 to the end.
+- Bullet time: Anon holds `ready`, small lean (16 deg) + spine bend action (NLA COMBINE, BEND_SIGN measured); bullets from
+  Jeanphil's posed hand, staggered 0.035 s, spread x 0.2 m, heights = bent body top + 0.22..0.46 m; glow=3.0; muzzle flash
+  sphere + point light; orbit bearing 100, amount 130 (side-on, never crossing the barrage).
+- Fight fall: Anon lowered LIE_DROP 0.27 m and his tail swung flat by a hook modifier (`tail_hook`, empty parented to the
+  armature, matrix_inverse from world matrices) until LIE_END. Body rests on the mat (top 0.06).
+- Farter: holds a phone (screen texture `pack/props/phone_chart.png`, "$FART +6,942%"), new `phone_insert` shot before f01.
+- Bome: bobs, then at OFFER turns his right glove (with the cookie, now 1.6x) to Anon and sinks; new `cookie_take` shot.
+- Staircase: treads with nosing, risers, red runner, closed side panel, balusters, handrail, newel, landing rail, family photos,
+  light switch, laundry basket, shoes, landing + lit half-open door.
+- Basement: CRT turned to face Mensa with the rain screen on its glass; chair moved behind Slerf.
+- Agents' shades: `fitted_shades` on measured eyes (AGENT_EYES: jean 1.465 m; planks 1.405 m, flat wrap) — verified on renders.
+- Slerf's "leverage": `voices.py` supports `PH:` phoneme pieces; s08 regenerated with lˈɛvəɹɪdʒ (user to confirm by ear).
+- tools/cine.py: `with=[partner]`, `cam_at`/`cam_at1`, solver rejects cameras inside characters.
+- Film is now 137.8 s of 3D (3307 frames) + titles (PRE 6 s, closing 14 s) because of the two new shots.
+
+### Next steps
+1. Review `W/chk21` (check frames of v21; list in `W/check21.txt`), make before/after sheets with `/root/mx_probe/ba.py`
+   (compares to frames_jpg/50dff5a2ee — NOTE shot times moved by +~3 s after s/phone_insert: compare by shot, not frame number),
+   send them, wait for the user.
+2. Open items: swallow look; Bome cookie readability; take_red bag overlapping Slerf's arm; phone insert framing.
+3. Only when the user says so: commit edl.json, workers render (render_worker.sh A B, reuse list for unchanged shots),
+   finish_all.sh, review at 3 frames/s plus the pop detector (see PLAYBOOK), send.
+- Tools in /root/mx_probe (not in git): face.py (ortho face grid), grid.py, clips.py (pose sheets), sheet.py, ba.py,
+  lying.py, check13.py. Copies of the important ones are in `commercial/memetrix/probe/`.
+- Cleanup pending the user's OK: worker sessions (tag memetrix-render) and branches claude/memetrix-w1..w10.
