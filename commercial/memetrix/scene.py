@@ -553,7 +553,17 @@ if not DRY:
     BM_G = paw_top(P, -1, 0.5, 2.0, 0.4, only=BM_RH)
     A['bome'].arm.animation_data.action = None
     # Farter holds his phone up to his face (left hand forward at 1 m in a held attack pose); the screen faces his eyes
-    P = posed(A['farter'], 'attack1', 0.3)
+    fa = A['farter']                                               # his left hand up in front of his chest, reading the phone:
+    ftg = bpy.data.objects.new('ik_farter_phone', None)            # an IK arm with a pole (elbow down and out), on all the time
+    fpo = bpy.data.objects.new('ik_farter_pole', None)             # (his clips only wave the arm beside his head)
+    for o_ in (ftg, fpo):
+        sc.collection.objects.link(o_)
+        o_.parent = fa.tilt_obj
+    ftg.location = (0.10, -0.50, 0.96)
+    fpo.location = (0.6, 0.1, 0.6)
+    fc_ = fa.arm.pose.bones['mixamorig:LeftForeArm'].constraints.new('IK')
+    fc_.target, fc_.pole_target, fc_.chain_count, fc_.pole_angle = ftg, fpo, 2, math.radians(-90)
+    P = posed(A['farter'], 'idle', 0.1)
     FL = bone_verts(A['farter'], 'mixamorig:LeftHand', 0.4)
     FH = sum((P[i] for i in FL), Vector()) / len(FL)
     eye_f = Vector((0, -0.12, cine.EYES['farter']))
@@ -561,19 +571,20 @@ if not DRY:
     phone = bpy.data.objects.new('phone', None)
     PROPS.objects.link(phone)
     case_m = mxsets.material('phone_case', (0.03, 0.03, 0.035), rough=0.3, metal=0.5)
-    scr_m = mxsets.image_material('phone_screen', os.path.join(HERE, 'pack', 'props', 'phone_chart.png'), emit=2.2)
+    scr_m = mxsets.image_material('phone_screen', os.path.join(HERE, 'pack', 'props', 'phone_chart.png'), emit=1.1)
     mxsets.box('phone_body', (0.085, 0.012, 0.17), (0, 0, 0), case_m, PROPS, parent=phone, bevel=0.006)
     scr = mxsets.plane('phone_glass', 0.076, 0.152, (0, -0.0065, 0), scr_m, PROPS, parent=phone, rot=(math.radians(90), 0, 0))
     pl = bpy.data.objects.new('phone_light', bpy.data.lights.new('phone_light', 'AREA'))
     pl.data.size = 0.12
     pl.data.color = (0.3, 1.0, 0.45)
-    pl.data.energy = 6.0
+    pl.data.energy = 3.0
     sc.collection.objects.link(pl)
     pl.parent = phone
     pl.location = (0, -0.02, 0)
     pl.rotation_euler = (math.radians(90), 0, 0)
     phone.rotation_mode = 'QUATERNION'
-    phone.rotation_quaternion = (-look).to_track_quat('Y', 'Z')        # the screen side (-Y) faces his eyes
+    scr_n = (Vector((0, 0, 1)) * 0.7 + look * 0.3).normalized()       # held at waist level: the screen faces up, toward his eyes
+    phone.rotation_quaternion = (-scr_n).to_track_quat('Y', 'Z')       # (the screen side is -Y)
     place(phone, A['farter'], FH + Vector((0, 0, 0.0)), 0.06, FL)
     A['farter'].arm.animation_data.action = None
     print('PHONE at', tuple(round(v, 2) for v in FH), 'BOME glove', tuple(round(v, 2) for v in BM_G), 'ANON cookie reach', tuple(round(v, 2) for v in AN_CK))
@@ -778,7 +789,7 @@ line('s06', [S('slerf', size='MCU', bearing=-20, lens=60, frame='right', fstop=2
 mensa.play(ANIM, 'idle', 1.4)
 line('n01', [S('mensa', size='MS', bearing=150, lens=40, frame='left', fstop=2.8, move='push', amount=0.15),
              S('mensa', size='CU', bearing=-80, lens=70, frame='right', fstop=2.0)], 'BASEMENT', weights=[1.2, 1])
-farter.play(ANIM - 0.6, 'attack1@0.3')                          # Farter, apart from the others, staring at his phone
+farter.play(ANIM - 0.6, 'idle', 0.6)                            # Farter, apart from the others, staring at his phone
 shot('phone_insert', 1.5, S('farter', distance=1.35, bearing=155, angle=20, lens=45, frame='center', fstop=2.8, move='push', amount=0.2),
      'BASEMENT')                                                 # over his shoulder: the chart that only goes up
 line('f01', [S('farter', size='MCU', bearing=35, lens=55, frame='right', fstop=2.0, move='push', amount=0.12)], 'BASEMENT', pad=0.35,
@@ -1187,9 +1198,26 @@ if not DRY:
             ph = bpy.data.objects['phone']
             c = ph.matrix_world.translation.copy()
             n = (ph.matrix_world.to_quaternion() @ Vector((0, -1, 0))).normalized()   # out of the screen
-            s_['cam']['look_offset'] = list(c - cine.eye_point('farter', feet, head))
-            s_['cam']['cam_at'] = list(c + n * 0.40 + Vector((0, 0, 0.20)))      # above his glove, looking down at the screen
-            s_['cam']['cam_at1'] = list(c + n * 0.30 + Vector((0, 0, 0.15)))
+            top_ = (ph.matrix_world.to_quaternion() @ Vector((0, 0, 1))).normalized()   # aim at the top half: the headline
+            s_['cam']['look_offset'] = list(c + top_ * 0.035 - cine.eye_point('farter', feet, head))
+            eye_w = cine.eye_point('farter', feet, head)                          # over the top of his head (the screen faces
+            fwd_f = Vector((math.sin(math.radians(head)), math.cos(math.radians(head)), 0))   # his eyes; his tongue is in the way
+            side_f = Vector((fwd_f.y, -fwd_f.x, 0))                              # from in front, his hood from above)
+            dg_ = bpy.context.evaluated_depsgraph_get()            # straight over the screen, the nearest clear spot
+            pick = None
+            for dist in (0.40, 0.46, 0.55):
+                cand = c + n * dist
+                d_ = c - cand
+                hit, loc, *_r = sc.ray_cast(dg_, cand, d_.normalized(), distance=d_.length - 0.02)
+                if not hit:
+                    pick = cand
+                    break
+            assert pick is not None, 'no clear view of the phone'
+            print('PHONE cam', tuple(round(v, 2) for v in pick - eye_w))
+            s_['cam']['cam_at'] = list(pick)
+            s_['cam']['cam_at1'] = list(pick + (c - pick) * 0.12)
+            s_['cam']['lens'] = 45
+            s_['cam']['fstop'] = 8.0                                # the whole screen sharp all through the shot
             s_['cam']['lens'] = 40
         if s_['name'] == 'cookie_take':                           # side-on to the hand-over, on the side away from the book
             feet, head = make_where({n: sorted(x.keys, key=lambda k: k[0]) for n, x in A.items()})('anon', s_['a0'] + 0.5)
