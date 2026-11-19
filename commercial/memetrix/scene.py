@@ -542,11 +542,11 @@ if not DRY:
         place(gem, A['anon'], top, 0.08, bone_verts(A['anon'], f'mixamorig:{side}ForeArm', 0.3))
         print('DIAMOND', side, tuple(round(v, 2) for v in top))
     # Anon takes the cookie with a short reach (paw forward at about 1 m high)
-    P = posed(A['anon'], 'attack2', 0.1)
+    P = posed(A['anon'], 'attack2', 0.4)                          # the long reach: he stands back from the book and stretches
     AN_CK = paw_fwd(P, AN_RF)
     COOKIE_A = mxsets.cookie('cookie_a', PROPS)
     COOKIE_A.rotation_euler = (math.radians(70), 0, 0)
-    place(COOKIE_A, A['anon'], AN_CK, 0.04, AN_RF)
+    place(COOKIE_A, A['anon'], AN_CK, 0.05, AN_RF)
     # Bome: the cookie on his right glove (the book's gloves stick out sideways; he turns to offer it)
     P = posed(A['bome'], 'idle', 0.1)
     BM_RH = bone_verts(A['bome'], 'mixamorig:RightHand', 0.4)
@@ -725,7 +725,7 @@ line('s02', [S('slerf', size='CU', bearing=0, lens=85, frame='center', fstop=1.8
 CANDLES_ON = ANIM                                                # the paws come out with a candle on each
 slerf.play(CANDLES_ON - 0.2, 'present@0.5')                       # both fists come forward, a candle on each
 line('s03', [S('slerf', size='MS', bearing=-30, angle='low', lens=40, frame='center', move='arc', amount=50, fstop=2.8),
-             S('slerf', size='MS', bearing=-8, angle=-6, lens=45, frame='center', fstop=2.4, move='push', amount=0.12),
+             S('slerf', size='MS', bearing=0, angle=28, lens=40, frame='center', fstop=2.4, move='push', amount=0.12, **{'with': ['anon']}),
              S('slerf', size='MS', bearing=55, lens=55, frame='center', fstop=2.4, move='push', amount=0.1, **{'with': ['anon']})], 'FLOOR',
      weights=[1.2, 1.2, 1.2])
 line('a04', [S('anon', size='CU', bearing=30, lens=75, frame='right', dutch=6, fstop=1.8)], 'FLOOR')
@@ -881,7 +881,7 @@ anon_here = Vector((BASE.x - 4.4, BASE.y + 3.9, 0))
 v = (anon_here - Vector((BOME_AT.x, BOME_AT.y, 0))).normalized()
 phi = math.atan2(-v.y, -v.x)                                     # rig rotation that turns local -X (his right glove) onto v
 H_OFFER = 180 - math.degrees(phi)
-z_offer = max(-0.1, (AC.z + 0.04) - (G.z + 0.025))
+z_offer = max(-0.35, (AC.z + 0.05) - (G.z + 0.025))       # the book sinks to his reach
 glove = Vector((BOME_AT.x + G.x * math.cos(phi) - G.y * math.sin(phi), BOME_AT.y + G.x * math.sin(phi) + G.y * math.cos(phi), z_offer + G.z))
 H_A = heading_to(anon_here, glove)
 pa = math.radians(180 - H_A)
@@ -896,7 +896,7 @@ bome.pos, bome.H = Vector((BOME_AT.x, BOME_AT.y, BASE.z + z_offer)), H_OFFER
 bome.play(OFFER, 'idle@0.1')
 anon.walk(OFFER + 0.2, ANON_CK_AT, speed=1.2, then='idle')
 anon.turn(COOKIE_T - 0.4, H_A, 0.2)
-anon.play(COOKIE_T - 0.1, 'attack2@0.1')
+anon.play(COOKIE_T - 0.1, 'attack2@0.4')
 anon.play(COOKIE_T + 0.9, 'idle')
 if not DRY:
     print('COOKIE offer: bome H', round(H_OFFER), 'sinks to', round(z_offer, 2), 'glove', tuple(round(x_, 2) for x_ in glove),
@@ -1196,8 +1196,22 @@ if not DRY:
             mid = (Vector((ANON_CK_AT.x, ANON_CK_AT.y, 0)) + Vector((glove.x, glove.y, 0))) / 2
             d_ = (Vector((glove.x, glove.y, 0)) - Vector((ANON_CK_AT.x, ANON_CK_AT.y, 0))).normalized()
             perp = Vector((-d_.y, d_.x, 0))
-            if (mid + perp - Vector((BOME_AT.x, BOME_AT.y, 0))).length < (mid - perp - Vector((BOME_AT.x, BOME_AT.y, 0))).length:
-                perp = -perp
+            wh = make_where({n: sorted(x.keys, key=lambda k: k[0]) for n, x in A.items()})
+            others = [Vector(wh(n, s_['a0'] + 0.5)[0]).to_2d() for n in A if n != 'anon']
+            best = None                                            # the side (and swing) with nobody standing near the camera
+            for sign in (1, -1):
+                for ang in (0, 20, -20, 40, -40):
+                    pd = (Quaternion((0, 0, 1), math.radians(ang)) @ (perp * sign))
+                    spot = (mid + pd * 2.3).to_2d()
+                    clear_ = min((spot - o_).length for o_ in others)
+                    if best is None or clear_ > best[0]:
+                        best = (clear_, pd)
+                    if clear_ > 1.2:
+                        break
+                if best[0] > 1.2:
+                    break
+            perp = best[1]
+            print('COOKIE cam clearance', round(best[0], 2))
             look = mid + Vector((0, 0, BASE.z + 0.95))
             s_['cam']['look_offset'] = list(look - cine.eye_point('anon', feet, head))
             s_['cam']['cam_at'] = list(look + perp * 2.3 + Vector((0, 0, 0.25)))

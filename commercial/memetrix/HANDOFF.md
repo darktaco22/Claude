@@ -74,6 +74,14 @@ Candle freeze wall on the rooftop, Mom's door seen up the staircase, Slerf holdi
 - tools/cine.py: `with=[partner]`, `cam_at`/`cam_at1`, solver rejects cameras inside characters.
 - Film is now 137.8 s of 3D (3307 frames) + titles (PRE 6 s, closing 14 s) because of the two new shots.
 
+### Since then (approved by the user: 'looks better')
+- Slerf presents both candles with a custom pose 'present' (idle body squared up, right arm from attack1 at 25 %, left arm
+  mirrored with quaternion (w, x, -y, -z)); green candle mirrors the red one's spot; candles centred on the fists.
+- Anon takes the red candle coming in at H_TAKE -35 deg (bag clear of the fist); swallow and take approved.
+- Cookie: Anon uses the long reach (attack2@0.4), Bome sinks up to 0.35 m; cookie_take camera picks a side clear of all actors.
+- s03_1: frontal high camera over Anon's bag (red/green glow on Slerf's face).
+- Latest build: W/scene_v26.blend, edl W/edl_v26.json. Disk: keep W small (old scene_v*.blend deleted).
+
 ### Next steps
 1. Review `W/chk21` (check frames of v21; list in `W/check21.txt`), make before/after sheets with `/root/mx_probe/ba.py`
    (compares to frames_jpg/50dff5a2ee — NOTE shot times moved by +~3 s after s/phone_insert: compare by shot, not frame number),
