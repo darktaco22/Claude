@@ -40,11 +40,11 @@ Ranges:
 
 ## Finish (one session, after all workers are done)
 ```
-cd commercial/memetrix
+# from the repo root
 for n in 1 2 3 4 5 6 7 8; do git fetch -q origin claude/memetrix-r$n && \
-  git archive origin/claude/memetrix-r$n frames_jpg/37a9155c53 2>/dev/null | tar -x; done   # (run from the repo root with full paths)
-ls frames_jpg/37a9155c53 | wc -l          # must be 3187
-W=~/mx_work ./finish_all.sh          # run_in_background, timeout 7200000; writes ../output/meme-royale-memetrix.mp4
+  git archive origin/claude/memetrix-r$n commercial/memetrix/frames_jpg/37a9155c53 | tar -x; done
+ls commercial/memetrix/frames_jpg/37a9155c53 | wc -l      # must be 3187
+cd commercial/memetrix && W=~/mx_work ./finish_all.sh     # run_in_background, timeout 7200000 -> ../output/meme-royale-memetrix.mp4
 ```
 Then review at 3 frames a second (contact sheets) and run the pop detector in `probe/` before sending, keep the MP4
 under 100 MB (re-encode at 3000k if needed), commit it.
