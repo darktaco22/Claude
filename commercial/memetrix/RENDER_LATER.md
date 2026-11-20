@@ -15,6 +15,12 @@ glowing staggered candles; diamonds in Anon's raised paws; muzzle flash; many ca
 - End of the cookie shot: Anon lowers the paw with the cookie behind his body (could lift it toward the bag).
 - Bullet candles still look a little like flat sticks up close.
 
+## Look (keep it): fog, lights, motion blur
+`render_worker.sh` renders with everything on by default: the volumetric haze (trading floor, basement, rooftop), per-set lights,
+camera fill and rim light, motion blur, 67 % size at 6 samples (upscaled to 1080p in the finish, which adds the grade, bloom,
+anamorphic streaks, halation, chromatic edges, grain and letterbox). **Do not set NOHAZE=1 or MB=0** for the real render: those
+switches were only used for the quick check frames in `output/review/`, which is why those look cleaner and darker.
+
 ## How to render (8 cloud workers, about 2.5-3 hours)
 Start one fresh worker session per range (create_session on this repo, revision `claude/eager-brown-rlfja0`, each with its own
 outcome branch `claude/memetrix-r1` ... `-r8`) with this prompt (fill in A B and N):
