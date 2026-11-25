@@ -442,6 +442,46 @@ def exhaust_material(name, col=(0.05, 1.0, 0.2), strength=5.0):
     return mat
 
 
+def night_sky(mat):
+    """The rooftop dome: city glow low on the horizon (warm-green) fading to a dark zenith, with soft clouds catching it.
+    Replaces the flat near-black emission (the flight looks up into it for two seconds)."""
+    mat.use_nodes = True
+    nt = mat.node_tree
+    nt.nodes.clear()
+    out = nt.nodes.new('ShaderNodeOutputMaterial')
+    tc = nt.nodes.new('ShaderNodeTexCoord')
+    sep = nt.nodes.new('ShaderNodeSeparateXYZ')
+    nt.links.new(tc.outputs['Object'], sep.inputs[0])
+    h = nt.nodes.new('ShaderNodeMapRange')                          # height on the dome: 0 at the horizon, 1 high up
+    h.inputs['From Min'].default_value = -40.0
+    h.inputs['From Max'].default_value = 700.0
+    nt.links.new(sep.outputs['Z'], h.inputs['Value'])
+    ramp = nt.nodes.new('ShaderNodeValToRGB')
+    els = ramp.color_ramp.elements
+    els[0].position, els[0].color = 0.0, (0.11, 0.12, 0.07, 1)       # sodium-and-neon city glow
+    els[1].position, els[1].color = 1.0, (0.012, 0.03, 0.024, 1)  # overhead: clouds still catch the city
+    mid = els.new(0.3)
+    mid.color = (0.04, 0.08, 0.06, 1)
+    nt.links.new(h.outputs['Result'], ramp.inputs['Fac'])
+    noise = nt.nodes.new('ShaderNodeTexNoise')                      # clouds
+    noise.noise_dimensions = '4D'
+    noise.inputs['Scale'].default_value = 0.006
+    noise.inputs['Detail'].default_value = 6.0
+    noise.inputs['Roughness'].default_value = 0.6
+    nt.links.new(tc.outputs['Object'], noise.inputs['Vector'])
+    _drive(noise.inputs['W'], 'default_value', 'frame / 900')
+    cl = nt.nodes.new('ShaderNodeMapRange')
+    cl.inputs['From Min'].default_value = 0.45
+    cl.inputs['From Max'].default_value = 0.75
+    cl.inputs['To Min'].default_value = 0.6
+    cl.inputs['To Max'].default_value = 2.8
+    nt.links.new(noise.outputs['Fac'], cl.inputs['Value'])
+    em = nt.nodes.new('ShaderNodeEmission')
+    nt.links.new(ramp.outputs['Color'], em.inputs['Color'])
+    nt.links.new(cl.outputs['Result'], em.inputs['Strength'])
+    nt.links.new(em.outputs[0], out.inputs['Surface'])
+
+
 def wet_floor(mat, seed=0.0):
     """Rain on a flat roof: puddles (mirror-smooth, a shade darker) between wet gravel, the puddles shimmering with drops.
     World-position noise picks the puddles; animated 4D Voronoi bumps their normal (the drops), gravel stays matte-wet."""

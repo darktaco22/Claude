@@ -78,6 +78,8 @@ for m_ in bpy.data.materials:                                     # the rooftop 
         m_.node_tree.nodes['Principled BSDF'].inputs['Roughness'].default_value = 0.12
         if m_.name.startswith(('roof_gravel', 'ground_roof')):
             sets2.wet_floor(m_)                                       # puddles between wet gravel, rain in the puddles
+if 'rooftop_sky' in bpy.data.materials:
+    sets2.night_sky(bpy.data.materials['rooftop_sky'])            # city glow on the horizon, clouds
 PROPS = mxsets.collection('PROPS')
 for o_ in bpy.data.objects:                                       # the trading floor's bull, cracked
     if 'bull' in o_.name.lower() and o_.type == 'MESH':
