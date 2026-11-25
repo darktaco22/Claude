@@ -125,8 +125,53 @@ def build_cafe():
                             ('cafe_right', (0.3, 10, 4.2), (6, 0, 2.1)), ('cafe_ceiling', (12, 10, 0.2), (0, 0, 4.25))):
         box(name, size, o + Vector(off), wall_m, col)
     box('cafe_stripe', (11.9, 0.05, 0.25), o + Vector((0, 4.83, 1.0)), trim_m, col)
-    # the window in the back wall: the Memetrix outside (green code rain), a frame and mullions
-    screen('cafe_window_view', 4.6, 2.0, o + Vector((-2.2, 4.84, 2.2)), (math.radians(90), 0, math.radians(180)), col, 1.6, (0.6, 1.0, 0.7))
+    # the window in the back wall: a real opening onto the city at night (it was a code screen that rendered as black)
+    back = bpy.data.objects['cafe_back']
+    cutter = box('cafe_window_cut', (4.6, 1.0, 2.0), o + Vector((-2.2, 5.0, 2.2)), wall_m, col)
+    cutter.hide_render = True
+    cutter.hide_viewport = True
+    cut = back.modifiers.new('window', 'BOOLEAN')
+    cut.operation = 'DIFFERENCE'
+    cut.object = cutter
+    glass = material('cafe_glass', (0.8, 0.9, 0.85), rough=0.02)
+    glass.node_tree.nodes['Principled BSDF'].inputs['Transmission Weight'].default_value = 1.0
+    pane = plane('cafe_window_glass', 4.6, 2.0, o + Vector((-2.2, 4.95, 2.2)), glass, col, rot=(math.radians(90), 0, 0))
+    pane.visible_shadow = False
+    pane['cine_ignore'] = True
+    # outside: the sidewalk, the street, and the other side of it: shops with lit signs, towers rising behind them
+    rnd_c = random.Random(21)
+    box('street_sidewalk', (40, 4, 0.15), o + Vector((0, 7.2, 0.07)), material('sidewalk', (0.18, 0.18, 0.19), rough=0.7), col)
+    wet = material('street_asphalt', (0.03, 0.035, 0.035), rough=0.18)
+    plane('street_road', 60, 12, o + Vector((0, 15.2, 0.0)), wet, col)
+    for k in range(9):                                            # lane marks
+        box(f'lane{k}', (1.6, 0.12, 0.01), o + Vector((-16 + k * 4.2, 15.2, 0.01)), material('lane', (0.9, 0.8, 0.3), rough=0.5), col)
+    for k in range(10):                                           # the far side: towers, each a lit window grid
+        w, d, h = rnd_c.uniform(5, 9), rnd_c.uniform(6, 10), rnd_c.uniform(14, 48)
+        x = -24 + k * 5.6 + rnd_c.uniform(-0.8, 0.8)
+        box(f'cafe_city{k}', (w, d, h), o + Vector((x, 25 + d / 2 + rnd_c.uniform(0, 8), h / 2)),
+            mxsets.window_material(f'cafe_win{k}', 40 + k, (w, d, h)), col)
+    for k, (x, txt, colour) in enumerate(((-6.5, 'PAWN', (1.0, 0.2, 0.15)), (-1.8, 'HODL 24H', (0.2, 1.0, 0.35)),
+                                          (3.4, 'NOODLES', (1.0, 0.55, 0.1)))):
+        bpy.ops.object.text_add(location=o + Vector((x, 23.4, 3.6)), rotation=(math.radians(90), 0, 0))   # reads from the café
+        sign = bpy.context.active_object
+        sign.name = f'neon_sign{k}'
+        sign.data.body = txt
+        sign.data.size = 1.0
+        sign.data.align_x = 'CENTER'
+        sign.data.materials.append(material(f'neon{k}', colour, emit=colour, strength=3.0))   # (8 washed out to white)
+        for c_ in list(sign.users_collection):
+            c_.objects.unlink(sign)
+        col.objects.link(sign)
+        nl = light(f'L_neon{k}', 'AREA', o + Vector((x, 22.6, 3.4)), 300, colour, lit, size=2.0, rot=(math.radians(-90), 0, 0))
+        nl.visible_camera = False                                  # (seen through the window it was a white square)
+    pole_m = material('street_pole', (0.08, 0.08, 0.09), rough=0.4, metal=0.6)
+    lamp_m = material('street_lamp', (1.0, 0.8, 0.5), emit=(1.0, 0.78, 0.45), strength=12.0)
+    for k, x in enumerate((-9.0, -1.0, 7.0)):                     # street lamps on the near sidewalk
+        cylinder(f'street_pole{k}', 0.07, 5.0, o + Vector((x, 8.4, 2.5)), pole_m, col, verts=10)
+        sphere(f'street_bulb{k}', 0.22, o + Vector((x, 8.4, 5.1)), lamp_m, col)
+        light(f'L_street{k}', 'POINT', o + Vector((x, 8.4, 4.9)), 900, (1.0, 0.75, 0.45), lit, size=0.3).visible_camera = False
+    sky = material('cafe_sky', (0.0, 0.0, 0.0), emit=(0.02, 0.05, 0.045), strength=1.0)
+    plane('cafe_sky', 140, 70, o + Vector((0, 60, 30)), sky, col, rot=(math.radians(90), 0, 0))
     frame_m = material('cafe_window_frame', (0.15, 0.1, 0.08), rough=0.4)
     for name, size, off in (('win_top', (4.8, 0.12, 0.12), (-2.2, 4.8, 3.25)), ('win_bot', (4.8, 0.12, 0.12), (-2.2, 4.8, 1.15)),
                             ('win_mid', (0.08, 0.12, 2.1), (-2.2, 4.8, 2.2)), ('win_l', (0.12, 0.12, 2.2), (-4.6, 4.8, 2.2)),
@@ -178,6 +223,9 @@ def build_cafe():
     light('cafe_window_light', 'AREA', o + Vector((-2.2, 4.4, 2.2)), 120, (0.4, 1.0, 0.55), lit, size=2.0,
           rot=(math.radians(-90), 0, 0))
     haze('haze_cafe', o + Vector((0, 0, 2.1)), (11.5, 9.5, 4.1), 0.012, (1.0, 0.75, 0.55), col)
+    for l_ in lit.objects:                                         # lights light the set but never show as glowing quads
+        if l_.type == 'LIGHT':
+            l_.visible_camera = l_.visible_transmission = l_.visible_glossy = False   # (seen through the glass too)
     dust('embers_cafe', o + Vector((0, 0.5, 2.0)), (10, 8, 3.5), 350, (1.0, 0.5, 0.15), col, 9)
     return col
 
