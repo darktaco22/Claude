@@ -16,6 +16,17 @@ mix) -> review at 3 fps + pop detector -> send.
   SELL / HOLD doors outlined in light); rooftop rain (instanced streaks, driver-animated). Flame emission lowered to 9
   after the last look test (pink-white at 14): re-check.
 
+## State (2026-11-25)
+- scene2.py builds (W/scene2_v2.blend): 56 shots, 145.8 s. Full preview reviewed (anim2_v1), first fix pass rendered (anim2_v2).
+- Doors: red / green falling code (user request), done.
+- Fixed in pass 1: basement wide (camera was above the ceiling), Mensa's second shot, café establishing shot (camera was outside
+  the walls), Jeanphil "Me. Too." wide (a clone's fist filled the frame), Michi's rooftop line, the door wide, the save.
+- Still to fix: Swordcat's "He holds." and Toshi's / This-Is-Fine's lines after the duel (the other café characters block
+  them: restage the three after the duel); the duel catch (Swordcat too far from Anon in the catch shot: check headings);
+  the Whale's close-ups look down onto his hat (use MS/MCU from eye level, not CU); the cracked bull (no crack yet);
+  the rocket candle reads as a green bar beside Anon; then the 2D work in finish.py (crash opening, LIQUIDATION stamp,
+  liquidation bar over Michi, closing).
+
 ## Next
 1. scene.py for episode 2 (copy ../memetrix/scene.py; keep Actor, glue, posed/fist_top/place, held poses, custom poses,
    IK-with-pole, cam_at, swallow-style measured targets). New: Swordcat duel (blocks, slow-motion lean, blade catch:

@@ -39,7 +39,7 @@ FPS = 24
 VO = json.load(open(os.path.join(HERE, 'pack', 'vo', 'vo.json')))
 
 CLONES = [f'jc{k}' for k in range(11)]                           # with Jeanphil himself: twelve
-cine.EYES.update({'anon': 1.24, 'slerf': 1.30, 'michi': 1.30, 'mensa': 1.42, 'jean': 1.47, 'whale': 1.37, 'swordcat': 1.30,
+cine.EYES.update({'anon': 1.24, 'slerf': 1.30, 'michi': 1.30, 'mensa': 1.42, 'jean': 1.47, 'whale': 1.5, 'swordcat': 1.30,
                   'fine': 1.28, 'toshi': 1.21})                   # measured on front + side height grids
 cine.EYES.update({n: 1.47 for n in CLONES})
 cine.EYE_FWD.update({'mensa': 0.35, 'anon': 0.08})
@@ -554,13 +554,13 @@ mensa.cut(a, BASE + Vector((2.5, 0.72, 0)), 20)
 michi.cut(a, BASE + Vector((-1.2, 0.2, 0)), 120)
 slerf.cut(a, BASE + Vector((0.8, 1.2, 0)), 200)
 anon.cut(a, BASE + Vector((-0.2, -1.2, 0)), 30)
-shot('base_wide', 2.2, S('anon', size='EWS', angle=20, bearing=200, lens=24, frame='center', fstop=5.6, move='crane', amount=-8), 'BASEMENT')
+shot('base_wide', 2.2, S('anon', size='WS', angle=8, bearing=200, lens=20, frame='center', fstop=5.6, move='push', amount=0.1), 'BASEMENT')
 line('n10', [S('mensa', size='MCU', bearing=-70, lens=60, frame='right', fstop=2.0, move='push', amount=0.1)], 'BASEMENT')
 michi.walk(ANIM - 0.4, BASE + Vector((-0.4, 0.3, 0)), speed=1.0)
 line('m10', [S('michi', size='MCU', bearing=20, lens=60, frame='left', fstop=2.0)], 'BASEMENT', pad=0.15)
 mensa.turn(ANIM, 200, 0.6)                                       # he spins the chair round
 line('n11', [S('mensa', size='MS', bearing=10, lens=40, frame='center', fstop=2.8),
-             S('mensa', distance=2.6, bearing=150, lens=50, frame='center', fstop=4.0, look_offset=(0.6, 1.6, -0.1))], 'BASEMENT',
+             S('mensa', size='MS', bearing=-80, lens=35, frame='right', fstop=4.0)], 'BASEMENT',
      weights=[1, 1.2])
 line('a10', [S('anon', size='MCU', bearing=-20, lens=60, frame='right', fstop=2.0, move='push', amount=0.12)], 'BASEMENT')
 line('s10', [S('slerf', size='MCU', angle='low', bearing=10, lens=55, frame='center', fstop=2.0)], 'BASEMENT', pad=0.8)
@@ -577,7 +577,7 @@ swordcat.cut(a, CAFE + Vector((4.6, -0.6, 0)), 230)
 anon.cut(a, CAFE + Vector((1.2, -2.6, 0)), 10)
 michi.cut(a, CAFE + Vector((0.2, -3.0, 0)), 15)
 anon.walk(a + 0.3, CAFE + Vector((1.4, -0.4, 0)), speed=1.1)
-shot('cafe_establish', 2.6, S('anon', size='EWS', angle=14, bearing=200, lens=22, frame='center', fstop=5.6, move='track',
+shot('cafe_establish', 2.6, S('anon', distance=4.6, angle=14, bearing=200, lens=20, frame='center', fstop=5.6,
                               look_offset=(0.5, 1.6, 0)), 'CAFE')
 line('f10', [S('fine', size='MCU', bearing=-15, lens=55, frame='right', fstop=2.0)], 'CAFE')
 line('a12', [S('anon', size='MCU', bearing=30, lens=55, frame='left', fstop=2.2)], 'CAFE')
@@ -610,10 +610,10 @@ shot('duel_catch', 1.6, S('anon', size='MCU', bearing=70, lens=50, frame='center
                           **{'with': ['swordcat']}), 'CAFE', speed=0.4, hand=None)
 swordcat.play(ANIM, 'idle')
 anon.play(ANIM, 'idle')
-line('w10', [S('swordcat', size='CU', bearing=-25, lens=70, frame='right', fstop=1.8)], 'CAFE', pad=0.4)
+line('w10', [S('swordcat', size='CU', bearing=35, lens=70, frame='right', fstop=1.8)], 'CAFE', pad=0.4)
 toshi.walk(ANIM, CAFE + Vector((2.0, -0.2, 0)), speed=1.0)
-line('t11', [S('toshi', size='MS', bearing=30, lens=45, frame='center', fstop=2.8, **{'with': ['anon']})], 'CAFE')
-line('f14', [S('fine', size='MCU', bearing=0, lens=50, frame='center', fstop=2.4, move='pull', amount=0.3)], 'CAFE', pad=0.6)
+line('t11', [S('toshi', size='MS', bearing=-60, lens=45, frame='center', fstop=2.8, **{'with': ['anon']})], 'CAFE')
+line('f14', [S('fine', size='MCU', bearing=-45, lens=50, frame='center', fstop=2.4, move='pull', amount=0.3)], 'CAFE', pad=0.6)
 
 # ---------------------------------------------------------------- 3. the Jeanphil brawl and the flight (rooftop, rain)
 a = ANIM
@@ -636,7 +636,7 @@ for k, c_ in enumerate(clones):
 anon.face(CLONE_T, jean, 0.3)
 shot('clones_appear', 2.4, S('anon', size='EWS', angle=35, bearing=200, lens=24, frame='center', fstop=5.6, move='crane', amount=12),
      'ROOFTOP')
-line('j11', [S('anon', size='WS', angle=-8, bearing=180, lens=22, frame='center', fstop=4.0, **{'with': ['jean'] + CLONES})],
+line('j11', [S('anon', size='WS', angle=15, bearing=180, lens=24, frame='center', fstop=4.0, **{'with': ['jean'] + CLONES})],
      'ROOFTOP', pad=0.3)
 line('a13', [S('anon', size='MCU', bearing=-20, lens=60, frame='right', fstop=2.0, move='push', amount=0.1)], 'ROOFTOP')
 # the brawl: they close in; Anon fights in a slow orbit; three pile on; the shockwave throws them all back
@@ -663,7 +663,7 @@ for k, c_ in enumerate(clones):
 shot('shockwave', 2.6, S('anon', size='WS', angle=30, bearing=40, lens=24, frame='center', fstop=5.6, **{'with': CLONES}), 'ROOFTOP',
      speed=0.35, hand=None)
 anon.play(ANIM, 'idle')
-line('m11', [S('michi', size='MCU', bearing=20, lens=55, frame='left', fstop=2.0, **{'with': ['toshi']})], 'ROOFTOP')
+line('m11', [S('michi', size='MCU', bearing=-45, lens=55, frame='left', fstop=2.0, **{'with': ['toshi']})], 'ROOFTOP')
 line('a14', [S('anon', size='CU', bearing=-30, lens=75, frame='right', fstop=1.8)], 'ROOFTOP', pad=0.15)
 # the flight: the green candle ignites over his raised paw and he goes straight up into the rain
 LAUNCH = ANIM + 0.3
@@ -694,7 +694,7 @@ line('wh12', [S('whale', size='CU', bearing=0, lens=75, frame='center', fstop=2.
 line('a16', [S('anon', size='CU', bearing=-20, lens=75, frame='right', fstop=1.8)], 'WHITE')
 line('wh13', [S('whale', size='MCU', bearing=20, lens=60, frame='left', fstop=2.4)], 'WHITE')
 DOORS_T = ANIM
-line('wh14', [S('anon', size='WS', bearing=180, lens=24, frame='center', fstop=5.6, look_offset=(0, 3.4, 0.6)),
+line('wh14', [S('anon', size='EWS', angle=28, bearing=180, lens=20, frame='center', fstop=5.6, look_offset=(0, 3.4, 0.6)),
               S('whale', size='MCU', bearing=-15, lens=60, frame='right', fstop=2.4)], 'WHITE', weights=[1.2, 1])
 anon.walk(ANIM - 0.2, WHITE + Vector((2.4, 2.3, 0)), speed=0.8)
 line('a17', [S('anon', size='MS', bearing=150, lens=35, frame='center', fstop=4.0, move='track')], 'WHITE', pad=0.6)
@@ -705,7 +705,7 @@ line('a18', [S('anon', size='CU', bearing=0, lens=70, frame='center', fstop=1.8)
 # ---------------------------------------------------------------- 5. liquidation (rooftop, rain): the save and the last look
 a = ANIM
 michi.cut(a, ROOF + Vector((-6.0, -4.2, 0)), 200, clip='lose')
-toshi.cut(a, ROOF + Vector((-6.6, -3.4, 0)), 160)
+toshi.cut(a, ROOF + Vector((-7.8, -2.4, 0)), 160)          # (clear of the save and the collapse)
 anon.cut(a, ROOF + Vector((-5.4, -2.2, 6.0)), 200)
 for c_ in clones:
     c_.cut(a, OFF, 180)
