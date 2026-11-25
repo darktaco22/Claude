@@ -711,7 +711,7 @@ line('wh12', [S('whale', size='MCU', angle=-18, bearing=0, lens=60, frame='cente
 line('a16', [S('anon', size='CU', bearing=-20, lens=75, frame='right', fstop=1.8)], 'WHITE')
 line('wh13', [S('whale', size='MCU', angle=-18, bearing=20, lens=60, frame='left', fstop=2.4)], 'WHITE')
 DOORS_T = ANIM
-line('wh14', [S('anon', size='EWS', angle=28, bearing=180, lens=20, frame='center', fstop=5.6, look_offset=(0, 3.4, 0.6)),
+line('wh14', [S('anon', size='WS', angle=14, bearing=180, lens=24, frame='center', fstop=5.6, look_offset=(0, 3.4, 0.6)),
               S('whale', size='MCU', angle=-18, bearing=-15, lens=60, frame='right', fstop=2.4)], 'WHITE', weights=[1.2, 1])
 anon.walk(ANIM - 0.2, WHITE + Vector((2.4, 2.3, 0)), speed=0.8)
 line('a17', [S('anon', size='MS', bearing=150, lens=35, frame='center', fstop=4.0, move='track')], 'WHITE', pad=0.6)
@@ -735,9 +735,13 @@ anon.keys.append([LIQ + 2.4, *anon.pos, anon.H, 0])                # he drops ou
 anon.play(LIQ + 2.4, 'attack2@0.4')                                # and pushes the green candle into her chart
 SAVE_T = LIQ + 2.6
 michi.play(SAVE_T + 0.4, 'idle')
-shot('the_save', 1.8, S('anon', size='MS', bearing=70, lens=35, frame='center', fstop=3.2, **{'with': ['michi']}), 'ROOFTOP')
+anon.play(SAVE_T + 0.55, 'idle')                                 # he straightens up from the push
+shot('the_save', 1.8, S('anon', size='MS', bearing=115, lens=35, frame='center', fstop=3.2, **{'with': ['michi']}), 'ROOFTOP')
 line('m12', [S('michi', size='CU', bearing=20, lens=75, frame='left', fstop=1.8)], 'ROOFTOP', pad=0.3)
-line('a19', [S('anon', size='MCU', bearing=-25, lens=60, frame='right', fstop=2.0)], 'ROOFTOP', pad=0.2)
+H_a19 = heading_to(anon.pos, michi.pos)
+anon.turn(ANIM, H_a19, 0.35)                                      # he turns to her as he answers (after her close-up)
+michi.turn(ANIM, heading_to(michi.pos, anon.pos), 0.35)           # and she to him
+line('a19', [S('anon', size='MCU', bearing=35, lens=60, frame='left', fstop=2.0, fixed_heading=H_a19)], 'ROOFTOP', pad=0.2)
 FALL_T = ANIM - 0.2                                               # he collapses: the fall lands at FALL_T + 0.9
 anon.play(FALL_T, 'die', 1.6)
 anon.hold(FALL_T + 0.6)
