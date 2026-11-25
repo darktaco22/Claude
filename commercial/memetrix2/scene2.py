@@ -467,7 +467,7 @@ if not DRY:
     # Anon's paws: the right paw punched forward (attack2 at 40 %: the block, the catch) and both paws up (win at 25 %)
     AN_RF = bone_verts(A['anon'], 'mixamorig:RightForeArm', 0.3)
     P = posed(A['anon'], 'win', 0.25)
-    ROCKET = mxsets.candle('rocket', 'green', PROPS, size=1.6, trail=1.4, glow=3.0)
+    ROCKET = mxsets.candle('rocket', 'green', PROPS, size=1.6, trail=0.0, glow=3.0)   # (a long trail read as a green bar)
     ROCKET.rotation_euler = (0, 0, 0)                               # upright over his raised right paw, the streak below it
     place(ROCKET, A['anon'], paw_top(P, -1, 0.8, 1.8, 0.2, only=AN_RF), 0.16, AN_RF)
     P = posed(A['anon'], 'attack2', 0.4)
@@ -544,6 +544,7 @@ clones = [A[n] for n in CLONES]
 
 # ---------------------------------------------------------------- 0. the crash: the bull cracks (3D tail of the cold open)
 a = ANIM
+BULL_T = a
 anon.cut(a, FLOOR + Vector((0, 2.0, 0)), 0)                       # (off frame, so the floor has its subject for the solver)
 shot('bull_crack', 3.0, S('anon', distance=9.0, angle=12, bearing=180, lens=28, frame='center', fstop=5.6, move='push', amount=0.15,
                           look_offset=(0, 6.0, 3.0)), 'FLOOR')
@@ -588,9 +589,9 @@ line('t10', [S('toshi', size='CU', bearing=-10, lens=75, frame='right', fstop=1.
 line('f13', [S('swordcat', size='MS', angle='low', bearing=20, lens=40, frame='center', fstop=2.8, move='push', amount=0.15)], 'CAFE')
 # the test: Swordcat at striking distance (1.3 m); three attacks, Anon blocks, leans out (slow motion), catches the blade
 DUEL = ANIM
-swordcat.walk(DUEL - 0.2, CAFE + Vector((1.4, 0.95, 0)), speed=2.4, then=None)
-swordcat.turn(DUEL + 0.35, 180, 0.15)
-anon.turn(DUEL, 0, 0.2)
+swordcat.walk(DUEL - 1.9, CAFE + Vector((0.3, 0.4, 0)), speed=2.4, then='ready')   # arrives before the duel (late, he slid
+swordcat.face(DUEL - 0.1, anon, 0.15)                             # through it) and off the line to This-Is-Fine and Toshi
+anon.face(DUEL - 0.1, swordcat, 0.2)
 swordcat.play(DUEL + 0.4, 'attack1', 1.1)
 anon.play(DUEL + 0.55, 'attack2@0.4')                             # the block: his paw meets the blade
 anon.play(DUEL + 1.15, 'idle')
@@ -685,20 +686,20 @@ for k in range(60):                                              # the Whale flo
 anon.walk(a, WHITE + Vector((0, -0.6, 0)), speed=0.9)
 shot('white_reveal', 3.2, S('anon', size='EWS', angle=6, bearing=180, lens=20, frame='center', fstop=8.0, move='push', amount=0.15,
                             look_offset=(0, 3.0, 0.6)), 'WHITE')
-line('wh10', [S('whale', size='MS', angle='low', bearing=0, lens=35, frame='center', fstop=4.0)], 'WHITE')
+line('wh10', [S('whale', size='MS', angle=-20, bearing=0, lens=35, frame='center', fstop=4.0)], 'WHITE')
 line('a15', [S('anon', size='MCU', bearing=20, lens=55, frame='left', fstop=2.4)], 'WHITE')
-line('wh11', [S('whale', size='MCU', bearing=-25, lens=55, frame='right', fstop=2.8),
+line('wh11', [S('whale', size='MCU', angle=-18, bearing=-25, lens=55, frame='right', fstop=2.8),
               S('anon', distance=4.0, bearing=180, lens=30, frame='center', fstop=5.6, look_offset=(0, 7.5, 2.2))], 'WHITE',
      weights=[1, 1.3])
-line('wh12', [S('whale', size='CU', bearing=0, lens=75, frame='center', fstop=2.0, move='push', amount=0.12)], 'WHITE')
+line('wh12', [S('whale', size='MCU', angle=-18, bearing=0, lens=60, frame='center', fstop=2.0, move='push', amount=0.12)], 'WHITE')
 line('a16', [S('anon', size='CU', bearing=-20, lens=75, frame='right', fstop=1.8)], 'WHITE')
-line('wh13', [S('whale', size='MCU', bearing=20, lens=60, frame='left', fstop=2.4)], 'WHITE')
+line('wh13', [S('whale', size='MCU', angle=-18, bearing=20, lens=60, frame='left', fstop=2.4)], 'WHITE')
 DOORS_T = ANIM
 line('wh14', [S('anon', size='EWS', angle=28, bearing=180, lens=20, frame='center', fstop=5.6, look_offset=(0, 3.4, 0.6)),
-              S('whale', size='MCU', bearing=-15, lens=60, frame='right', fstop=2.4)], 'WHITE', weights=[1.2, 1])
+              S('whale', size='MCU', angle=-18, bearing=-15, lens=60, frame='right', fstop=2.4)], 'WHITE', weights=[1.2, 1])
 anon.walk(ANIM - 0.2, WHITE + Vector((2.4, 2.3, 0)), speed=0.8)
 line('a17', [S('anon', size='MS', bearing=150, lens=35, frame='center', fstop=4.0, move='track')], 'WHITE', pad=0.6)
-line('wh15', [S('whale', size='CU', bearing=0, lens=85, frame='center', fstop=2.0, dutch=-6)], 'WHITE', pad=0.4)
+line('wh15', [S('whale', size='MCU', angle=-20, bearing=0, lens=70, frame='center', fstop=2.0, dutch=-6)], 'WHITE', pad=0.4)
 anon.turn(ANIM, 200, 0.3)
 line('a18', [S('anon', size='CU', bearing=0, lens=70, frame='center', fstop=1.8)], 'WHITE', pad=0.8)
 
@@ -728,6 +729,41 @@ END_FILM, END_A = FILM, ANIM
 
 # ================================================================ animated objects
 if not DRY:
+    # the bull cracks: a glowing red fissure drawn over its side (points found by rays, so it lies on the surface), growing
+    # from the shoulder down while the camera pushes in, and a chunk of gold breaks off and falls
+    dg = bpy.context.evaluated_depsgraph_get()
+    crack_pts = []
+    for k in range(12):
+        x = FLOOR.x - 1.4 + k * 0.24
+        z = 3.1 - k * 0.17 + (0.09 if k % 2 else -0.09)
+        hit, loc, *_ = sc.ray_cast(dg, Vector((x, FLOOR.y + 6.0, z)), Vector((0, 1, 0)), distance=6.0)
+        if hit:
+            crack_pts.append(loc - Vector((0, 0.01, 0)))
+    crack_m = mxsets.material('crack', (1.0, 0.1, 0.05), emit=(1.0, 0.12, 0.04), strength=12.0)
+    cd = bpy.data.curves.new('bull_crack', 'CURVE')
+    cd.dimensions = '3D'
+    cd.bevel_depth = 0.018
+    sp = cd.splines.new('POLY')
+    sp.points.add(len(crack_pts) - 1)
+    for p_, q_ in zip(sp.points, crack_pts):
+        p_.co = (*q_, 1)
+    crack = bpy.data.objects.new('bull_crack', cd)
+    mxsets.collection('FLOOR').objects.link(crack)
+    cd.materials.append(crack_m)
+    animate(cd, 'bevel_factor_end', [(F(BULL_T + 0.2), 0.0), (F(BULL_T + 1.6), 1.0)], 'LINEAR')
+    gold = mxsets.material('bull_chunk', (1.0, 0.72, 0.2), rough=0.25, metal=1.0)
+    chunk = mxsets.box('bull_chunk', (0.35, 0.3, 0.28), (0, 0, 0), gold, PROPS, bevel=0.03)
+    top = crack_pts[len(crack_pts) // 2] if crack_pts else FLOOR + Vector((0, 9.9, 2.0))
+    animate(chunk, 'location', [(F(0), (0, 0, -50)), (F(BULL_T + 1.7) - 0.02, (0, 0, -50)), (F(BULL_T + 1.7), tuple(top)),
+                                (F(BULL_T + 2.4), tuple(Vector((top.x - 0.2, top.y - 0.5, FLOOR.z + 1.2))))], 'LINEAR')
+    animate(chunk, 'rotation_euler', [(F(BULL_T + 1.7), (0, 0, 0)), (F(BULL_T + 2.4), (1.2, 0.6, 0.3))], 'LINEAR')
+    print('CRACK points', len(crack_pts))
+    # the rocket: flames out of its base (crossed flame cards) and a bright green-white light, only in flight
+    for k in range(3):
+        fc_ = mxsets.plane(f'rocket_flame{k}', 0.16, 0.5, (0, 0, -0.42), sets2.flame_material(f'rocket_flame_m{k}', 4.0 + k),
+                           PROPS, parent=ROCKET, rot=(math.radians(-90), 0, math.radians(60 * k)))
+        fc_.visible_shadow = False
+        fc_['cine_ignore'] = True
     show('rocket', [(0, False), (LAUNCH - 0.4, True), (FLIGHT_END, False)])
     show('save_candle', [(0, False), (LIQ + 1.9, True), (SAVE_T + 0.35, False)])
     show('seed_key', [(0, True)])
