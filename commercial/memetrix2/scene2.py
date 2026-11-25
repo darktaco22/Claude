@@ -572,7 +572,7 @@ line('a10', [S('anon', size='MCU', bearing=-20, lens=60, frame='right', fstop=2.
 line('s10', [S('slerf', size='MCU', angle='low', bearing=10, lens=55, frame='center', fstop=2.0)], 'BASEMENT', pad=0.8)
 line('a11', [S('anon', size='CU', bearing=25, lens=75, frame='left', fstop=1.8)], 'BASEMENT')
 line('s11', [S('slerf', size='MCU', bearing=-30, lens=70, frame='center', fstop=2.0, move='push', amount=0.12)], 'BASEMENT', pad=0.5)
-line('mo10', [S('anon', size='WS', angle=-20, bearing=180, lens=24, frame='center', fstop=4.0, **{'with': ['michi', 'slerf']})],
+line('mo10', [S('anon', size='WS', angle=-12, bearing=180, lens=35, frame='center', fstop=4.0, **{'with': ['michi', 'slerf']})],
      'BASEMENT', pad=0.4)
 
 # ---------------------------------------------------------------- 2. the burning café
@@ -590,7 +590,7 @@ line('a12', [S('anon', size='MCU', bearing=30, lens=55, frame='left', fstop=2.2)
 line('f11', [S('fine', size='CU', bearing=10, lens=70, frame='center', fstop=1.8, move='push', amount=0.08)], 'CAFE')
 line('f12', [S('fine', size='MS', bearing=-35, lens=40, frame='left', fstop=2.8, **{'with': ['toshi']}),
              S('toshi', size='MCU', bearing=20, lens=60, frame='center', fstop=2.0)], 'CAFE', weights=[1.3, 1])
-line('t10', [S('toshi', size='CU', bearing=-10, lens=75, frame='right', fstop=1.8)], 'CAFE')
+line('t10', [S('toshi', size='MCU', bearing=-10, lens=70, frame='right', fstop=2.0)], 'CAFE')
 line('f13', [S('swordcat', size='MS', angle=-5, bearing=-55, lens=35, frame='center', fstop=2.8, move='push', amount=0.15)], 'CAFE')
 # the test: Swordcat at striking distance (1.3 m); three attacks, Anon blocks, leans out (slow motion), catches the blade
 DUEL = ANIM
@@ -631,7 +631,7 @@ CATCH_PT = catch_w + Vector((0, 0, 1.31))                         # the insert: 
 shot('catch_insert', 1.1, S('anon', size='CU', lens=42, frame=(0.0, 0.0), fstop=2.8, catch_insert=True), 'CAFE', speed=0.25, hand=None)
 swordcat.play(ANIM, 'idle')
 anon.play(ANIM, 'idle')
-line('w10', [S('swordcat', size='CU', bearing=35, lens=70, frame='right', fstop=1.8)], 'CAFE', pad=0.4)
+line('w10', [S('swordcat', size='MCU', bearing=-35, lens=60, frame='left', fstop=2.0)], 'CAFE', pad=0.4)
 toshi.walk(ANIM, CAFE + Vector((2.0, -0.2, 0)), speed=1.0)
 line('t11', [S('toshi', size='MS', bearing=-60, lens=45, frame='center', fstop=2.8, **{'with': ['anon']})], 'CAFE')
 line('f14', [S('fine', size='MCU', bearing=-45, lens=50, frame='center', fstop=2.4, move='pull', amount=0.3)], 'CAFE', pad=0.6)
@@ -707,19 +707,19 @@ anon.walk(a, WHITE + Vector((0, -0.6, 0)), speed=0.9)
 shot('white_reveal', 3.2, S('anon', size='EWS', angle=6, bearing=180, lens=20, frame='center', fstop=8.0, move='push', amount=0.15,
                             look_offset=(0, 3.0, 0.6)), 'WHITE')
 line('wh10', [S('whale', size='MS', angle=-20, bearing=0, lens=35, frame='center', fstop=4.0)], 'WHITE')
-line('a15', [S('anon', size='MCU', bearing=20, lens=55, frame='left', fstop=2.4)], 'WHITE')
-line('wh11', [S('whale', size='MCU', angle=-18, bearing=-25, lens=55, frame='right', fstop=2.8),
+line('a15', [S('anon', size='MS', bearing=20, lens=45, frame='left', fstop=2.8)], 'WHITE')
+line('wh11', [S('whale', size='MCU', angle=-18, bearing=-25, lens=55, frame='right', fstop=2.8, look_offset=(0, 0, 0.18)),
               S('anon', distance=4.0, bearing=180, lens=30, frame='center', fstop=5.6, look_offset=(0, 7.5, 2.2))], 'WHITE',
      weights=[1, 1.3])
-line('wh12', [S('whale', size='MCU', angle=-18, bearing=0, lens=60, frame='center', fstop=2.0, move='push', amount=0.12)], 'WHITE')
-line('a16', [S('anon', size='CU', bearing=-20, lens=75, frame='right', fstop=1.8)], 'WHITE')
-line('wh13', [S('whale', size='MCU', angle=-18, bearing=20, lens=60, frame='left', fstop=2.4)], 'WHITE')
+line('wh12', [S('whale', size='MCU', angle=-18, bearing=0, lens=60, frame='center', fstop=2.0, move='push', amount=0.12, look_offset=(0, 0, 0.18))], 'WHITE')
+line('a16', [S('anon', size='MCU', bearing=-20, lens=70, frame='right', fstop=2.0)], 'WHITE')
+line('wh13', [S('whale', size='MS', angle=-12, bearing=40, lens=40, frame='left', fstop=2.8)], 'WHITE')
 DOORS_T = ANIM
 line('wh14', [S('anon', size='WS', angle=14, bearing=180, lens=24, frame='center', fstop=5.6, look_offset=(0, 3.4, 1.05)),
-              S('whale', size='MCU', angle=-18, bearing=-15, lens=60, frame='right', fstop=2.4)], 'WHITE', weights=[1.2, 1])
+              S('whale', size='MCU', angle=-18, bearing=-15, lens=60, frame='right', fstop=2.4, look_offset=(0, 0, 0.18))], 'WHITE', weights=[1.2, 1])
 anon.walk(ANIM - 0.2, WHITE + Vector((2.4, 2.3, 0)), speed=0.8)
 line('a17', [S('anon', size='MS', bearing=150, lens=35, frame='center', fstop=4.0, move='track')], 'WHITE', pad=0.6)
-line('wh15', [S('whale', size='MCU', angle=-20, bearing=0, lens=70, frame='center', fstop=2.0, dutch=-6)], 'WHITE', pad=0.4)
+line('wh15', [S('whale', size='MCU', angle=-20, bearing=0, lens=70, frame='center', fstop=2.0, dutch=-6, look_offset=(0, 0, 0.18))], 'WHITE', pad=0.4)
 anon.turn(ANIM, 200, 0.3)
 line('a18', [S('anon', size='CU', bearing=0, lens=70, frame='center', fstop=1.8)], 'WHITE', pad=0.8)
 

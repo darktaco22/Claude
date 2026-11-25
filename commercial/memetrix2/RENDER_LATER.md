@@ -5,7 +5,7 @@ Everything needed is committed on branch `claude/eager-brown-rlfja0`: scene code
 (`pack/props`, `pack/stills`), titles, sound and finish (`finish.py`). `edl.json` is the edit to render; frames are filed under
 the first 10 characters of its sha1 (`sha1sum edl.json | cut -c1-10`). **Re-check the hash before starting workers**: every
 scene fix rewrites `edl.json`, and `render_worker.sh` prints the hash it is rendering (`EDIT <hash>`). As of this writing:
-**1bf7de506d**, 57 shots, 3406 frames of 3D (film frames 121-3526) + the opening and closing = about 2 min 40 s.
+**85232b1f5b**, 57 shots, 3406 frames of 3D (film frames 121-3526) + the opening and closing = about 2 min 40 s.
 
 ## Look (keep it): fog, lights, motion blur
 `render_worker.sh` renders with everything on by default: volumetric haze (café smoke, rooftop rain fog, basement dust),

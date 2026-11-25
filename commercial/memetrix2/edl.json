@@ -508,9 +508,9 @@
 "cam": {
 "subject": "anon",
 "size": "WS",
-"angle": -10.0,
+"angle": -2.0,
 "bearing": 190,
-"lens": 24,
+"lens": 35,
 "frame": "center",
 "fstop": 4.0,
 "with": [
@@ -667,11 +667,11 @@
 "set": "CAFE",
 "cam": {
 "subject": "toshi",
-"size": "CU",
+"size": "MCU",
 "bearing": -10,
-"lens": 75,
+"lens": 70,
 "frame": "right",
-"fstop": 1.8
+"fstop": 2.0
 },
 "hand": [
 "INVESTIGATION",
@@ -885,12 +885,11 @@
 "set": "CAFE",
 "cam": {
 "subject": "swordcat",
-"size": "CU",
-"bearing": 45,
-"lens": 70,
-"frame": "right",
-"fstop": 1.8,
-"angle": 0.0
+"size": "MCU",
+"bearing": -35,
+"lens": 60,
+"frame": "left",
+"fstop": 2.0
 },
 "hand": [
 "INVESTIGATION",
@@ -1279,11 +1278,11 @@
 "set": "WHITE",
 "cam": {
 "subject": "anon",
-"size": "MCU",
+"size": "MS",
 "bearing": 20,
-"lens": 55,
+"lens": 45,
 "frame": "left",
-"fstop": 2.4
+"fstop": 2.8
 },
 "hand": [
 "INVESTIGATION",
@@ -1304,7 +1303,12 @@
 "bearing": -25,
 "lens": 55,
 "frame": "right",
-"fstop": 2.8
+"fstop": 2.8,
+"look_offset": [
+0,
+0,
+0.18
+]
 },
 "hand": [
 "INVESTIGATION",
@@ -1352,7 +1356,12 @@
 "frame": "center",
 "fstop": 2.0,
 "move": "push",
-"amount": 0.12
+"amount": 0.12,
+"look_offset": [
+0,
+0,
+0.18
+]
 },
 "hand": [
 "INVESTIGATION",
@@ -1368,11 +1377,11 @@
 "set": "WHITE",
 "cam": {
 "subject": "anon",
-"size": "CU",
+"size": "MCU",
 "bearing": -20,
-"lens": 75,
+"lens": 70,
 "frame": "right",
-"fstop": 1.8
+"fstop": 2.0
 },
 "hand": [
 "INVESTIGATION",
@@ -1388,12 +1397,12 @@
 "set": "WHITE",
 "cam": {
 "subject": "whale",
-"size": "MCU",
-"angle": -18,
-"bearing": 20,
-"lens": 60,
+"size": "MS",
+"angle": -12,
+"bearing": 40,
+"lens": 40,
 "frame": "left",
-"fstop": 2.4
+"fstop": 2.8
 },
 "hand": [
 "INVESTIGATION",
@@ -1440,7 +1449,12 @@
 "bearing": -15,
 "lens": 60,
 "frame": "right",
-"fstop": 2.4
+"fstop": 2.4,
+"look_offset": [
+0,
+0,
+0.18
+]
 },
 "hand": [
 "INVESTIGATION",
@@ -1483,7 +1497,12 @@
 "lens": 70,
 "frame": "center",
 "fstop": 2.0,
-"dutch": -6
+"dutch": -6,
+"look_offset": [
+0,
+0,
+0.18
+]
 },
 "hand": [
 "INVESTIGATION",
@@ -3671,7 +3690,6 @@
 "f12_1: foreground clutter (31% of frame) blocked the view; moved bearing -10, angle +0",
 "f13_0: foreground clutter (44% of frame) blocked the view; moved bearing +60, angle +20",
 "duel_catch: foreground clutter (33% of frame) blocked the view; moved bearing +30, angle +0",
-"w10_0: zcat blocked the view; moved bearing +10, angle +0",
 "t11_0: cafe_right blocked the view; moved bearing +10, angle +0",
 "f14_0: toshi blocked the view; moved bearing -20, angle +0",
 "launch: camera inside jc0 blocked the view; moved bearing +10, angle +0",
