@@ -589,7 +589,7 @@ line('t10', [S('toshi', size='CU', bearing=-10, lens=75, frame='right', fstop=1.
 line('f13', [S('swordcat', size='MS', angle='low', bearing=20, lens=40, frame='center', fstop=2.8, move='push', amount=0.15)], 'CAFE')
 # the test: Swordcat at striking distance (1.3 m); three attacks, Anon blocks, leans out (slow motion), catches the blade
 DUEL = ANIM
-swordcat.walk(DUEL - 1.9, CAFE + Vector((0.3, 0.4, 0)), speed=2.4, then='ready')   # arrives before the duel (late, he slid
+swordcat.walk(DUEL - 2.8, CAFE + Vector((0.3, 0.4, 0)), speed=2.4, then='ready')   # arrives before the duel (late, he slid
 swordcat.face(DUEL - 0.1, anon, 0.15)                             # through it) and off the line to This-Is-Fine and Toshi
 anon.face(DUEL - 0.1, swordcat, 0.2)
 swordcat.play(DUEL + 0.4, 'attack1', 1.1)
@@ -600,9 +600,22 @@ anon.lean(DUEL + 1.3, 0)
 anon.lean(DUEL + 1.45, -22)
 anon.lean(DUEL + 1.85, -22)
 anon.lean(DUEL + 2.1, 0)
-swordcat.play(DUEL + 2.2, 'attack3', 1.0)
+swordcat.play(DUEL + 2.2, 'attack1', 1.0)
+# the catch, measured on the blade prop (prop_blade, parented to his right hand): his thrust (attack1 at 60 %) holds the blade
+# level at 1.31 m, pointing straight ahead, the point 0.96 m out a hand's width from the tip; Anon's raised paws (win at 25 %) meet 0.29 m in front of him at 1.47 m, 0.82 m apart. Anon steps
+# in so the middle of his paws is on the blade.
+def rot_(v, H):
+    r = math.radians(180 - H)
+    return Vector((v.x * math.cos(r) - v.y * math.sin(r), v.x * math.sin(r) + v.y * math.cos(r), 0))
+Hs = heading_to(swordcat.pos, anon.pos)
+catch_w = swordcat.pos + rot_(Vector((-0.26, -0.96, 0)), Hs)
+Ha = (Hs + 180) % 360
+CATCH_AT = catch_w - rot_(Vector((0, -0.29, 0)), Ha)
+anon.hold(DUEL + 2.2)
+anon.pos, anon.H = CATCH_AT, Ha
+anon.keys.append([DUEL + 2.45, *CATCH_AT, Ha, 0])
 anon.play(DUEL + 2.45, 'win@0.25')                                # both paws up: the blade caught between them
-swordcat.play(DUEL + 2.62, 'attack3@0.45')                        # freeze on the strike
+swordcat.play(DUEL + 2.5, 'attack1@0.6')                          # freeze on the thrust, the blade between his paws
 shot('duel_wide', 1.4, S('anon', size='WS', bearing=90, lens=32, frame='center', fstop=4.0, **{'with': ['swordcat']}), 'CAFE')
 shot('duel_block', 0.9, S('anon', size='MS', bearing=60, lens=45, frame='center', fstop=2.8, **{'with': ['swordcat']}), 'CAFE')
 shot('duel_lean', 2.4, S('anon', size='MS', angle='low', bearing=100, lens=35, frame='center', fstop=3.2, move='arc', amount=40,
@@ -823,6 +836,25 @@ if not DRY:
         animate(obj, 'scale', samples[1:], 'CONSTANT')
 
 # ================================================================ solve
+if not DRY:                                                        # the duel from the open side of the café, side-on to the fight
+    wh_ = make_where({n: sorted(x.keys, key=lambda k: k[0]) for n, x in A.items()})
+    for s_ in SHOTS:
+        if s_['name'] in ('duel_wide', 'duel_block', 'duel_lean'):
+            a_mid = s_['a0'] + (s_['t1'] - s_['t0']) * s_['s0'] * 0.5
+            pa, ha = wh_('anon', a_mid)
+            ps, _ = wh_('swordcat', a_mid)
+            mid = (Vector(pa) + Vector(ps)) / 2
+            d_ = (Vector(ps) - Vector(pa)).normalized()
+            perp = Vector((-d_.y, d_.x, 0))
+            if perp.y > 0:                                         # the side away from the counter (This-Is-Fine and Toshi)
+                perp = -perp
+            dist, up = {'duel_wide': (3.4, 0.6), 'duel_block': (2.9, 0.75), 'duel_lean': (2.9, 0.6)}[s_['name']]
+            s_['cam']['lens'] = 28 if s_['name'] != 'duel_wide' else s_['cam'].get('lens', 32)
+            look = mid + Vector((0, 0, 1.0))
+            s_['cam']['look_offset'] = list(look - cine.eye_point('anon', pa, ha))
+            s_['cam']['cam_at'] = list(look + perp * dist + Vector((0, 0, up)) - d_ * (0.3 if s_['name'] == 'duel_lean' else 0))
+            s_['cam']['cam_at1'] = list(look + perp * (dist * 0.9) + Vector((0, 0, up)) + d_ * (0.3 if s_['name'] == 'duel_lean' else 0))
+
 tracks = {n: actor.keys for n, actor in A.items()}
 tracks = {n: sorted(k, key=lambda x: x[0]) for n, k in tracks.items()}
 where = make_where(tracks)
