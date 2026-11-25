@@ -88,19 +88,97 @@ def flame_material(name, seed=0.0):
     return mat
 
 
+def fire_material(name, seed=0.0):
+    """Volumetric fire: climbing 4D noise, cut off with height and toward the edges, emitting orange to yellow by its heat.
+    (Object coordinates of the unit cube; a first blackbody version came out almost black.)"""
+    mat = bpy.data.materials.new(name)
+    mat.use_nodes = True
+    nt = mat.node_tree
+    nt.nodes.clear()
+    N = nt.nodes.new
+    L = nt.links.new
+    tc = N('ShaderNodeTexCoord')
+    sep = N('ShaderNodeSeparateXYZ'); L(tc.outputs['Object'], sep.inputs[0])            # x, y, z in -0.5..0.5
+    off = N('ShaderNodeVectorMath'); off.operation = 'ADD'
+    _drive(off.inputs[1], 'default_value', '-frame * 0.07', index=2)                  # the flame climbs
+    L(tc.outputs['Object'], off.inputs[0])
+    noise = N('ShaderNodeTexNoise'); noise.noise_dimensions = '4D'
+    noise.inputs['Scale'].default_value = 5.0; noise.inputs['Detail'].default_value = 8.0; noise.inputs['Roughness'].default_value = 0.7
+    noise.inputs['Distortion'].default_value = 1.2                                     # licking, ragged tongues
+    _drive(noise.inputs['W'], 'default_value', f'frame / 12 + {seed}')
+    L(off.outputs[0], noise.inputs['Vector'])
+    # falloff = (0.5 - z) * (1 - 2 * radius): 1 at the base centre, 0 at the top and the sides
+    up = N('ShaderNodeMath'); up.operation = 'SUBTRACT'; up.inputs[0].default_value = 0.5; L(sep.outputs['Z'], up.inputs[1])
+    xy = N('ShaderNodeCombineXYZ'); L(sep.outputs['X'], xy.inputs['X']); L(sep.outputs['Y'], xy.inputs['Y'])
+    rad = N('ShaderNodeVectorMath'); rad.operation = 'LENGTH'; L(xy.outputs[0], rad.inputs[0])
+    side = N('ShaderNodeMath'); side.operation = 'MULTIPLY_ADD'; side.use_clamp = True
+    side.inputs[1].default_value = -2.0; side.inputs[2].default_value = 1.0; L(rad.outputs[1], side.inputs[0])
+    fall = N('ShaderNodeMath'); fall.operation = 'MULTIPLY'; L(up.outputs[0], fall.inputs[0]); L(side.outputs[0], fall.inputs[1])
+    # heat = noise * falloff, sharpened into tongues
+    heat = N('ShaderNodeMath'); heat.operation = 'MULTIPLY'; L(noise.outputs['Fac'], heat.inputs[0]); L(fall.outputs[0], heat.inputs[1])
+    tongue = N('ShaderNodeMapRange'); tongue.clamp = True
+    tongue.inputs['From Min'].default_value = 0.14; tongue.inputs['From Max'].default_value = 0.34
+    L(heat.outputs[0], tongue.inputs['Value'])
+    ramp = N('ShaderNodeValToRGB')
+    ramp.color_ramp.elements[0].position = 0.0; ramp.color_ramp.elements[0].color = (0.55, 0.03, 0.0, 1)
+    ramp.color_ramp.elements[1].position = 1.0; ramp.color_ramp.elements[1].color = (1.0, 0.75, 0.25, 1)
+    mid = ramp.color_ramp.elements.new(0.45); mid.color = (1.0, 0.25, 0.02, 1)
+    L(tongue.outputs['Result'], ramp.inputs['Fac'])
+    strength = N('ShaderNodeMath'); strength.operation = 'MULTIPLY'; strength.inputs[1].default_value = 12.0
+    L(tongue.outputs['Result'], strength.inputs[0])
+    dens = N('ShaderNodeMath'); dens.operation = 'MULTIPLY'; dens.inputs[1].default_value = 3.0
+    L(tongue.outputs['Result'], dens.inputs[0])
+    vol = N('ShaderNodeVolumePrincipled')
+    vol.inputs['Color'].default_value = (0.08, 0.05, 0.03, 1)
+    L(dens.outputs[0], vol.inputs['Density'])
+    L(ramp.outputs['Color'], vol.inputs['Emission Color'])
+    L(strength.outputs[0], vol.inputs['Emission Strength'])
+    out = N('ShaderNodeOutputMaterial'); L(vol.outputs[0], out.inputs['Volume'])
+    return mat
+
+
+def smoke_material(name, seed=0.0, density=0.6):
+    """Rising grey smoke: noise that climbs over time, thinning with height."""
+    mat = bpy.data.materials.new(name)
+    mat.use_nodes = True
+    nt = mat.node_tree
+    nt.nodes.clear()
+    tc = nt.nodes.new('ShaderNodeTexCoord')
+    off = nt.nodes.new('ShaderNodeVectorMath'); off.operation = 'ADD'
+    _drive(off.inputs[1], 'default_value', '-frame * 0.012', index=2)
+    nt.links.new(tc.outputs['Object'], off.inputs[0])
+    noise = nt.nodes.new('ShaderNodeTexNoise')
+    noise.noise_dimensions = '4D'
+    noise.inputs['Scale'].default_value = 3.0
+    noise.inputs['Detail'].default_value = 4.0
+    _drive(noise.inputs['W'], 'default_value', f'frame / 40 + {seed}')
+    nt.links.new(off.outputs[0], noise.inputs['Vector'])
+    cut = nt.nodes.new('ShaderNodeMapRange')
+    cut.inputs['From Min'].default_value = 0.45; cut.inputs['From Max'].default_value = 0.75
+    cut.inputs['To Max'].default_value = density
+    nt.links.new(noise.outputs['Fac'], cut.inputs['Value'])
+    vol = nt.nodes.new('ShaderNodeVolumePrincipled')
+    vol.inputs['Color'].default_value = (0.12, 0.11, 0.1, 1)
+    nt.links.new(cut.outputs['Result'], vol.inputs['Density'])
+    out = nt.nodes.new('ShaderNodeOutputMaterial')
+    nt.links.new(vol.outputs[0], out.inputs['Volume'])
+    return mat
+
+
 def fire(name, loc, size, col, lit, energy=60.0, seed=0.0):
-    """A fire: three crossed flame cards, a flickering orange point light and a little smoke."""
-    holder = bpy.data.objects.new(name, None)
-    col.objects.link(holder)
-    holder.location = loc
-    for k in range(3):
-        card = plane(f'{name}_card{k}', size * 0.9, size * 1.6, (0, 0, size * 0.8), flame_material(f'{name}_m{k}', seed + k * 3.1),
-                     col, parent=holder, rot=(math.radians(90), 0, math.radians(60 * k)))
-        card.visible_shadow = False
-        card['cine_ignore'] = True
-    lamp = light(name + '_light', 'POINT', Vector(loc) + Vector((0, 0, size * 0.7)), energy, (1.0, 0.45, 0.12), lit, size=size * 0.4)
-    _drive(lamp.data, 'energy', f'{energy} * (0.8 + 0.15 * sin(frame * 0.9 + {seed}) + 0.08 * sin(frame * 2.3 + {seed * 2}))')
-    return holder
+    """A fire: a volumetric flame (box, procedural shader), a smoke column above it, two flickering orange lights."""
+    loc = Vector(loc)
+    flame = box(name, (size * 0.9, size * 0.9, size * 1.8), loc + Vector((0, 0, size * 0.9)), fire_material(name + '_m', seed), col)
+    flame.visible_shadow = False
+    flame['cine_ignore'] = True
+    smoke = box(name + '_smoke', (size * 1.3, size * 1.3, size * 2.0), loc + Vector((0, 0, size * 2.6)), smoke_material(name + '_sm', seed, 0.5),
+                col)
+    smoke.visible_shadow = False
+    smoke['cine_ignore'] = True
+    for k, (dz, e) in enumerate(((0.5, 1.0), (1.1, 0.55))):
+        lamp = light(f'{name}_light{k}', 'POINT', loc + Vector((0, 0, size * dz)), energy * e, (1.0, 0.42, 0.1), lit, size=size * 0.35)
+        _drive(lamp.data, 'energy', f'{energy * e} * (0.75 + 0.18 * sin(frame * 0.9 + {seed + k}) + 0.1 * sin(frame * 2.7 + {seed * 2 + k}))')
+    return flame
 
 
 def build_cafe():
@@ -118,7 +196,7 @@ def build_cafe():
     nt.links.new(chk.outputs['Color'], nt.nodes['Principled BSDF'].inputs['Base Color'])
     nt.nodes['Principled BSDF'].inputs['Roughness'].default_value = 0.3
     plane('cafe_floor', 12, 10, o, tiles, col)
-    wall_m = material('cafe_wall', (0.55, 0.38, 0.28), rough=0.85)
+    wall_m = material('cafe_wall', (0.38, 0.24, 0.17), rough=0.85)
     mxsets.add_bump(wall_m, 30.0, 0.2)
     trim_m = material('cafe_trim', (0.6, 0.08, 0.06), rough=0.5)
     for name, size, off in (('cafe_back', (12, 0.3, 4.2), (0, 5, 2.1)), ('cafe_left', (0.3, 10, 4.2), (-6, 0, 2.1)),
@@ -212,17 +290,34 @@ def build_cafe():
     for k, x in enumerate((-3.6, -0.8, 2.0, 4.0)):
         cylinder(f'pendant_cord{k}', 0.008, 1.2, o + Vector((x, 1.0 if k > 1 else -0.8, 3.6)), board_m, col, verts=6)
         cone = cylinder(f'pendant{k}', 0.22, 0.18, o + Vector((x, 1.0 if k > 1 else -0.8, 2.95)), trim_m, col, verts=20)
-        light(f'L_pendant{k}', 'POINT', o + Vector((x, 1.0 if k > 1 else -0.8, 2.8)), 45, (1.0, 0.75, 0.45), lit, size=0.15)
+        light(f'L_pendant{k}', 'POINT', o + Vector((x, 1.0 if k > 1 else -0.8, 2.8)), 12, (1.0, 0.75, 0.45), lit, size=0.15)
     rnd = random.Random(5)
     spots = [((-3.6, 0.6, 0.81), 0.8), ((-0.8, -2.6, 0.81), 0.65), ((1.4, 2.6, 1.11), 0.75), ((3.6, 2.6, 1.11), 0.9),
              ((3.6, 4.6, 2.5), 1.0), ((-5.4, 4.2, 0.0), 1.8), ((5.3, -3.8, 0.0), 2.0), ((-3.6, -2.2, 0.81), 0.6),
              ((5.6, 3.0, 0.0), 1.6), ((-5.6, -3.5, 0.0), 1.5), ((0.4, 4.6, 0.0), 1.3), ((-1.0, 4.6, 3.0), 0.9)]
     for k, (p, s) in enumerate(spots):
-        fire(f'fire{k}', o + Vector(p), s, col, lit, energy=35 + 70 * s, seed=rnd.uniform(0, 20))
-    light('cafe_key', 'AREA', o + Vector((0, -3, 3.9)), 90, (1.0, 0.7, 0.45), lit, size=3.0, rot=(math.radians(20), 0, 0))
+        fire(f'fire{k}', o + Vector(p), s * 1.25, col, lit, energy=25 + 50 * s, seed=rnd.uniform(0, 20))   # (darker room: the fire is the light)
+    # flames climbing the walls (wide, flat fire boxes against them) and a burning curtain by the window
+    for k, (p, sz) in enumerate((((-5.75, 2.0, 0.0), (0.4, 2.2, 3.0)), ((5.75, -1.5, 0.0), (0.4, 2.6, 3.2)),
+                                 ((1.6, 4.75, 0.0), (2.4, 0.4, 2.6)), ((-4.9, 4.7, 1.1), (0.7, 0.35, 2.6)))):
+        wf = box(f'wallfire{k}', sz, o + Vector(p) + Vector((0, 0, sz[2] / 2)), fire_material(f'wallfire_m{k}', 30 + k * 5), col)
+        wf.visible_shadow = False
+        wf['cine_ignore'] = True
+        wl = light(f'L_wallfire{k}', 'AREA', o + Vector(p) + Vector((0, 0, sz[2] * 0.4)), 150, (1.0, 0.4, 0.08), lit, size=1.5)
+        _drive(wl.data, 'energy', f'150 * (0.75 + 0.2 * sin(frame * 0.8 + {k * 3}) + 0.1 * sin(frame * 2.3 + {k}))')
+    smoke_layer = box('cafe_smoke_layer', (11.6, 9.6, 1.1), o + Vector((0, 0, 3.6)), smoke_material('cafe_smoke_layer_m', 7, 1.4), col)
+    smoke_layer.visible_shadow = False
+    smoke_layer['cine_ignore'] = True
+    soot = material('soot', (0.02, 0.018, 0.016), rough=0.95)
+    for k, (p, rot, sz) in enumerate((((-5.83, 2.0, 2.6), (math.radians(90), 0, math.radians(90)), (3.0, 3.0)),
+                                      ((5.83, -1.5, 2.6), (math.radians(90), 0, math.radians(-90)), (3.4, 3.2)),
+                                      ((1.6, 4.84, 2.4), (math.radians(90), 0, math.radians(180)), (3.0, 2.6)))):
+        sm_ = plane(f'scorch{k}', sz[0], sz[1], o + Vector(p), soot, col, rot=rot)       # blackened wall above each wall fire
+        sm_.visible_shadow = False
+    light('cafe_key', 'AREA', o + Vector((0, -3, 3.9)), 20, (1.0, 0.7, 0.45), lit, size=3.0, rot=(math.radians(20), 0, 0))
     light('cafe_window_light', 'AREA', o + Vector((-2.2, 4.4, 2.2)), 120, (0.4, 1.0, 0.55), lit, size=2.0,
           rot=(math.radians(-90), 0, 0))
-    haze('haze_cafe', o + Vector((0, 0, 2.1)), (11.5, 9.5, 4.1), 0.012, (1.0, 0.75, 0.55), col)
+    haze('haze_cafe', o + Vector((0, 0, 2.1)), (11.5, 9.5, 4.1), 0.012, (1.0, 0.7, 0.5), col)
     for l_ in lit.objects:                                         # lights light the set but never show as glowing quads
         if l_.type == 'LIGHT':
             l_.visible_camera = l_.visible_transmission = l_.visible_glossy = False   # (seen through the glass too)

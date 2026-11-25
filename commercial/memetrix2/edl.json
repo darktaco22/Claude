@@ -666,9 +666,9 @@
 "cam": {
 "subject": "swordcat",
 "size": "MS",
-"angle": "low",
-"bearing": 20,
-"lens": 40,
+"angle": 15.0,
+"bearing": 5,
+"lens": 35,
 "frame": "center",
 "fstop": 2.8,
 "move": "push",
@@ -965,7 +965,7 @@
 "cam": {
 "subject": "anon",
 "size": "WS",
-"angle": 15,
+"angle": 32,
 "bearing": 180,
 "lens": 24,
 "frame": "center",
@@ -1160,7 +1160,7 @@
 "lens": 24,
 "frame": "center",
 "fstop": 5.6,
-"eye": 0.9
+"eye": 1.25
 },
 "hand": null
 },
@@ -1548,8 +1548,8 @@
 "cam": {
 "subject": "anon",
 "size": "WS",
-"angle": 25,
-"bearing": 60,
+"angle": 40,
+"bearing": 160,
 "lens": 35,
 "frame": "center",
 "fstop": 4.0,
@@ -1970,6 +1970,22 @@
 1994.5,
 -3.200000047683716,
 0.0,
+200,
+0
+],
+[
+136.96600000000004,
+1994.5,
+-3.200000047683716,
+0.0,
+200,
+0
+],
+[
+137.31600000000003,
+1994.5,
+-3.200000047683716,
+-0.27000001072883606,
 200,
 0
 ]
@@ -3563,7 +3579,7 @@
 "a12_0: toshi blocked the view; moved bearing +30, angle +0",
 "f11_0: foreground clutter (29% of frame) blocked the view; moved bearing +10, angle +0",
 "f12_1: foreground clutter (31% of frame) blocked the view; moved bearing -10, angle +0",
-"f13_0: BLOCKED by booth_back2_1 at every tried angle: restage or hide it",
+"f13_0: foreground clutter (44% of frame) blocked the view; moved bearing +60, angle +20",
 "duel_catch: foreground clutter (33% of frame) blocked the view; moved bearing +30, angle +0",
 "w10_0: zcat blocked the view; moved bearing +10, angle +0",
 "t11_0: cafe_right blocked the view; moved bearing +10, angle +0",
