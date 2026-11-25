@@ -393,20 +393,73 @@ def build_white_room(stills=None):
 
 def episode1_stills(frames_dir, count=24):
     """Frames of Anon from episode 1 for the monitor wall (every Nth frame of the shots he is in)."""
+    packed = sorted(glob.glob(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pack', 'stills', 'f_*.jpg')))
+    if len(packed) >= count:                                    # committed copies (episode 1's frames are not in git)
+        return packed[:count]
     files = sorted(glob.glob(os.path.join(frames_dir, 'f_*.jpg')))
     return files[::max(1, len(files) // count)][:count]
+
+
+def wet_floor(mat, seed=0.0):
+    """Rain on a flat roof: puddles (mirror-smooth, a shade darker) between wet gravel, the puddles shimmering with drops.
+    World-position noise picks the puddles; animated 4D Voronoi bumps their normal (the drops), gravel stays matte-wet."""
+    nt = mat.node_tree
+    bsdf = nt.nodes.get('Principled BSDF')
+    if bsdf is None:
+        return
+    geo = nt.nodes.new('ShaderNodeNewGeometry')
+    noise = nt.nodes.new('ShaderNodeTexNoise')
+    noise.inputs['Scale'].default_value = 0.35
+    noise.inputs['Detail'].default_value = 3.0
+    nt.links.new(geo.outputs['Position'], noise.inputs['Vector'])
+    ramp = nt.nodes.new('ShaderNodeValToRGB')                       # 1 = puddle, 0 = wet gravel
+    ramp.color_ramp.elements[0].position = 0.46
+    ramp.color_ramp.elements[0].color = (1, 1, 1, 1)
+    ramp.color_ramp.elements[1].position = 0.52
+    ramp.color_ramp.elements[1].color = (0, 0, 0, 1)
+    nt.links.new(noise.outputs['Fac'], ramp.inputs['Fac'])
+    rough = nt.nodes.new('ShaderNodeMapRange')
+    rough.inputs['To Min'].default_value = 0.42
+    rough.inputs['To Max'].default_value = 0.03
+    nt.links.new(ramp.outputs['Color'], rough.inputs['Value'])
+    nt.links.new(rough.outputs['Result'], bsdf.inputs['Roughness'])
+    base = tuple(bsdf.inputs['Base Color'].default_value)
+    mix = nt.nodes.new('ShaderNodeMix')
+    mix.data_type = 'RGBA'
+    mix.inputs['A'].default_value = base
+    mix.inputs['B'].default_value = (base[0] * 0.55, base[1] * 0.55, base[2] * 0.55, 1.0)
+    nt.links.new(ramp.outputs['Color'], mix.inputs['Factor'])
+    nt.links.new(mix.outputs['Result'], bsdf.inputs['Base Color'])
+    vor = nt.nodes.new('ShaderNodeTexVoronoi')                       # the drops: cells that re-form every few frames
+    vor.voronoi_dimensions = '4D'
+    vor.feature = 'DISTANCE_TO_EDGE'
+    vor.inputs['Scale'].default_value = 9.0
+    nt.links.new(geo.outputs['Position'], vor.inputs['Vector'])
+    _drive(vor.inputs['W'], 'default_value', f'frame / 5 + {seed}')
+    amt = nt.nodes.new('ShaderNodeMath')
+    amt.operation = 'MULTIPLY'
+    nt.links.new(ramp.outputs['Color'], amt.inputs[0])
+    amt.inputs[1].default_value = 0.25
+    bump = nt.nodes.new('ShaderNodeBump')
+    bump.inputs['Distance'].default_value = 0.004
+    nt.links.new(amt.outputs['Value'], bump.inputs['Strength'])
+    nt.links.new(vor.outputs['Distance'], bump.inputs['Height'])
+    nt.links.new(bump.outputs['Normal'], bsdf.inputs['Normal'])
 
 
 def rooftop_rain(col, centre, size=(30, 30), drops=2500, seed=3):
     """Falling rain: thin streaks vertex-instanced over a cloud that drops and wraps (driver on the cloud's z)."""
     rnd = random.Random(seed)
     mesh = bpy.data.meshes.new('rain_cloud')
-    pts = [(rnd.uniform(-size[0] / 2, size[0] / 2), rnd.uniform(-size[1] / 2, size[1] / 2), rnd.uniform(0, 12)) for _ in range(drops)]
+    # the cloud falls 6 m and snaps back up. Every drop in the bottom 6 m has a twin 6 m above it, so the snap is invisible,
+    # and the snap lands half-way between frames (frame + 0.5 on an 11-frame cycle), outside any motion-blur shutter
+    half = [(rnd.uniform(-size[0] / 2, size[0] / 2), rnd.uniform(-size[1] / 2, size[1] / 2), rnd.uniform(0, 6)) for _ in range(drops // 2)]
+    pts = half + [(x, y, z + 6) for x, y, z in half]
     mesh.from_pydata(pts, [], [])
     cloud = bpy.data.objects.new('rain_cloud', mesh)
     col.objects.link(cloud)
     cloud.location = centre
-    _drive(cloud, 'location', f'{centre.z} - (frame * 0.55) % 6', index=2)
+    _drive(cloud, 'location', f'{centre.z} - ((frame + 0.5) % 11) * {6 / 11}', index=2)
     streak_m = material('rain_streak', (0.75, 0.9, 0.85), rough=0.1, emit=(0.6, 0.85, 0.75), strength=0.6)
     streak = cylinder('rain_streak', 0.004, 0.35, (0, 0, 0), streak_m, col, verts=4)
     streak.parent = cloud
@@ -414,4 +467,9 @@ def rooftop_rain(col, centre, size=(30, 30), drops=2500, seed=3):
     cloud.instance_type = 'VERTS'
     cloud['cine_ignore'] = True
     streak['cine_ignore'] = True
+    for ob in (cloud, streak):                                # slow-motion shots sample fractional frames, so the snap can
+        try:                                                  # still fall inside a shutter: the streaks are drawn long
+            ob.cycles.use_motion_blur = False                 # already, so the rain carries no object blur at all
+        except AttributeError:
+            pass
     return cloud

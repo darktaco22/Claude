@@ -37,7 +37,20 @@ mix) -> review at 3 fps + pop detector -> send.
   new cast cards, taglines NOBODY HOLDS FOREVER. / WATCH ME., new sound (fire, white-room drone, battle music in the brawl,
   duel steel, clone zaps, shockwave, rocket launch, margin call riser, the save). Test sheets in review/.
 
+## State (2026-11-25, evening)
+- Café: real 3D city through a Boolean-cut window (towers with lit windows, wet street, neon PAWN / HODL 24H / NOODLES,
+  street lamps); volumetric fire (12 fire volumes + wall/curtain fire, smoke layer under the ceiling, scorch marks); all café
+  lights hidden from camera/glass/gloss rays. Café frames are ~3x slower than episode 1's: use more workers.
+- CRT insert (n11_1): one Jeanphil, then four, then sixteen on the screen as the camera pulls back from inside Mensa;
+  TV model's sticky notes removed from the glass. cine.py gained `look_at` (absolute look point for prop inserts).
+- n11_0 holds a fixed heading while Mensa spins; f10 re-angled; key ring dimmer.
+
 ## Next
+1. Full preview anim2_full3 (scene2_v17) -> hunt and fix.
+2. Detail passes: rooftop rain and wet reflections, white room, brawl choreography, the Whale.
+3. RENDER_LATER-style package for episode 2 (workers, 67 % / 6 samples, fog + motion blur ON).
+
+## Earlier plan (kept for reference)
 1. scene.py for episode 2 (copy ../memetrix/scene.py; keep Actor, glue, posed/fist_top/place, held poses, custom poses,
    IK-with-pole, cam_at, swallow-style measured targets). New: Swordcat duel (blocks, slow-motion lean, blade catch:
    glue Anon's paws to the blade), 12 Jeanphil clones (instances of the jeanphil character, shades fitted once and glued),

@@ -76,6 +76,8 @@ sets2.rooftop_rain(mxsets.collection('ROOFTOP'), ROOF + Vector((0, 0, 2.0)))
 for m_ in bpy.data.materials:                                     # the rooftop in rain: a wet, reflective floor
     if m_.name.startswith(('roof', 'ground_roof')) and m_.use_nodes and 'Principled BSDF' in m_.node_tree.nodes:
         m_.node_tree.nodes['Principled BSDF'].inputs['Roughness'].default_value = 0.12
+        if m_.name.startswith(('roof_gravel', 'ground_roof')):
+            sets2.wet_floor(m_)                                       # puddles between wet gravel, rain in the puddles
 PROPS = mxsets.collection('PROPS')
 for o_ in bpy.data.objects:                                       # the trading floor's bull, cracked
     if 'bull' in o_.name.lower() and o_.type == 'MESH':
@@ -556,9 +558,9 @@ michi.cut(a, BASE + Vector((-1.2, 0.2, 0)), 120)
 slerf.cut(a, BASE + Vector((0.8, 1.2, 0)), 200)
 anon.cut(a, BASE + Vector((-0.2, -1.2, 0)), 30)
 shot('base_wide', 2.2, S('anon', size='WS', angle=8, bearing=200, lens=20, frame='center', fstop=5.6, move='push', amount=0.1), 'BASEMENT')
-line('n10', [S('mensa', size='MCU', bearing=-70, lens=60, frame='right', fstop=2.0, move='push', amount=0.1)], 'BASEMENT')
+line('n10', [S('mensa', size='MCU', bearing=-40, lens=60, frame='right', fstop=2.0, move='push', amount=0.1)], 'BASEMENT')
 michi.walk(ANIM - 0.4, BASE + Vector((-0.4, 0.3, 0)), speed=1.0)
-line('m10', [S('michi', size='MCU', bearing=20, lens=60, frame='left', fstop=2.0)], 'BASEMENT', pad=0.15)
+line('m10', [S('michi', size='MCU', bearing=-15, lens=60, frame='left', fstop=2.0)], 'BASEMENT', pad=0.15)
 mensa.turn(ANIM, 200, 0.6)                                       # he spins the chair round
 CRT_T = ANIM                                                      # the CRT fills with Jeanphils: one, four, sixteen
 line('n11', [S('mensa', size='MS', bearing=-25, lens=40, frame='center', fstop=2.8, fixed_heading=200),   # (camera held while he spins)
@@ -567,7 +569,7 @@ line('n11', [S('mensa', size='MS', bearing=-25, lens=40, frame='center', fstop=2
 line('a10', [S('anon', size='MCU', bearing=-20, lens=60, frame='right', fstop=2.0, move='push', amount=0.12)], 'BASEMENT')
 line('s10', [S('slerf', size='MCU', angle='low', bearing=10, lens=55, frame='center', fstop=2.0)], 'BASEMENT', pad=0.8)
 line('a11', [S('anon', size='CU', bearing=25, lens=75, frame='left', fstop=1.8)], 'BASEMENT')
-line('s11', [S('slerf', size='CU', bearing=0, lens=70, frame='center', fstop=2.0, move='push', amount=0.2)], 'BASEMENT', pad=0.5)
+line('s11', [S('slerf', size='MCU', bearing=35, lens=70, frame='center', fstop=2.0, move='push', amount=0.12)], 'BASEMENT', pad=0.5)
 line('mo10', [S('anon', size='WS', angle=-20, bearing=180, lens=24, frame='center', fstop=4.0, **{'with': ['michi', 'slerf']})],
      'BASEMENT', pad=0.4)
 
@@ -853,6 +855,10 @@ if not DRY:
                                 (F(BULL_T + 2.4), tuple(Vector((top.x - 0.2, top.y - 0.5, FLOOR.z + 1.2))))], 'LINEAR')
     animate(chunk, 'rotation_euler', [(F(BULL_T + 1.7), (0, 0, 0)), (F(BULL_T + 2.4), (1.2, 0.6, 0.3))], 'LINEAR')
     print('CRACK points', len(crack_pts))
+    for o_ in bpy.data.objects:                                   # the bull's laser eyes sputter and die as it cracks
+        if o_.name.startswith('fx_glow_eyes') and o_.parent and o_.parent.name.startswith('exchange_ex_bull'):
+            show(o_.name, [(0, True), (BULL_T + 0.7, False), (BULL_T + 0.78, True), (BULL_T + 0.86, False),
+                           (BULL_T + 0.95, True), (BULL_T + 1.0, False)])
     # the rocket: flames out of its base (crossed flame cards) and a bright green-white light, only in flight
     for k in range(3):
         fc_ = mxsets.plane(f'rocket_flame{k}', 0.3, 1.1, (0, 0, -0.78), sets2.flame_material(f'rocket_flame_m{k}', 4.0 + k),
