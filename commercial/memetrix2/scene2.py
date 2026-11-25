@@ -467,9 +467,9 @@ if not DRY:
     # Anon's paws: the right paw punched forward (attack2 at 40 %: the block, the catch) and both paws up (win at 25 %)
     AN_RF = bone_verts(A['anon'], 'mixamorig:RightForeArm', 0.3)
     P = posed(A['anon'], 'win', 0.25)
-    ROCKET = mxsets.candle('rocket', 'green', PROPS, size=1.6, trail=0.0, glow=3.0)   # (a long trail read as a green bar)
+    ROCKET = mxsets.candle('rocket', 'green', PROPS, size=2.6, trail=0.0, glow=4.0)   # (a long trail read as a green bar)
     ROCKET.rotation_euler = (0, 0, 0)                               # upright over his raised right paw, the streak below it
-    place(ROCKET, A['anon'], paw_top(P, -1, 0.8, 1.8, 0.2, only=AN_RF), 0.16, AN_RF)
+    place(ROCKET, A['anon'], paw_top(P, -1, 0.8, 1.8, 0.2, only=AN_RF), 0.24, AN_RF)
     P = posed(A['anon'], 'attack2', 0.4)
     AN_REACH = paw_fwd(P, AN_RF)
     SAVE = mxsets.candle('save_candle', 'green', PROPS, size=1.5, glow=2.0)
@@ -686,7 +686,7 @@ anon.hold(LAUNCH)
 anon.pos = CENTRE + Vector((0, 0, 28.0))
 anon.keys.append([LAUNCH + 1.8, *anon.pos, anon.H, 0])
 shot('launch', 1.2, S('anon', size='WS', angle='low', bearing=20, lens=28, frame='center', fstop=4.0, look_offset=(0, 0, 0.4)), 'ROOFTOP')
-shot('flight', 1.8, S('anon', distance=6.0, angle=-35, bearing=0, lens=24, frame='center', fstop=5.6, eye=0.8), 'ROOFTOP', hand=None)
+shot('flight', 1.8, S('anon', distance=3.4, angle=-30, bearing=40, lens=24, frame='center', fstop=5.6, eye=1.25), 'ROOFTOP', hand=None)
 FLIGHT_END = ANIM
 
 # ---------------------------------------------------------------- 4. the Whale (the white room)
@@ -773,10 +773,25 @@ if not DRY:
     print('CRACK points', len(crack_pts))
     # the rocket: flames out of its base (crossed flame cards) and a bright green-white light, only in flight
     for k in range(3):
-        fc_ = mxsets.plane(f'rocket_flame{k}', 0.16, 0.5, (0, 0, -0.42), sets2.flame_material(f'rocket_flame_m{k}', 4.0 + k),
+        fc_ = mxsets.plane(f'rocket_flame{k}', 0.3, 1.1, (0, 0, -0.78), sets2.flame_material(f'rocket_flame_m{k}', 4.0 + k),
                            PROPS, parent=ROCKET, rot=(math.radians(-90), 0, math.radians(60 * k)))
         fc_.visible_shadow = False
         fc_['cine_ignore'] = True
+    # the exhaust trail: a glowing green column out of the candle's base, growing below him as he climbs (origin at its top)
+    plume_m = mxsets.material('plume', (0.05, 1.0, 0.2), emit=(0.05, 1.0, 0.2), strength=4.0)   # saturated: pale read as a pole
+    bpy.ops.mesh.primitive_cone_add(vertices=12, radius1=0.0, radius2=0.035, depth=1.0)   # a thin streak, narrowing to a point
+    plume = bpy.context.active_object
+    plume.name = 'rocket_plume'
+    for c_ in list(plume.users_collection):
+        c_.objects.unlink(plume)
+    PROPS.objects.link(plume)
+    plume.data.materials.append(plume_m)
+    plume.data.transform(Matrix.Translation((0, 0, -0.5)))
+    plume.parent = ROCKET
+    plume.location = (0, 0, -0.25)
+    plume.visible_shadow = False
+    plume['cine_ignore'] = True
+    animate(plume, 'scale', [(F(0), (1, 1, 0.001)), (F(LAUNCH), (1, 1, 0.001)), (F(LAUNCH + 1.6), (1.0, 1.0, 14.0))], 'LINEAR')
     show('rocket', [(0, False), (LAUNCH - 0.4, True), (FLIGHT_END, False)])
     show('save_candle', [(0, False), (LIQ + 1.9, True), (SAVE_T + 0.35, False)])
     show('seed_key', [(0, True)])
