@@ -217,12 +217,20 @@ def build_white_room(stills=None):
             s = plane(f'monitor_screen{r}_{c}', 1.08, 0.72, o + Vector((x, 6.79, z)), scr_m, col, rot=(math.radians(90), 0, 0))
             s.visible_shadow = False
             s['monitor'] = True
-    # the two doors (outlined in light) and their words, closed until the Whale opens them
-    edge = material('door_edge', (1, 1, 1), emit=(1.0, 0.98, 0.92), strength=9.0)
-    for name, x, word in (('door_sell', -2.4, 'SELL'), ('door_hold', 2.4, 'HOLD')):
-        for part, size, off in (('l', (0.05, 0.05, 2.3), (-0.6, 0, 1.15)), ('r', (0.05, 0.05, 2.3), (0.6, 0, 1.15)),
-                                ('t', (1.25, 0.05, 0.05), (0, 0, 2.3))):
-            box(f'{name}_{part}', size, o + Vector((x, 3.0, 0)) + Vector(off), edge, col)
+    # the two doors are made of falling code: SELL a doorway of red code, HOLD a doorway of green code, each word in its colour
+    for name, x, word, tint in (('door_sell', -2.4, 'SELL', (1.0, 0.12, 0.08)), ('door_hold', 2.4, 'HOLD', (0.15, 1.0, 0.3))):
+        d = screen(name, 1.25, 2.3, o + Vector((x, 3.0, 1.15)), (math.radians(90), 0, 0), col, 5.0, tint)
+        nt = d.data.materials[0].node_tree                          # colour the code by its brightness (the rain frames are green:
+        bw = nt.nodes.new('ShaderNodeRGBToBW')                      # tinting them red left almost nothing) over a faint glow
+        nt.links.new(nt.nodes['rain'].outputs['Color'], bw.inputs[0])
+        mix = next(n for n in nt.nodes if n.type == 'MIX_RGB')
+        boost = nt.nodes.new('ShaderNodeMath')
+        boost.operation = 'MULTIPLY_ADD'
+        boost.inputs[1].default_value = 4.0
+        boost.inputs[2].default_value = 0.025
+        nt.links.new(bw.outputs[0], boost.inputs[0])
+        nt.links.new(boost.outputs[0], mix.inputs[1])
+        light(name + '_glow', 'AREA', o + Vector((x, 2.7, 1.2)), 140, tint, lit, size=1.2, rot=(math.radians(90), 0, 0))
         bpy.ops.object.text_add(location=o + Vector((x, 2.98, 2.55)), rotation=(math.radians(90), 0, 0))
         t = bpy.context.active_object
         t.name = name + '_word'
@@ -230,7 +238,7 @@ def build_white_room(stills=None):
         t.data.size = 0.5
         t.data.align_x = 'CENTER'
         t.data.extrude = 0.02
-        t.data.materials.append(material(name + '_word_m', (0.02, 0.02, 0.02), rough=0.3))
+        t.data.materials.append(material(name + '_word_m', tint, emit=tint, strength=1.2))   # (brighter washed out to pastel)
         for c_ in list(t.users_collection):
             c_.objects.unlink(t)
         col.objects.link(t)
