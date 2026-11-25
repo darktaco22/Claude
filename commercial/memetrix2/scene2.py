@@ -546,8 +546,8 @@ clones = [A[n] for n in CLONES]
 a = ANIM
 BULL_T = a
 anon.cut(a, FLOOR + Vector((0, 2.0, 0)), 0)                       # (off frame, so the floor has its subject for the solver)
-shot('bull_crack', 3.0, S('anon', distance=9.0, angle=12, bearing=180, lens=28, frame='center', fstop=5.6, move='push', amount=0.15,
-                          look_offset=(0, 6.0, 3.0)), 'FLOOR')
+shot('bull_crack', 3.0, S('anon', distance=5.0, angle=6, bearing=180, lens=35, frame='center', fstop=4.0, move='push', amount=0.2,
+                          look_offset=(-0.2, 8.0, 1.0)), 'FLOOR')                 # close on the fissure and the falling chunk
 
 # ---------------------------------------------------------------- 1. the rug: Mom's basement
 a = ANIM
@@ -607,7 +607,7 @@ shot('duel_wide', 1.4, S('anon', size='WS', bearing=90, lens=32, frame='center',
 shot('duel_block', 0.9, S('anon', size='MS', bearing=60, lens=45, frame='center', fstop=2.8, **{'with': ['swordcat']}), 'CAFE')
 shot('duel_lean', 2.4, S('anon', size='MS', angle='low', bearing=100, lens=35, frame='center', fstop=3.2, move='arc', amount=40,
                          **{'with': ['swordcat']}), 'CAFE', speed=0.3, hand=None)
-shot('duel_catch', 1.6, S('anon', size='MCU', bearing=70, lens=50, frame='center', fstop=2.8, look_offset=(0, 0.3, 0.2),
+shot('duel_catch', 1.6, S('anon', size='MS', bearing=-90, lens=40, frame='center', fstop=3.2, look_offset=(-0.55, 0.4, -0.05),
                           **{'with': ['swordcat']}), 'CAFE', speed=0.4, hand=None)
 swordcat.play(ANIM, 'idle')
 anon.play(ANIM, 'idle')
@@ -672,7 +672,7 @@ anon.play(LAUNCH - 0.3, 'win@0.25')
 anon.hold(LAUNCH)
 anon.pos = CENTRE + Vector((0, 0, 28.0))
 anon.keys.append([LAUNCH + 1.8, *anon.pos, anon.H, 0])
-shot('launch', 1.2, S('anon', size='MS', angle='low', bearing=20, lens=28, frame='center', fstop=4.0), 'ROOFTOP')
+shot('launch', 1.2, S('anon', size='WS', angle='low', bearing=20, lens=28, frame='center', fstop=4.0, look_offset=(0, 0, 0.4)), 'ROOFTOP')
 shot('flight', 1.8, S('anon', distance=6.0, angle=-35, bearing=0, lens=24, frame='center', fstop=5.6, eye=0.8), 'ROOFTOP', hand=None)
 FLIGHT_END = ANIM
 

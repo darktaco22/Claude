@@ -264,18 +264,18 @@
 "set": "FLOOR",
 "cam": {
 "subject": "anon",
-"distance": 9.0,
-"angle": 12,
+"distance": 5.0,
+"angle": 6,
 "bearing": 180,
-"lens": 28,
+"lens": 35,
 "frame": "center",
-"fstop": 5.6,
+"fstop": 4.0,
 "move": "push",
-"amount": 0.15,
+"amount": 0.2,
 "look_offset": [
-0,
-6.0,
-3.0
+-0.2,
+8.0,
+1.0
 ]
 },
 "hand": [
@@ -666,8 +666,8 @@
 "cam": {
 "subject": "swordcat",
 "size": "MS",
-"angle": -15.0,
-"bearing": 10,
+"angle": "low",
+"bearing": 20,
 "lens": 40,
 "frame": "center",
 "fstop": 2.8,
@@ -689,14 +689,14 @@
 "cam": {
 "subject": "anon",
 "size": "WS",
-"bearing": 135,
+"bearing": 80,
 "lens": 32,
 "frame": "center",
 "fstop": 4.0,
 "with": [
 "swordcat"
 ],
-"angle": 0.0
+"angle": 20.0
 },
 "hand": [
 "INVESTIGATION",
@@ -713,7 +713,7 @@
 "cam": {
 "subject": "anon",
 "size": "MS",
-"bearing": 70,
+"bearing": 15,
 "lens": 45,
 "frame": "center",
 "fstop": 2.8,
@@ -737,8 +737,8 @@
 "cam": {
 "subject": "anon",
 "size": "MS",
-"angle": "low",
-"bearing": 100,
+"angle": -15.0,
+"bearing": 145,
 "lens": 35,
 "frame": "center",
 "fstop": 3.2,
@@ -759,19 +759,20 @@
 "set": "CAFE",
 "cam": {
 "subject": "anon",
-"size": "MCU",
-"bearing": 70,
-"lens": 50,
+"size": "MS",
+"bearing": -60,
+"lens": 40,
 "frame": "center",
-"fstop": 2.8,
+"fstop": 3.2,
 "look_offset": [
-0,
-0.3,
-0.2
+-0.55,
+0.4,
+-0.05
 ],
 "with": [
 "swordcat"
-]
+],
+"angle": 0.0
 },
 "hand": null
 },
@@ -1083,12 +1084,17 @@
 "set": "ROOFTOP",
 "cam": {
 "subject": "anon",
-"size": "MS",
-"angle": "low",
-"bearing": 20,
+"size": "WS",
+"angle": -15.0,
+"bearing": 30,
 "lens": 28,
 "frame": "center",
-"fstop": 4.0
+"fstop": 4.0,
+"look_offset": [
+0,
+0,
+0.4
+]
 },
 "hand": [
 "INVESTIGATION",
@@ -1152,7 +1158,7 @@
 "cam": {
 "subject": "whale",
 "size": "MS",
-"angle": "low",
+"angle": -20,
 "bearing": 0,
 "lens": 35,
 "frame": "center",
@@ -1193,6 +1199,7 @@
 "cam": {
 "subject": "whale",
 "size": "MCU",
+"angle": -18,
 "bearing": -25,
 "lens": 55,
 "frame": "right",
@@ -1237,9 +1244,10 @@
 "set": "WHITE",
 "cam": {
 "subject": "whale",
-"size": "CU",
+"size": "MCU",
+"angle": -18,
 "bearing": 0,
-"lens": 75,
+"lens": 60,
 "frame": "center",
 "fstop": 2.0,
 "move": "push",
@@ -1280,6 +1288,7 @@
 "cam": {
 "subject": "whale",
 "size": "MCU",
+"angle": -18,
 "bearing": 20,
 "lens": 60,
 "frame": "left",
@@ -1326,6 +1335,7 @@
 "cam": {
 "subject": "whale",
 "size": "MCU",
+"angle": -18,
 "bearing": -15,
 "lens": 60,
 "frame": "right",
@@ -1366,9 +1376,10 @@
 "set": "WHITE",
 "cam": {
 "subject": "whale",
-"size": "CU",
+"size": "MCU",
+"angle": -20,
 "bearing": 0,
-"lens": 85,
+"lens": 70,
 "frame": "center",
 "fstop": 2.0,
 "dutch": -6
@@ -1727,7 +1738,7 @@
 0
 ],
 [
-58.038000000000004,
+57.938,
 601.4000244140625,
 -0.4000000059604645,
 0.0,
@@ -1735,11 +1746,11 @@
 0
 ],
 [
-58.23800000000001,
+58.138000000000005,
 601.4000244140625,
 -0.4000000059604645,
 0.0,
-0,
+-53.97353353350571,
 0
 ],
 [
@@ -2587,7 +2598,7 @@
 1
 ],
 [
-57.838,
+56.138000000000005,
 604.5999755859375,
 -0.6000000238418579,
 0.0,
@@ -2595,35 +2606,35 @@
 0
 ],
 [
-58.038000000000004,
+56.33800000000001,
 604.5999755859375,
 -0.6000000238418579,
 0.0,
--64.1552692704525,
+-76.9080706731736,
 0
 ],
 [
-58.388000000000005,
-601.4000244140625,
-0.949999988079071,
+57.938,
+600.2999877929688,
+0.4000000059604645,
 0.0,
--64.1552692704525,
+-76.9080706731736,
 0
 ],
 [
-58.538000000000004,
-601.4000244140625,
-0.949999988079071,
+58.088,
+600.2999877929688,
+0.4000000059604645,
 0.0,
-180,
+126.02646646649428,
 0
 ],
 [
-59.51949393407431,
-601.4000244140625,
-0.949999988079071,
+58.17747337661865,
+600.2999877929688,
+0.4000000059604645,
 0.0,
--64.1552692704525,
+-76.9080706731736,
 0
 ]
 ],
@@ -3482,7 +3493,6 @@
 },
 "frame_scale": 1.35,
 "notes": [
-"bull_crack: BLOCKED by base_ceiling at every tried angle: restage or hide it",
 "n11_0: body.003 blocked the view; moved bearing +45, angle +0",
 "a10_0: body.001 blocked the view; moved bearing +30, angle +0",
 "s10_0: foreground clutter (46% of frame) blocked the view; moved bearing -30, angle +0",
@@ -3493,11 +3503,14 @@
 "a12_0: toshi blocked the view; moved bearing +30, angle +0",
 "f11_0: foreground clutter (29% of frame) blocked the view; moved bearing +10, angle +0",
 "f12_1: foreground clutter (31% of frame) blocked the view; moved bearing -10, angle +0",
-"f13_0: camera inside toshi blocked the view; moved bearing -10, angle +0",
-"duel_wide: cafe_right blocked the view; moved bearing +45, angle +0",
-"duel_block: foreground clutter (13% of frame) blocked the view; moved bearing +10, angle +0",
+"f13_0: BLOCKED by booth_back2_1 at every tried angle: restage or hide it",
+"duel_wide: cafe_right blocked the view; moved bearing -10, angle +20",
+"duel_block: thisisfine blocked the view; moved bearing -45, angle +0",
+"duel_lean: counter blocked the view; moved bearing +45, angle +0",
+"duel_catch: foreground clutter (28% of frame) blocked the view; moved bearing +30, angle +0",
 "t11_0: cafe_right blocked the view; moved bearing +10, angle +0",
 "f14_0: toshi blocked the view; moved bearing -20, angle +0",
+"launch: camera inside jc0 blocked the view; moved bearing +10, angle +0",
 "flight: white_floor blocked the view; moved bearing +20, angle +0",
 "a18_0: door_hold blocked the view; moved bearing +10, angle +0"
 ]
