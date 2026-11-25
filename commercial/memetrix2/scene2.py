@@ -475,7 +475,7 @@ if not DRY:
     SAVE = mxsets.candle('save_candle', 'green', PROPS, size=1.5, glow=2.0)
     place(SAVE, A['anon'], AN_REACH, 0.1, AN_RF)
     # Toshi's key ring of seed words: a glowing ring at her chest
-    key_m = mxsets.material('seed_key', (1.0, 0.85, 0.3), emit=(1.0, 0.8, 0.25), strength=4.0)
+    key_m = mxsets.material('seed_key', (1.0, 0.75, 0.2), emit=(1.0, 0.7, 0.15), strength=1.2)
     bpy.ops.mesh.primitive_torus_add(major_radius=0.09, minor_radius=0.012)
     KEY = bpy.context.active_object
     KEY.name = 'seed_key'
@@ -560,9 +560,10 @@ line('n10', [S('mensa', size='MCU', bearing=-70, lens=60, frame='right', fstop=2
 michi.walk(ANIM - 0.4, BASE + Vector((-0.4, 0.3, 0)), speed=1.0)
 line('m10', [S('michi', size='MCU', bearing=20, lens=60, frame='left', fstop=2.0)], 'BASEMENT', pad=0.15)
 mensa.turn(ANIM, 200, 0.6)                                       # he spins the chair round
-line('n11', [S('mensa', size='MS', bearing=10, lens=40, frame='center', fstop=2.8),
-             S('mensa', size='MS', bearing=-80, lens=35, frame='right', fstop=4.0)], 'BASEMENT',
-     weights=[1, 1.2])
+CRT_T = ANIM                                                      # the CRT fills with Jeanphils: one, four, sixteen
+line('n11', [S('mensa', size='MS', bearing=-25, lens=40, frame='center', fstop=2.8, fixed_heading=200),   # (camera held while he spins)
+             S('mensa', size='MCU', lens=21, frame=(0.0, 0.0), fstop=5.6, crt=True)], 'BASEMENT',
+     weights=[1, 1.2])                                           # (the second shot: the CRT, placed on its screen below)
 line('a10', [S('anon', size='MCU', bearing=-20, lens=60, frame='right', fstop=2.0, move='push', amount=0.12)], 'BASEMENT')
 line('s10', [S('slerf', size='MCU', angle='low', bearing=10, lens=55, frame='center', fstop=2.0)], 'BASEMENT', pad=0.8)
 line('a11', [S('anon', size='CU', bearing=25, lens=75, frame='left', fstop=1.8)], 'BASEMENT')
@@ -580,7 +581,7 @@ michi.cut(a, CAFE + Vector((0.2, -3.0, 0)), 15)
 anon.walk(a + 0.3, CAFE + Vector((1.4, -0.4, 0)), speed=1.1)
 shot('cafe_establish', 2.6, S('anon', distance=4.6, angle=14, bearing=200, lens=20, frame='center', fstop=5.6,
                               look_offset=(0.5, 1.6, 0)), 'CAFE')
-line('f10', [S('fine', size='MCU', bearing=-15, lens=55, frame='right', fstop=2.0)], 'CAFE')
+line('f10', [S('fine', size='MCU', bearing=25, lens=55, frame='left', fstop=2.0)], 'CAFE')
 line('a12', [S('anon', size='MCU', bearing=30, lens=55, frame='left', fstop=2.2)], 'CAFE')
 line('f11', [S('fine', size='CU', bearing=10, lens=70, frame='center', fstop=1.8, move='push', amount=0.08)], 'CAFE')
 line('f12', [S('fine', size='MS', bearing=-35, lens=40, frame='left', fstop=2.8, **{'with': ['toshi']}),
@@ -746,6 +747,42 @@ END_FILM, END_A = FILM, ANIM
 
 # ================================================================ animated objects
 if not DRY:
+    crt = bpy.data.objects.get('rain_crt')
+    tv_ = bpy.data.objects.get('crt_tv.001')
+    if crt is not None and tv_ is not None:                    # the TV model's sticky notes overhang the glass: lift them off
+        import bmesh
+        inv_ = crt.matrix_world.inverted()
+        hx_, hy_ = crt.dimensions.x * 0.5, crt.dimensions.y * 0.5
+        for ob_ in [c for c in tv_.children_recursive if c.type == 'MESH' and c.name.startswith('body')]:
+            bm_ = bmesh.new(); bm_.from_mesh(ob_.data)
+            seed_ = set()
+            for f_ in bm_.faces:
+                lp_ = inv_ @ (ob_.matrix_world @ f_.calc_center_median())
+                if abs(lp_.x) < hx_ and abs(lp_.y) < hy_ and lp_.z > -0.012:
+                    seed_.add(f_)
+            isl_, todo_ = set(seed_), list(seed_)          # whole notes: every face linked to one over the screen
+            while todo_:
+                for e_ in todo_.pop().edges:
+                    for g_ in e_.link_faces:
+                        if g_ not in isl_:
+                            isl_.add(g_); todo_.append(g_)
+            if seed_ and len(isl_) < len(bm_.faces) * 0.2:     # (never the TV's shell itself)
+                bmesh.ops.delete(bm_, geom=list(isl_), context='FACES')
+                bm_.to_mesh(ob_.data)
+                print('CRT notes removed', ob_.name, len(isl_))
+            bm_.free()
+    if crt is not None:
+        for k, n_ in enumerate((1, 4, 16)):
+            m_ = mxsets.image_material(f'crt_jean{n_}', os.path.join(HERE, 'pack', 'props', f'crt_jean{n_}.png'), emit=2.5)
+            pl = crt.copy(); pl.data = crt.data.copy()
+            pl.data.materials.clear(); pl.data.materials.append(m_)
+            pl.name = f'crt_jean{n_}'
+            mxsets.collection('BASEMENT').objects.link(pl)
+            nrm = crt.matrix_world.to_quaternion() @ Vector((0, 0, 1))
+            pl.location = crt.location + nrm * (0.02 + 0.004 * (k + 1))     # in front of the bezel's sticky notes
+            ins_ = next((x for x in SHOTS if x['cam'].get('crt')), None)        # timed to the insert: the cut lands on one face
+            t_ = (ins_['a0'] + 0.15 + k * 0.8) if ins_ else (CRT_T + 0.6 + k * 1.1)
+            show(pl.name, [(0, False), (t_, True), (CRT_T + 9.0, False)])
     # the fall: his tail curls straight down under him; swing it out flat along the roof (a hook on the tail, pivoting at its
     # root, weighted from root to tip) while the rig lowers him onto the roof (as in episode 1's fall)
     an = A['anon']
@@ -914,6 +951,20 @@ if not DRY:                                                        # the duel fr
             s_['cam']['look_offset'] = list(look - cine.eye_point('anon', pa, ha))
             s_['cam']['cam_at'] = list(look + perp * dist + Vector((0, 0, up)) - d_ * (0.3 if s_['name'] == 'duel_lean' else 0))
             s_['cam']['cam_at1'] = list(look + perp * (dist * 0.9) + Vector((0, 0, up)) + d_ * (0.3 if s_['name'] == 'duel_lean' else 0))
+
+if not DRY:                                                        # the CRT insert: straight onto its screen, easing in
+    crt = bpy.data.objects.get('rain_crt')
+    for s_ in SHOTS:
+        if s_['cam'].get('crt') and crt is not None:
+            c_ = sum((crt.matrix_world @ Vector(v) for v in crt.bound_box), Vector()) / 8   # the screen's centre, not its origin
+            n_ = (crt.matrix_world.to_quaternion() @ Vector((0, 0, 1))).normalized()
+            if n_.dot(Vector(make_where({k: sorted(x.keys, key=lambda q: q[0]) for k, x in A.items()})('mensa', s_['a0'])[0]) - c_) < 0:
+                n_ = -n_                                            # the screen side faces Mensa
+            feet, head = make_where({k: sorted(x.keys, key=lambda q: q[0]) for k, x in A.items()})('mensa', s_['a0'] + 0.5)
+            s_['cam']['look_at'] = list(c_)             # (an offset from Mensa drifted as he turned)
+            rt_ = (-n_).cross(Vector((0, 0, 1))).normalized()       # a touch to the right: Mensa's head sits left of the lens
+            s_['cam']['cam_at'] = list(c_ + n_ * 0.52 + rt_ * 0.05 + Vector((0, 0, 0.02)))
+            s_['cam']['cam_at1'] = list(c_ + n_ * 0.74 + rt_ * 0.4 + Vector((0, 0, 0.05)))   # pulls back as the grid multiplies
 
 tracks = {n: actor.keys for n, actor in A.items()}
 tracks = {n: sorted(k, key=lambda x: x[0]) for n, k in tracks.items()}

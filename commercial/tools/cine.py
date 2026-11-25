@@ -122,6 +122,8 @@ def rig(shot, u, t, where, aspect):
         eye.z = Vector(feet).z + shot['eye']
     if 'look_offset' in shot:
         eye += Vector(shot['look_offset'])
+    if 'look_at' in shot:                                  # an absolute point to frame (inserts on props)
+        eye = Vector(shot['look_at'])
     if shot.get('fixed_heading') is not None:
         heading = shot['fixed_heading']
     lens0 = shot.get('lens', 50.0)
