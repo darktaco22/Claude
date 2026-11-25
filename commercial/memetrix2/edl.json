@@ -689,14 +689,28 @@
 "cam": {
 "subject": "anon",
 "size": "WS",
-"bearing": 80,
+"bearing": 90,
 "lens": 32,
 "frame": "center",
 "fstop": 4.0,
 "with": [
 "swordcat"
 ],
-"angle": 20.0
+"look_offset": [
+-0.4853515625,
+0.35294729471206665,
+-0.24000000953674316
+],
+"cam_at": [
+598.8502197265625,
+-2.749734401702881,
+1.600000023841858
+],
+"cam_at1": [
+599.0502319335938,
+-2.4747607707977295,
+1.600000023841858
+]
 },
 "hand": [
 "INVESTIGATION",
@@ -713,14 +727,28 @@
 "cam": {
 "subject": "anon",
 "size": "MS",
-"bearing": 15,
-"lens": 45,
+"bearing": 60,
+"lens": 28,
 "frame": "center",
 "fstop": 2.8,
 "with": [
 "swordcat"
 ],
-"angle": 0.0
+"look_offset": [
+-0.4853515625,
+0.35294729471206665,
+-0.24000000953674316
+],
+"cam_at": [
+599.144287109375,
+-2.3453617095947266,
+1.75
+],
+"cam_at1": [
+599.3148803710938,
+-2.110825300216675,
+1.75
+]
 },
 "hand": [
 "INVESTIGATION",
@@ -737,15 +765,30 @@
 "cam": {
 "subject": "anon",
 "size": "MS",
-"angle": -15.0,
-"bearing": 145,
-"lens": 35,
+"angle": "low",
+"bearing": 100,
+"lens": 28,
 "frame": "center",
 "fstop": 3.2,
 "move": "arc",
 "amount": 40,
 "with": [
 "swordcat"
+],
+"look_offset": [
+-0.36431884765625,
+0.42568349838256836,
+-0.24000000953674316
+],
+"cam_at": [
+598.7830810546875,
+-2.2437920570373535,
+1.600000023841858
+],
+"cam_at1": [
+598.5946655273438,
+-1.6045899391174316,
+1.600000023841858
 ]
 },
 "hand": null
@@ -786,10 +829,11 @@
 "cam": {
 "subject": "swordcat",
 "size": "CU",
-"bearing": 35,
+"bearing": 45,
 "lens": 70,
 "frame": "right",
-"fstop": 1.8
+"fstop": 1.8,
+"angle": 0.0
 },
 "hand": [
 "INVESTIGATION",
@@ -1110,13 +1154,13 @@
 "set": "ROOFTOP",
 "cam": {
 "subject": "anon",
-"distance": 6.0,
-"angle": -35.0,
-"bearing": 20,
+"distance": 3.4,
+"angle": -30,
+"bearing": 40,
 "lens": 24,
 "frame": "center",
 "fstop": 5.6,
-"eye": 0.8
+"eye": 0.9
 },
 "hand": null
 },
@@ -1751,6 +1795,22 @@
 -0.4000000059604645,
 0.0,
 -53.97353353350571,
+0
+],
+[
+60.23800000000001,
+601.4000244140625,
+-0.4000000059604645,
+0.0,
+-53.97353353350571,
+0
+],
+[
+60.48800000000001,
+601.1580200195312,
+-0.5454723834991455,
+0.0,
+306.0264664664943,
 0
 ],
 [
@@ -2598,7 +2658,7 @@
 1
 ],
 [
-56.138000000000005,
+55.23800000000001,
 604.5999755859375,
 -0.6000000238418579,
 0.0,
@@ -2606,9 +2666,17 @@
 0
 ],
 [
-56.33800000000001,
+55.43800000000001,
 604.5999755859375,
 -0.6000000238418579,
+0.0,
+-76.9080706731736,
+0
+],
+[
+57.27747337661865,
+600.2999877929688,
+0.4000000059604645,
 0.0,
 -76.9080706731736,
 0
@@ -2627,14 +2695,6 @@
 0.4000000059604645,
 0.0,
 126.02646646649428,
-0
-],
-[
-58.17747337661865,
-600.2999877929688,
-0.4000000059604645,
-0.0,
--76.9080706731736,
 0
 ]
 ],
@@ -3504,14 +3564,11 @@
 "f11_0: foreground clutter (29% of frame) blocked the view; moved bearing +10, angle +0",
 "f12_1: foreground clutter (31% of frame) blocked the view; moved bearing -10, angle +0",
 "f13_0: BLOCKED by booth_back2_1 at every tried angle: restage or hide it",
-"duel_wide: cafe_right blocked the view; moved bearing -10, angle +20",
-"duel_block: thisisfine blocked the view; moved bearing -45, angle +0",
-"duel_lean: counter blocked the view; moved bearing +45, angle +0",
-"duel_catch: foreground clutter (28% of frame) blocked the view; moved bearing +30, angle +0",
+"duel_catch: foreground clutter (33% of frame) blocked the view; moved bearing +30, angle +0",
+"w10_0: zcat blocked the view; moved bearing +10, angle +0",
 "t11_0: cafe_right blocked the view; moved bearing +10, angle +0",
 "f14_0: toshi blocked the view; moved bearing -20, angle +0",
 "launch: camera inside jc0 blocked the view; moved bearing +10, angle +0",
-"flight: white_floor blocked the view; moved bearing +20, angle +0",
 "a18_0: door_hold blocked the view; moved bearing +10, angle +0"
 ]
 }

@@ -27,6 +27,16 @@ mix) -> review at 3 fps + pop detector -> send.
   the rocket candle reads as a green bar beside Anon; then the 2D work in finish.py (crash opening, LIQUIDATION stamp,
   liquidation bar over Michi, closing).
 
+## State (2026-11-25, later)
+- Duel: blade catch measured on Swordcat's sword prop (`prop_blade`, parented to his right hand: attack1 at 60 % holds it level
+  at 1.31 m pointing ahead); Anon steps in so his raised paws close on it. Side-on duel cameras from the open side of the café.
+- Bull crack (ray-placed glowing fissure + falling chunk), rocket candle (size 2.6) with a tapered green exhaust streak.
+- finish.py for episode 2: crash opening (code turns red column by column and falls; news ticker), typed messages,
+  THE MEMETRIX II + red LIQUIDATION stamp with a crack, café and white-room grades, clone glitches, shockwave/save flashes,
+  liquidation bar over the film with the world draining of colour (MARGIN RESTORED after the save), "To be continued...",
+  new cast cards, taglines NOBODY HOLDS FOREVER. / WATCH ME., new sound (fire, white-room drone, battle music in the brawl,
+  duel steel, clone zaps, shockwave, rocket launch, margin call riser, the save). Test sheets in review/.
+
 ## Next
 1. scene.py for episode 2 (copy ../memetrix/scene.py; keep Actor, glue, posed/fist_top/place, held poses, custom poses,
    IK-with-pole, cam_at, swallow-style measured targets). New: Swordcat duel (blocks, slow-motion lean, blade catch:
