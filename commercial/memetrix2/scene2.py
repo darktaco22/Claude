@@ -625,6 +625,8 @@ shot('duel_lean', 2.4, S('anon', size='MS', angle='low', bearing=100, lens=35, f
                          **{'with': ['swordcat']}), 'CAFE', speed=0.3, hand=None)
 shot('duel_catch', 1.6, S('anon', size='MS', bearing=-90, lens=40, frame='center', fstop=3.2, look_offset=(-0.55, 0.4, -0.05),
                           **{'with': ['swordcat']}), 'CAFE', speed=0.4, hand=None)
+CATCH_PT = catch_w + Vector((0, 0, 1.31))                         # the insert: the blade between his paws, side-on, slow
+shot('catch_insert', 1.1, S('anon', size='CU', lens=42, frame=(0.0, 0.0), fstop=2.8, catch_insert=True), 'CAFE', speed=0.25, hand=None)
 swordcat.play(ANIM, 'idle')
 anon.play(ANIM, 'idle')
 line('w10', [S('swordcat', size='CU', bearing=35, lens=70, frame='right', fstop=1.8)], 'CAFE', pad=0.4)
@@ -963,6 +965,34 @@ if not DRY:                                                        # the duel fr
             s_['cam']['look_offset'] = list(look - cine.eye_point('anon', pa, ha))
             s_['cam']['cam_at'] = list(look + perp * dist + Vector((0, 0, up)) - d_ * (0.3 if s_['name'] == 'duel_lean' else 0))
             s_['cam']['cam_at1'] = list(look + perp * (dist * 0.9) + Vector((0, 0, up)) + d_ * (0.3 if s_['name'] == 'duel_lean' else 0))
+
+    for s_ in SHOTS:
+        if s_['cam'].get('catch_insert'):
+            pa, _ = wh_('anon', s_['a0'])
+            ps, _ = wh_('swordcat', s_['a0'])
+            d_ = (Vector(ps) - Vector(pa)).normalized()
+            perp = Vector((-d_.y, d_.x, 0))
+            if perp.y > 0:
+                perp = -perp
+            # measured on the blade itself at that moment: side-on to the steel, on the open side, aimed at its last third
+            # (where it meets Anon's paws and bag); the planned catch point sat 12 cm low and the near paw filled the frame
+            sc.frame_set(int(F(s_['a0'])) + 1)
+            bl_ = next((o for o in bpy.data.objects if o.name.startswith('prop_blade') and o.parent
+                        and o.parent.name.startswith('swordcat')), None)
+            look_ = CATCH_PT
+            if bl_ is not None:
+                bb_ = [bl_.matrix_world @ Vector(v) for v in bl_.bound_box]
+                _, e0, e1 = max(((a - b).length, a, b) for a in bb_ for b in bb_)
+                tip_, hilt_ = (e0, e1) if (e0 - Vector(pa)).length < (e1 - Vector(pa)).length else (e1, e0)
+                look_ = hilt_.lerp(tip_, 0.7)
+                ax_ = (tip_ - hilt_); ax_.z = 0; ax_.normalize()
+                perp = Vector((-ax_.y, ax_.x, 0))
+                if perp.y > 0:
+                    perp = -perp
+            s_['cam']['look_at'] = list(look_)
+            s_['cam']['cam_at'] = list(look_ + perp * 0.95 + Vector((0, 0, 0.18)))
+            s_['cam']['cam_at1'] = list(look_ + perp * 0.8 + Vector((0, 0, 0.12)))
+            print('CATCH insert look', tuple(round(v, 2) for v in look_))
 
 if not DRY:                                                        # the CRT insert: straight onto its screen, easing in
     crt = bpy.data.objects.get('rain_crt')
