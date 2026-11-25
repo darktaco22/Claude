@@ -586,7 +586,7 @@ line('f11', [S('fine', size='CU', bearing=10, lens=70, frame='center', fstop=1.8
 line('f12', [S('fine', size='MS', bearing=-35, lens=40, frame='left', fstop=2.8, **{'with': ['toshi']}),
              S('toshi', size='MCU', bearing=20, lens=60, frame='center', fstop=2.0)], 'CAFE', weights=[1.3, 1])
 line('t10', [S('toshi', size='CU', bearing=-10, lens=75, frame='right', fstop=1.8)], 'CAFE')
-line('f13', [S('swordcat', size='MS', angle='low', bearing=20, lens=40, frame='center', fstop=2.8, move='push', amount=0.15)], 'CAFE')
+line('f13', [S('swordcat', size='MS', angle=-5, bearing=-55, lens=35, frame='center', fstop=2.8, move='push', amount=0.15)], 'CAFE')
 # the test: Swordcat at striking distance (1.3 m); three attacks, Anon blocks, leans out (slow motion), catches the blade
 DUEL = ANIM
 swordcat.walk(DUEL - 2.8, CAFE + Vector((0.3, 0.4, 0)), speed=2.4, then='ready')   # arrives before the duel (late, he slid
@@ -650,7 +650,7 @@ for k, c_ in enumerate(clones):
 anon.face(CLONE_T, jean, 0.3)
 shot('clones_appear', 2.4, S('anon', size='EWS', angle=35, bearing=200, lens=24, frame='center', fstop=5.6, move='crane', amount=12),
      'ROOFTOP')
-line('j11', [S('anon', size='WS', angle=15, bearing=180, lens=24, frame='center', fstop=4.0, **{'with': ['jean'] + CLONES})],
+line('j11', [S('anon', size='WS', angle=32, bearing=180, lens=24, frame='center', fstop=4.0, **{'with': ['jean'] + CLONES})],
      'ROOFTOP', pad=0.3)
 line('a13', [S('anon', size='MCU', bearing=-20, lens=60, frame='right', fstop=2.0, move='push', amount=0.1)], 'ROOFTOP')
 # the brawl: they close in; Anon fights in a slow orbit; three pile on; the shockwave throws them all back
@@ -735,13 +735,58 @@ michi.play(SAVE_T + 0.4, 'idle')
 shot('the_save', 1.8, S('anon', size='MS', bearing=70, lens=35, frame='center', fstop=3.2, **{'with': ['michi']}), 'ROOFTOP')
 line('m12', [S('michi', size='CU', bearing=20, lens=75, frame='left', fstop=1.8)], 'ROOFTOP', pad=0.3)
 line('a19', [S('anon', size='MCU', bearing=-25, lens=60, frame='right', fstop=2.0)], 'ROOFTOP', pad=0.2)
-anon.play(ANIM + 0.1, 'die', 0.8)
-shot('collapse', 1.8, S('anon', size='WS', angle=25, bearing=60, lens=35, frame='center', fstop=4.0, **{'with': ['michi']}), 'ROOFTOP')
+FALL_T = ANIM - 0.2                                               # he collapses: the fall lands at FALL_T + 0.9
+anon.play(FALL_T, 'die', 1.6)
+anon.hold(FALL_T + 0.6)
+anon.pos = anon.pos - Vector((0, 0, 0.27))                       # lying on his back the tail props him up: lower him onto the
+anon.keys.append([FALL_T + 0.95, *anon.pos, anon.H, 0])          # roof while the tail swings flat (below)
+shot('collapse', 1.8, S('anon', size='WS', angle=40, bearing=160, lens=35, frame='center', fstop=4.0, **{'with': ['michi']}), 'ROOFTOP')
 shot('last_jean', 2.4, S('jean', size='CU', bearing=-10, lens=85, frame='center', fstop=1.8, move='push', amount=0.15), 'ROOFTOP')
 END_FILM, END_A = FILM, ANIM
 
 # ================================================================ animated objects
 if not DRY:
+    # the fall: his tail curls straight down under him; swing it out flat along the roof (a hook on the tail, pivoting at its
+    # root, weighted from root to tip) while the rig lowers him onto the roof (as in episode 1's fall)
+    an = A['anon']
+    body = skin(an)
+    tail = {v.index: min(1.0, max(0.0, (v.co.y - 0.24) / 0.22)) ** 1.2 for v in body.data.vertices if v.co.y > 0.24 and v.co.z < 0.75}
+    vg = body.vertex_groups.new(name='tail_hook')
+    for i_, w_ in tail.items():
+        vg.add([i_], w_, 'REPLACE')
+    sc.frame_set(int(F(FALL_T + 1.5)))
+    ev = body.evaluated_get(bpy.context.evaluated_depsgraph_get())
+    co = [v.co.copy() for v in ev.data.vertices]
+    root_ = [co[i_] for i_, w_ in tail.items() if w_ < 0.12]
+    tip_ = [co[i_] for i_, w_ in tail.items() if w_ > 0.9]
+    rest_ = [co[i_] for i_ in range(len(co)) if i_ not in tail]
+    base = sum(root_, Vector()) / len(root_)
+    tipc = sum(tip_, Vector()) / len(tip_)
+    centre = sum(rest_, Vector()) / len(rest_)
+    out = base - centre
+    out.z = 0
+    out.normalize()
+    target = (out + Vector((0, 0, 0.75))).normalized()
+    q = (tipc - base).normalized().rotation_difference(target)
+    hook_e = bpy.data.objects.new('tail_hook', None)
+    sc.collection.objects.link(hook_e)
+    hook_e.parent = body.parent                                    # (parented to the mesh it deforms made a dependency cycle
+    hook_e.matrix_parent_inverse = body.matrix_parent_inverse.copy()   # and stretched the tail into a rod)
+    assert (body.matrix_basis - Matrix.Identity(4)).to_3x3().median_scale < 1e-6 and body.matrix_basis.translation.length < 1e-6, \
+        'the skin has its own transform: compose it into the hook'
+    hook_e.location = base
+    hook_e.rotation_mode = 'QUATERNION'
+    hk = body.modifiers.new('tail_hook', 'HOOK')
+    hk.object = hook_e
+    hk.vertex_group = 'tail_hook'
+    hk.falloff_type = 'NONE'
+    bpy.context.view_layer.update()
+    hk.matrix_inverse = hook_e.matrix_world.inverted() @ body.matrix_world   # identity until the hook turns
+    hk.center = base
+    ident = (1.0, 0.0, 0.0, 0.0)
+    animate(hook_e, 'rotation_quaternion', [(F(0), ident), (F(FALL_T + 0.3), ident), (F(FALL_T + 0.9), tuple(q))], 'BEZIER')
+    print('TAIL base', tuple(round(v, 2) for v in base), 'tip', tuple(round(v, 2) for v in tipc), 'swing', round(math.degrees(q.angle)), 'deg')
+
     # the bull cracks: a glowing red fissure drawn over its side (points found by rays, so it lies on the surface), growing
     # from the shoulder down while the camera pushes in, and a chunk of gold breaks off and falls
     dg = bpy.context.evaluated_depsgraph_get()
