@@ -45,8 +45,15 @@ mix) -> review at 3 fps + pop detector -> send.
   TV model's sticky notes removed from the glass. cine.py gained `look_at` (absolute look point for prop inserts).
 - n11_0 holds a fixed heading while Mensa spins; f10 re-angled; key ring dimmer.
 
+- Full preview anim2_full3 reviewed; fixed since: bull laser eyes die on the crack (crack stays on the bull), Mensa / Michi /
+  Slerf basement angles, seamless rain (no pop, no blur smear), wet puddled roof, see-through rain near the lens, rocket
+  exhaust fading from the nozzle, the save from the far side (Toshi's katana), Anon straightens after the save and the two turn
+  to each other on "Bought the dip.", the door shot (Whale between big SELL / HOLD doors), slow-motion catch insert measured on
+  the blade. Real-look frames (fog + blur, 40 %) checked: review/look_v35.jpg. Finish checked on them.
+- RENDER_LATER.md + setup.sh / render_worker.sh / finish_all.sh: the render package (12 workers).
+
 ## Next
-1. Full preview anim2_full3 (scene2_v17) -> hunt and fix.
+1. Another full preview after the fixes -> hunt and fix.
 2. Detail passes: rooftop rain and wet reflections, white room, brawl choreography, the Whale.
 3. RENDER_LATER-style package for episode 2 (workers, 67 % / 6 samples, fog + motion blur ON).
 
