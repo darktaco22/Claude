@@ -400,6 +400,48 @@ def episode1_stills(frames_dir, count=24):
     return files[::max(1, len(files) // count)][:count]
 
 
+def exhaust_material(name, col=(0.05, 1.0, 0.2), strength=5.0):
+    """Rocket exhaust on a cone (local z -1..0, nozzle at the top): emission fading from the nozzle down, with a flickering
+    noise core, mixed into transparency so the end of the flare dissolves instead of stopping in a hard edge."""
+    mat = bpy.data.materials.new(name)
+    mat.use_nodes = True
+    mat.blend_method = 'BLEND'
+    nt = mat.node_tree
+    nt.nodes.clear()
+    out = nt.nodes.new('ShaderNodeOutputMaterial')
+    tc = nt.nodes.new('ShaderNodeTexCoord')
+    sep = nt.nodes.new('ShaderNodeSeparateXYZ')
+    nt.links.new(tc.outputs['Generated'], sep.inputs[0])
+    fade = nt.nodes.new('ShaderNodeMath')                           # 1 at the nozzle, 0 at the tail
+    fade.operation = 'POWER'
+    nt.links.new(sep.outputs['Z'], fade.inputs[0])
+    fade.inputs[1].default_value = 4.0
+    noise = nt.nodes.new('ShaderNodeTexNoise')
+    noise.noise_dimensions = '4D'
+    noise.inputs['Scale'].default_value = 6.0
+    nt.links.new(tc.outputs['Object'], noise.inputs['Vector'])
+    _drive(noise.inputs['W'], 'default_value', 'frame / 3')
+    flick = nt.nodes.new('ShaderNodeMapRange')
+    flick.inputs['To Min'].default_value = 0.55
+    flick.inputs['To Max'].default_value = 1.2
+    nt.links.new(noise.outputs['Fac'], flick.inputs['Value'])
+    fac = nt.nodes.new('ShaderNodeMath')
+    fac.operation = 'MULTIPLY'
+    fac.use_clamp = True
+    nt.links.new(fade.outputs['Value'], fac.inputs[0])
+    nt.links.new(flick.outputs['Result'], fac.inputs[1])
+    em = nt.nodes.new('ShaderNodeEmission')
+    em.inputs['Color'].default_value = (*col, 1.0)
+    em.inputs['Strength'].default_value = strength
+    tr = nt.nodes.new('ShaderNodeBsdfTransparent')
+    mix = nt.nodes.new('ShaderNodeMixShader')
+    nt.links.new(fac.outputs['Value'], mix.inputs['Fac'])
+    nt.links.new(tr.outputs[0], mix.inputs[1])
+    nt.links.new(em.outputs[0], mix.inputs[2])
+    nt.links.new(mix.outputs[0], out.inputs['Surface'])
+    return mat
+
+
 def wet_floor(mat, seed=0.0):
     """Rain on a flat roof: puddles (mirror-smooth, a shade darker) between wet gravel, the puddles shimmering with drops.
     World-position noise picks the puddles; animated 4D Voronoi bumps their normal (the drops), gravel stays matte-wet."""
@@ -460,8 +502,10 @@ def rooftop_rain(col, centre, size=(30, 30), drops=2500, seed=3):
     col.objects.link(cloud)
     cloud.location = centre
     _drive(cloud, 'location', f'{centre.z} - ((frame + 0.5) % 11) * {6 / 11}', index=2)
-    streak_m = material('rain_streak', (0.75, 0.9, 0.85), rough=0.1, emit=(0.6, 0.85, 0.75), strength=0.6)
-    streak = cylinder('rain_streak', 0.004, 0.35, (0, 0, 0), streak_m, col, verts=4)
+    streak_m = material('rain_streak', (0.75, 0.9, 0.85), rough=0.1, emit=(0.6, 0.85, 0.75), strength=0.45)
+    streak_m.node_tree.nodes['Principled BSDF'].inputs['Alpha'].default_value = 0.4   # see-through: a drop beside the lens
+    streak_m.blend_method = 'BLEND'                                                   # is a faint smear, not a white bar
+    streak = cylinder('rain_streak', 0.0028, 0.35, (0, 0, 0), streak_m, col, verts=4)
     streak.parent = cloud
     streak.visible_shadow = False
     cloud.instance_type = 'VERTS'

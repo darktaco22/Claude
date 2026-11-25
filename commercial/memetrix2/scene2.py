@@ -558,9 +558,9 @@ michi.cut(a, BASE + Vector((-1.2, 0.2, 0)), 120)
 slerf.cut(a, BASE + Vector((0.8, 1.2, 0)), 200)
 anon.cut(a, BASE + Vector((-0.2, -1.2, 0)), 30)
 shot('base_wide', 2.2, S('anon', size='WS', angle=8, bearing=200, lens=20, frame='center', fstop=5.6, move='push', amount=0.1), 'BASEMENT')
-line('n10', [S('mensa', size='MCU', bearing=-40, lens=60, frame='right', fstop=2.0, move='push', amount=0.1)], 'BASEMENT')
+line('n10', [S('mensa', size='MCU', bearing=35, lens=60, frame='right', fstop=2.0, move='push', amount=0.1)], 'BASEMENT')
 michi.walk(ANIM - 0.4, BASE + Vector((-0.4, 0.3, 0)), speed=1.0)
-line('m10', [S('michi', size='MCU', bearing=-15, lens=60, frame='left', fstop=2.0)], 'BASEMENT', pad=0.15)
+line('m10', [S('michi', size='MS', bearing=25, lens=45, frame='left', fstop=2.8, **{'with': ['slerf']})], 'BASEMENT', pad=0.15)
 mensa.turn(ANIM, 200, 0.6)                                       # he spins the chair round
 CRT_T = ANIM                                                      # the CRT fills with Jeanphils: one, four, sixteen
 line('n11', [S('mensa', size='MS', bearing=-25, lens=40, frame='center', fstop=2.8, fixed_heading=200),   # (camera held while he spins)
@@ -569,7 +569,7 @@ line('n11', [S('mensa', size='MS', bearing=-25, lens=40, frame='center', fstop=2
 line('a10', [S('anon', size='MCU', bearing=-20, lens=60, frame='right', fstop=2.0, move='push', amount=0.12)], 'BASEMENT')
 line('s10', [S('slerf', size='MCU', angle='low', bearing=10, lens=55, frame='center', fstop=2.0)], 'BASEMENT', pad=0.8)
 line('a11', [S('anon', size='CU', bearing=25, lens=75, frame='left', fstop=1.8)], 'BASEMENT')
-line('s11', [S('slerf', size='MCU', bearing=35, lens=70, frame='center', fstop=2.0, move='push', amount=0.12)], 'BASEMENT', pad=0.5)
+line('s11', [S('slerf', size='MCU', bearing=-30, lens=70, frame='center', fstop=2.0, move='push', amount=0.12)], 'BASEMENT', pad=0.5)
 line('mo10', [S('anon', size='WS', angle=-20, bearing=180, lens=24, frame='center', fstop=4.0, **{'with': ['michi', 'slerf']})],
      'BASEMENT', pad=0.4)
 
@@ -833,9 +833,11 @@ if not DRY:
     for k in range(12):
         x = FLOOR.x - 1.4 + k * 0.24
         z = 3.1 - k * 0.17 + (0.09 if k % 2 else -0.09)
-        hit, loc, *_ = sc.ray_cast(dg, Vector((x, FLOOR.y + 6.0, z)), Vector((0, 1, 0)), distance=6.0)
-        if hit:
-            crack_pts.append(loc - Vector((0, 0.01, 0)))
+        hit, loc, _n, _i, hob, _m = sc.ray_cast(dg, Vector((x, FLOOR.y + 6.0, z)), Vector((0, 1, 0)), distance=6.0)
+        if hit and hob.name.startswith('ex_bull'):                  # only on the bull (a hit on a leg then the plinth
+            crack_pts.append(loc - Vector((0, 0.01, 0)))           # drew a segment through the air)
+        elif crack_pts:
+            break
     crack_m = mxsets.material('crack', (1.0, 0.1, 0.05), emit=(1.0, 0.12, 0.04), strength=12.0)
     cd = bpy.data.curves.new('bull_crack', 'CURVE')
     cd.dimensions = '3D'
@@ -865,9 +867,9 @@ if not DRY:
                            PROPS, parent=ROCKET, rot=(math.radians(-90), 0, math.radians(60 * k)))
         fc_.visible_shadow = False
         fc_['cine_ignore'] = True
-    # the exhaust trail: a glowing green column out of the candle's base, growing below him as he climbs (origin at its top)
-    plume_m = mxsets.material('plume', (0.05, 1.0, 0.2), emit=(0.05, 1.0, 0.2), strength=4.0)   # saturated: pale read as a pole
-    bpy.ops.mesh.primitive_cone_add(vertices=12, radius1=0.0, radius2=0.035, depth=1.0)   # a thin streak, narrowing to a point
+    # the exhaust: a green flare out of the candle's base, 3 m long, flickering and fading to nothing (origin at its top)
+    plume_m = sets2.exhaust_material('plume')                     # bright at the nozzle, fading out below (a solid
+    bpy.ops.mesh.primitive_cone_add(vertices=16, radius1=0.1, radius2=0.03, depth=1.0)   # streak read as a pole), flaring wider
     plume = bpy.context.active_object
     plume.name = 'rocket_plume'
     for c_ in list(plume.users_collection):
@@ -879,7 +881,7 @@ if not DRY:
     plume.location = (0, 0, -0.25)
     plume.visible_shadow = False
     plume['cine_ignore'] = True
-    animate(plume, 'scale', [(F(0), (1, 1, 0.001)), (F(LAUNCH), (1, 1, 0.001)), (F(LAUNCH + 1.6), (1.0, 1.0, 14.0))], 'LINEAR')
+    animate(plume, 'scale', [(F(0), (1, 1, 0.001)), (F(LAUNCH), (1, 1, 0.001)), (F(LAUNCH + 0.5), (1.0, 1.0, 2.6))], 'LINEAR')
     show('rocket', [(0, False), (LAUNCH - 0.4, True), (FLIGHT_END, False)])
     show('save_candle', [(0, False), (LIQ + 1.9, True), (SAVE_T + 0.35, False)])
     show('seed_key', [(0, True)])

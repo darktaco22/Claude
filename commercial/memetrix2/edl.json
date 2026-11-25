@@ -316,12 +316,13 @@
 "cam": {
 "subject": "mensa",
 "size": "MCU",
-"bearing": -70,
+"bearing": 45,
 "lens": 60,
 "frame": "right",
 "fstop": 2.0,
 "move": "push",
-"amount": 0.1
+"amount": 0.1,
+"angle": 0.0
 },
 "hand": [
 "INVESTIGATION",
@@ -337,11 +338,15 @@
 "set": "BASEMENT",
 "cam": {
 "subject": "michi",
-"size": "MCU",
-"bearing": 20,
-"lens": 60,
+"size": "MS",
+"bearing": 35,
+"lens": 45,
 "frame": "left",
-"fstop": 2.0
+"fstop": 2.8,
+"with": [
+"slerf"
+],
+"angle": 0.0
 },
 "hand": [
 "INVESTIGATION",
@@ -480,14 +485,13 @@
 "set": "BASEMENT",
 "cam": {
 "subject": "slerf",
-"size": "CU",
-"bearing": -20,
+"size": "MCU",
+"bearing": -30,
 "lens": 70,
 "frame": "center",
 "fstop": 2.0,
 "move": "push",
-"amount": 0.2,
-"angle": 0.0
+"amount": 0.12
 },
 "hand": [
 "INVESTIGATION",
@@ -3587,9 +3591,10 @@
 },
 "frame_scale": 1.35,
 "notes": [
+"n10_0: foreground clutter (20% of frame) blocked the view; moved bearing +10, angle +0",
+"m10_0: foreground clutter (10% of frame) blocked the view; moved bearing +10, angle +0",
 "a10_0: body.001 blocked the view; moved bearing +30, angle +0",
 "s10_0: foreground clutter (46% of frame) blocked the view; moved bearing -30, angle +0",
-"s11_0: camera inside anon blocked the view; moved bearing -20, angle +0",
 "mo10_0: base_ground blocked the view; moved bearing +10, angle +10",
 "cafe_establish: foreground clutter (11% of frame) blocked the view; moved bearing -30, angle +0",
 "f10_0: foreground clutter (15% of frame) blocked the view; moved bearing +10, angle +0",
