@@ -388,21 +388,34 @@ def char_material(name, base=(0.5, 0.1, 0.08), amount=0.8, embers=True, seed=0.0
     bsdf = nt.nodes['Principled BSDF']
     N, L = nt.nodes.new, nt.links.new
     tc = N('ShaderNodeNewGeometry')        # world position: the same char grain on a 5 m counter and a 10 cm bottle (object space stretched it)
-    nz = N('ShaderNodeTexNoise'); nz.inputs['Scale'].default_value = 7.5; nz.inputs['Detail'].default_value = 10.0   # (3.5 read as
-    nz.inputs['Roughness'].default_value = 0.7                                                                    # cow-print blotches)
+    # Burning works in stages, so the colour does too: smoke-stained paint, then scorched brown, then black char. Two noise
+    # scales (broad burn fronts, fine grain) and a wide, soft ramp: a hard cut between paint and black read as camouflage.
+    nz = N('ShaderNodeTexNoise'); nz.inputs['Scale'].default_value = 2.2; nz.inputs['Detail'].default_value = 6.0
+    nz.inputs['Roughness'].default_value = 0.55
     L(tc.outputs['Position'], nz.inputs['Vector'])
+    fine = N('ShaderNodeTexNoise'); fine.inputs['Scale'].default_value = 24.0; fine.inputs['Detail'].default_value = 8.0
+    L(tc.outputs['Position'], fine.inputs['Vector'])
+    fm = N('ShaderNodeMix'); fm.data_type = 'FLOAT'; fm.inputs['Factor'].default_value = 0.3
+    L(nz.outputs['Fac'], fm.inputs['A']); L(fine.outputs['Fac'], fm.inputs['B'])
+    spread = N('ShaderNodeMapRange')                                 # noise sits near 0.5: stretch it so fronts vary
+    spread.inputs['From Min'].default_value = 0.32; spread.inputs['From Max'].default_value = 0.68
+    L(fm.outputs['Result'], spread.inputs['Value'])
+    burn = N('ShaderNodeMath'); burn.operation = 'ADD'; burn.use_clamp = True     # how far this spot has burnt (0..1)
+    L(spread.outputs['Result'], burn.inputs[0]); burn.inputs[1].default_value = (amount - 0.55) * 1.2
+    ramp = N('ShaderNodeValToRGB'); cr_ = ramp.color_ramp; cr_.interpolation = 'EASE'
+    stained = tuple(c * (0.45 - 0.2 * amount) + 0.03 for c in base)            # soot-dulled paint
+    cr_.elements[0].position = 0.18; cr_.elements[0].color = (*stained, 1)
+    cr_.elements[1].position = 0.62; cr_.elements[1].color = (0.016, 0.013, 0.011, 1)
+    mid = cr_.elements.new(0.4); mid.color = (0.075, 0.04, 0.02, 1)             # scorched, blistered brown
+    L(burn.outputs['Value'], ramp.inputs['Fac'])
+    L(ramp.outputs['Color'], bsdf.inputs['Base Color'])
     cut = N('ShaderNodeMapRange'); cut.clamp = True                 # where the char has taken over
-    cut.inputs['From Min'].default_value = 0.62 - 0.35 * amount; cut.inputs['From Max'].default_value = 0.7 - 0.35 * amount
-    L(nz.outputs['Fac'], cut.inputs['Value'])
-    mix = N('ShaderNodeMix'); mix.data_type = 'RGBA'
-    mix.inputs['A'].default_value = (*base, 1)
-    mix.inputs['B'].default_value = (0.018, 0.015, 0.013, 1)
-    L(cut.outputs['Result'], mix.inputs['Factor'])
-    L(mix.outputs['Result'], bsdf.inputs['Base Color'])
+    cut.inputs['From Min'].default_value = 0.5; cut.inputs['From Max'].default_value = 0.72
+    L(burn.outputs['Value'], cut.inputs['Value'])
     rough = N('ShaderNodeMapRange'); rough.inputs['To Min'].default_value = 0.45; rough.inputs['To Max'].default_value = 0.95
     L(cut.outputs['Result'], rough.inputs['Value'])
     L(rough.outputs['Result'], bsdf.inputs['Roughness'])
-    bump = N('ShaderNodeBump'); bump.inputs['Strength'].default_value = 0.6 * amount; bump.inputs['Distance'].default_value = 0.01
+    bump = N('ShaderNodeBump'); bump.inputs['Strength'].default_value = 0.05 + 0.8 * amount * amount; bump.inputs['Distance'].default_value = 0.01
     blis = N('ShaderNodeTexVoronoi'); blis.inputs['Scale'].default_value = 28.0     # blistered, alligatored char
     L(tc.outputs['Position'], blis.inputs['Vector'])
     L(blis.outputs['Distance'], bump.inputs['Height'])
@@ -494,6 +507,23 @@ def burn_cafe(col, o):
         cl = plane(f'soot_ceiling{k}', 3.0 * s_, 3.0 * s_, o + Vector((x, y, 4.148 - 0.0004 * k)), scorch, col,
                    rot=(math.radians(180), 0, rnd.uniform(0, 6.28)))
         cl.visible_shadow = False
+    # the whole floor under a film of soot and ash (smoke settles everywhere, not just under the fires)
+    ash = bpy.data.materials.new('floor_ash')
+    ash.use_nodes = True
+    nt = ash.node_tree
+    bsdf = nt.nodes['Principled BSDF']
+    bsdf.inputs['Base Color'].default_value = (0.03, 0.028, 0.026, 1)
+    bsdf.inputs['Roughness'].default_value = 0.97
+    tc = nt.nodes.new('ShaderNodeTexCoord')
+    nz = nt.nodes.new('ShaderNodeTexNoise'); nz.inputs['Scale'].default_value = 0.9; nz.inputs['Detail'].default_value = 9.0
+    nt.links.new(tc.outputs['Object'], nz.inputs['Vector'])
+    a_ = nt.nodes.new('ShaderNodeMapRange'); a_.clamp = True
+    a_.inputs['From Min'].default_value = 0.3; a_.inputs['From Max'].default_value = 0.75
+    a_.inputs['To Min'].default_value = 0.3; a_.inputs['To Max'].default_value = 0.88
+    nt.links.new(nz.outputs['Fac'], a_.inputs['Value']); nt.links.new(a_.outputs['Result'], bsdf.inputs['Alpha'])
+    ash.blend_method = 'BLEND'
+    fl = plane('ash_floor', 11.5, 9.5, o + Vector((0, 0, 0.0015)), ash, col)
+    fl.visible_shadow = False
     # debris under the floor fires: charred planks and broken ceiling tiles, every piece resting on the floor
     char_wood = char_material('char_debris', (0.3, 0.2, 0.12), 0.95, embers=True, seed=5)
     tile_m = char_material('char_tile', (0.55, 0.5, 0.45), 0.6, embers=False)
@@ -916,7 +946,7 @@ def spark_burst(name, centre, col, count=90, radius=0.9, seed=1, up=0.35, colour
 
 # ---------------------------------------------------------------- set dressing: placed on real surfaces, checked
 DRESSED = []                                             # (object, kind) for the placement check after the build
-SKIP_RAY = ('haze', 'rain', 'smoke', 'fire', 'dust', 'embers', 'scorch', 'soot', 'cafe_smoke', 'L_', 'shockwave', 'spark')
+SKIP_RAY = ('haze', 'rain', 'smoke', 'fire', 'dust', 'embers', 'scorch', 'soot', 'ash_', 'cafe_smoke', 'L_', 'shockwave', 'spark')
 
 
 ASSEMBLIES = (('couch',), ('lamp_',), ('mini_fridge', 'fridge_'), ('dartboard',), ('shelf_',), ('side_',), ('crust',), ('cup_stack',),

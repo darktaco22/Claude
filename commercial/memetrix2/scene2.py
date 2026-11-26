@@ -1112,4 +1112,8 @@ print(f'EDL {len(SHOTS)} shots, film {END_FILM:.1f} s ({edl["last"]} frames), {l
 if not DRY:
     sc.frame_start, sc.frame_end = 1, int(F(END_A + 1))
     bpy.ops.wm.save_as_mainfile(filepath=OUT, compress=False)
-    print('SAVED', OUT)
+    print('SAVED', OUT, flush=True)
+    # Blender sometimes hung on quit after this save (freeing the fire volumes) until the 2-hour cap killed the job:
+    # the file is complete here, so leave at once.
+    sys.stdout.flush(); sys.stderr.flush()
+    os._exit(0)
