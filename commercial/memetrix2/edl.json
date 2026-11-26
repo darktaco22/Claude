@@ -10,7 +10,12 @@
 "launch": 90.938,
 "doors": 118.461,
 "liquidation": 136.82,
-"save": 139.42
+"save": 139.42,
+"lightning": [
+70.553,
+75.275,
+137.27
+]
 },
 "cue_rows": [
 {

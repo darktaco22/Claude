@@ -621,6 +621,7 @@ anon.pos, anon.H = CATCH_AT, Ha
 anon.keys.append([DUEL + 2.45, *CATCH_AT, Ha, 0])
 anon.play(DUEL + 2.45, 'win@0.25')                                # both paws up: the blade caught between them
 swordcat.play(DUEL + 2.5, 'attack1@0.6')                          # freeze on the thrust, the blade between his paws
+EVENTS_CATCH = DUEL + 2.62
 shot('duel_wide', 1.4, S('anon', size='WS', bearing=90, lens=32, frame='center', fstop=4.0, **{'with': ['swordcat']}), 'CAFE')
 shot('duel_block', 0.9, S('anon', size='MS', bearing=60, lens=45, frame='center', fstop=2.8, **{'with': ['swordcat']}), 'CAFE')
 shot('duel_lean', 2.4, S('anon', size='MS', angle='low', bearing=100, lens=35, frame='center', fstop=3.2, move='arc', amount=40,
@@ -638,6 +639,7 @@ line('f14', [S('fine', size='MCU', bearing=-45, lens=50, frame='center', fstop=2
 
 # ---------------------------------------------------------------- 3. the Jeanphil brawl and the flight (rooftop, rain)
 a = ANIM
+ROOF_A = a
 anon.cut(a, ROOF + Vector((-1.0, -6.0, 0)), 20)
 michi.cut(a, ROOF + Vector((-2.0, -6.6, 0)), 20)
 toshi.cut(a, ROOF + Vector((-0.2, -6.8, 0)), 20)
@@ -948,7 +950,49 @@ if not DRY:
             samples.append((F(a_), sized(on)))
         animate(obj, 'scale', samples[1:], 'CONSTANT')
 
-# ================================================================ solve
+# ---------------------------------------------------------------- effects: lightning over the roof, sparks
+FLASHES = [ROOF_A + 0.35, CLONE_T + 0.05, LIQ + 0.25]                  # lightning over the roof (big flash 0.2 s in)
+if not DRY:
+    # lightning: a cold sun that strobes (two quick flickers, then the big flash) and the sky lighting up with it
+    bolt = bpy.data.objects.new('lightning', bpy.data.lights.new('lightning', 'SUN'))
+    bolt.data.color = (0.72, 0.85, 1.0)
+    bolt.data.angle = math.radians(6)
+    bolt.rotation_euler = (math.radians(35), 0, math.radians(-30))
+    mxsets.collection('L_ROOFTOP').objects.link(bolt)
+    en_, sky_ = [(F(0), 0.0)], [(F(0), 0.0)]
+    for t_ in FLASHES:
+        for dt_, e_ in ((0.0, 4.0), (0.05, 0.3), (0.1, 2.0), (0.14, 0.2), (0.2, 9.0), (0.32, 2.5), (0.45, 0.0)):
+            en_.append((F(t_ + dt_), e_))
+            sky_.append((F(t_ + dt_), e_ * 1.6))
+    bolt.data.animation_data_create()
+    act_ = bpy.data.actions.new('lightning_energy')
+    bolt.data.animation_data.action = act_
+    fc_ = act_.fcurves.new('energy')
+    for f_, v_ in en_:
+        fc_.keyframe_points.insert(f_, v_).interpolation = 'LINEAR'
+    skym_ = bpy.data.materials.get('rooftop_sky')
+    if skym_ and 'sky_flash' in skym_.node_tree.nodes:
+        sock_ = skym_.node_tree.nodes['sky_flash'].inputs[1]
+        for f_, v_ in sky_:
+            sock_.default_value = v_
+            sock_.keyframe_insert('default_value', frame=f_)
+        for fc in skym_.node_tree.animation_data.action.fcurves:
+            for kp in fc.keyframe_points:
+                kp.interpolation = 'LINEAR'
+    print('LIGHTNING at', [round(t_, 2) for t_ in FLASHES])
+
+    def burst(name, where_, t_, dur, **kw):
+        cloud_, spark_ = sets2.spark_burst(name, where_, PROPS, **kw)
+        kb_ = cloud_.data.shape_keys.key_blocks['burst']
+        for f_, v_ in ((F(0), 0.0), (F(t_), 0.0), (F(t_ + dur * 0.35), 0.75), (F(t_ + dur), 1.0)):
+            kb_.value = v_
+            kb_.keyframe_insert('value', frame=f_)
+        animate(spark_, 'scale', [(F(0), (0, 0, 0)), (F(t_) - 0.02, (0, 0, 0)), (F(t_), (1, 1, 1)),
+                                  (F(t_ + dur * 0.6), (1, 1, 1)), (F(t_ + dur), (0, 0, 0))], 'LINEAR')
+        return cloud_
+    burst('launch_sparks', CENTRE + Vector((0, 0, 0.15)), LAUNCH - 0.05, 0.8, count=260, radius=2.6, seed=4, up=0.9,
+          colour=(0.4, 1.0, 0.5), strength=30.0, size=0.02)                     # green: the candle's own fire hitting the roof
+
 if not DRY:                                                        # the duel from the open side of the café, side-on to the fight
     wh_ = make_where({n: sorted(x.keys, key=lambda k: k[0]) for n, x in A.items()})
     for s_ in SHOTS:
@@ -995,6 +1039,7 @@ if not DRY:                                                        # the duel fr
             s_['cam']['cam_at'] = list(look_ + perp * 0.95 + Vector((0, 0, 0.18)))
             s_['cam']['cam_at1'] = list(look_ + perp * 0.8 + Vector((0, 0, 0.12)))
             print('CATCH insert look', tuple(round(v, 2) for v in look_))
+            burst('catch_sparks', look_, EVENTS_CATCH - 0.06, 0.5, count=70, radius=0.55, seed=11, up=0.5)   # steel on steel
 
 if not DRY:                                                        # the CRT insert: straight onto its screen, easing in
     crt = bpy.data.objects.get('rain_crt')
@@ -1041,9 +1086,10 @@ def film_of(a):
     return None
 
 
-EVENTS = {'duel': DUEL + 0.55, 'swing2': DUEL + 1.3, 'catch': DUEL + 2.62, 'clones': CLONE_T, 'wave': WAVE_T, 'launch': LAUNCH,
+EVENTS = {'duel': DUEL + 0.55, 'swing2': DUEL + 1.3, 'catch': EVENTS_CATCH, 'clones': CLONE_T, 'wave': WAVE_T, 'launch': LAUNCH,
           'doors': DOORS_T, 'liquidation': LIQ, 'save': SAVE_T}
 EVENTS = {k: film_of(v) for k, v in EVENTS.items()}
+EVENTS['lightning'] = [film_of(t_ + 0.2) for t_ in FLASHES]
 cue_rows = [dict(id=i, f=t, dur=VO[i]['dur'], who=VO[i]['who'], sub=VO[i]['sub']) for i, t in CUES]
 edl = dict(fps=FPS, title=TITLE, events=EVENTS, cue_rows=cue_rows, end=round(END_FILM, 4), last=int(round(END_FILM * FPS)), shots=SHOTS, cues=CUES, tracks=tracks,
            eyes=cine.EYES, eye_fwd=cine.EYE_FWD, frame_scale=cine.FRAME_SCALE, notes=NOTES)

@@ -794,6 +794,18 @@ def impact(t, gain=0.5):
     put('fx', mono(sub * 0.9 + boom), t, gain)
 
 
+def thunder(t, gain=0.5, seed=0):
+    """Thunder for a lightning flash: a sharp crack, then a low rumble rolling away for a few seconds."""
+    r_ = np.random.default_rng(100 + seed)
+    x = np.arange(int(4.5 * SR)) / SR
+    crack = r_.normal(0, 1, len(x))
+    crack = (crack - lowpass(crack, 6)) * np.exp(-x / 0.05) * 1.4
+    rumble = lowpass(r_.normal(0, 1, len(x)), 220) * 30
+    roll = 0.55 + 0.45 * np.sin(2 * np.pi * 1.7 * x + seed) * np.sin(2 * np.pi * 0.6 * x + 1.3 * seed)
+    env = np.clip(x / 0.12, 0, 1) * np.exp(-x / 1.5)
+    put('fx', mono(crack + rumble * roll * env), t, gain)
+
+
 # opening (output time): drone, the terminal typing and glitches, the dive, the title slam, the burn into the film
 OFFSET = 0.0
 pad([38, 45, 50], 0.0, OPEN, 0.06, 1.5, 1.5)
@@ -860,6 +872,8 @@ riser(EV['launch'], 1.6, 0.2)
 tone(EV['doors'], 220, 330, 1.6, 0.05)                                  # the doors open: a clean rising tone
 riser(EV['liquidation'], EV['save'] - EV['liquidation'], 0.25)          # the margin call
 put('fx', game('spell_pump'), EV['save'], 0.5)
+for k, t_ in enumerate(EV.get('lightning', [])):
+    thunder(t_, 0.45, k)                                                # the flash, then the crack and the roll
 put('fx', game('level_up'), EV['save'] + 0.3, 0.25)
 # closing: out of the film, a whoosh per cast card, the menu music, the logo landing, the tagline typed
 zap(T_CARD, 0.14)

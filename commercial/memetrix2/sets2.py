@@ -8,6 +8,7 @@ import os
 import random
 import sys
 
+import bmesh
 import bpy
 from mathutils import Vector
 
@@ -88,7 +89,7 @@ def flame_material(name, seed=0.0):
     return mat
 
 
-def fire_material(name, seed=0.0):
+def fire_material(name, seed=0.0, shape='flame'):
     """Volumetric fire: climbing 4D noise, cut off with height and toward the edges, emitting orange to yellow by its heat.
     (Object coordinates of the unit cube; a first blackbody version came out almost black.)"""
     mat = bpy.data.materials.new(name)
@@ -103,30 +104,56 @@ def fire_material(name, seed=0.0):
     _drive(off.inputs[1], 'default_value', '-frame * 0.07', index=2)                  # the flame climbs
     L(tc.outputs['Object'], off.inputs[0])
     noise = N('ShaderNodeTexNoise'); noise.noise_dimensions = '4D'
-    noise.inputs['Scale'].default_value = 5.0; noise.inputs['Detail'].default_value = 8.0; noise.inputs['Roughness'].default_value = 0.7
-    noise.inputs['Distortion'].default_value = 1.2                                     # licking, ragged tongues
-    _drive(noise.inputs['W'], 'default_value', f'frame / 12 + {seed}')
-    L(off.outputs[0], noise.inputs['Vector'])
-    # falloff = (0.5 - z) * (1 - 2 * radius): 1 at the base centre, 0 at the top and the sides
-    up = N('ShaderNodeMath'); up.operation = 'SUBTRACT'; up.inputs[0].default_value = 0.5; L(sep.outputs['Z'], up.inputs[1])
-    xy = N('ShaderNodeCombineXYZ'); L(sep.outputs['X'], xy.inputs['X']); L(sep.outputs['Y'], xy.inputs['Y'])
-    rad = N('ShaderNodeVectorMath'); rad.operation = 'LENGTH'; L(xy.outputs[0], rad.inputs[0])
-    side = N('ShaderNodeMath'); side.operation = 'MULTIPLY_ADD'; side.use_clamp = True
-    side.inputs[1].default_value = -2.0; side.inputs[2].default_value = 1.0; L(rad.outputs[1], side.inputs[0])
-    fall = N('ShaderNodeMath'); fall.operation = 'MULTIPLY'; L(up.outputs[0], fall.inputs[0]); L(side.outputs[0], fall.inputs[1])
+    noise.inputs['Scale'].default_value = 8.0; noise.inputs['Detail'].default_value = 10.0; noise.inputs['Roughness'].default_value = 0.72
+    noise.inputs['Distortion'].default_value = 1.4                                     # licking, ragged tongues
+    _drive(noise.inputs['W'], 'default_value', f'frame / 10 + {seed}')
+    stretch = N('ShaderNodeVectorMath'); stretch.operation = 'MULTIPLY'                 # flames are tall tongues, not blobs:
+    stretch.inputs[1].default_value = (1.0, 1.0, 0.4) if shape != 'sheet' else (1.0, 1.0, 0.6)   # squash the noise in z
+    L(off.outputs[0], stretch.inputs[0])
+    L(stretch.outputs[0], noise.inputs['Vector'])
+    # falloff: 1 low in the middle, 0 at the top and the sides. 'flame': a full body that narrows only near the top (the
+    # first version, (0.5 - z) * (1 - 2r), was a narrow cone: small pointed tongues). 'sheet': fire spread over a surface
+    # (walls, ceiling): fades only at the box's edges, so it reads as a burning surface, not a jet.
+    def rng_(src, a, b):
+        m = N('ShaderNodeMapRange'); m.clamp = True
+        m.inputs['From Min'].default_value = a; m.inputs['From Max'].default_value = b
+        L(src, m.inputs['Value'])
+        return m.outputs['Result']
+
+    def mul_(a, b):
+        m = N('ShaderNodeMath'); m.operation = 'MULTIPLY'; L(a, m.inputs[0]); L(b, m.inputs[1])
+        return m.outputs[0]
+    ax = N('ShaderNodeMath'); ax.operation = 'ABSOLUTE'; L(sep.outputs['X'], ax.inputs[0])
+    ay = N('ShaderNodeMath'); ay.operation = 'ABSOLUTE'; L(sep.outputs['Y'], ay.inputs[0])
+    if shape == 'sheet':
+        fall = mul_(mul_(rng_(ax.outputs[0], 0.5, 0.25), rng_(ay.outputs[0], 0.5, 0.25)),
+                    mul_(rng_(sep.outputs['Z'], 0.5, 0.1), rng_(sep.outputs['Z'], -0.5, -0.3)))
+    else:
+        xy = N('ShaderNodeCombineXYZ'); L(sep.outputs['X'], xy.inputs['X']); L(sep.outputs['Y'], xy.inputs['Y'])
+        rad = N('ShaderNodeVectorMath'); rad.operation = 'LENGTH'; L(xy.outputs[0], rad.inputs[0])
+        width = N('ShaderNodeMath'); width.operation = 'MULTIPLY_ADD'                 # the body narrows with height:
+        width.inputs[1].default_value = -0.3; width.inputs[2].default_value = 0.35       # 0.5 wide at the base, 0.2 at the top
+        L(sep.outputs['Z'], width.inputs[0])
+        rr = N('ShaderNodeMath'); rr.operation = 'DIVIDE'; L(rad.outputs[1], rr.inputs[0]); L(width.outputs[0], rr.inputs[1])
+        side = rng_(rr.outputs[0], 1.0, 0.6)
+        fall = mul_(side, rng_(sep.outputs['Z'], 0.5, 0.0))
     # heat = noise * falloff, sharpened into tongues
-    heat = N('ShaderNodeMath'); heat.operation = 'MULTIPLY'; L(noise.outputs['Fac'], heat.inputs[0]); L(fall.outputs[0], heat.inputs[1])
+    con = N('ShaderNodeMapRange'); con.clamp = True                       # fractal noise hugs 0.5: stretch it, or the
+    con.inputs['From Min'].default_value = 0.32; con.inputs['From Max'].default_value = 0.68   # flame is just the smooth falloff
+    L(noise.outputs['Fac'], con.inputs['Value'])
+    heat = N('ShaderNodeMath'); heat.operation = 'MULTIPLY'; L(con.outputs['Result'], heat.inputs[0]); L(fall, heat.inputs[1])
     tongue = N('ShaderNodeMapRange'); tongue.clamp = True
-    tongue.inputs['From Min'].default_value = 0.14; tongue.inputs['From Max'].default_value = 0.34
+    lo_, hi_ = (0.4, 0.75) if shape == 'sheet' else (0.2, 0.6)        # (a sheet burns only on the noise peaks: tongues)
+    tongue.inputs['From Min'].default_value = lo_; tongue.inputs['From Max'].default_value = hi_
     L(heat.outputs[0], tongue.inputs['Value'])
     ramp = N('ShaderNodeValToRGB')
-    ramp.color_ramp.elements[0].position = 0.0; ramp.color_ramp.elements[0].color = (0.55, 0.03, 0.0, 1)
-    ramp.color_ramp.elements[1].position = 1.0; ramp.color_ramp.elements[1].color = (1.0, 0.75, 0.25, 1)
-    mid = ramp.color_ramp.elements.new(0.45); mid.color = (1.0, 0.25, 0.02, 1)
+    ramp.color_ramp.elements[0].position = 0.0; ramp.color_ramp.elements[0].color = (0.35, 0.015, 0.0, 1)
+    ramp.color_ramp.elements[1].position = 1.0; ramp.color_ramp.elements[1].color = (1.0, 0.6, 0.15, 1)
+    mid = ramp.color_ramp.elements.new(0.5); mid.color = (1.0, 0.16, 0.0, 1)   # deep orange: bright emission goes pale under AgX
     L(tongue.outputs['Result'], ramp.inputs['Fac'])
-    strength = N('ShaderNodeMath'); strength.operation = 'MULTIPLY'; strength.inputs[1].default_value = 12.0
+    strength = N('ShaderNodeMath'); strength.operation = 'MULTIPLY'; strength.inputs[1].default_value = 6.5
     L(tongue.outputs['Result'], strength.inputs[0])
-    dens = N('ShaderNodeMath'); dens.operation = 'MULTIPLY'; dens.inputs[1].default_value = 3.0
+    dens = N('ShaderNodeMath'); dens.operation = 'MULTIPLY'; dens.inputs[1].default_value = 5.0   # sooty edges
     L(tongue.outputs['Result'], dens.inputs[0])
     vol = N('ShaderNodeVolumePrincipled')
     vol.inputs['Color'].default_value = (0.08, 0.05, 0.03, 1)
@@ -137,32 +164,97 @@ def fire_material(name, seed=0.0):
     return mat
 
 
-def smoke_material(name, seed=0.0, density=0.6):
-    """Rising grey smoke: noise that climbs over time, thinning with height."""
+def smoke_material(name, seed=0.0, density=0.6, shape='column', col=(0.32, 0.29, 0.26)):   # grey: it catches the firelight
+    """Rising smoke: climbing noise, shaped so the volume never shows the box it lives in (the first version had hard
+    straight edges at the bottom of the ceiling layer and the sides of every column).
+    shape 'column': fades in above the fire, thins to nothing at the top and toward the sides.
+    shape 'layer': a ceiling layer, full at the top, feathering out over its lower 70 %."""
     mat = bpy.data.materials.new(name)
     mat.use_nodes = True
     nt = mat.node_tree
     nt.nodes.clear()
-    tc = nt.nodes.new('ShaderNodeTexCoord')
-    off = nt.nodes.new('ShaderNodeVectorMath'); off.operation = 'ADD'
-    _drive(off.inputs[1], 'default_value', '-frame * 0.012', index=2)
-    nt.links.new(tc.outputs['Object'], off.inputs[0])
-    noise = nt.nodes.new('ShaderNodeTexNoise')
+    N, L = nt.nodes.new, nt.links.new
+    tc = N('ShaderNodeTexCoord')
+    sep = N('ShaderNodeSeparateXYZ'); L(tc.outputs['Object'], sep.inputs[0])
+    off = N('ShaderNodeVectorMath'); off.operation = 'ADD'
+    _drive(off.inputs[1], 'default_value', f'-frame * {0.012 if shape == "layer" else 0.02}', index=2)
+    L(tc.outputs['Object'], off.inputs[0])
+    noise = N('ShaderNodeTexNoise')
     noise.noise_dimensions = '4D'
-    noise.inputs['Scale'].default_value = 3.0
-    noise.inputs['Detail'].default_value = 4.0
+    noise.inputs['Scale'].default_value = 4.5
+    noise.inputs['Detail'].default_value = 7.0
+    noise.inputs['Roughness'].default_value = 0.62
+    noise.inputs['Distortion'].default_value = 0.9                  # wisps and curls, not a soft blob
     _drive(noise.inputs['W'], 'default_value', f'frame / 40 + {seed}')
-    nt.links.new(off.outputs[0], noise.inputs['Vector'])
-    cut = nt.nodes.new('ShaderNodeMapRange')
-    cut.inputs['From Min'].default_value = 0.45; cut.inputs['From Max'].default_value = 0.75
+    st_ = N('ShaderNodeVectorMath'); st_.operation = 'MULTIPLY'
+    st_.inputs[1].default_value = (1.0, 1.0, 0.55) if shape == 'column' else (0.6, 0.6, 1.0)   # rising columns / spreading layer
+    L(off.outputs[0], st_.inputs[0])
+    L(st_.outputs[0], noise.inputs['Vector'])
+    cut = N('ShaderNodeMapRange')
+    cut.inputs['From Min'].default_value = 0.42; cut.inputs['From Max'].default_value = 0.66
     cut.inputs['To Max'].default_value = density
-    nt.links.new(noise.outputs['Fac'], cut.inputs['Value'])
-    vol = nt.nodes.new('ShaderNodeVolumePrincipled')
-    vol.inputs['Color'].default_value = (0.12, 0.11, 0.1, 1)
-    nt.links.new(cut.outputs['Result'], vol.inputs['Density'])
-    out = nt.nodes.new('ShaderNodeOutputMaterial')
-    nt.links.new(vol.outputs[0], out.inputs['Volume'])
+    L(noise.outputs['Fac'], cut.inputs['Value'])
+
+    def ramp_(src, a, b):                                   # 0 at a, 1 at b (clamped)
+        m = N('ShaderNodeMapRange'); m.clamp = True
+        m.inputs['From Min'].default_value = a; m.inputs['From Max'].default_value = b
+        L(src, m.inputs['Value'])
+        return m.outputs['Result']
+
+    def mul_(a, b):
+        m = N('ShaderNodeMath'); m.operation = 'MULTIPLY'
+        L(a, m.inputs[0]); L(b, m.inputs[1])
+        return m.outputs[0]
+    if shape == 'layer':
+        shp = ramp_(sep.outputs['Z'], -0.5, 0.2)
+    else:
+        xy = N('ShaderNodeCombineXYZ'); L(sep.outputs['X'], xy.inputs['X']); L(sep.outputs['Y'], xy.inputs['Y'])
+        rad = N('ShaderNodeVectorMath'); rad.operation = 'LENGTH'; L(xy.outputs[0], rad.inputs[0])
+        side = ramp_(rad.outputs[1], 0.5, 0.15)              # 1 in the middle, 0 at the walls of the box
+        bottom = ramp_(sep.outputs['Z'], -0.5, -0.25)
+        top = ramp_(sep.outputs['Z'], 0.5, 0.05)
+        shp = mul_(mul_(side, bottom), top)
+    vol = N('ShaderNodeVolumePrincipled')
+    vol.inputs['Color'].default_value = (*col, 1)
+    L(mul_(cut.outputs['Result'], shp), vol.inputs['Density'])
+    out = N('ShaderNodeOutputMaterial')
+    L(vol.outputs[0], out.inputs['Volume'])
     return mat
+
+
+def embers(name, centre, size, count, col, seed=1, rise=3.2, period=96):
+    """Rising embers: glowing orange sparks drifting up through the room and looping. Like the rain, every spark has a twin
+    one loop below, the loop snaps half-way between frames, and the cloud has no object motion blur (slow-motion shots
+    sample fractional frames), so the loop is never seen."""
+    rnd = random.Random(seed)
+    half = [(rnd.uniform(-size[0] / 2, size[0] / 2), rnd.uniform(-size[1] / 2, size[1] / 2), rnd.uniform(0, rise))
+            for _ in range(count // 2)]
+    pts = half + [(x, y, z - rise) for x, y, z in half]
+    mesh = bpy.data.meshes.new(name)
+    mesh.from_pydata(pts, [], [])
+    cloud = bpy.data.objects.new(name, mesh)
+    col.objects.link(cloud)
+    cloud.location = centre
+    _drive(cloud, 'location', f'{centre.z} + ((frame + 0.5) % {period}) * {rise / period}', index=2)
+    _drive(cloud, 'location', f'{centre.x} + 0.12 * sin(frame * 0.05 + {seed})', index=0)       # a slow sideways drift
+    m = material(name + '_m', (1.0, 0.35, 0.06), emit=(1.0, 0.3, 0.04), strength=5.0)
+    spark = bpy.data.objects.new(name + '_spark', bpy.data.meshes.new(name + '_spark'))
+    bm = bmesh.new()
+    bmesh.ops.create_icosphere(bm, subdivisions=1, radius=0.006)
+    bmesh.ops.scale(bm, vec=(1.0, 1.0, 2.2), verts=bm.verts)      # a little stretched: they are moving
+    bm.to_mesh(spark.data); bm.free()
+    spark.data.materials.append(m)
+    col.objects.link(spark)
+    spark.parent = cloud
+    cloud.instance_type = 'VERTS'
+    for ob in (cloud, spark):
+        ob['cine_ignore'] = True
+        ob.visible_shadow = False
+        try:
+            ob.cycles.use_motion_blur = False
+        except AttributeError:
+            pass
+    return cloud
 
 
 def fire(name, loc, size, col, lit, energy=60.0, seed=0.0):
@@ -171,8 +263,12 @@ def fire(name, loc, size, col, lit, energy=60.0, seed=0.0):
     flame = box(name, (size * 0.9, size * 0.9, size * 1.8), loc + Vector((0, 0, size * 0.9)), fire_material(name + '_m', seed), col)
     flame.visible_shadow = False
     flame['cine_ignore'] = True
-    smoke = box(name + '_smoke', (size * 1.3, size * 1.3, size * 2.0), loc + Vector((0, 0, size * 2.6)), smoke_material(name + '_sm', seed, 0.5),
-                col)
+    # the plume: from the top of the flame (never below head height, so it never fogs the actors) to the ceiling,
+    # no wider than 1.3 m (big floor fires had 4 m columns that filled the room)
+    z0, z1 = max(loc.z + size * 1.3, 1.9), 4.3
+    w = min(size * 1.2, 1.3)
+    smoke = box(name + '_smoke', (w, w, z1 - z0), Vector((loc.x, loc.y, (z0 + z1) / 2)),
+                smoke_material(name + '_sm', seed, 6.0, 'column'), col)        # a plume rolling up off each fire
     smoke.visible_shadow = False
     smoke['cine_ignore'] = True
     for k, (dz, e) in enumerate(((0.5, 1.0), (1.1, 0.55))):
@@ -294,18 +390,32 @@ def build_cafe():
     rnd = random.Random(5)
     spots = [((-3.6, 0.6, 0.81), 0.8), ((-0.8, -2.6, 0.81), 0.65), ((1.4, 2.6, 1.11), 0.75), ((3.6, 2.6, 1.11), 0.9),
              ((3.6, 4.6, 2.5), 1.0), ((-5.4, 4.2, 0.0), 1.8), ((5.3, -3.8, 0.0), 2.0), ((-3.6, -2.2, 0.81), 0.6),
-             ((5.6, 3.0, 0.0), 1.6), ((-5.6, -3.5, 0.0), 1.5), ((0.4, 4.6, 0.0), 1.3), ((-1.0, 4.6, 3.0), 0.9)]
+             ((5.6, 3.0, 0.0), 1.6), ((-5.6, -3.5, 0.0), 1.5), ((0.4, 4.6, 0.0), 1.3), ((-1.0, 4.6, 3.0), 0.9),
+             # more: the booths' seats, a stool, burning debris on the floor, the coffee machine, the far corner
+             ((-3.6, 1.45, 0.48), 0.7), ((-2.2, -4.2, 0.0), 0.9),               # (none near the duel's floor)
+             ((4.4, 3.3, 1.8), 0.55), ((-5.4, 0.0, 0.0), 1.2), ((3.0, -4.3, 0.0), 1.1)]
     for k, (p, s) in enumerate(spots):
-        fire(f'fire{k}', o + Vector(p), s * 1.25, col, lit, energy=25 + 50 * s, seed=rnd.uniform(0, 20))   # (darker room: the fire is the light)
+        fire(f'fire{k}', o + Vector(p), s * 1.25, col, lit, energy=18 + 38 * s, seed=rnd.uniform(0, 20))   # (darker room: the fire is the light)
     # flames climbing the walls (wide, flat fire boxes against them) and a burning curtain by the window
     for k, (p, sz) in enumerate((((-5.75, 2.0, 0.0), (0.4, 2.2, 3.0)), ((5.75, -1.5, 0.0), (0.4, 2.6, 3.2)),
                                  ((1.6, 4.75, 0.0), (2.4, 0.4, 2.6)), ((-4.9, 4.7, 1.1), (0.7, 0.35, 2.6)))):
-        wf = box(f'wallfire{k}', sz, o + Vector(p) + Vector((0, 0, sz[2] / 2)), fire_material(f'wallfire_m{k}', 30 + k * 5), col)
+        wf = box(f'wallfire{k}', sz, o + Vector(p) + Vector((0, 0, sz[2] / 2)), fire_material(f'wallfire_m{k}', 30 + k * 5, 'sheet'), col)
         wf.visible_shadow = False
         wf['cine_ignore'] = True
         wl = light(f'L_wallfire{k}', 'AREA', o + Vector(p) + Vector((0, 0, sz[2] * 0.4)), 150, (1.0, 0.4, 0.08), lit, size=1.5)
         _drive(wl.data, 'energy', f'150 * (0.75 + 0.2 * sin(frame * 0.8 + {k * 3}) + 0.1 * sin(frame * 2.3 + {k}))')
-    smoke_layer = box('cafe_smoke_layer', (11.6, 9.6, 1.1), o + Vector((0, 0, 3.6)), smoke_material('cafe_smoke_layer_m', 7, 1.4), col)
+    # flames rolling across the ceiling from the wall fires (rollover): fire boxes turned on their side, licking sideways
+    # (turned 90 degrees about y, a box's +z, the way the flame climbs, points along +x; then rz turns it away from its wall)
+    for k, (p, sz, rz) in enumerate((((-4.6, 2.0, 3.95), (2.4, 2.0, 0.5), 0), ((4.4, -1.5, 3.95), (2.6, 2.4, 0.5), 180),
+                                     ((1.6, 3.6, 3.95), (2.4, 2.2, 0.5), -90))):
+        rf = box(f'rollover{k}', (sz[2], sz[1], sz[0]), o + Vector(p), fire_material(f'rollover_m{k}', 60 + k * 7, 'sheet'), col,
+                 rot=(0, math.radians(90), math.radians(rz)))
+        rf.visible_shadow = False
+        rf['cine_ignore'] = True
+        rl = light(f'L_rollover{k}', 'AREA', o + Vector(p) - Vector((0, 0, 0.3)), 90, (1.0, 0.38, 0.06), lit, size=1.6,
+                   rot=(0, 0, 0))
+        _drive(rl.data, 'energy', f'90 * (0.7 + 0.25 * sin(frame * 0.7 + {k * 5}) + 0.1 * sin(frame * 2.9 + {k}))')
+    smoke_layer = box('cafe_smoke_layer', (11.6, 9.6, 1.3), o + Vector((0, 0, 3.6)), smoke_material('cafe_smoke_layer_m', 7, 3.5, 'layer'), col)
     smoke_layer.visible_shadow = False
     smoke_layer['cine_ignore'] = True
     soot = material('soot', (0.02, 0.018, 0.016), rough=0.95)
@@ -321,7 +431,7 @@ def build_cafe():
     for l_ in lit.objects:                                         # lights light the set but never show as glowing quads
         if l_.type == 'LIGHT':
             l_.visible_camera = l_.visible_transmission = l_.visible_glossy = False   # (seen through the glass too)
-    dust('embers_cafe', o + Vector((0, 0.5, 2.0)), (10, 8, 3.5), 350, (1.0, 0.5, 0.15), col, 9)
+    embers('embers_cafe', o + Vector((0, 0.3, 0.2)), (11, 9, 0), 900, col, seed=9, rise=3.8, period=110)
     return col
 
 
@@ -476,10 +586,47 @@ def night_sky(mat):
     cl.inputs['To Min'].default_value = 0.6
     cl.inputs['To Max'].default_value = 2.8
     nt.links.new(noise.outputs['Fac'], cl.inputs['Value'])
+    flash = nt.nodes.new('ShaderNodeMath')                          # lightning: the scene keys inputs[1] (0 = no flash)
+    flash.name = 'sky_flash'
+    flash.operation = 'MULTIPLY_ADD'
+    nt.links.new(cl.outputs['Result'], flash.inputs[0])
+    flash.inputs[1].default_value = 0.0
+    nt.links.new(cl.outputs['Result'], flash.inputs[2])
     em = nt.nodes.new('ShaderNodeEmission')
     nt.links.new(ramp.outputs['Color'], em.inputs['Color'])
-    nt.links.new(cl.outputs['Result'], em.inputs['Strength'])
+    nt.links.new(flash.outputs[0], em.inputs['Strength'])
     nt.links.new(em.outputs[0], out.inputs['Surface'])
+
+
+def spark_burst(name, centre, col, count=90, radius=0.9, seed=1, up=0.35, colour=(1.0, 0.55, 0.15), strength=30.0, size=0.007):
+    """A burst of sparks: glowing specks thrown out from one point and falling (shape key 'burst', 0 = all at the centre,
+    1 = flown out and dropped). The scene keys the shape key and the spark's scale (0 = hidden)."""
+    rnd = random.Random(seed)
+    mesh = bpy.data.meshes.new(name)
+    pts = [(rnd.uniform(-0.01, 0.01), rnd.uniform(-0.01, 0.01), rnd.uniform(-0.01, 0.01)) for _ in range(count)]
+    mesh.from_pydata(pts, [], [])
+    cloud = bpy.data.objects.new(name, mesh)
+    col.objects.link(cloud)
+    cloud.location = centre
+    cloud.shape_key_add(name='Basis')
+    kb = cloud.shape_key_add(name='burst')
+    for i, v in enumerate(kb.data):
+        d = Vector((rnd.gauss(0, 1), rnd.gauss(0, 1), rnd.gauss(0, 1) + up)).normalized()
+        r = radius * rnd.uniform(0.35, 1.0)
+        v.co = Vector(pts[i]) + d * r + Vector((0, 0, -0.45 * r * rnd.uniform(0.5, 1.0)))   # out, then falling
+    m = material(name + '_m', colour, emit=colour, strength=strength)
+    spark = bpy.data.objects.new(name + '_spark', bpy.data.meshes.new(name + '_spark'))
+    bm = bmesh.new()
+    bmesh.ops.create_icosphere(bm, subdivisions=1, radius=size)
+    bm.to_mesh(spark.data); bm.free()
+    spark.data.materials.append(m)
+    col.objects.link(spark)
+    spark.parent = cloud
+    cloud.instance_type = 'VERTS'
+    for ob in (cloud, spark):
+        ob['cine_ignore'] = True
+        ob.visible_shadow = False
+    return cloud, spark
 
 
 def wet_floor(mat, seed=0.0):
