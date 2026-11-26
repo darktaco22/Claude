@@ -612,6 +612,86 @@ def burn_cafe(col, o):
     return col
 
 
+def cafe_signs(col, lit, o):
+    """What a real diner has on its glass and walls, still there while it burns: the name in gold leaf on the street
+    window (painted on the inside of the glass to read from the street, so from in here it reads backward, as it does
+    in any real shop), the hours on the door-side pane, a red neon OPEN sign hanging in the window, still lit, its N
+    failing; a chalk menu with prices over the counter; a lit green EXIT sign, a FIRE EXTINGUISHER placard over the
+    extinguisher nobody used, a NO SMOKING sign behind the counter, next to the fire."""
+    out = (math.radians(90), 0, math.radians(180))            # reads from the street (+y)
+    inn = (math.radians(90), 0, 0)                             # reads from inside the café (-y)
+    gold = material('gold_leaf', (1.0, 0.72, 0.28), rough=0.22, metal=1.0, emit=(1.0, 0.65, 0.25), strength=0.35)
+    vinyl = material('window_vinyl', (0.92, 0.9, 0.85), rough=0.5, emit=(0.9, 0.88, 0.8), strength=0.15)
+    gy = 4.94                                                  # the glass is at y 4.95: lettering on its inner face
+    # window: left pane x -4.5..-2.24, right pane -2.16..0.1, glass z 1.2..3.2
+    for name, body, x, z, size, m in (('sign_name0', "FINE'S", -3.37, 2.62, 0.36, gold), ('sign_name1', 'DINER', -1.03, 2.62, 0.36, gold),
+                                      ('sign_est', 'EST. 1987', -3.37, 2.38, 0.12, gold),
+                                      ('sign_sub', 'COFFEE  ~  PIE  ~  BREAKFAST', -1.03, 2.4, 0.085, gold),
+                                      ('sign_hours0', 'HOURS', -0.4, 1.68, 0.06, vinyl), ('sign_hours1', 'MON-FRI  6AM-10PM', -0.4, 1.58, 0.042, vinyl),
+                                      ('sign_hours2', 'SAT-SUN  7AM-11PM', -0.4, 1.51, 0.042, vinyl)):
+        t = _txt(name, body, o + Vector((x, gy, z)), out, size, m, col)
+        if m is gold:
+            t.data.extrude = 0.0015
+        t['cine_ignore'] = True
+    for k, dx in enumerate((-0.32, 0.32)):                     # a thin line under the name, like the sign painter's rule
+        box(f'sign_rule{k}', (0.62, 0.002, 0.012), o + Vector((-2.2 + (-1.17 if k == 0 else 1.17), gy, 2.53)), gold, col)
+    # the neon OPEN sign, hanging on two chains in the left pane, facing the street; the N is dying and flickers
+    nx, ny, nz = -3.4, 4.74, 1.62
+    steady = material('neon_open', (1.0, 0.1, 0.06), emit=(1.0, 0.12, 0.06), strength=6.0)
+    dying = material('neon_open_n', (1.0, 0.1, 0.06), emit=(1.0, 0.12, 0.06), strength=6.0)
+    _drive(steady.node_tree.nodes['Principled BSDF'].inputs['Emission Strength'], 'default_value',
+           '6.0 + 0.8 * sin(frame * 2.3) * sin(frame * 0.41)')
+    _drive(dying.node_tree.nodes['Principled BSDF'].inputs['Emission Strength'], 'default_value',
+           '6.0 * floor(fmod(frame * 0.731 + 3.0 * sin(frame * 0.13), 1.9))')        # (on, off, on, off, irregularly)
+    neon = _txt('neon_open', 'OPEN', o + Vector((nx, ny, nz)), out, 0.3, steady, col)
+    neon.data.materials.append(dying)
+    for i, ch in enumerate(neon.data.body_format):
+        ch.material_index = 1 if i == 3 else 0
+    neon.data.bevel_depth = 0.006                                    # tubes, not slabs
+    neon.data.offset = -0.012
+    neon.data.extrude = 0.004
+    box('neon_open_rail', (1.0, 0.012, 0.012), o + Vector((nx, ny, nz + 0.29)), material('neon_rail', (0.05, 0.05, 0.05), rough=0.4,
+        metal=0.6), col)                                              # the bar the tubes hang from (clear frame, no backing)
+    chain = material('chain', (0.3, 0.3, 0.32), rough=0.3, metal=1.0)
+    for k, dx in enumerate((-0.45, 0.45)):
+        top_, bot_ = 3.19, nz + 0.296
+        cylinder(f'neon_open_chain{k}', 0.004, top_ - bot_, o + Vector((nx + dx, ny, (top_ + bot_) / 2)), chain, col, verts=6)
+    nl = light('L_neon_open', 'POINT', o + Vector((nx, ny - 0.25, nz + 0.12)), 6.0, (1.0, 0.12, 0.06), lit, size=0.3)
+    _drive(nl.data, 'energy', '6.0 + 0.8 * sin(frame * 2.3) * sin(frame * 0.41)')
+    # the chalk menu over the counter (board x 1.0..4.2, z 2.5..3.5, face at y 4.79)
+    chalk = material('chalk', (0.88, 0.88, 0.84), rough=0.95, emit=(0.85, 0.85, 0.8), strength=0.12)
+    my = 4.785
+    _txt('menu_title', "FINE'S  MENU", o + Vector((2.6, my, 3.27)), inn, 0.14, chalk, col)
+    items = (('COFFEE', '1.50'), ('TEA', '1.25'), ('PIE, SLICE', '3.25'), ('MILKSHAKE', '3.75'),
+             ('EGGS & TOAST', '4.95'), ('PANCAKES', '5.50'), ('BURGER & FRIES', '7.95'), ('SOUP OF THE DAY', '3.95'))
+    for k, (item, price) in enumerate(items):
+        cx_ = 1.15 if k < 4 else 2.75
+        z_ = 3.06 - (k % 4) * 0.15
+        _txt(f'menu_item{k}', item, o + Vector((cx_, my, z_)), inn, 0.085, chalk, col, align='LEFT')
+        _txt(f'menu_price{k}', price, o + Vector((cx_ + 1.3, my, z_)), inn, 0.085, chalk, col, align='RIGHT')
+    # EXIT over the left wall's front end; a fire extinguisher placard; NO SMOKING behind the counter
+    ex_m = material('exit_face', (0.1, 0.9, 0.3), emit=(0.15, 1.0, 0.35), strength=4.0)
+    ex_case = box('exit_sign', (0.06, 0.38, 0.2), o + Vector((-5.819, -4.2, 3.0)), material('exit_case', (0.85, 0.85, 0.82), rough=0.4), col)
+    _txt('exit_text', 'EXIT', o + Vector((-5.788, -4.2, 2.955)), (math.radians(90), 0, math.radians(90)), 0.11, ex_m, col)
+    light('L_exit', 'POINT', o + Vector((-5.6, -4.2, 2.9)), 3.0, (0.15, 1.0, 0.35), lit, size=0.1)
+    red = material('placard_red', (0.75, 0.04, 0.03), rough=0.5)
+    white = material('placard_white', (0.95, 0.95, 0.92), rough=0.5)
+    plane('ext_placard', 0.26, 0.17, o + Vector((-5.848, -0.8, 1.52)), red, col, rot=(math.radians(90), 0, math.radians(90)))
+    for k, w in enumerate(('FIRE', 'EXTINGUISHER')):
+        _txt(f'ext_placard_text{k}', w, o + Vector((-5.846, -0.8, 1.54 - k * 0.055)), (math.radians(90), 0, math.radians(90)),
+             0.045 if k == 0 else 0.03, white, col)
+    plane('nosmoking_sign', 0.32, 0.2, o + Vector((0.45, 4.848, 1.78)), white, col, rot=inn)
+    _txt('nosmoking_text', 'NO SMOKING', o + Vector((0.45, 4.846, 1.765)), inn, 0.045, red, col)
+    ring = bpy.data.curves.new('nosmoking_ring', 'CURVE')                # (the red circle above the words)
+    ring.dimensions = '2D'; ring.bevel_depth = 0.004
+    sp = ring.splines.new('POLY'); sp.points.add(23); sp.use_cyclic_u = True
+    for i, p_ in enumerate(sp.points):
+        a_ = i / 24 * 6.2832
+        p_.co = (math.cos(a_) * 0.035, math.sin(a_) * 0.035, 0, 1)
+    rob = bpy.data.objects.new('nosmoking_ring', ring); col.objects.link(rob); ring.materials.append(red)
+    rob.location = o + Vector((0.45, 4.846, 1.84)); rob.rotation_euler = inn
+
+
 def build_cafe():
     """Café FINE: a small diner where everything is quietly on fire. Warm orange light inside, the green Memetrix outside."""
     col = collection('CAFE')
@@ -642,8 +722,20 @@ def build_cafe():
     cut = back.modifiers.new('window', 'BOOLEAN')
     cut.operation = 'DIFFERENCE'
     cut.object = cutter
-    glass = material('cafe_glass', (0.8, 0.9, 0.85), rough=0.02)
-    glass.node_tree.nodes['Principled BSDF'].inputs['Transmission Weight'].default_value = 1.0
+    # thin window glass: see-through with a faint reflection at grazing angles. (A one-sided plane with refraction at
+    # IOR 1.5 bent the street like a lens and mirrored the room's lights onto it as a pale panel.)
+    glass = bpy.data.materials.new('cafe_glass')
+    glass.use_nodes = True
+    gnt = glass.node_tree
+    gnt.nodes.remove(gnt.nodes['Principled BSDF'])
+    tr = gnt.nodes.new('ShaderNodeBsdfTransparent'); tr.inputs['Color'].default_value = (0.93, 0.97, 0.95, 1)
+    gl = gnt.nodes.new('ShaderNodeBsdfGlossy'); gl.inputs['Roughness'].default_value = 0.03
+    lw = gnt.nodes.new('ShaderNodeLayerWeight'); lw.inputs['Blend'].default_value = 0.12
+    fr = gnt.nodes.new('ShaderNodeMath'); fr.operation = 'MULTIPLY'; fr.inputs[1].default_value = 0.5
+    gnt.links.new(lw.outputs['Fresnel'], fr.inputs[0])
+    mx_ = gnt.nodes.new('ShaderNodeMixShader')
+    gnt.links.new(fr.outputs[0], mx_.inputs['Fac']); gnt.links.new(tr.outputs[0], mx_.inputs[1]); gnt.links.new(gl.outputs[0], mx_.inputs[2])
+    gnt.links.new(mx_.outputs[0], gnt.nodes['Material Output'].inputs['Surface'])
     pane = plane('cafe_window_glass', 4.6, 2.0, o + Vector((-2.2, 4.95, 2.2)), glass, col, rot=(math.radians(90), 0, 0))
     pane.visible_shadow = False
     pane['cine_ignore'] = True
@@ -652,6 +744,7 @@ def build_cafe():
     box('street_sidewalk', (40, 4, 0.15), o + Vector((0, 7.2, 0.07)), material('sidewalk', (0.18, 0.18, 0.19), rough=0.7), col)
     wet = material('street_asphalt', (0.03, 0.035, 0.035), rough=0.18)
     plane('street_road', 60, 12, o + Vector((0, 15.2, 0.0)), wet, col)
+    box('street_sidewalk_far', (60, 2.6, 0.15), o + Vector((0, 22.5, 0.07)), bpy.data.materials['sidewalk'], col)   # (under the shops)
     for k in range(9):                                            # lane marks
         box(f'lane{k}', (1.6, 0.12, 0.01), o + Vector((-16 + k * 4.2, 15.2, 0.01)), material('lane', (0.9, 0.8, 0.3), rough=0.5), col)
     for k in range(10):                                           # the far side: towers, each a lit window grid
@@ -659,20 +752,37 @@ def build_cafe():
         x = -24 + k * 5.6 + rnd_c.uniform(-0.8, 0.8)
         box(f'cafe_city{k}', (w, d, h), o + Vector((x, 25 + d / 2 + rnd_c.uniform(0, 8), h / 2)),
             mxsets.window_material(f'cafe_win{k}', 40 + k, (w, d, h)), col)
-    for k, (x, txt, colour) in enumerate(((-6.5, 'PAWN', (1.0, 0.2, 0.15)), (-1.8, 'HODL 24H', (0.2, 1.0, 0.35)),
-                                          (3.4, 'NOODLES', (1.0, 0.55, 0.1)))):
-        bpy.ops.object.text_add(location=o + Vector((x, 23.4, 3.6)), rotation=(math.radians(90), 0, 0))   # reads from the café
+    # the shops across the street: each name on a sign box fixed to its building, at the height of its own shopfront
+    # (they were bare letters floating in the air, all at one height, lined up behind the café's window lettering)
+    box_m = material('shop_sign_box', (0.03, 0.03, 0.035), rough=0.5, metal=0.4)
+    for k, (x, txt, colour, z, size) in enumerate(((-6.9, 'PAWN & GOLD', (1.0, 0.2, 0.15), 4.6, 0.55), (-1.4, 'HODL 24H', (0.2, 1.0, 0.35), 3.0, 0.6),
+                                                   (3.9, 'NOODLES', (1.0, 0.55, 0.1), 5.4, 0.7))):
+        w_ = len(txt) * size * 0.68 + 0.5
+        top = z + size * 1.35 + 0.8                                 # the shop: a low front building the sign is fixed to
+        box(f'shopfront{k}', (max(w_ + 1.2, 5.0), 1.2, top), o + Vector((x, 23.7 + 0.6, top / 2)),
+            material(f'shopfront_m{k}', (0.12, 0.11, 0.1), rough=0.8), col)
+        win_tint = tuple(0.25 + 0.45 * c for c in colour)                # (at 0.6 they read as blank pastel slabs)
+        ww = max(w_ + 1.2, 5.0) - 1.4
+        plane(f'shop_window{k}', ww, 2.0, o + Vector((x, 23.69, 1.25)),
+              material(f'shop_window_m{k}', (0.03, 0.03, 0.03), rough=0.05, emit=win_tint, strength=0.18), col, rot=(math.radians(90), 0, 0))
+        for j in range(3):                                              # mullions and a door frame: glass, not a light box
+            box(f'shop_mullion{k}_{j}', (0.06, 0.03, 2.0), o + Vector((x - ww / 2 + ww * (j + 1) / 4, 23.67, 1.25)), box_m, col)
+        box(f'shop_transom{k}', (ww, 0.03, 0.06), o + Vector((x, 23.67, 1.75)), box_m, col)
+        box(f'shop_sign{k}', (w_, 0.3, size * 1.35), o + Vector((x, 23.55, z + size * 0.35)), box_m, col)
+        bpy.ops.object.text_add(location=o + Vector((x, 23.38, z)), rotation=(math.radians(90), 0, 0))   # reads from the café
         sign = bpy.context.active_object
         sign.name = f'neon_sign{k}'
         sign.data.body = txt
-        sign.data.size = 1.0
+        sign.data.size = size
         sign.data.align_x = 'CENTER'
         sign.data.materials.append(material(f'neon{k}', colour, emit=colour, strength=3.0))   # (8 washed out to white)
         for c_ in list(sign.users_collection):
             c_.objects.unlink(sign)
         col.objects.link(sign)
-        nl = light(f'L_neon{k}', 'AREA', o + Vector((x, 22.6, 3.4)), 300, colour, lit, size=2.0, rot=(math.radians(-90), 0, 0))
-        nl.visible_camera = False                                  # (seen through the window it was a white square)
+        nl = light(f'L_neon{k}', 'AREA', o + Vector((x, 22.6, z - 0.2)), 220, colour, lit, size=1.6, rot=(math.radians(-90), 0, 0))
+        nl.visible_camera = False                                  # (seen through the window it was a white square:
+        nl.visible_transmission = False                            # through the glass too, a pale panel over the street)
+        nl.visible_glossy = False
     pole_m = material('street_pole', (0.08, 0.08, 0.09), rough=0.4, metal=0.6)
     lamp_m = material('street_lamp', (1.0, 0.8, 0.5), emit=(1.0, 0.78, 0.45), strength=12.0)
     for k, x in enumerate((-9.0, -1.0, 7.0)):                     # street lamps on the near sidewalk
@@ -706,16 +816,7 @@ def build_cafe():
     # the menu board over the counter and a coffee machine
     board_m = material('menu_board', (0.05, 0.06, 0.05), rough=0.8)
     box('menu_board', (3.2, 0.06, 1.0), o + Vector((2.6, 4.82, 3.0)), board_m, col)
-    for k, txt in enumerate(('COFFEE ......... FINE', 'PIE ........... FINE', 'EXIT .............. ?')):
-        bpy.ops.object.text_add(location=o + Vector((1.2, 4.78, 3.25 - k * 0.27)), rotation=(math.radians(90), 0, 0))
-        t = bpy.context.active_object
-        t.name = f'menu_text{k}'
-        t.data.body = txt
-        t.data.size = 0.17
-        t.data.materials.append(material('chalk', (0.95, 0.95, 0.9), emit=(0.9, 0.9, 0.85), strength=0.4))
-        for c in list(t.users_collection):
-            c.objects.unlink(t)
-        col.objects.link(t)
+    cafe_signs(col, lit, o)
     box('coffee_machine', (0.6, 0.5, 0.7), o + Vector((4.4, 2.75, 1.46)), chrome, col, bevel=0.03)   # on the counter top
     # (it stood at y 3.3, behind the counter, 1.1 m off the floor with nothing under it)
     # pendant lamps (warm), and the fires: on tables, the counter, the menu board, the floor in a corner
@@ -757,8 +858,9 @@ def build_cafe():
         sm_ = plane(f'scorch{k}', sz[0], sz[1], o + Vector(p), soot, col, rot=rot)       # blackened wall above each wall fire
         sm_.visible_shadow = False
     light('cafe_key', 'AREA', o + Vector((0, -3, 3.9)), 20, (1.0, 0.7, 0.45), lit, size=3.0, rot=(math.radians(20), 0, 0))
-    light('cafe_window_light', 'AREA', o + Vector((-2.2, 4.4, 2.2)), 120, (0.4, 1.0, 0.55), lit, size=2.0,
-          rot=(math.radians(-90), 0, 0))
+    wl = light('cafe_window_light', 'AREA', o + Vector((-2.2, 4.4, 2.2)), 120, (0.4, 1.0, 0.55), lit, size=2.0,
+               rot=(math.radians(-90), 0, 0))
+    wl.visible_camera = wl.visible_glossy = wl.visible_transmission = False   # (the glass reflected it: a pale panel on the street)
     haze('haze_cafe', o + Vector((0, 0, 2.1)), (11.5, 9.5, 4.1), 0.012, (1.0, 0.7, 0.5), col)
     for l_ in lit.objects:                                         # lights light the set but never show as glowing quads
         if l_.type == 'LIGHT':
