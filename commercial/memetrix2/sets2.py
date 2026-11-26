@@ -290,6 +290,10 @@ FUEL_LOOK = {
 }
 
 
+DENS_K = float(os.environ.get('FIRE_DENS', '0.35'))   # (tuned on isolated fires: denser smoke fogged the room orange)
+GLOW_K = float(os.environ.get('FIRE_GLOW', '0.6'))    # (brighter went white under AgX)
+
+
 def sim_fire_material(recipe):
     """Shader for a baked fire (density, flame grids): smoke from density, emission from flame through the fuel's colours.
     Both are multiplied by the object's 'fade' property (the loop crossfade)."""
@@ -305,15 +309,19 @@ def sim_fire_material(recipe):
     fade = N('ShaderNodeAttribute'); fade.attribute_type = 'OBJECT'; fade.attribute_name = 'fade'
     den = N('ShaderNodeAttribute'); den.attribute_name = 'density'
     fl = N('ShaderNodeAttribute'); fl.attribute_name = 'flame'
-    d1 = N('ShaderNodeMath'); d1.operation = 'MULTIPLY'; L(den.outputs['Fac'], d1.inputs[0]); d1.inputs[1].default_value = lk['dens']
+    d1 = N('ShaderNodeMath'); d1.operation = 'MULTIPLY'; L(den.outputs['Fac'], d1.inputs[0]); d1.inputs[1].default_value = lk['dens'] * DENS_K
     d2 = N('ShaderNodeMath'); d2.operation = 'MULTIPLY'; L(d1.outputs[0], d2.inputs[0]); L(fade.outputs['Fac'], d2.inputs[1])
     ramp = N('ShaderNodeValToRGB')
     els = ramp.color_ramp.elements
     els[0].position, els[0].color = 0.0, (*lk['ramp'][0], 1)
     els[1].position, els[1].color = 1.0, (*lk['ramp'][2], 1)
     mid = els.new(0.45); mid.color = (*lk['ramp'][1], 1)
-    L(fl.outputs['Fac'], ramp.inputs['Fac'])
-    st = N('ShaderNodeMath'); st.operation = 'MULTIPLY'; L(fl.outputs['Fac'], st.inputs[0]); st.inputs[1].default_value = lk['glow']
+    fk = N('ShaderNodeMapRange'); fk.clamp = True                 # only real flame glows (faint flame values spread through
+    fk.inputs['From Min'].default_value = 0.18; fk.inputs['From Max'].default_value = 0.85   # the smoke lit it orange)
+    L(fl.outputs['Fac'], fk.inputs['Value'])
+    fp = N('ShaderNodeMath'); fp.operation = 'POWER'; L(fk.outputs['Result'], fp.inputs[0]); fp.inputs[1].default_value = 1.6
+    L(fk.outputs['Result'], ramp.inputs['Fac'])
+    st = N('ShaderNodeMath'); st.operation = 'MULTIPLY'; L(fp.outputs[0], st.inputs[0]); st.inputs[1].default_value = lk['glow'] * GLOW_K
     st2 = N('ShaderNodeMath'); st2.operation = 'MULTIPLY'; L(st.outputs[0], st2.inputs[0]); L(fade.outputs['Fac'], st2.inputs[1])
     vol = N('ShaderNodeVolumePrincipled')
     vol.inputs['Color'].default_value = (*lk['smoke'], 1)
@@ -345,6 +353,8 @@ def sim_fire(name, recipe, loc, col, lit, scale=1.0, rot=0.0, start=0, energy=60
         vd.frame_offset = W_
         vd.frame_start = int(start) + shift
         vd.sequence_mode = 'REPEAT'
+        vd.velocity_grid = ''                                      # no velocity motion blur: with it, Cycles padded the volume
+        vd.velocity_scale = 0.0                                    # mesh by the (grid-unit) velocity and ran out of memory
         vd.materials.append(mat)
         ob = bpy.data.objects.new(vd.name, vd)
         col.objects.link(ob)
@@ -360,6 +370,7 @@ def sim_fire(name, recipe, loc, col, lit, scale=1.0, rot=0.0, start=0, energy=60
         fc.driver.expression = f'1 - abs(2 * fmod(frame - {s0} + {L_ * 1000}, {L_}) / {L_} - 1)'   # (fmod: a simple expression, no Python)
         ob['cine_ignore'] = True
         ob.visible_shadow = False
+        ob.cycles.use_motion_blur = False
         objs.append(ob)
     for k, (dz, e) in enumerate(((0.35, 1.0), (0.9, 0.5))):
         lamp = light(f'{name}_light{k}', 'POINT', Vector(loc) + Vector((0, 0, dz * scale)), energy * e, (1.0, 0.42, 0.1), lit,
@@ -376,10 +387,10 @@ def char_material(name, base=(0.5, 0.1, 0.08), amount=0.8, embers=True, seed=0.0
     nt = mat.node_tree
     bsdf = nt.nodes['Principled BSDF']
     N, L = nt.nodes.new, nt.links.new
-    tc = N('ShaderNodeTexCoord')
-    nz = N('ShaderNodeTexNoise'); nz.inputs['Scale'].default_value = 3.5; nz.inputs['Detail'].default_value = 8.0
-    nz.inputs['Roughness'].default_value = 0.65
-    L(tc.outputs['Object'], nz.inputs['Vector'])
+    tc = N('ShaderNodeNewGeometry')        # world position: the same char grain on a 5 m counter and a 10 cm bottle (object space stretched it)
+    nz = N('ShaderNodeTexNoise'); nz.inputs['Scale'].default_value = 7.5; nz.inputs['Detail'].default_value = 10.0   # (3.5 read as
+    nz.inputs['Roughness'].default_value = 0.7                                                                    # cow-print blotches)
+    L(tc.outputs['Position'], nz.inputs['Vector'])
     cut = N('ShaderNodeMapRange'); cut.clamp = True                 # where the char has taken over
     cut.inputs['From Min'].default_value = 0.62 - 0.35 * amount; cut.inputs['From Max'].default_value = 0.7 - 0.35 * amount
     L(nz.outputs['Fac'], cut.inputs['Value'])
@@ -393,14 +404,14 @@ def char_material(name, base=(0.5, 0.1, 0.08), amount=0.8, embers=True, seed=0.0
     L(rough.outputs['Result'], bsdf.inputs['Roughness'])
     bump = N('ShaderNodeBump'); bump.inputs['Strength'].default_value = 0.6 * amount; bump.inputs['Distance'].default_value = 0.01
     blis = N('ShaderNodeTexVoronoi'); blis.inputs['Scale'].default_value = 28.0     # blistered, alligatored char
-    L(tc.outputs['Object'], blis.inputs['Vector'])
+    L(tc.outputs['Position'], blis.inputs['Vector'])
     L(blis.outputs['Distance'], bump.inputs['Height'])
     L(bump.outputs['Normal'], bsdf.inputs['Normal'])
     if embers:
         warp = N('ShaderNodeTexNoise'); warp.inputs['Scale'].default_value = 2.5; warp.inputs['Detail'].default_value = 4.0
-        L(tc.outputs['Object'], warp.inputs['Vector'])
+        L(tc.outputs['Position'], warp.inputs['Vector'])
         wv = N('ShaderNodeMix'); wv.data_type = 'VECTOR'; wv.inputs['Factor'].default_value = 0.35   # wandering cracks,
-        L(tc.outputs['Object'], wv.inputs['A']); L(warp.outputs['Color'], wv.inputs['B'])                  # not tiles
+        L(tc.outputs['Position'], wv.inputs['A']); L(warp.outputs['Color'], wv.inputs['B'])                  # not tiles
         cr = N('ShaderNodeTexVoronoi'); cr.feature = 'DISTANCE_TO_EDGE'; cr.inputs['Scale'].default_value = 11.0
         cr.inputs['Randomness'].default_value = 1.0
         L(wv.outputs['Result'], cr.inputs['Vector'])
@@ -408,7 +419,7 @@ def char_material(name, base=(0.5, 0.1, 0.08), amount=0.8, embers=True, seed=0.0
         edge.inputs['From Min'].default_value = 0.025; edge.inputs['From Max'].default_value = 0.0
         L(cr.outputs['Distance'], edge.inputs['Value'])
         pulse = N('ShaderNodeTexNoise'); pulse.noise_dimensions = '4D'; pulse.inputs['Scale'].default_value = 2.0
-        L(tc.outputs['Object'], pulse.inputs['Vector'])
+        L(tc.outputs['Position'], pulse.inputs['Vector'])
         _drive(pulse.inputs['W'], 'default_value', f'frame / 30 + {seed}')
         hot = N('ShaderNodeMapRange'); hot.clamp = True
         hot.inputs['From Min'].default_value = 0.56; hot.inputs['From Max'].default_value = 0.7   # glowing only in patches
@@ -682,7 +693,7 @@ def build_cafe():
     for k, (rec, p, sc_, rz) in enumerate(FIRES):
         sc_ *= rnd.uniform(0.92, 1.08)
         got = sim_fire(f'fire{k}', rec, o + Vector(p), col, lit, scale=sc_, rot=math.radians(rz), start=rnd.randint(0, 191),
-                       energy=20 + 40 * sc_, seed=rnd.uniform(0, 20))
+                       energy=12 + 24 * sc_, seed=rnd.uniform(0, 20))
         if got is None:                                            # not baked: the procedural flame (quick looks, no setup)
             fire(f'fire{k}', o + Vector(p), sc_, col, lit, energy=18 + 38 * sc_, seed=rnd.uniform(0, 20))
         else:
@@ -1152,23 +1163,24 @@ def dress_basement(o):
     paper = material('poster_paper', (0.92, 0.9, 0.84), rough=0.8)
     ink = material('poster_ink', (0.05, 0.6, 0.2), rough=0.6, emit=(0.05, 0.6, 0.2), strength=0.1)
     red = material('poster_red', (0.75, 0.06, 0.05), rough=0.6)
-    posters = [('HODL', (1.4, WY - 0.01, 2.6), (math.radians(90), 0, math.radians(180)), ink),
-               ('WAGMI', (-4.2, WY - 0.01, 2.4), (math.radians(90), 0, math.radians(180)), red),
-               ('TO THE MOON', (WX - 0.01, -1.5, 2.5), (math.radians(90), 0, math.radians(90)), ink)]
+    # rotations: back wall (y = +8.8) faces -y: (90, 0, 0); right wall (x = +9.8) faces -x: (90, 0, -90). With these the
+    # print's +x runs left-to-right for someone in the room (the first version flipped them 180 degrees: mirrored text)
+    posters = [('HODL', (1.4, WY - 0.01, 2.6), (math.radians(90), 0, 0), ink),
+               ('WAGMI', (-4.2, WY - 0.01, 2.4), (math.radians(90), 0, 0), red),
+               ('TO THE MOON', (WX - 0.01, -1.5, 2.5), (math.radians(90), 0, math.radians(-90)), ink)]
     for k, (txt, p_, rot, m_) in enumerate(posters):
         pl = plane(f'poster{k}', 1.4 if len(txt) > 6 else 1.0, 0.75 if len(txt) > 6 else 1.3, o + Vector(p_), paper, col, rot=rot)
+        bpy.context.view_layer.update()
         nrm = (pl.matrix_world.to_quaternion() @ Vector((0, 0, 1))).normalized()
-        if nrm.dot(Vector((p_[0], p_[1], 0))) > 0:                  # the printed side faces into the room
-            pl.rotation_euler.z += math.pi
-            nrm = -nrm
         t = _txt(f'poster_text{k}', txt, pl.location + nrm * 0.004, pl.rotation_euler, 0.2 if len(txt) > 6 else 0.3, m_, col)
+        t.location.z -= 0.1 if len(txt) <= 6 else 0.07                 # (text sits on its baseline: centre it on the sheet)
         DRESSED.append((pl, 'wall'))
     dart_m = material('dartboard', (0.08, 0.08, 0.07), rough=0.8)
     db = cylinder('dartboard', 0.23, 0.04, o + Vector((WX - 0.02, 2.6, 1.75)), dart_m, col, rot=(0, math.radians(90), 0), verts=40)
     ring = cylinder('dartboard_ring', 0.1, 0.045, o + Vector((WX - 0.02, 2.6, 1.75)), red, col, rot=(0, math.radians(90), 0), verts=32)
     DRESSED.append((db, 'wall'))
     # a rug under the crew, cables from the CRT across the floor, crusts on a plate, a mug
-    rug_m = material('rug', (0.35, 0.12, 0.1), rough=0.95)
+    rug_m = material('rug', (0.2, 0.07, 0.05), rough=0.95)                  # worn dark red (it read pink under the bulbs)
     mxsets.add_bump(rug_m, 60.0, 0.2)
     rug = box('rug', (4.2, 3.0, 0.008), o + Vector((0.2, 0.0, 0.5)), rug_m, col)
     rug.rotation_euler = (0, 0, math.radians(8))
@@ -1314,7 +1326,15 @@ def dress_rooftop(o):
     bm.to_mesh(dish.data); bm.free()
     dish.data.materials.append(metal)
     dish.rotation_euler = (math.radians(120), 0, math.radians(200))
-    dish.location = Vector((o.x + dx_, o.y + dy_, pole.location.z + 0.75))
+    bpy.context.view_layer.update()
+    rq = dish.rotation_euler.to_matrix()
+    cap = Vector((0, 0, -0.5))                                      # the bowl's centre, in its own space (a cap of a sphere)
+    top = Vector((o.x + dx_, o.y + dy_, pole.location.z + 0.7))   # the pole's top
+    dish.location = top - rq @ cap + (rq @ Vector((0, 0, -1))) * 0.04   # bowl on the pole (it floated 45 cm off it)
+    axis = (rq @ Vector((0, 0, 1))).normalized()                    # the feed arm, out of the bowl along its axis
+    arm = cylinder('dish_arm', 0.012, 0.5, top + axis * 0.25, metal, col, verts=8)
+    arm.rotation_mode = 'QUATERNION'
+    arm.rotation_quaternion = axis.to_track_quat('Z', 'Y')
     # electrical box on the east parapet (inner face x = 16.5) and a conduit running down and along the roof
     eb = box('elec_box', (0.25, 0.6, 0.8), o + Vector((16.5 - 0.127, -6.0, 0.6)), material('elec', (0.55, 0.58, 0.5), rough=0.6), col)
     put(eb, z_from=o.z + 2)

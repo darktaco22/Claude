@@ -5,7 +5,7 @@ Everything needed is committed on branch `claude/eager-brown-rlfja0`: scene code
 (`pack/props`, `pack/stills`), titles, sound and finish (`finish.py`). `edl.json` is the edit to render; frames are filed under
 the first 10 characters of its sha1 (`sha1sum edl.json | cut -c1-10`). **Re-check the hash before starting workers**: every
 scene fix rewrites `edl.json`, and `render_worker.sh` prints the hash it is rendering (`EDIT <hash>`). As of this writing:
-**85232b1f5b**, 57 shots, 3406 frames of 3D (film frames 121-3526) + the opening and closing = about 2 min 40 s.
+**59aee902f7**, 57 shots, 3406 frames of 3D (film frames 121-3526) + the opening and closing = about 2 min 40 s.
 
 ## Look (keep it): fog, lights, motion blur
 `render_worker.sh` renders with everything on by default: volumetric haze (café smoke, rooftop rain fog, basement dust),
@@ -14,8 +14,16 @@ in the finish, which adds the grade, bloom, streaks, halation, grain and letterb
 render: those switches were only for quick check frames (`review/`), which is why those look cleaner and darker.
 The rain has object motion blur switched off on purpose (it loops; the streaks are drawn long already).
 
+## The café's fires are simulations
+`setup.sh` bakes them on each worker before building the scene (`firesims.py`: seven fuels, about 15 minutes and 1.7 GB of
+disk the first time; bakes are deterministic, so every worker gets the same fire). A worker needs about 4 GB free. If
+`fire_sims` is missing, the scene falls back to the older procedural flames, so check the build log says
+`CAFE fires 19 simulated 19` and `PLACE checked 76 problems 0`.
+Fire volumes carry no motion blur on purpose (with it, Cycles padded them by the simulation's velocity and ran out of
+memory). A café frame takes about 100 s at 67 % / 6 samples and peaks under 1 GB.
+
 ## How to render (12 cloud workers)
-Café frames take about 70-90 s each at 67 % / 6 samples (the fire volumes), the other sets 25-40 s, so each worker needs
+Café frames take about 100 s each at 67 % / 6 samples (the fire volumes), the other sets 25-40 s, so each worker needs
 2-4 passes of the 2-hour cap: on exit 3 it is simply run again. Start one fresh worker session per range (create_session on this
 repo, revision `claude/eager-brown-rlfja0`, each with its own outcome branch `claude/memetrix2-r1` ... `-r12`) with this
 prompt (fill in A B N and the hash):
