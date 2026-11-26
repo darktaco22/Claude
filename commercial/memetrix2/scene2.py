@@ -76,6 +76,10 @@ sets2.rooftop_rain(mxsets.collection('ROOFTOP'), ROOF + Vector((0, 0, 2.0)))
 sets2.dress_basement(BASE)                                         # more things, each on a real surface, then checked
 sets2.dress_cafe(sets2.ORIGIN['CAFE'])
 sets2.dress_rooftop(ROOF)
+sets2.dress_basement_more(BASE)                                    # second pass: more things in every set, checked the same way
+sets2.dress_cafe_more(sets2.ORIGIN['CAFE'])
+sets2.dress_rooftop_more(ROOF)
+sets2.dress_white_more(WHITE, sets2.episode1_stills(os.path.join(EP1, 'frames_jpg', '50dff5a2ee')))
 _C = sets2.ORIGIN['CAFE']
 sets2.check_dressing({'couch': (BASE.x - 9.8, BASE.x + 9.8, BASE.y - 8.8, BASE.y + 8.8, 4.95),
                       'shelf': (BASE.x - 9.8, BASE.x + 9.8, BASE.y - 8.8, BASE.y + 8.8, 4.95),
@@ -83,7 +87,14 @@ sets2.check_dressing({'couch': (BASE.x - 9.8, BASE.x + 9.8, BASE.y - 8.8, BASE.y
                       'side_': (BASE.x - 9.8, BASE.x + 9.8, BASE.y - 8.8, BASE.y + 8.8, 4.95),
                       'debris': (_C.x - 5.85, _C.x + 5.85, _C.y - 4.85, _C.y + 4.85, 4.15),
                       'ceiling_tile': (_C.x - 5.85, _C.x + 5.85, _C.y - 4.85, _C.y + 4.85, 4.15),
-                      'elec_box': (ROOF.x - 16.5, ROOF.x + 16.5, ROOF.y - 16.5, ROOF.y + 16.5, 30)})
+                      'elec_box': (ROOF.x - 16.5, ROOF.x + 16.5, ROOF.y - 16.5, ROOF.y + 16.5, 30),
+                      **{k_: (BASE.x - 9.8, BASE.x + 9.8, BASE.y - 8.8, BASE.y + 8.8, 4.95)
+                         for k_ in ('joist', 'duct', 'ceiling_pipe', 'base_window', 'whiteboard', 'beanbag', 'hoodie', 'sneaker',
+                                    'tote', 'bin_bag', 'pcdesk', 'wbench', 'dumbbell', 'kettlebell', 'dehumidifier')},
+                      **{k_: (_C.x - 5.85, _C.x + 5.85, _C.y - 4.85, _C.y + 4.85, 4.15)
+                         for k_ in ('jukebox', 'cafe_tv', 'cafe_picture', 'cutlery', 'cafe_bin')},
+                      **{k_: (ROOF.x - 16.5, ROOF.x + 16.5, ROOF.y - 16.5, ROOF.y + 16.5, 30)
+                         for k_ in ('sleeper', 'roof_pipe', 'stair_lamp', 'butt_bucket', 'traffic_cone')}})
 for m_ in bpy.data.materials:                                     # the rooftop in rain: a wet, reflective floor
     if m_.name.startswith(('roof', 'ground_roof')) and m_.use_nodes and 'Principled BSDF' in m_.node_tree.nodes:
         m_.node_tree.nodes['Principled BSDF'].inputs['Roughness'].default_value = 0.12
@@ -1111,6 +1122,7 @@ with open(os.path.join(HERE, 'edl.json'), 'w') as fh:
 print(f'EDL {len(SHOTS)} shots, film {END_FILM:.1f} s ({edl["last"]} frames), {len(CUES)} cues, {solved} shots moved by the solver')
 if not DRY:
     sc.frame_start, sc.frame_end = 1, int(F(END_A + 1))
+    print('SAVING', OUT, flush=True)
     bpy.ops.wm.save_as_mainfile(filepath=OUT, compress=False)
     print('SAVED', OUT, flush=True)
     # Blender sometimes hung on quit after this save (freeing the fire volumes) until the 2-hour cap killed the job:

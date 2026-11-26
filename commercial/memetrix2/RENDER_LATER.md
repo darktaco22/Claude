@@ -18,7 +18,7 @@ The rain has object motion blur switched off on purpose (it loops; the streaks a
 `setup.sh` bakes them on each worker before building the scene (`firesims.py`: seven fuels, about 15 minutes and 1.7 GB of
 disk the first time; bakes are deterministic, so every worker gets the same fire). A worker needs about 4 GB free. If
 `fire_sims` is missing, the scene falls back to the older procedural flames, so check the build log says
-`CAFE fires 19 simulated 19` and `PLACE checked 76 problems 0`.
+`CAFE fires 19 simulated 19` and `PLACE checked 154 problems 0`.
 Fire volumes carry no motion blur on purpose (with it, Cycles padded them by the simulation's velocity and ran out of
 memory). A café frame takes about 100 s at 67 % / 6 samples and peaks under 1 GB.
 

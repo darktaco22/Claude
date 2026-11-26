@@ -15,7 +15,24 @@ from mathutils import Matrix, Vector
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, '..', 'memetrix'))
 import mxsets  # noqa: E402
-from mxsets import box, collection, cylinder, dust, haze, light, material, plane, screen, sphere  # noqa: E402
+from mxsets import box, cylinder, dust, haze, light, material, plane, screen, sphere  # noqa: E402
+
+_new_collection = mxsets.collection
+SET_COLLECTIONS = ('FLOOR', 'BASEMENT', 'DOJO', 'ROOFTOP', 'CAFE', 'WHITE', 'PROPS')
+
+
+def collection(name):
+    """A set's (or a set's light) collection: the existing one if there is one. mxsets.collection always made a new one, so
+    later dressing went into BASEMENT.001 and the like, and lights added later (the couch lamp, the lightning) landed in
+    L_BASEMENT.001 / L_ROOFTOP.001, which the renderer never switches off with their set."""
+    if name in SET_COLLECTIONS or name.startswith('L_'):
+        c = bpy.data.collections.get(name)
+        if c is not None:
+            return c
+    return _new_collection(name)
+
+
+mxsets.collection = collection
 
 ORIGIN = dict(mxsets.ORIGIN, CAFE=Vector((600, 0, 0)), WHITE=Vector((800, 0, 0)))
 
@@ -949,8 +966,10 @@ DRESSED = []                                             # (object, kind) for th
 SKIP_RAY = ('haze', 'rain', 'smoke', 'fire', 'dust', 'embers', 'scorch', 'soot', 'ash_', 'cafe_smoke', 'L_', 'shockwave', 'spark')
 
 
+ASSEMBLY_PAIRS = []                                     # (name, name): parts of one thing that touch on purpose
 ASSEMBLIES = (('couch',), ('lamp_',), ('mini_fridge', 'fridge_'), ('dartboard',), ('shelf_',), ('side_',), ('crust',), ('cup_stack',),
-              ('pie',), ('till',), ('clock',), ('extinguisher',), ('skylight',), ('crate', 'pallet'), ('dish',), ('elec_box', 'conduit'))
+              ('pie',), ('till',), ('clock',), ('extinguisher',), ('skylight',), ('crate', 'pallet'), ('dish',), ('elec_box', 'conduit'),
+              ('jukebox',), ('cafe_tv',), ('mstack',), ('whiteboard',), ('traffic_cone',), ('butt',), ('fchair',), ('pcdesk',), ('wbench',), ('dumbbell',), ('clotheshorse',), ('dehumidifier',))
 
 
 def _group(name):
@@ -1072,6 +1091,8 @@ def check_dressing(bounds):
             if other is ob or other.parent is ob or ob.parent is other or other is support.get(ob.name):
                 continue
             if g_ is not None and _group(other.name) == g_:           # the parts of one piece of furniture
+                continue
+            if (ob.name, other.name) in ASSEMBLY_PAIRS or (other.name, ob.name) in ASSEMBLY_PAIRS:
                 continue
             omn = Vector([min((other.matrix_world @ Vector(c))[i] for c in other.bound_box) for i in range(3)])
             omx = Vector([max((other.matrix_world @ Vector(c))[i] for c in other.bound_box) for i in range(3)])
@@ -1458,3 +1479,353 @@ def rooftop_rain(col, centre, size=(30, 30), drops=2500, seed=3):
         except AttributeError:
             pass
     return cloud
+
+
+# ------------------------------------------------------------------------------------------------ second dressing pass
+def _blob(name, radius, scale, loc, mat, col, seed=0, lumpy=0.12):
+    """A soft, slumped shape (bean bag, bin bag, hoodie): a squashed sphere with a little noise in its surface."""
+    ob = sphere(name, radius, loc, mat, col, scale=scale)
+    rnd = random.Random(seed)
+    for v in ob.data.vertices:
+        v.co *= 1.0 + rnd.uniform(-lumpy, lumpy) * 0.5
+        if v.co.z < -radius * 0.55:                                  # a flat bottom where it rests
+            v.co.z = -radius * 0.55
+    return ob
+
+
+def _curve(name, pts, radius, mat, col, order=3):
+    cd = bpy.data.curves.new(name, 'CURVE'); cd.dimensions = '3D'; cd.bevel_depth = radius; cd.bevel_resolution = 2
+    sp = cd.splines.new('NURBS'); sp.points.add(len(pts) - 1); sp.use_endpoint_u = True; sp.order_u = min(order, len(pts))
+    for p_, q_ in zip(sp.points, pts):
+        p_.co = (q_[0], q_[1], q_[2], 1)
+    ob = bpy.data.objects.new(name, cd); col.objects.link(ob); cd.materials.append(mat)
+    return ob
+
+
+def _floor_cable(name, o, pts, radius, mat, col):
+    """A cable lying on whatever is under it (each control point dropped onto the surface below)."""
+    out = []
+    for x, y in pts:
+        z_ = surface_below(o.x + x, o.y + y, o.z + 0.5)
+        out.append((o.x + x, o.y + y, (z_ if z_ is not None else o.z) + radius + 0.001))
+    return _curve(name, out, radius, mat, col)
+
+
+def dress_basement_more(o):
+    """Mom's basement, second pass: the ceiling's joists, a duct and pipes (a basement ceiling is never flat plaster), two
+    high windows with streetlight in them, a whiteboard with the 'plan' and its chart, a bean bag, storage totes in the
+    corner, a hoodie on the couch arm, sneakers by the couch, a bag of chips, a bin bag by the stairs."""
+    col = collection('BASEMENT')
+    rnd = random.Random(33)
+    WX, WY, CZ = 9.8, 8.8, 4.95
+    wood = material('joist_wood', (0.42, 0.3, 0.18), rough=0.85)
+    mxsets.add_bump(wood, 30.0, 0.2)
+    for k in range(14):                                            # joists along x, every 1.2 m (clear of the bulb cords)
+        y = -8.2 + k * 1.2
+        j = box(f'joist{k}', (2 * WX - 0.02, 0.06, 0.22), o + Vector((0, y, CZ - 0.111)), wood, col)
+        DRESSED.append((j, 'wall'))
+    duct_m = material('duct', (0.55, 0.56, 0.56), rough=0.35, metal=0.9)
+    du = box('duct_main', (0.5, 14.0, 0.28), o + Vector((-6.5, -1.0, CZ - 0.22 - 0.144)), duct_m, col)   # across the joists, under them
+    DRESSED.append((du, 'wall'))
+    steel_m = material('board_frame', (0.7, 0.7, 0.72), rough=0.3, metal=0.8)
+    copper = material('copper_pipe', (0.72, 0.38, 0.2), rough=0.3, metal=1.0)
+    for k, (x, r) in enumerate(((3.5, 0.022), (3.65, 0.016))):     # wall to wall (they stopped in mid-air)
+        pp = cylinder(f'ceiling_pipe{k}', r, 2 * WY - 0.02, o + Vector((x, 0.0, CZ - 0.22 - r - 0.002)), copper, col,
+                      rot=(math.radians(90), 0, 0), verts=12)
+        DRESSED.append((pp, 'wall'))
+    # two high windows in the back wall, above the washers and above the shelf: streetlight comes in cold and blue
+    frame_m = material('window_frame', (0.6, 0.6, 0.58), rough=0.6)
+    for k, x in enumerate((-5.8, 5.6)):
+        fr = box(f'base_window_frame{k}', (1.2, 0.06, 0.5), o + Vector((x, WY - 0.032, 4.35)), frame_m, col)
+        gl = plane(f'base_window_glass{k}', 1.08, 0.38, o + Vector((x, WY - 0.064, 4.35)),
+                   material(f'base_window_night{k}', (0.1, 0.15, 0.25), rough=0.1, emit=(0.35, 0.5, 0.8), strength=0.8), col,
+                   rot=(math.radians(90), 0, 0))
+        gl.visible_shadow = False
+        mxsets.light(f'L_base_window{k}', 'AREA', o + Vector((x, WY - 0.15, 4.3)), 30, (0.55, 0.7, 1.0), collection('L_BASEMENT'),
+                     size=1.0, rot=(math.radians(-70), 0, 0))
+        DRESSED.append((fr, 'wall'))
+    # the whiteboard on the right wall: THE PLAN, a chart that goes up and then very much down
+    board = plane('whiteboard', 1.6, 1.0, o + Vector((WX - 0.014, -4.8, 1.9)), material('whiteboard', (0.9, 0.9, 0.88), rough=0.25), col,
+                  rot=(math.radians(90), 0, math.radians(-90)))
+    frm = box('whiteboard_frame', (0.012, 1.66, 1.06), o + Vector((WX - 0.007, -4.8, 1.9)), steel_m, col)
+    DRESSED.append((frm, 'wall'))
+    tray = box('whiteboard_tray', (0.06, 1.2, 0.02), o + Vector((WX - 0.031, -4.8, 1.36)), steel_m, col)
+    marker_r = material('marker_red', (0.8, 0.05, 0.04), rough=0.5)
+    marker_b = material('marker_blue', (0.05, 0.15, 0.7), rough=0.5)
+    xw = o.x + WX - 0.02
+    up = [(-0.7, -0.35), (-0.45, -0.2), (-0.3, -0.25), (-0.1, 0.05), (0.05, 0.0), (0.2, 0.3), (0.3, 0.33), (0.42, -0.38)]
+    _curve('whiteboard_chart', [(xw, o.y - 4.8 - u, o.z + 1.9 + v) for u, v in up], 0.005, marker_r, col, order=2)
+    _txt('whiteboard_title', 'THE PLAN', Vector((xw, o.y - 4.8 + 0.1, o.z + 2.22)), (math.radians(90), 0, math.radians(-90)), 0.14,
+         marker_b, col)
+    _txt('whiteboard_note', 'buy high', Vector((xw, o.y - 4.8 - 0.25, o.z + 1.52)), (math.radians(90), 0, math.radians(-90)), 0.08,
+         marker_b, col)
+    for k, m_ in enumerate((marker_r, marker_b)):
+        mk = cylinder(f'whiteboard_marker{k}', 0.009, 0.12, o + Vector((WX - 0.03, -4.6 + k * 0.1, 1.5)), m_, col,
+                      rot=(math.radians(90), 0, 0), verts=8)
+        put(mk)
+    # a bean bag by the right wall, a hoodie on the couch arm, sneakers by the couch, chips on a cushion
+    bean = _blob('beanbag', 0.5, (1.0, 1.1, 0.7), o + Vector((WX - 1.3, -2.9, 1.0)), material('beanbag', (0.1, 0.12, 0.3), rough=0.8), col,
+                 seed=3)
+    put(bean, z_from=o.z + 2)
+    arm = bpy.data.objects.get('couch_arm1')
+    if arm is not None:
+        hd = _blob('hoodie', 0.25, (1.0, 0.42, 0.28), o + Vector((-WX + 0.75, -2.6 + 1.2, 2.0)), material('hoodie', (0.3, 0.3, 0.32), rough=0.95),
+                   col, seed=5, lumpy=0.2)
+        hd.rotation_euler = (0, 0.1, 0.05)
+        put(hd, z_from=o.z + 2)
+    shoe_m = material('sneaker', (0.85, 0.85, 0.85), rough=0.6)
+    for k in range(2):
+        sn = box(f'sneaker{k}', (0.3, 0.11, 0.1), o + Vector((-WX + 1.25 + k * 0.04, -3.95 - k * 0.36, 0.5)), shoe_m, col, bevel=0.03)
+        sn.rotation_euler = (0, 0, 0.3 + k * 0.25)
+        put(sn)
+    cushion = bpy.data.objects.get('couch_cushion0')
+    if cushion is not None:
+        ch = _blob('chips_bag', 0.11, (1.0, 0.75, 0.3), cushion.location + Vector((0.05, 0.05, 0.4)),
+                   material('chips', (0.85, 0.15, 0.08), rough=0.3, metal=0.4), col, seed=9, lumpy=0.25)
+        ch.rotation_euler = (0, 0, 0.6)
+        put(ch, z_from=cushion.location.z + 0.5)
+    # storage totes stacked in the front-left corner, a bin bag by the stairs
+    tote_m = material('tote', (0.2, 0.35, 0.45), rough=0.4)
+    lid_m = material('tote_lid', (0.08, 0.1, 0.12), rough=0.4)
+    for k, (x, y) in enumerate(((-WX + 0.45, -WY + 0.4), (-WX + 1.25, -WY + 0.4), (-WX + 0.5, -WY + 0.42))):
+        t_ = box(f'tote{k}', (0.62, 0.44, 0.36), o + Vector((x, y, 2.0 + k)), tote_m, col, bevel=0.02)
+        t_.rotation_euler = (0, 0, rnd.uniform(-0.05, 0.05))
+        put(t_, z_from=o.z + 3)
+        ld = box(f'tote_lid{k}', (0.66, 0.48, 0.03), o + Vector((x, y, 0)), lid_m, col, bevel=0.01)
+        ld.rotation_euler = t_.rotation_euler
+        bpy.context.view_layer.update()
+        ld.location.z = t_.location.z + 0.18 + 0.016
+        ASSEMBLY_PAIRS.append((t_.name, ld.name))
+    # the front of the room (it was bare floor): an old PC desk against the front wall, a weight bench nobody uses with
+    # dumbbells and a kettlebell, a dehumidifier in the corner, a clothes horse with laundry drying on it
+    dk = material('desk_laminate', (0.5, 0.42, 0.32), rough=0.55)
+    dx_, dy_ = 3.4, -WY + 0.42
+    dtop = box('pcdesk_top', (1.5, 0.72, 0.035), o + Vector((dx_, dy_, 0.74)), dk, col)
+    for k, (ex, ey) in enumerate(((-0.72, -0.33), (0.72, -0.33), (-0.72, 0.33), (0.72, 0.33))):
+        box(f'pcdesk_leg{k}', (0.04, 0.04, 0.722), o + Vector((dx_ + ex, dy_ + ey, 0.361)), dk, col)
+    dtop.location.z = o.z + 0.722 + 0.0175 + 0.001
+    pcm = material('pc_beige', (0.75, 0.72, 0.62), rough=0.5)
+    mon = box('pcdesk_monitor', (0.42, 0.4, 0.36), o + Vector((dx_ - 0.15, dy_ - 0.08, 1.5)), pcm, col, bevel=0.02)
+    put(mon)
+    scr = plane('pcdesk_screen', 0.32, 0.25, o + Vector((dx_ - 0.15, dy_ + 0.121, 0)),
+                material('pc_screen', (0.02, 0.1, 0.05), emit=(0.1, 0.9, 0.35), strength=0.6), col, rot=(math.radians(90), 0, math.radians(180)))
+    scr.location.z = mon.location.z + 0.02
+    kb = box('pcdesk_keyboard', (0.44, 0.15, 0.025), o + Vector((dx_ - 0.1, dy_ + 0.22, 1.5)), pcm, col, bevel=0.005); put(kb)
+    ms = box('pcdesk_mouse', (0.06, 0.1, 0.03), o + Vector((dx_ + 0.25, dy_ + 0.22, 1.5)), pcm, col, bevel=0.012); put(ms)
+    tw = box('pcdesk_tower', (0.2, 0.45, 0.42), o + Vector((dx_ + 0.5, dy_ - 0.05, 0.5)), pcm, col, bevel=0.01); put(tw, z_from=o.z + 0.6)
+    cn_ = cylinder('pcdesk_can', 0.033, 0.12, o + Vector((dx_ + 0.55, dy_ + 0.05, 1.5)), bpy.data.materials.get('energy_can'), col, verts=16)
+    put(cn_)
+    oc = box('pcdesk_chair_seat', (0.5, 0.5, 0.08), o + Vector((dx_ - 0.1, dy_ + 0.75, 0.5)), material('office_chair', (0.08, 0.08, 0.09),
+             rough=0.7), col, bevel=0.03)
+    ocp = cylinder('pcdesk_chair_post', 0.03, 0.42, o + Vector((dx_ - 0.1, dy_ + 0.75, 0.21)), steel_m, col, verts=10)
+    ocb = cylinder('pcdesk_chair_base', 0.28, 0.03, o + Vector((dx_ - 0.1, dy_ + 0.75, 0.015)), steel_m, col, verts=5)
+    ocp.location.z = o.z + 0.03 + 0.21 + 0.001
+    oc.location.z = ocp.location.z + 0.21 + 0.04 + 0.001
+    ocback = box('pcdesk_chair_back', (0.46, 0.06, 0.5), o + Vector((dx_ - 0.1, dy_ + 0.98, 0)), oc.data.materials[0], col, bevel=0.03)
+    ocback.rotation_euler = (math.radians(-8), 0, 0)
+    ocback.location.z = oc.location.z + 0.04 + 0.25
+    # weight bench and weights, out in the room's front-right
+    bx_, by_ = 6.2, -6.0
+    pad = box('wbench_pad', (0.3, 1.2, 0.08), o + Vector((bx_, by_, 0.46)), material('bench_vinyl', (0.06, 0.06, 0.07), rough=0.4), col,
+              bevel=0.02)
+    for k, ey in enumerate((-0.5, 0.5)):
+        box(f'wbench_leg{k}', (0.36, 0.05, 0.42), o + Vector((bx_, by_ + ey, 0.21)), steel_m, col)
+    pad.location.z = o.z + 0.42 + 0.04 + 0.001
+    iron = material('iron', (0.12, 0.12, 0.13), rough=0.45, metal=0.9)
+    for k, (x, y, rz) in enumerate(((bx_ + 0.6, by_ - 0.3, 0.2), (bx_ + 0.75, by_ + 0.05, -0.3))):
+        bar = cylinder(f'dumbbell_bar{k}', 0.016, 0.36, o + Vector((x, y, 0.08)), steel_m, col, rot=(0, math.radians(90), rz), verts=8)
+        bar.location.z = o.z + 0.075
+        for j, s_ in enumerate((-1, 1)):
+            w_ = cylinder(f'dumbbell_plate{k}_{j}', 0.075, 0.05, o + Vector((x, y, 0.0751)), iron, col, rot=(0, math.radians(90), rz), verts=16)
+            w_.location.x += math.cos(rz) * 0.14 * s_
+            w_.location.y += math.sin(rz) * 0.14 * s_
+        DRESSED.append((bar, 'wall'))
+    kb_ = sphere('kettlebell', 0.11, o + Vector((bx_ - 0.5, by_ + 0.7, 1.0)), iron, col); put(kb_)
+    # a dehumidifier in the front-right corner, its little blue light on
+    dh = box('dehumidifier', (0.38, 0.28, 0.6), o + Vector((WX - 0.3, -WY + 0.3, 0.5)), material('dehum', (0.9, 0.9, 0.88), rough=0.4), col,
+             bevel=0.02)
+    put(dh)
+    led = sphere('dehumidifier_led', 0.008, dh.location + Vector((-0.1, 0.141, 0.22)), material('dehum_led', (0.1, 0.4, 1.0),
+                 emit=(0.1, 0.4, 1.0), strength=8.0), col)
+    # a clothes horse with laundry on it, between the couch and the totes
+    hx, hy = -WX + 1.6, -6.6
+    for k, ex in enumerate((-0.4, 0.4)):
+        for j, tilt in enumerate((-0.18, 0.18)):
+            cylinder(f'clotheshorse_leg{k}_{j}', 0.01, 1.15, o + Vector((hx + ex, hy + math.sin(tilt) * 0.55, 0.57)), steel_m, col,
+                     rot=(tilt, 0, 0), verts=6)
+    for j, (zz, dy) in enumerate(((1.05, 0.0), (0.75, 0.0))):
+        cylinder(f'clotheshorse_rail{j}', 0.008, 0.82, o + Vector((hx, hy + dy, zz)), steel_m, col, rot=(0, math.radians(90), 0), verts=6)
+    for j, (zz, tint, w) in enumerate(((1.05, (0.7, 0.1, 0.12), 0.32), (1.05, (0.15, 0.3, 0.6), 0.26), (0.75, (0.85, 0.85, 0.8), 0.3))):
+        cl = box(f'clotheshorse_cloth{j}', (w, 0.012, 0.34), o + Vector((hx + (-0.2, 0.1, -0.1)[j], hy + (0.012 if j < 2 else -0.012),
+                                                                          zz - 0.17 - 0.009)),
+                 material(f'laundry{j}', tint, rough=0.95), col)
+    bag = _blob('bin_bag', 0.35, (1.0, 0.9, 1.1), o + Vector((-6.8, 4.3, 1.5)), material('bin_bag', (0.02, 0.02, 0.025), rough=0.15), col,
+                seed=12, lumpy=0.25)
+    put(bag, z_from=o.z + 2)
+    return col
+
+
+def dress_cafe_more(o):
+    """The café, second pass: a charred jukebox by the right wall, a burnt TV on its bracket in the corner, scorched
+    pictures on the walls (one fallen on its face), a ceiling fan with a blade sagging from the heat, cutlery by the
+    plates, a bin at the end of the counter."""
+    col = collection('CAFE')
+    rnd = random.Random(43)
+    # jukebox: body, rounded top, a dead glass front
+    jb = box('jukebox', (0.65, 0.8, 1.2), o + Vector((5.47, 0.4, 0.6)), char_material('char_jukebox', (0.6, 0.12, 0.08), 0.6, False, 7), col,
+             bevel=0.03)
+    put(jb)
+    jt = cylinder('jukebox_top', 0.4, 0.65, o + Vector((5.47, 0.4, 0)), char_material('char_jukebox_top', (0.75, 0.55, 0.2), 0.7, True, 8), col,
+                  rot=(0, math.radians(90), 0), verts=28)
+    bpy.context.view_layer.update()
+    jt.location.z = jb.location.z + 0.6 - 0.02
+    jg = box('jukebox_glass', (0.01, 0.6, 0.5), o + Vector((5.47 - 0.33, 0.4, 0)), material('juke_glass', (0.05, 0.03, 0.02), rough=0.1), col)
+    jg.location.z = jb.location.z + 0.18
+    # the TV on its bracket in the right wall's corner above the counter end: case charred, screen cracked and dead
+    tv = box('cafe_tv', (0.12, 0.9, 0.55), o + Vector((5.72, 2.4, 3.15)), char_material('char_tv', (0.12, 0.12, 0.13), 0.7, False, 9), col,
+             bevel=0.01)
+    tvs = plane('cafe_tv_screen', 0.84, 0.49, o + Vector((5.659, 2.4, 3.15)), material('tv_dead', (0.01, 0.01, 0.012), rough=0.05), col,
+                rot=(math.radians(90), 0, math.radians(-90)))
+    mxsets.add_bump(tvs.data.materials[0], 9.0, 0.8)                 # (a crazed, cracked screen)
+    brk = box('cafe_tv_bracket', (0.07, 0.12, 0.12), o + Vector((5.815, 2.4, 3.15)), bpy.data.materials.get('cafe_chrome'), col)
+    DRESSED.append((tv, 'wall'))
+    # pictures on the walls, scorched; one has fallen on its face
+    for k, (x, y, z, w, h, rz) in enumerate(((-5.834, -2.4, 2.2, 0.55, 0.42, 90), (-5.834, -1.3, 2.35, 0.4, 0.5, 90),
+                                             (5.834, 3.4, 2.4, 0.6, 0.45, -90))):
+        pf = box(f'cafe_picture{k}', (0.6, 0.03, 0.45), o + Vector((x, y, z)),
+                 char_material(f'char_picture{k}', (0.85, 0.75, 0.55), 0.45 + 0.2 * k, k == 2, 10 + k), col)
+        pf.scale = (w, 0.03, h)
+        pf.rotation_euler = (0, 0, math.radians(rz))
+        DRESSED.append((pf, 'wall'))
+    fallen = box('cafe_picture_fallen', (0.5, 0.4, 0.03), o + Vector((-5.3, -1.75, 0.5)),
+                 char_material('char_picture_fallen', (0.85, 0.75, 0.55), 0.6, False, 14), col)
+    fallen.rotation_euler = (0, 0, 0.35)
+    put(fallen)
+    # ceiling fan: downrod from the ceiling, motor, four blades, one drooping (the heat softened it)
+    fan_m = char_material('char_fan', (0.35, 0.25, 0.15), 0.55, False, 15)
+    fx_, fy_ = 1.6, -2.0
+    rod = cylinder('fan_rod', 0.015, 0.5, o + Vector((fx_, fy_, 4.15 - 0.25)), bpy.data.materials.get('cafe_chrome'), col, verts=8)
+    mot = cylinder('fan_motor', 0.13, 0.14, o + Vector((fx_, fy_, 4.15 - 0.5 - 0.07)), fan_m, col, verts=20)
+    for k in range(4):
+        a_ = math.radians(20 + k * 90)
+        bl = box(f'fan_blade{k}', (0.6, 0.14, 0.012), o + Vector((fx_ + math.cos(a_) * 0.43, fy_ + math.sin(a_) * 0.43, 4.15 - 0.53)), fan_m, col)
+        droop = 0.45 if k == 1 else 0.06
+        bl.rotation_euler = (0, 0, a_)
+        bl.rotation_euler.rotate_axis('Y', droop)
+        bl.location.z -= math.sin(droop) * 0.3
+    # cutlery beside each plate, a bin at the end of the counter
+    cut_m = char_material('char_cutlery', (0.6, 0.6, 0.62), 0.5, False, 16)
+    for k, (x, y) in enumerate(((-3.6, 0.6), (-3.6, -2.2), (-0.8, -2.6))):
+        for j, dx in enumerate((-0.37, -0.06)):
+            c_ = box(f'cutlery{k}_{j}', (0.016, 0.19, 0.005), o + Vector((x + dx, y - 0.12 + rnd.uniform(-0.02, 0.02), 1.3)), cut_m, col)
+            c_.rotation_euler = (0, 0, rnd.uniform(-0.12, 0.12))
+            put(c_)
+    bin_ = cylinder('cafe_bin', 0.2, 0.62, o + Vector((-0.35, 2.6, 0.5)), char_material('char_bin', (0.3, 0.3, 0.3), 0.4, False, 17), col, verts=20)
+    put(bin_)
+    return col
+
+
+def dress_rooftop_more(o):
+    """The roof, second pass: coping on the parapet, a pipe run on wooden sleepers along the north edge, a lamp over the
+    stair door, someone's smoking spot (a folding chair, a bucket of butts), a ladder up the water tank, a traffic cone."""
+    col = collection('ROOFTOP')
+    rnd = random.Random(53)
+    conc = material('coping', (0.38, 0.38, 0.36), rough=0.7)
+    for k, (cx, cy, sx, sy) in enumerate(((0, 16.75, 34.1, 0.62), (0, -16.75, 34.1, 0.62), (16.75, 0, 0.62, 32.86), (-16.75, 0, 0.62, 32.86))):
+        box(f'coping{k}', (sx, sy, 0.06), o + Vector((cx, cy, 1.1 + 0.031)), conc, col)
+    # the pipe run: sleepers every 2 m, two pipes lying on them
+    sl_m = material('sleeper', (0.25, 0.2, 0.14), rough=0.9)
+    pipe_m = material('roof_pipe', (0.45, 0.47, 0.45), rough=0.5, metal=0.7)
+    xs = [-8.0 + 2.0 * k for k in range(9)]
+    top = 0
+    for k, x in enumerate(xs):
+        s_ = box(f'sleeper{k}', (0.15, 0.6, 0.12), o + Vector((x, 15.6, 1.0)), sl_m, col)
+        put(s_, z_from=o.z + 1)
+        top = s_.location.z + 0.06
+    for j, (dy, r) in enumerate(((-0.13, 0.07), (0.15, 0.05))):
+        pp = cylinder(f'roof_pipe{j}', r, 17.0, o + Vector((0.0, 15.6 + dy, 0)), pipe_m, col, rot=(0, math.radians(90), 0), verts=16)
+        pp.location.z = top + r + 0.001
+        DRESSED.append((pp, 'rest'))
+    # a bulkhead lamp over the stair door (door at x -10.2, face y = -9.5) and its warm light on the wet roof
+    lamp = cylinder('stair_lamp', 0.1, 0.09, o + Vector((-10.2, -9.5 + 0.047, 2.45)), material('stair_lamp_m', (1.0, 0.8, 0.5),
+                    emit=(1.0, 0.75, 0.4), strength=6.0), col, rot=(math.radians(90), 0, 0), verts=16)
+    DRESSED.append((lamp, 'wall'))
+    mxsets.light('L_stair_lamp', 'POINT', o + Vector((-10.2, -9.2, 2.4)), 60, (1.0, 0.72, 0.4), collection('L_ROOFTOP'), size=0.12)
+    # the smoking spot: a folding chair beside the door, a bucket of sand and butts next to it
+    chm = material('folding_chair', (0.18, 0.22, 0.2), rough=0.5, metal=0.6)
+    cx, cy = -8.4, -8.6
+    seat = box('fchair_seat', (0.42, 0.4, 0.03), o + Vector((cx, cy, 0.46)), chm, col)
+    for k, (dx, dy) in enumerate(((-0.19, -0.17), (0.19, -0.17), (-0.19, 0.17), (0.19, 0.17))):
+        lg = cylinder(f'fchair_leg{k}', 0.012, 0.445, o + Vector((cx + dx, cy + dy, 0.2225)), chm, col, verts=8)
+        put(lg, z_from=o.z + 0.5)
+    seat.location.z = o.z + 0.445 + 0.016 + 0.001
+    for k, dx in enumerate((-0.19, 0.19)):                          # the back's two uprights (the rear legs carry on up)
+        cylinder(f'fchair_upright{k}', 0.012, 0.8, o + Vector((cx + dx, cy - 0.215, 0.4)), chm, col, verts=8)
+    bk = box('fchair_back', (0.42, 0.03, 0.32), o + Vector((cx, cy - 0.2, 0.46 + 0.016 + 0.17)), chm, col)
+    bucket = cylinder('butt_bucket', 0.13, 0.26, o + Vector((cx + 0.55, cy + 0.15, 1.0)), material('bucket', (0.55, 0.12, 0.08), rough=0.4,
+                      metal=0.5), col, verts=18)
+    put(bucket)
+    sand = cylinder('butt_sand', 0.12, 0.01, bucket.location + Vector((0, 0, 0.13 + 0.006)), material('sand', (0.6, 0.55, 0.45), rough=1.0), col,
+                    verts=18)
+    butt_m = material('butt', (0.9, 0.85, 0.75), rough=0.8)
+    for k in range(5):
+        a_ = rnd.uniform(0, 6.28); r_ = rnd.uniform(0.02, 0.08)
+        bt = cylinder(f'butt{k}', 0.004, 0.03, sand.location + Vector((math.cos(a_) * r_, math.sin(a_) * r_, 0.012)), butt_m, col,
+                      rot=(rnd.uniform(0.3, 1.0), 0, a_), verts=6)
+    # ladder up the water tank's west side (tank x 9.3..12.7, y 9.8..13.2, from 4 m to 7 m)
+    lad = material('ladder', (0.4, 0.42, 0.4), rough=0.5, metal=0.8)
+    lx = 9.3 - 0.08
+    for k, y in enumerate((11.2, 11.7)):
+        cylinder(f'tank_ladder_rail{k}', 0.02, 6.95, o + Vector((lx, y, 3.475)), lad, col, verts=8)   # (stops under the tank's roof)
+    for k in range(22):
+        cylinder(f'tank_ladder_rung{k}', 0.013, 0.5, o + Vector((lx, 11.45, 0.3 + k * 0.3)), lad, col, rot=(math.radians(90), 0, 0), verts=8)
+    # a traffic cone left by the electrical box
+    cone_m = material('cone', (1.0, 0.3, 0.02), rough=0.5)
+    bpy.ops.mesh.primitive_cone_add(vertices=16, radius1=0.16, radius2=0.03, depth=0.6, location=o + Vector((15.2, -3.6, 1.0)))
+    cn = bpy.context.active_object
+    cn.name = 'traffic_cone'
+    for c_ in list(cn.users_collection):
+        c_.objects.unlink(cn)
+    col.objects.link(cn)
+    cn.data.materials.append(cone_m)
+    cn.location.z += 3.0                                           # (out of the way while its base is put down)
+    cb = box('traffic_cone_base', (0.38, 0.38, 0.03), o + Vector((15.2, -3.6, 1.0)), cone_m, col)
+    put(cb)
+    put(cn, z_from=cb.location.z + 0.5)                            # the cone stands on its base
+    return col
+
+
+def dress_white_more(o, stills=None):
+    """The white room, second pass: old monitors stacked on the floor at both ends of the wall, turned toward the room,
+    a few dead, and their cables running across the white floor to the wall."""
+    col = collection('WHITE')
+    rnd = random.Random(13)
+    case_m = bpy.data.materials.get('monitor_case') or material('monitor_case2', (0.82, 0.8, 0.76), rough=0.5)
+    dead = material('monitor_dead', (0.03, 0.035, 0.035), rough=0.1)
+    stills = stills or []
+    k = 0
+    for side in (-1, 1):
+        x0, ang = side * 7.1, math.radians(side * -28)
+        rq = Matrix.Rotation(ang, 3, 'Z')
+        slots = [(-0.7, 0, 0), (0.7, 0, 0), (0.0, 0, 1)]              # two on the floor, one on top between them
+        for j, (u, _, lev) in enumerate(slots):
+            p_ = o + Vector((x0, 5.9, 0)) + rq @ Vector((u, 0, 0))
+            m = box(f'mstack{side}_{j}', (1.3, 0.8, 0.92), p_ + Vector((0, 0, 0.6 + lev * 1.5)), case_m, col, bevel=0.04)
+            m.rotation_euler = (0, 0, ang + rnd.uniform(-0.03, 0.03))
+            put(m, z_from=o.z + 0.6 + lev * 1.5 + 0.8)
+            bpy.context.view_layer.update()
+            if stills and (j + side) % 3:
+                scr_m = mxsets.image_material(f'mstack_img{side}_{j}', stills[(k * 5 + 3) % len(stills)], emit=1.2)
+            else:
+                scr_m = dead
+            k += 1
+            fw = m.matrix_world.to_quaternion() @ Vector((0, -1, 0))
+            s = plane(f'mstack_screen{side}_{j}', 1.08, 0.72, m.location + fw * 0.405, scr_m, col,
+                      rot=(math.radians(90), 0, m.rotation_euler.z))
+            s.visible_shadow = False
+            s['monitor'] = True
+    cab = material('white_cable', (0.04, 0.04, 0.045), rough=0.45)
+    for k, pts in enumerate(([(-4.6, 6.75), (-5.0, 6.1), (-5.6, 5.75), (-6.4, 5.6)], [(4.6, 6.75), (5.0, 6.1), (5.6, 5.75), (6.4, 5.6)],
+                             [(-1.0, 6.75), (-1.6, 5.2), (-2.2, 3.6), (-2.4, 3.08)], [(1.0, 6.75), (1.7, 5.3), (2.2, 3.7), (2.4, 3.08)])):
+        _floor_cable(f'white_cable{k}', o, pts, 0.018, cab, col)
+    return col

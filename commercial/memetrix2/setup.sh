@@ -20,8 +20,18 @@ done
 B="$W/scene2.blend"
 if [ ! -f "$B" ] || [ scene2.py -nt "$B" ] || [ sets2.py -nt "$B" ] || [ edl.json -nt "$B" ] || [ ../memetrix/mxsets.py -nt "$B" ] || [ ../tools/cine.py -nt "$B" ]; then
   cp edl.json "$W/edl2_repo.json"
-  "$BL" -b --factory-startup -P scene2.py -- --out "$B" --lib "$W/chars.blend" > "$W/build2.log" 2>&1
-  grep -q SAVED "$W/build2.log" || { echo "build failed"; tail -20 "$W/build2.log"; exit 1; }
+  touch "$W/build2.start"
+  # (unbuffered, so nothing is lost if it is stopped; Blender sometimes hangs inside its save after the file is written,
+  # so the build has a time limit and a file written after the start counts: Blender writes to a temporary name and
+  # renames it at the end, so a newer scene2.blend is a complete one)
+  PYTHONUNBUFFERED=1 timeout 1800 "$BL" -b --factory-startup -P scene2.py -- --out "$B" --lib "$W/chars.blend" > "$W/build2.log" 2>&1
+  if ! grep -q SAVED "$W/build2.log"; then
+    if grep -q "^EDL " "$W/build2.log" && grep -q "SAVING" "$W/build2.log" && [ "$B" -nt "$W/build2.start" ]; then
+      echo "build: Blender hung after writing the scene (known); the written file is complete, carrying on"
+    else
+      echo "build failed"; tail -20 "$W/build2.log"; exit 1
+    fi
+  fi
   cmp -s edl.json "$W/edl2_repo.json" || { cp "$W/edl2_repo.json" edl.json; echo "ERROR: the edit rebuilt here differs from the committed edl.json (stale checkout? git pull). Not rendering."; exit 1; }
 fi
 echo SETUP-OK
