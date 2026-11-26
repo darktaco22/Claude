@@ -693,13 +693,14 @@
 "cam": {
 "subject": "swordcat",
 "size": "MS",
-"angle": 15.0,
-"bearing": 5,
+"angle": -5.0,
+"bearing": -45,
 "lens": 35,
 "frame": "center",
 "fstop": 2.8,
 "move": "push",
-"amount": 0.15
+"amount": 0.15,
+"fixed_heading": -76.9080706731736
 },
 "hand": [
 "INVESTIGATION",
@@ -1524,11 +1525,11 @@
 "cam": {
 "subject": "anon",
 "size": "CU",
-"bearing": 10,
+"bearing": 0,
 "lens": 70,
 "frame": "center",
 "fstop": 1.8,
-"angle": 0.0
+"fixed_heading": 200
 },
 "hand": [
 "INVESTIGATION",
@@ -3688,16 +3689,15 @@
 "a10_0: body.001 blocked the view; moved bearing +30, angle +0",
 "s10_0: foreground clutter (46% of frame) blocked the view; moved bearing -30, angle +0",
 "mo10_0: base_ground blocked the view; moved bearing +10, angle +10",
-"cafe_establish: foreground clutter (11% of frame) blocked the view; moved bearing -30, angle +0",
+"cafe_establish: foreground clutter (12% of frame) blocked the view; moved bearing -30, angle +0",
 "f10_0: foreground clutter (15% of frame) blocked the view; moved bearing +10, angle +0",
 "a12_0: toshi blocked the view; moved bearing +30, angle +0",
 "f11_0: foreground clutter (29% of frame) blocked the view; moved bearing +10, angle +0",
 "f12_1: foreground clutter (31% of frame) blocked the view; moved bearing -10, angle +0",
-"f13_0: foreground clutter (44% of frame) blocked the view; moved bearing +60, angle +20",
+"f13_0: foreground clutter (44% of frame) blocked the view; moved bearing +10, angle +0",
 "duel_catch: foreground clutter (33% of frame) blocked the view; moved bearing +30, angle +0",
 "t11_0: cafe_right blocked the view; moved bearing +10, angle +0",
 "f14_0: toshi blocked the view; moved bearing -20, angle +0",
-"launch: camera inside jc0 blocked the view; moved bearing +10, angle +0",
-"a18_0: door_hold blocked the view; moved bearing +10, angle +0"
+"launch: camera inside jc0 blocked the view; moved bearing +10, angle +0"
 ]
 }

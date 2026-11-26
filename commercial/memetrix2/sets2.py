@@ -10,7 +10,7 @@ import sys
 
 import bmesh
 import bpy
-from mathutils import Vector
+from mathutils import Matrix, Vector
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, '..', 'memetrix'))
@@ -235,7 +235,7 @@ def embers(name, centre, size, count, col, seed=1, rise=3.2, period=96):
     cloud = bpy.data.objects.new(name, mesh)
     col.objects.link(cloud)
     cloud.location = centre
-    _drive(cloud, 'location', f'{centre.z} + ((frame + 0.5) % {period}) * {rise / period}', index=2)
+    _drive(cloud, 'location', f'{centre.z} + fmod(frame + 0.5, {period}) * {rise / period}', index=2)
     _drive(cloud, 'location', f'{centre.x} + 0.12 * sin(frame * 0.05 + {seed})', index=0)       # a slow sideways drift
     m = material(name + '_m', (1.0, 0.35, 0.06), emit=(1.0, 0.3, 0.04), strength=5.0)
     spark = bpy.data.objects.new(name + '_spark', bpy.data.meshes.new(name + '_spark'))
@@ -275,6 +275,283 @@ def fire(name, loc, size, col, lit, energy=60.0, seed=0.0):
         lamp = light(f'{name}_light{k}', 'POINT', loc + Vector((0, 0, size * dz)), energy * e, (1.0, 0.42, 0.1), lit, size=size * 0.35)
         _drive(lamp.data, 'energy', f'{energy * e} * (0.75 + 0.18 * sin(frame * 0.9 + {seed + k}) + 0.1 * sin(frame * 2.7 + {seed * 2 + k}))')
     return flame
+
+
+FIRE_SIMS = os.environ.get('FIRE_SIMS') or os.path.join(os.environ.get('W', os.path.expanduser('~/mx_work')), 'fire_sims')
+# per fuel: smoke colour, smoke density, flame colours (cool, mid, hot), flame brightness
+FUEL_LOOK = {
+    'table':   dict(smoke=(0.10, 0.09, 0.08), dens=1.6, ramp=((0.45, 0.03, 0.0), (1.0, 0.22, 0.01), (1.0, 0.62, 0.18)), glow=9.0),
+    'booth':   dict(smoke=(0.04, 0.035, 0.03), dens=2.6, ramp=((0.40, 0.02, 0.0), (0.95, 0.16, 0.0), (1.0, 0.5, 0.12)), glow=7.0),
+    'grease':  dict(smoke=(0.12, 0.11, 0.1), dens=1.2, ramp=((0.6, 0.06, 0.0), (1.0, 0.35, 0.03), (1.0, 0.8, 0.4)), glow=12.0),
+    'paper':   dict(smoke=(0.2, 0.19, 0.18), dens=1.0, ramp=((0.55, 0.05, 0.0), (1.0, 0.3, 0.02), (1.0, 0.72, 0.3)), glow=10.0),
+    'sheet':   dict(smoke=(0.08, 0.07, 0.06), dens=1.8, ramp=((0.45, 0.03, 0.0), (1.0, 0.2, 0.01), (1.0, 0.58, 0.16)), glow=8.0),
+    'debris':  dict(smoke=(0.07, 0.06, 0.05), dens=2.0, ramp=((0.45, 0.03, 0.0), (1.0, 0.24, 0.01), (1.0, 0.6, 0.18)), glow=8.5),
+    'machine': dict(smoke=(0.03, 0.03, 0.03), dens=2.8, ramp=((0.6, 0.1, 0.02), (1.0, 0.45, 0.1), (1.0, 0.9, 0.7)), glow=14.0),
+}
+
+
+def sim_fire_material(recipe):
+    """Shader for a baked fire (density, flame grids): smoke from density, emission from flame through the fuel's colours.
+    Both are multiplied by the object's 'fade' property (the loop crossfade)."""
+    name = 'simfire_' + recipe
+    if name in bpy.data.materials:
+        return bpy.data.materials[name]
+    lk = FUEL_LOOK[recipe]
+    mat = bpy.data.materials.new(name)
+    mat.use_nodes = True
+    nt = mat.node_tree
+    nt.nodes.clear()
+    N, L = nt.nodes.new, nt.links.new
+    fade = N('ShaderNodeAttribute'); fade.attribute_type = 'OBJECT'; fade.attribute_name = 'fade'
+    den = N('ShaderNodeAttribute'); den.attribute_name = 'density'
+    fl = N('ShaderNodeAttribute'); fl.attribute_name = 'flame'
+    d1 = N('ShaderNodeMath'); d1.operation = 'MULTIPLY'; L(den.outputs['Fac'], d1.inputs[0]); d1.inputs[1].default_value = lk['dens']
+    d2 = N('ShaderNodeMath'); d2.operation = 'MULTIPLY'; L(d1.outputs[0], d2.inputs[0]); L(fade.outputs['Fac'], d2.inputs[1])
+    ramp = N('ShaderNodeValToRGB')
+    els = ramp.color_ramp.elements
+    els[0].position, els[0].color = 0.0, (*lk['ramp'][0], 1)
+    els[1].position, els[1].color = 1.0, (*lk['ramp'][2], 1)
+    mid = els.new(0.45); mid.color = (*lk['ramp'][1], 1)
+    L(fl.outputs['Fac'], ramp.inputs['Fac'])
+    st = N('ShaderNodeMath'); st.operation = 'MULTIPLY'; L(fl.outputs['Fac'], st.inputs[0]); st.inputs[1].default_value = lk['glow']
+    st2 = N('ShaderNodeMath'); st2.operation = 'MULTIPLY'; L(st.outputs[0], st2.inputs[0]); L(fade.outputs['Fac'], st2.inputs[1])
+    vol = N('ShaderNodeVolumePrincipled')
+    vol.inputs['Color'].default_value = (*lk['smoke'], 1)
+    L(d2.outputs[0], vol.inputs['Density'])
+    L(ramp.outputs['Color'], vol.inputs['Emission Color'])
+    L(st2.outputs[0], vol.inputs['Emission Strength'])
+    out = N('ShaderNodeOutputMaterial'); L(vol.outputs[0], out.inputs['Volume'])
+    return mat
+
+
+def sim_fire(name, recipe, loc, col, lit, scale=1.0, rot=0.0, start=0, energy=60.0, seed=0.0):
+    """A baked fire placed on a burning object: two copies of the same simulation half a loop apart, crossfaded (each copy
+    is faded out at the moment it jumps back to the start of its loop, so the loop never shows), plus two flickering lights.
+    Returns None when the simulation has not been baked (the caller falls back to the procedural fire)."""
+    meta_p = os.path.join(FIRE_SIMS, recipe, 'DONE.json')
+    if not os.path.exists(meta_p):
+        return None
+    import json
+    meta = json.load(open(meta_p))
+    W_, L_ = meta['warm'], meta['loop']
+    first = os.path.join(FIRE_SIMS, recipe, 'data', 'fluid_data_0001.vdb')
+    mat = sim_fire_material(recipe)
+    objs = []
+    for k, shift in enumerate((0, L_ // 2)):
+        vd = bpy.data.volumes.new(f'{name}_{"ab"[k]}')
+        vd.filepath = first
+        vd.is_sequence = True
+        vd.frame_duration = L_
+        vd.frame_offset = W_
+        vd.frame_start = int(start) + shift
+        vd.sequence_mode = 'REPEAT'
+        vd.materials.append(mat)
+        ob = bpy.data.objects.new(vd.name, vd)
+        col.objects.link(ob)
+        org = Vector(meta.get('origin', (0, 0, 0))) * scale        # the grid's (0,0,0) is the domain's lower corner
+        org.rotate(Matrix.Rotation(rot, 3, 'Z'))
+        ob.location = Vector(loc) + org
+        ob.rotation_euler = (0, 0, rot)
+        ob.scale = (scale, scale, scale)
+        ob['fade'] = 1.0
+        fc = ob.driver_add('["fade"]')
+        fc.driver.type = 'SCRIPTED'
+        s0 = int(start) + shift
+        fc.driver.expression = f'1 - abs(2 * fmod(frame - {s0} + {L_ * 1000}, {L_}) / {L_} - 1)'   # (fmod: a simple expression, no Python)
+        ob['cine_ignore'] = True
+        ob.visible_shadow = False
+        objs.append(ob)
+    for k, (dz, e) in enumerate(((0.35, 1.0), (0.9, 0.5))):
+        lamp = light(f'{name}_light{k}', 'POINT', Vector(loc) + Vector((0, 0, dz * scale)), energy * e, (1.0, 0.42, 0.1), lit,
+                     size=0.25 * scale)
+        _drive(lamp.data, 'energy', f'{energy * e} * (0.75 + 0.18 * sin(frame * 0.9 + {seed + k}) + 0.1 * sin(frame * 2.7 + {seed * 2 + k}))')
+    return objs
+
+
+def char_material(name, base=(0.5, 0.1, 0.08), amount=0.8, embers=True, seed=0.0):
+    """Burnt: the object's own colour survives in patches, the rest is blistered black char; with embers, glowing orange
+    cracks (Voronoi edges masked by noise) pulse in the char. amount: 0 = scorched, 1 = burnt through."""
+    mat = bpy.data.materials.new(name)
+    mat.use_nodes = True
+    nt = mat.node_tree
+    bsdf = nt.nodes['Principled BSDF']
+    N, L = nt.nodes.new, nt.links.new
+    tc = N('ShaderNodeTexCoord')
+    nz = N('ShaderNodeTexNoise'); nz.inputs['Scale'].default_value = 3.5; nz.inputs['Detail'].default_value = 8.0
+    nz.inputs['Roughness'].default_value = 0.65
+    L(tc.outputs['Object'], nz.inputs['Vector'])
+    cut = N('ShaderNodeMapRange'); cut.clamp = True                 # where the char has taken over
+    cut.inputs['From Min'].default_value = 0.62 - 0.35 * amount; cut.inputs['From Max'].default_value = 0.7 - 0.35 * amount
+    L(nz.outputs['Fac'], cut.inputs['Value'])
+    mix = N('ShaderNodeMix'); mix.data_type = 'RGBA'
+    mix.inputs['A'].default_value = (*base, 1)
+    mix.inputs['B'].default_value = (0.018, 0.015, 0.013, 1)
+    L(cut.outputs['Result'], mix.inputs['Factor'])
+    L(mix.outputs['Result'], bsdf.inputs['Base Color'])
+    rough = N('ShaderNodeMapRange'); rough.inputs['To Min'].default_value = 0.45; rough.inputs['To Max'].default_value = 0.95
+    L(cut.outputs['Result'], rough.inputs['Value'])
+    L(rough.outputs['Result'], bsdf.inputs['Roughness'])
+    bump = N('ShaderNodeBump'); bump.inputs['Strength'].default_value = 0.6 * amount; bump.inputs['Distance'].default_value = 0.01
+    blis = N('ShaderNodeTexVoronoi'); blis.inputs['Scale'].default_value = 28.0     # blistered, alligatored char
+    L(tc.outputs['Object'], blis.inputs['Vector'])
+    L(blis.outputs['Distance'], bump.inputs['Height'])
+    L(bump.outputs['Normal'], bsdf.inputs['Normal'])
+    if embers:
+        warp = N('ShaderNodeTexNoise'); warp.inputs['Scale'].default_value = 2.5; warp.inputs['Detail'].default_value = 4.0
+        L(tc.outputs['Object'], warp.inputs['Vector'])
+        wv = N('ShaderNodeMix'); wv.data_type = 'VECTOR'; wv.inputs['Factor'].default_value = 0.35   # wandering cracks,
+        L(tc.outputs['Object'], wv.inputs['A']); L(warp.outputs['Color'], wv.inputs['B'])                  # not tiles
+        cr = N('ShaderNodeTexVoronoi'); cr.feature = 'DISTANCE_TO_EDGE'; cr.inputs['Scale'].default_value = 11.0
+        cr.inputs['Randomness'].default_value = 1.0
+        L(wv.outputs['Result'], cr.inputs['Vector'])
+        edge = N('ShaderNodeMapRange'); edge.clamp = True
+        edge.inputs['From Min'].default_value = 0.025; edge.inputs['From Max'].default_value = 0.0
+        L(cr.outputs['Distance'], edge.inputs['Value'])
+        pulse = N('ShaderNodeTexNoise'); pulse.noise_dimensions = '4D'; pulse.inputs['Scale'].default_value = 2.0
+        L(tc.outputs['Object'], pulse.inputs['Vector'])
+        _drive(pulse.inputs['W'], 'default_value', f'frame / 30 + {seed}')
+        hot = N('ShaderNodeMapRange'); hot.clamp = True
+        hot.inputs['From Min'].default_value = 0.56; hot.inputs['From Max'].default_value = 0.7   # glowing only in patches
+        L(pulse.outputs['Fac'], hot.inputs['Value'])
+        m1 = N('ShaderNodeMath'); m1.operation = 'MULTIPLY'; L(edge.outputs['Result'], m1.inputs[0]); L(hot.outputs['Result'], m1.inputs[1])
+        m2 = N('ShaderNodeMath'); m2.operation = 'MULTIPLY'; L(m1.outputs[0], m2.inputs[0]); L(cut.outputs['Result'], m2.inputs[1])
+        m3 = N('ShaderNodeMath'); m3.operation = 'MULTIPLY'; L(m2.outputs[0], m3.inputs[0]); m3.inputs[1].default_value = 6.0 * amount
+        bsdf.inputs['Emission Color'].default_value = (1.0, 0.28, 0.03, 1)
+        L(m3.outputs[0], bsdf.inputs['Emission Strength'])
+    return mat
+
+
+def rest_on(obj, z_surface):
+    """Drop an object (after its rotation) so its lowest point sits on a surface: never sunk in, never floating."""
+    bpy.context.view_layer.update()
+    low = min((obj.matrix_world @ Vector(c)).z for c in obj.bound_box)
+    if obj.type == 'MESH' and obj.data.vertices:
+        low = min((obj.matrix_world @ v.co).z for v in obj.data.vertices)
+    obj.location.z += z_surface - low + 0.001
+    _TREES.pop(obj.name, None)
+    bpy.context.view_layer.update()
+    return obj
+
+
+def burn_cafe(col, o):
+    """Everything the fire has had: charred furniture where it burns, scorch and ash on the floor, soot on the ceiling,
+    collapsed debris, a knocked-over stool, a burnt curtain at the window, sagging booth backs."""
+    rnd = random.Random(21)
+    # furniture that burns: char by distance to its fire
+    burnt = {'booth0_1': 0.95, 'booth_back0_1': 1.0, 'booth2_-1': 0.9, 'booth_back2_-1': 1.0, 'table_top0': 0.85,
+             'table_top2': 0.7, 'table_top1': 0.55, 'booth0_-1': 0.45, 'booth_back0_-1': 0.5, 'booth2_1': 0.4,
+             'booth_back2_1': 0.45, 'booth1_-1': 0.25, 'booth_back1_-1': 0.3, 'counter_top': 0.5, 'counter': 0.45,
+             'stool_seat3': 0.6, 'stool_seat4': 0.7, 'menu_board': 0.8, 'coffee_machine': 0.6}
+    for k, (name, amt) in enumerate(burnt.items()):
+        ob = bpy.data.objects.get(name)
+        if ob is None or not ob.data.materials:
+            continue
+        m0 = ob.data.materials[0]
+        bsdf = m0.node_tree.nodes.get('Principled BSDF') if m0.use_nodes else None
+        base = tuple(bsdf.inputs['Base Color'].default_value)[:3] if bsdf else (0.4, 0.3, 0.2)
+        ob.data.materials[0] = char_material(f'char_{name}', base, amt, embers=amt > 0.55, seed=k * 3.1)
+    for name in ('booth_back0_1', 'booth_back2_-1'):                 # vinyl that has burnt sags over toward the seat
+        ob = bpy.data.objects.get(name)
+        if ob is not None:
+            bpy.context.view_layer.objects.active = ob
+            mod = ob.modifiers.new('sag', 'SIMPLE_DEFORM')
+            mod.deform_method = 'BEND'
+            mod.deform_axis = 'X'
+            mod.angle = math.radians(18 if name.endswith('_1') else -18)
+    # scorch and ash on the floor under every floor-level fire, soot on the ceiling above the big ones
+    scorch = bpy.data.materials.new('floor_scorch')
+    scorch.use_nodes = True
+    nt = scorch.node_tree
+    bsdf = nt.nodes['Principled BSDF']
+    bsdf.inputs['Base Color'].default_value = (0.012, 0.01, 0.009, 1)
+    bsdf.inputs['Roughness'].default_value = 0.95
+    gr = nt.nodes.new('ShaderNodeTexGradient'); gr.gradient_type = 'SPHERICAL'
+    tc = nt.nodes.new('ShaderNodeTexCoord'); nt.links.new(tc.outputs['Object'], gr.inputs['Vector'])
+    nz = nt.nodes.new('ShaderNodeTexNoise'); nz.inputs['Scale'].default_value = 4.0; nt.links.new(tc.outputs['Object'], nz.inputs['Vector'])
+    mm = nt.nodes.new('ShaderNodeMath'); mm.operation = 'MULTIPLY'
+    nt.links.new(gr.outputs['Fac'], mm.inputs[0]); nt.links.new(nz.outputs['Fac'], mm.inputs[1])
+    a_ = nt.nodes.new('ShaderNodeMapRange'); a_.clamp = True
+    a_.inputs['From Min'].default_value = 0.05; a_.inputs['From Max'].default_value = 0.35
+    nt.links.new(mm.outputs[0], a_.inputs['Value']); nt.links.new(a_.outputs['Result'], bsdf.inputs['Alpha'])
+    scorch.blend_method = 'BLEND'
+    floor_fires = [(-5.0, 4.0, 1.2), (5.0, -3.6, 1.3), (5.3, 3.8, 0.9), (-5.0, -3.4, 1.1), (0.4, 4.2, 0.85), (-2.2, -4.1, 0.75),
+                   (-5.1, 0.0, 1.0), (3.0, -4.1, 0.9), (-5.42, 2.0, 1.0), (5.38, -1.5, 1.1), (1.6, 4.42, 1.0)]
+    for k, (x, y, s_) in enumerate(floor_fires):
+        pl = plane(f'scorch_floor{k}', 2.6 * s_, 2.6 * s_, o + Vector((x, y, 0.003 + 0.0004 * k)), scorch, col,
+                   rot=(0, 0, rnd.uniform(0, 6.28)))
+        pl.visible_shadow = False
+        cl = plane(f'soot_ceiling{k}', 3.0 * s_, 3.0 * s_, o + Vector((x, y, 4.148 - 0.0004 * k)), scorch, col,
+                   rot=(math.radians(180), 0, rnd.uniform(0, 6.28)))
+        cl.visible_shadow = False
+    # debris under the floor fires: charred planks and broken ceiling tiles, every piece resting on the floor
+    char_wood = char_material('char_debris', (0.3, 0.2, 0.12), 0.95, embers=True, seed=5)
+    tile_m = char_material('char_tile', (0.55, 0.5, 0.45), 0.6, embers=False)
+    for k, (x, y, s_) in enumerate(floor_fires[:8]):
+        for j in range(5):
+            ln = rnd.uniform(0.35, 0.9) * s_
+            pc = box(f'debris{k}_{j}', (ln, rnd.uniform(0.06, 0.14), rnd.uniform(0.03, 0.07)),
+                     o + Vector((x + rnd.uniform(-0.35, 0.35) * s_, y + rnd.uniform(-0.35, 0.35) * s_, 0.5)), char_wood, col,
+                     rot=(rnd.uniform(-0.25, 0.25), rnd.uniform(-0.25, 0.25), rnd.uniform(0, 3.14)))
+            rest_on(pc, o.z + 0.004 * (j + 1))                       # stacked a little: none floats, none sinks
+        tl = box(f'ceiling_tile{k}', (0.6, 0.6, 0.02), o + Vector((x + rnd.uniform(-0.5, 0.5), y + rnd.uniform(-0.5, 0.5), 0.3)),
+                 tile_m, col, rot=(rnd.uniform(-0.08, 0.08), rnd.uniform(-0.08, 0.08), rnd.uniform(0, 3.14)))
+        rest_on(tl, o.z + 0.002)
+    # where the tiles fell from: dark holes in the ceiling over two of the fires
+    hole_m = material('ceiling_hole', (0.004, 0.004, 0.004), rough=1.0)
+    for k, (x, y) in enumerate(((-5.0, 4.0), (5.0, -3.6))):
+        plane(f'ceiling_hole{k}', 0.6, 0.6, o + Vector((x + 0.3, y - 0.2, 4.146)), hole_m, col, rot=(math.radians(180), 0, 0.3))
+    # a stool knocked over, lying on its side on the floor (seat and post as one piece, resting on the floor)
+    chrome = bpy.data.materials.get('cafe_chrome')
+    seat = char_material('char_stool', (0.7, 0.06, 0.05), 0.5, embers=False)
+    post = cylinder('stool_fallen_post', 0.04, 0.72, o + Vector((-1.9, 1.2, 0.5)), chrome, col, verts=12)
+    st = cylinder('stool_fallen_seat', 0.2, 0.09, o + Vector((-1.9, 1.2 + 0.36, 0.5)), seat, col, verts=20)
+    for ob in (post, st):
+        ob.rotation_euler = (math.radians(90), 0, 0)
+    post.location.y = 1.2 - 0.0
+    st.location.y = 1.2 + 0.405
+    rest_on(post, o.z)
+    st.location.z = post.location.z
+    rest_on(st, o.z)
+    # the curtain at the window, half burnt away: a hanging sheet, holes eaten through it from the bottom up
+    cur = bpy.data.materials.new('curtain_burnt')
+    cur.use_nodes = True
+    nt = cur.node_tree
+    bsdf = nt.nodes['Principled BSDF']
+    tc = nt.nodes.new('ShaderNodeTexCoord')
+    sep = nt.nodes.new('ShaderNodeSeparateXYZ'); nt.links.new(tc.outputs['Generated'], sep.inputs[0])
+    nz = nt.nodes.new('ShaderNodeTexNoise'); nz.inputs['Scale'].default_value = 6.0; nz.inputs['Detail'].default_value = 6.0
+    nt.links.new(tc.outputs['Object'], nz.inputs['Vector'])
+    h = nt.nodes.new('ShaderNodeMath'); h.operation = 'ADD'; nt.links.new(sep.outputs['Y'], h.inputs[0]); nt.links.new(nz.outputs['Fac'], h.inputs[1])
+    keep = nt.nodes.new('ShaderNodeMapRange'); keep.clamp = True       # gone below the burn line, ragged
+    keep.inputs['From Min'].default_value = 0.85; keep.inputs['From Max'].default_value = 0.9
+    nt.links.new(h.outputs[0], keep.inputs['Value']); nt.links.new(keep.outputs['Result'], bsdf.inputs['Alpha'])
+    edge = nt.nodes.new('ShaderNodeMapRange'); edge.clamp = True       # a charred, glowing edge just above the line
+    edge.inputs['From Min'].default_value = 1.05; edge.inputs['From Max'].default_value = 0.88
+    nt.links.new(h.outputs[0], edge.inputs['Value'])
+    mx = nt.nodes.new('ShaderNodeMix'); mx.data_type = 'RGBA'
+    mx.inputs['A'].default_value = (0.5, 0.06, 0.05, 1); mx.inputs['B'].default_value = (0.02, 0.015, 0.012, 1)
+    nt.links.new(edge.outputs['Result'], mx.inputs['Factor']); nt.links.new(mx.outputs['Result'], bsdf.inputs['Base Color'])
+    gl = nt.nodes.new('ShaderNodeMapRange'); gl.clamp = True
+    gl.inputs['From Min'].default_value = 0.92; gl.inputs['From Max'].default_value = 0.88; gl.inputs['To Max'].default_value = 5.0
+    nt.links.new(h.outputs[0], gl.inputs['Value'])
+    bsdf.inputs['Emission Color'].default_value = (1.0, 0.3, 0.04, 1)
+    nt.links.new(gl.outputs['Result'], bsdf.inputs['Emission Strength'])
+    cur.blend_method = 'BLEND'
+    bpy.ops.mesh.primitive_plane_add(size=1)
+    cp = bpy.context.active_object
+    cp.name = 'curtain'
+    for c in list(cp.users_collection):
+        c.objects.unlink(cp)
+    col.objects.link(cp)
+    cp.scale = (0.75, 2.2, 1)
+    cp.rotation_euler = (math.radians(90), 0, 0)
+    cp.location = o + Vector((-4.9, 4.7, 2.15))                     # from the curtain rail at 3.25 m down to 1.05 m
+    sub = cp.modifiers.new('sub', 'SUBDIVIDE' if False else 'SUBSURF'); sub.levels = 0
+    wave = cp.modifiers.new('folds', 'WAVE'); wave.use_x = True; wave.use_y = False; wave.height = 0.04; wave.width = 0.25
+    wave.speed = 0.0
+    cp.data.materials.append(cur)
+    rail = cylinder('curtain_rail', 0.012, 1.0, o + Vector((-4.9, 4.72, 3.27)), chrome, col, rot=(0, math.radians(90), 0), verts=8)
+    return col
 
 
 def build_cafe():
@@ -381,40 +658,37 @@ def build_cafe():
         for c in list(t.users_collection):
             c.objects.unlink(t)
         col.objects.link(t)
-    box('coffee_machine', (0.6, 0.5, 0.7), o + Vector((4.4, 3.3, 1.45)), chrome, col, bevel=0.03)
+    box('coffee_machine', (0.6, 0.5, 0.7), o + Vector((4.4, 2.75, 1.46)), chrome, col, bevel=0.03)   # on the counter top
+    # (it stood at y 3.3, behind the counter, 1.1 m off the floor with nothing under it)
     # pendant lamps (warm), and the fires: on tables, the counter, the menu board, the floor in a corner
     for k, x in enumerate((-3.6, -0.8, 2.0, 4.0)):
         cylinder(f'pendant_cord{k}', 0.008, 1.2, o + Vector((x, 1.0 if k > 1 else -0.8, 3.6)), board_m, col, verts=6)
         cone = cylinder(f'pendant{k}', 0.22, 0.18, o + Vector((x, 1.0 if k > 1 else -0.8, 2.95)), trim_m, col, verts=20)
         light(f'L_pendant{k}', 'POINT', o + Vector((x, 1.0 if k > 1 else -0.8, 2.8)), 12, (1.0, 0.75, 0.45), lit, size=0.15)
+    # the fires, each on the thing that is burning and burning like it: baked simulations (firesims.py), one recipe per
+    # fuel, every instance with its own size, turn and start time. Surfaces: table tops at 0.805 m, counter top 1.11 m,
+    # booth seats 0.48 m (backs on the side away from the table), the walls' inner faces at x = +-5.85 and y = 4.85.
     rnd = random.Random(5)
-    spots = [((-3.6, 0.6, 0.81), 0.8), ((-0.8, -2.6, 0.81), 0.65), ((1.4, 2.6, 1.11), 0.75), ((3.6, 2.6, 1.11), 0.9),
-             ((3.6, 4.6, 2.5), 1.0), ((-5.4, 4.2, 0.0), 1.8), ((5.3, -3.8, 0.0), 2.0), ((-3.6, -2.2, 0.81), 0.6),
-             ((5.6, 3.0, 0.0), 1.6), ((-5.6, -3.5, 0.0), 1.5), ((0.4, 4.6, 0.0), 1.3), ((-1.0, 4.6, 3.0), 0.9),
-             # more: the booths' seats, a stool, burning debris on the floor, the coffee machine, the far corner
-             ((-3.6, 1.45, 0.48), 0.7), ((-2.2, -4.2, 0.0), 0.9),               # (none near the duel's floor)
-             ((4.4, 3.3, 1.8), 0.55), ((-5.4, 0.0, 0.0), 1.2), ((3.0, -4.3, 0.0), 1.1)]
-    for k, (p, s) in enumerate(spots):
-        fire(f'fire{k}', o + Vector(p), s * 1.25, col, lit, energy=18 + 38 * s, seed=rnd.uniform(0, 20))   # (darker room: the fire is the light)
-    # flames climbing the walls (wide, flat fire boxes against them) and a burning curtain by the window
-    for k, (p, sz) in enumerate((((-5.75, 2.0, 0.0), (0.4, 2.2, 3.0)), ((5.75, -1.5, 0.0), (0.4, 2.6, 3.2)),
-                                 ((1.6, 4.75, 0.0), (2.4, 0.4, 2.6)), ((-4.9, 4.7, 1.1), (0.7, 0.35, 2.6)))):
-        wf = box(f'wallfire{k}', sz, o + Vector(p) + Vector((0, 0, sz[2] / 2)), fire_material(f'wallfire_m{k}', 30 + k * 5, 'sheet'), col)
-        wf.visible_shadow = False
-        wf['cine_ignore'] = True
-        wl = light(f'L_wallfire{k}', 'AREA', o + Vector(p) + Vector((0, 0, sz[2] * 0.4)), 150, (1.0, 0.4, 0.08), lit, size=1.5)
-        _drive(wl.data, 'energy', f'150 * (0.75 + 0.2 * sin(frame * 0.8 + {k * 3}) + 0.1 * sin(frame * 2.3 + {k}))')
-    # flames rolling across the ceiling from the wall fires (rollover): fire boxes turned on their side, licking sideways
-    # (turned 90 degrees about y, a box's +z, the way the flame climbs, points along +x; then rz turns it away from its wall)
-    for k, (p, sz, rz) in enumerate((((-4.6, 2.0, 3.95), (2.4, 2.0, 0.5), 0), ((4.4, -1.5, 3.95), (2.6, 2.4, 0.5), 180),
-                                     ((1.6, 3.6, 3.95), (2.4, 2.2, 0.5), -90))):
-        rf = box(f'rollover{k}', (sz[2], sz[1], sz[0]), o + Vector(p), fire_material(f'rollover_m{k}', 60 + k * 7, 'sheet'), col,
-                 rot=(0, math.radians(90), math.radians(rz)))
-        rf.visible_shadow = False
-        rf['cine_ignore'] = True
-        rl = light(f'L_rollover{k}', 'AREA', o + Vector(p) - Vector((0, 0, 0.3)), 90, (1.0, 0.38, 0.06), lit, size=1.6,
-                   rot=(0, 0, 0))
-        _drive(rl.data, 'energy', f'90 * (0.7 + 0.25 * sin(frame * 0.7 + {k * 5}) + 0.1 * sin(frame * 2.9 + {k}))')
+    FIRES = [('table', (-3.6, 0.6, 0.805), 0.85, 20), ('paper', (-0.8, -2.6, 0.805), 1.0, 0),       # (napkins and a menu)
+             ('table', (-3.6, -2.2, 0.805), 0.65, 140), ('grease', (2.3, 2.6, 1.11), 0.95, 0),
+             ('machine', (4.4, 2.75, 1.81), 0.8, 0),
+             ('booth', (-3.6, 1.45, 0.4), 1.0, 0), ('booth', (-3.6, -3.05, 0.4), 0.9, 180),
+             ('sheet', (-5.42, 2.0, 0.0), 1.0, 90), ('sheet', (5.38, -1.5, 0.0), 1.1, -90),
+             ('sheet', (1.6, 4.42, 0.0), 1.0, 0), ('sheet', (-4.9, 4.42, 1.0), 0.7, 0),             # (the last: the curtain)
+             ('debris', (-5.0, 4.0, 0.0), 1.2, 30), ('debris', (5.0, -3.6, 0.0), 1.3, 200), ('debris', (5.3, 3.8, 0.0), 0.9, 75),
+             ('debris', (-5.0, -3.4, 0.0), 1.1, 310), ('debris', (0.4, 4.2, 0.0), 0.85, 120), ('debris', (-2.2, -4.1, 0.0), 0.75, 250),
+             ('debris', (-5.1, 0.0, 0.0), 1.0, 160), ('debris', (3.0, -4.1, 0.0), 0.9, 15)]
+    simmed = 0
+    for k, (rec, p, sc_, rz) in enumerate(FIRES):
+        sc_ *= rnd.uniform(0.92, 1.08)
+        got = sim_fire(f'fire{k}', rec, o + Vector(p), col, lit, scale=sc_, rot=math.radians(rz), start=rnd.randint(0, 191),
+                       energy=20 + 40 * sc_, seed=rnd.uniform(0, 20))
+        if got is None:                                            # not baked: the procedural flame (quick looks, no setup)
+            fire(f'fire{k}', o + Vector(p), sc_, col, lit, energy=18 + 38 * sc_, seed=rnd.uniform(0, 20))
+        else:
+            simmed += 1
+    print('CAFE fires', len(FIRES), 'simulated', simmed)
+    burn_cafe(col, o)
     smoke_layer = box('cafe_smoke_layer', (11.6, 9.6, 1.3), o + Vector((0, 0, 3.6)), smoke_material('cafe_smoke_layer_m', 7, 3.5, 'layer'), col)
     smoke_layer.visible_shadow = False
     smoke_layer['cine_ignore'] = True
@@ -629,6 +903,436 @@ def spark_burst(name, centre, col, count=90, radius=0.9, seed=1, up=0.35, colour
     return cloud, spark
 
 
+# ---------------------------------------------------------------- set dressing: placed on real surfaces, checked
+DRESSED = []                                             # (object, kind) for the placement check after the build
+SKIP_RAY = ('haze', 'rain', 'smoke', 'fire', 'dust', 'embers', 'scorch', 'soot', 'cafe_smoke', 'L_', 'shockwave', 'spark')
+
+
+ASSEMBLIES = (('couch',), ('lamp_',), ('mini_fridge', 'fridge_'), ('dartboard',), ('shelf_',), ('side_',), ('crust',), ('cup_stack',),
+              ('pie',), ('till',), ('clock',), ('extinguisher',), ('skylight',), ('crate', 'pallet'), ('dish',), ('elec_box', 'conduit'))
+
+
+def _group(name):
+    return next((k for k, g in enumerate(ASSEMBLIES) if name.startswith(g)), None)
+
+
+_TREES = {}                                              # object name -> (world-space BVH, bbox min, bbox max)
+
+
+def _tree(ob):
+    """World-space BVH of a mesh object (cached; dropped when the object is moved by put/rest_on)."""
+    hit = _TREES.get(ob.name)
+    if hit is not None:
+        return hit
+    from mathutils.bvhtree import BVHTree
+    dg = bpy.context.evaluated_depsgraph_get()
+    ev = ob.evaluated_get(dg)
+    me = ev.to_mesh()
+    mw = ob.matrix_world
+    vs = [mw @ v.co for v in me.vertices]
+    polys = [tuple(p.vertices) for p in me.polygons]
+    ev.to_mesh_clear()
+    if not vs or not polys:
+        _TREES[ob.name] = (None, None, None)
+        return _TREES[ob.name]
+    mn = Vector([min(v[i] for v in vs) for i in range(3)])
+    mx = Vector([max(v[i] for v in vs) for i in range(3)])
+    _TREES[ob.name] = (BVHTree.FromPolygons(vs, polys), mn, mx)
+    return _TREES[ob.name]
+
+
+def surface_below(x, y, z_from, ignore=(), want_object=False):
+    """Height of the first solid surface under (x, y), looking down from z_from. Rays go against cached world-space BVHs of
+    the meshes whose bounds contain (x, y) (no scene re-evaluation per ray: the café's 38 simulated fire sequences made that
+    slow); volumes, rain, decals and the ignored objects are never candidates."""
+    best, best_ob = None, None
+    org = Vector((x, y, z_from))
+    for ob in bpy.data.objects:
+        if ob.type != 'MESH' or ob.hide_render or ob in ignore or ob.name.startswith(SKIP_RAY) or max(ob.dimensions) > 60:
+            continue
+        mw = ob.matrix_world
+        bb = [mw @ Vector(c) for c in ob.bound_box]
+        if not (min(c.x for c in bb) - 1e-4 <= x <= max(c.x for c in bb) + 1e-4 and
+                min(c.y for c in bb) - 1e-4 <= y <= max(c.y for c in bb) + 1e-4 and min(c.z for c in bb) <= z_from):
+            continue
+        t, mn, mx = _tree(ob)
+        if t is None:
+            continue
+        loc, nrm, idx, dist = t.ray_cast(org, Vector((0, 0, -1)), 200.0)
+        if loc is not None and (best is None or loc.z > best):
+            best, best_ob = loc.z, ob
+    return (best, best_ob) if want_object else best
+
+
+def put(obj, x=None, y=None, z_from=None, kind='rest'):
+    """Rest an object on the surface below it: its lowest vertex 1 mm above that surface."""
+    bpy.context.view_layer.update()
+    x = obj.location.x if x is None else x
+    y = obj.location.y if y is None else y
+    obj.location.x, obj.location.y = x, y
+    z0 = surface_below(x, y, z_from if z_from is not None else obj.location.z + 0.05, ignore=(obj,) + tuple(obj.children_recursive))
+    if z0 is not None:
+        rest_on(obj, z0)
+    DRESSED.append((obj, kind))
+    return obj
+
+
+def check_dressing(bounds):
+    """Placement check: every dressed object rests on something (a ray from just above its lowest point finds a surface
+    within 2 cm below it), sits inside its room (bounds: name prefix -> (xmin, xmax, ymin, ymax, zmax)), and none of its
+    corners is inside a wall. Prints PLACE lines; returns the number of problems."""
+    bad = 0
+    support = {}
+    bpy.context.view_layer.update()
+    for ob, kind in DRESSED:
+        if ob.name not in bpy.data.objects:
+            continue
+        vs = [ob.matrix_world @ v.co for v in ob.data.vertices] if ob.type == 'MESH' and ob.data.vertices else \
+            [ob.matrix_world @ Vector(c) for c in ob.bound_box]
+        lo = min(v.z for v in vs)
+        cx = sum(v.x for v in vs) / len(vs)
+        cy = sum(v.y for v in vs) / len(vs)
+        support[ob.name] = None
+        if kind == 'rest':
+            z0, sup = surface_below(cx, cy, lo + 0.005, ignore=(ob,), want_object=True)
+            support[ob.name] = sup
+            if z0 is None or lo - z0 > 0.02 or z0 - lo > 0.01:
+                print('PLACE floating/sunk', ob.name, 'low', round(lo, 3), 'surface', None if z0 is None else round(z0, 3))
+                bad += 1
+        for pre, (x0, x1, y0, y1, z1) in bounds.items():
+            if ob.name.startswith(pre):
+                out = [v for v in vs if not (x0 <= v.x <= x1 and y0 <= v.y <= y1 and v.z <= z1)]
+                if out:
+                    print('PLACE through a wall', ob.name, len(out), 'corners outside')
+                    bad += 1
+    # intersections with other solid objects (touching a support 1 mm below does not count)
+    from mathutils.bvhtree import BVHTree
+    dg = bpy.context.evaluated_depsgraph_get()
+
+    def tree(o_):
+        try:
+            return BVHTree.FromObject(o_, dg)
+        except Exception:
+            return None
+    solids = [o_ for o_ in bpy.data.objects if o_.type == 'MESH' and not o_.hide_render and not o_.name.startswith(SKIP_RAY)
+              and o_.data.vertices and max(o_.dimensions) < 30]
+    for ob, kind in DRESSED:
+        if ob.name not in bpy.data.objects or ob.type != 'MESH':
+            continue
+        t_ = tree(ob)
+        if t_ is None:
+            continue
+        mn = Vector([min((ob.matrix_world @ Vector(c))[i] for c in ob.bound_box) for i in range(3)])
+        mx = Vector([max((ob.matrix_world @ Vector(c))[i] for c in ob.bound_box) for i in range(3)])
+        if kind == 'decal':                                       # a rug lies under the furniture standing on it
+            continue
+        g_ = _group(ob.name)
+        for other in solids:
+            if other is ob or other.parent is ob or ob.parent is other or other is support.get(ob.name):
+                continue
+            if g_ is not None and _group(other.name) == g_:           # the parts of one piece of furniture
+                continue
+            omn = Vector([min((other.matrix_world @ Vector(c))[i] for c in other.bound_box) for i in range(3)])
+            omx = Vector([max((other.matrix_world @ Vector(c))[i] for c in other.bound_box) for i in range(3)])
+            if any(mx[i] < omn[i] or omx[i] < mn[i] for i in range(3)):
+                continue
+            t2 = tree(other)
+            if t2 is not None and t_.overlap(t2):
+                print('PLACE intersects', ob.name, 'x', other.name)
+                bad += 1
+    print('PLACE checked', len(DRESSED), 'problems', bad)
+    return bad
+
+
+def _txt(name, body, loc, rot, size, mat, col, align='CENTER', extrude=0.0):
+    bpy.ops.object.text_add(location=loc, rotation=rot)
+    t = bpy.context.active_object
+    t.name = name
+    t.data.body = body
+    t.data.size = size
+    t.data.align_x = align
+    t.data.extrude = extrude
+    t.data.materials.append(mat)
+    for c in list(t.users_collection):
+        c.objects.unlink(t)
+    col.objects.link(t)
+    return t
+
+
+def dress_basement(o):
+    """Mom's basement, lived in: a sagging couch against the left wall with a side table, a lamp and cans on it, a metal
+    shelf of junk against the back wall, a mini fridge, posters flat on the walls, a rug under the crew, cables to the CRT,
+    cords for the two bare bulbs (they hung from nothing), a dartboard, a mug and a plate of pizza crusts on the floor."""
+    col = collection('BASEMENT')
+    rnd = random.Random(31)
+    WX, WY = 9.8, 8.8                                              # inner wall faces: x = +-9.8, y = +-8.8; ceiling 4.95
+    fab = material('couch_fabric', (0.22, 0.24, 0.16), rough=0.95)
+    mxsets.add_bump(fab, 140.0, 0.25)
+    # the couch: base, seat cushions, back, arms; against the left wall, facing the room (+x)
+    cx, cy = -WX + 0.47, -2.6
+    base = box('couch_base', (0.9, 2.3, 0.32), o + Vector((cx, cy, 0.5)), fab, col, bevel=0.03); put(base, z_from=o.z + 1)
+    for k in range(3):
+        cu = box(f'couch_cushion{k}', (0.66, 0.7, 0.16), o + Vector((cx + 0.1, cy - 0.74 + k * 0.74, 1.0)), fab, col, bevel=0.05)
+        cu.rotation_euler = (rnd.uniform(-0.03, 0.03), rnd.uniform(-0.04, 0.0), rnd.uniform(-0.04, 0.04))
+        put(cu, z_from=o.z + 2)
+    back = box('couch_back', (0.24, 2.3, 0.55), o + Vector((-WX + 0.2, cy, 0.6)), fab, col, bevel=0.05)
+    back.rotation_euler = (0, math.radians(-6), 0)                 # leaning back toward the wall, clear of it
+    put(back, z_from=o.z + 2)
+    for s_ in (-1, 1):
+        ar = box(f'couch_arm{s_}', (0.9, 0.2, 0.55), o + Vector((cx, cy + s_ * 1.2, 0.6)), fab, col, bevel=0.05)
+        put(ar, z_from=o.z + 2)
+    bl = box('couch_blanket', (0.7, 0.9, 0.03), o + Vector((cx + 0.05, cy + 0.55, 2)), material('blanket', (0.45, 0.1, 0.12), rough=0.9),
+             col, bevel=0.012)
+    bl.rotation_euler = (0.04, -0.06, 0.25)
+    put(bl)
+    # side table at the couch's end with a lamp, energy drink cans and a controller
+    wood = material('side_table', (0.32, 0.2, 0.11), rough=0.6)
+    tx, ty = -WX + 0.4, cy - 1.75
+    top = box('side_table_top', (0.6, 0.6, 0.04), o + Vector((tx, ty, 0.6)), wood, col)
+    for k, (dx, dy) in enumerate(((-0.25, -0.25), (0.25, -0.25), (-0.25, 0.25), (0.25, 0.25))):
+        lg = box(f'side_table_leg{k}', (0.04, 0.04, 0.58), o + Vector((tx + dx, ty + dy, 0.29)), wood, col)
+        put(lg, z_from=o.z + 0.3)
+    top.location.z = o.z + 0.58 + 0.02
+    lamp_m = material('lamp_base', (0.15, 0.15, 0.16), rough=0.4, metal=0.6)
+    lb = cylinder('lamp_base', 0.08, 0.04, o + Vector((tx - 0.1, ty + 0.12, 1.5)), lamp_m, col, verts=20); put(lb)
+    lp = cylinder('lamp_pole', 0.012, 0.42, o + Vector((tx - 0.1, ty + 0.12, 1.5)), lamp_m, col, verts=8); put(lp)
+    shade_m = material('lamp_shade', (0.9, 0.78, 0.55), rough=0.8, emit=(1.0, 0.75, 0.45), strength=1.5)
+    sh = cylinder('lamp_shade', 0.14, 0.18, o + Vector((tx - 0.1, ty + 0.12, 0)), shade_m, col, verts=24)
+    sh.location.z = lp.location.z + 0.21 + 0.06
+    mxsets.light('L_couch_lamp', 'POINT', sh.location + Vector((0, 0, -0.02)), 25, (1.0, 0.72, 0.42), collection('L_BASEMENT'),
+                 size=0.1)
+    can_m = material('energy_can', (0.1, 0.75, 0.25), rough=0.25, metal=0.8)
+    for k in range(3):
+        cn = cylinder(f'side_can{k}', 0.033, 0.12, o + Vector((tx + 0.1 + k * 0.08, ty - 0.12 + rnd.uniform(-0.05, 0.05), 1.5)),
+                      can_m, col, verts=16)
+        if k == 2:
+            cn.rotation_euler = (math.radians(90), 0, rnd.uniform(0, 3))     # one empty, on its side
+        put(cn)
+    ctl = box('controller', (0.15, 0.1, 0.04), o + Vector((tx + 0.12, ty + 0.15, 1.5)), material('controller', (0.05, 0.05, 0.06), rough=0.4),
+              col, bevel=0.015)
+    ctl.rotation_euler = (0, 0, 0.5)
+    put(ctl)
+    # metal shelf against the back wall with boxes, paint cans, a toolbox and a jar of coins
+    steel = material('shelf_steel', (0.42, 0.43, 0.42), rough=0.45, metal=0.85)
+    sx, sy = 4.4, WY - 0.24
+    for k, zz in enumerate((0.02, 0.62, 1.22, 1.82)):
+        box(f'shelf_board{k}', (1.6, 0.45, 0.025), o + Vector((sx, sy, zz + 0.0125)), steel, col)
+    for k, (dx, dy) in enumerate(((-0.79, -0.21), (0.79, -0.21), (-0.79, 0.21), (0.79, 0.21))):
+        box(f'shelf_post{k}', (0.03, 0.03, 1.86), o + Vector((sx + dx, sy + dy, 0.93)), steel, col)
+    box_m = material('cardboard', (0.55, 0.4, 0.24), rough=0.9)
+    paint_m = material('paint_can', (0.7, 0.7, 0.72), rough=0.3, metal=0.7)
+    items = [('box', (0.5, 0.36, 0.3), (-0.45, 0, 1)), ('box', (0.38, 0.3, 0.24), (0.3, 0.02, 1)), ('paint', None, (0.65, -0.05, 1)),
+             ('paint', None, (-0.15, 0.0, 2)), ('paint', None, (0.05, 0.05, 2)), ('box', (0.6, 0.38, 0.4), (0.4, 0, 2)),
+             ('tool', (0.45, 0.2, 0.2), (-0.4, 0, 3)), ('box', (0.42, 0.34, 0.28), (0.35, 0.0, 3)), ('jar', None, (-0.6, 0.05, 0)),
+             ('box', (0.55, 0.38, 0.45), (0.3, 0.0, 0)), ('box', (0.4, 0.32, 0.3), (-0.2, 0.02, 0))]
+    shelf_z = (0.02 + 0.025, 0.62 + 0.025, 1.22 + 0.025, 1.82 + 0.025)
+    for k, (kind, size, (dx, dy, lev)) in enumerate(items):
+        p_ = o + Vector((sx + dx, sy + dy, shelf_z[lev] + 0.4))
+        if kind == 'box':
+            it = box(f'shelf_box{k}', size, p_, box_m, col, bevel=0.005)
+            it.rotation_euler = (0, 0, rnd.uniform(-0.08, 0.08))
+        elif kind == 'paint':
+            it = cylinder(f'shelf_paint{k}', 0.085, 0.19, p_, paint_m, col, verts=20)
+        elif kind == 'tool':
+            it = box(f'shelf_toolbox{k}', size, p_, material('toolbox', (0.7, 0.08, 0.06), rough=0.4, metal=0.4), col, bevel=0.01)
+        else:
+            it = cylinder(f'shelf_jar{k}', 0.07, 0.18, p_, material('jar', (0.75, 0.8, 0.75), rough=0.05), col, verts=20)
+        h_ = size[2] if size else (0.19 if kind == 'paint' else 0.18)    # (dimensions are not updated yet here)
+        it.location.z = o.z + shelf_z[lev] + 0.001 + h_ / 2
+        DRESSED.append((it, 'rest'))
+    # a mini fridge in the back-left, by the boxes, against the wall
+    fr = box('mini_fridge', (0.55, 0.55, 0.85), o + Vector((-1.6, WY - 0.3, 0.5)), material('fridge', (0.85, 0.85, 0.82), rough=0.3),
+             col, bevel=0.02); put(fr)
+    hd = box('fridge_handle', (0.03, 0.03, 0.3), o + Vector((-1.4, WY - 0.592, 0.6)), steel, col)
+    hd.location.z = fr.location.z + 0.15
+    st_ = box('fridge_sticker', (0.18, 0.005, 0.12), o + Vector((-1.7, WY - 0.578, 0)), material('sticker', (0.95, 0.65, 0.1), rough=0.5),
+              col)
+    st_.location.z = fr.location.z + 0.1
+    # posters, flat on the walls (1 cm off the concrete), and a dartboard
+    paper = material('poster_paper', (0.92, 0.9, 0.84), rough=0.8)
+    ink = material('poster_ink', (0.05, 0.6, 0.2), rough=0.6, emit=(0.05, 0.6, 0.2), strength=0.1)
+    red = material('poster_red', (0.75, 0.06, 0.05), rough=0.6)
+    posters = [('HODL', (1.4, WY - 0.01, 2.6), (math.radians(90), 0, math.radians(180)), ink),
+               ('WAGMI', (-4.2, WY - 0.01, 2.4), (math.radians(90), 0, math.radians(180)), red),
+               ('TO THE MOON', (WX - 0.01, -1.5, 2.5), (math.radians(90), 0, math.radians(90)), ink)]
+    for k, (txt, p_, rot, m_) in enumerate(posters):
+        pl = plane(f'poster{k}', 1.4 if len(txt) > 6 else 1.0, 0.75 if len(txt) > 6 else 1.3, o + Vector(p_), paper, col, rot=rot)
+        nrm = (pl.matrix_world.to_quaternion() @ Vector((0, 0, 1))).normalized()
+        if nrm.dot(Vector((p_[0], p_[1], 0))) > 0:                  # the printed side faces into the room
+            pl.rotation_euler.z += math.pi
+            nrm = -nrm
+        t = _txt(f'poster_text{k}', txt, pl.location + nrm * 0.004, pl.rotation_euler, 0.2 if len(txt) > 6 else 0.3, m_, col)
+        DRESSED.append((pl, 'wall'))
+    dart_m = material('dartboard', (0.08, 0.08, 0.07), rough=0.8)
+    db = cylinder('dartboard', 0.23, 0.04, o + Vector((WX - 0.02, 2.6, 1.75)), dart_m, col, rot=(0, math.radians(90), 0), verts=40)
+    ring = cylinder('dartboard_ring', 0.1, 0.045, o + Vector((WX - 0.02, 2.6, 1.75)), red, col, rot=(0, math.radians(90), 0), verts=32)
+    DRESSED.append((db, 'wall'))
+    # a rug under the crew, cables from the CRT across the floor, crusts on a plate, a mug
+    rug_m = material('rug', (0.35, 0.12, 0.1), rough=0.95)
+    mxsets.add_bump(rug_m, 60.0, 0.2)
+    rug = box('rug', (4.2, 3.0, 0.008), o + Vector((0.2, 0.0, 0.5)), rug_m, col)
+    rug.rotation_euler = (0, 0, math.radians(8))
+    put(rug, z_from=o.z + 1)
+    DRESSED[-1] = (rug, 'decal')
+    cab_m = material('cable', (0.03, 0.03, 0.03), rough=0.5)
+    pts = [Vector((3.0, 2.0, 0)), Vector((2.2, 1.6, 0)), Vector((1.4, 1.9, 0)), Vector((0.6, 1.5, 0)), Vector((0.35, 2.1, 0))]
+    cd = bpy.data.curves.new('crt_cable', 'CURVE'); cd.dimensions = '3D'; cd.bevel_depth = 0.008
+    sp = cd.splines.new('NURBS'); sp.points.add(len(pts) - 1); sp.use_endpoint_u = True; sp.order_u = 3
+    for p_, q_ in zip(sp.points, pts):
+        z_ = surface_below(o.x + q_.x, o.y + q_.y, o.z + 1.0) or o.z
+        p_.co = (o.x + q_.x, o.y + q_.y, z_ + 0.009, 1)
+    cb = bpy.data.objects.new('crt_cable', cd); col.objects.link(cb); cd.materials.append(cab_m)
+    plate = cylinder('crust_plate', 0.12, 0.012, o + Vector((-2.4, 1.6, 0.5)), material('plate', (0.92, 0.92, 0.9), rough=0.2), col, verts=28)
+    put(plate)
+    crust_m = material('crust', (0.62, 0.38, 0.14), rough=0.8)
+    for k in range(3):
+        cr = box(f'crust{k}', (0.09, 0.025, 0.02), o + Vector((-2.4 - 0.05 + k * 0.05, 1.6 + (0.03 if k == 1 else -0.02), 1)), crust_m,
+                 col, bevel=0.008)
+        cr.rotation_euler = (0, 0, 1.3 + k * 0.25)                    # side by side on the plate, not through each other
+        put(cr)
+    mug = cylinder('floor_mug', 0.045, 0.1, o + Vector((-2.1, 1.85, 1)), material('mug_b', (0.2, 0.35, 0.6), rough=0.3), col, verts=16)
+    put(mug)
+    # cords for the two bare bulbs: from the ceiling (4.95 m) down to each bulb's socket (they hung from nothing)
+    cord_m = material('bulb_cord', (0.02, 0.02, 0.02), rough=0.6)
+    for name in ('bulb_a', 'bulb_b'):
+        b_ = bpy.data.objects.get(name)
+        if b_ is None:
+            continue
+        top_, bot_ = o.z + 4.95, b_.location.z + 0.07
+        cylinder(name + '_cord', 0.006, top_ - bot_, Vector((b_.location.x, b_.location.y, (top_ + bot_) / 2)), cord_m, col, verts=6)
+        cylinder(name + '_socket', 0.025, 0.05, Vector((b_.location.x, b_.location.y, bot_ + 0.005)), cord_m, col, verts=12)
+    return col
+
+
+def dress_cafe(o):
+    """The café's things, and what the fire did to them: on every table a plate, sauce bottles, a napkin holder (charred and
+    slumped where the table burns); on the counter a till, a pie dome, a stack of cups; a stopped clock and an unused fire
+    extinguisher on the walls; broken plates on the floor."""
+    col = collection('CAFE')
+    rnd = random.Random(41)
+    burning_tables = {0: 1.0, 2: 0.85, 1: 0.5}                     # table index: how burnt (fire on tables 0 and 2, paper on 1)
+    china = material('china', (0.93, 0.92, 0.88), rough=0.2)
+    red = material('ketchup', (0.65, 0.04, 0.03), rough=0.25)
+    yel = material('mustard', (0.85, 0.65, 0.05), rough=0.25)
+    steel = bpy.data.materials.get('cafe_chrome')
+    for k, (x, y) in enumerate(((-3.6, 0.6), (-3.6, -2.2), (-0.8, -2.6))):
+        tk = {0: 0, 1: 2, 2: 1}[k]
+        amt = burning_tables[tk]
+        def m_(base, name):
+            return char_material(f'char_{name}{k}', base, amt, embers=amt > 0.8, seed=k * 2.3) if amt > 0.4 else None
+        pl = cylinder(f'plate{k}', 0.11, 0.012, o + Vector((x - 0.22, y - 0.12, 1.2)), m_((0.93, 0.92, 0.88), 'plate') or china, col, verts=28)
+        put(pl)
+        for j, (mat_, dx) in enumerate(((red, 0.18), (yel, 0.26))):
+            b_ = cylinder(f'sauce{k}_{j}', 0.03, 0.17, o + Vector((x + dx, y + 0.22, 1.3)), m_(mat_.diffuse_color[:3], f'sauce{j}_') or mat_,
+                          col, verts=14)
+            if amt > 0.8:                                          # plastic bottles in the fire sag and lean
+                b_.scale.z = rnd.uniform(0.6, 0.75)
+                b_.rotation_euler = (rnd.uniform(-0.3, 0.3), rnd.uniform(-0.3, 0.3), 0)
+            put(b_)
+        nh = box(f'napkins{k}', (0.12, 0.07, 0.1), o + Vector((x - 0.05, y + 0.28, 1.3)), m_((0.8, 0.8, 0.82), 'napkins') or steel, col)
+        put(nh)
+    # the counter: a till, a pie under a glass dome, a stack of cups, a sugar pourer (counter top at 1.11 m)
+    till = box('till', (0.42, 0.36, 0.22), o + Vector((0.8, 2.55, 1.5)), material('till', (0.18, 0.18, 0.2), rough=0.4, metal=0.3), col,
+               bevel=0.02)
+    put(till)
+    disp = box('till_display', (0.2, 0.03, 0.12), o + Vector((0.8, 2.45, 1.5)), material('till_screen', (0.1, 0.5, 0.2),
+               emit=(0.1, 0.8, 0.3), strength=1.5), col)
+    disp.rotation_euler = (math.radians(-20), 0, 0)
+    disp.location.z = till.location.z + 0.17
+    stand = cylinder('pie_stand', 0.16, 0.02, o + Vector((3.4, 2.65, 1.5)), char_material('char_stand', (0.9, 0.9, 0.9), 0.4, False), col,
+                     verts=28)
+    put(stand)
+    pie = cylinder('pie', 0.13, 0.04, o + Vector((3.4, 2.65, 1.5)), char_material('char_pie', (0.7, 0.45, 0.2), 0.75, True, 4), col, verts=28)
+    put(pie)
+    glass_m = material('dome_glass', (0.9, 0.9, 0.9), rough=0.05)
+    glass_m.node_tree.nodes['Principled BSDF'].inputs['Transmission Weight'].default_value = 0.9
+    bpy.ops.mesh.primitive_uv_sphere_add(radius=0.17, location=o + Vector((3.4, 2.65, 1.5)), segments=24, ring_count=12)
+    dome = bpy.context.active_object
+    dome.name = 'pie_dome'
+    for c in list(dome.users_collection):
+        c.objects.unlink(dome)
+    col.objects.link(dome)
+    bm = bmesh.new(); bm.from_mesh(dome.data)
+    bmesh.ops.delete(bm, geom=[v for v in bm.verts if v.co.z < -0.001], context='VERTS')   # a half dome
+    bm.to_mesh(dome.data); bm.free()
+    dome.data.materials.append(glass_m)
+    dome.location.z = stand.location.z + 0.011
+    for j in range(4):
+        cp = cylinder(f'cup_stack{j}', 0.045, 0.09, o + Vector((1.5, 2.85, 1.5)), china, col, verts=16)
+        cp.location.z = o.z + 1.11 + 0.001 + 0.045 + j * 0.06          # nested cups, each 6 cm above the last
+    sg = cylinder('sugar', 0.04, 0.12, o + Vector((1.9, 2.4, 1.5)), glass_m, col, verts=16); put(sg)
+    # walls: a stopped clock (right wall, inner face x = 5.85), a fire extinguisher on its bracket (left wall, x = -5.85)
+    clock = cylinder('clock', 0.22, 0.04, o + Vector((5.83, 1.2, 2.9)), char_material('char_clock', (0.92, 0.9, 0.85), 0.55, False), col,
+                     rot=(0, math.radians(90), 0), verts=36)
+    for j, (ang, ln) in enumerate(((math.radians(-60), 0.12), (math.radians(160), 0.17))):   # stopped at the moment it started
+        hd = box(f'clock_hand{j}', (0.005, 0.012, ln), o + Vector((5.805, 1.2, 2.9)), material('clock_hand', (0.02, 0.02, 0.02)), col)
+        hd.rotation_euler = (ang, 0, 0)
+        hd.location += Vector((0, -math.sin(ang) * ln / 2, math.cos(ang) * ln / 2))
+    DRESSED.append((clock, 'wall'))
+    ext_m = material('extinguisher', (0.75, 0.05, 0.04), rough=0.3, metal=0.2)
+    ex = cylinder('extinguisher', 0.075, 0.5, o + Vector((-5.73, -0.8, 0.95)), ext_m, col, verts=20)   # (5 mm off its bracket)
+    brk = box('extinguisher_bracket', (0.04, 0.12, 0.06), o + Vector((-5.83, -0.8, 1.05)), steel, col)
+    DRESSED.append((ex, 'wall'))
+    # broken plates on the floor (each shard flat on the tiles)
+    for j in range(7):                                             # (on a jittered grid: random spots overlapped)
+        sh = box(f'shard{j}', (rnd.uniform(0.04, 0.09), rnd.uniform(0.03, 0.06), 0.01),
+                 o + Vector((-2.6 + (j % 4) * 0.32 + rnd.uniform(-0.06, 0.06), -1.5 + (j // 4) * 0.4 + rnd.uniform(-0.06, 0.06), 0.3)),
+                 china, col)
+        sh.rotation_euler = (0, 0, rnd.uniform(0, 3.1))
+        put(sh)
+    return col
+
+
+def dress_rooftop(o):
+    """The roof, at the edges (the action is within 7 m of the centre): a pallet of crates by the stair house, a satellite
+    dish on its stand, an electrical box with conduit along the parapet, two skylights and a roof hatch."""
+    col = collection('ROOFTOP')
+    rnd = random.Random(51)
+    metal = bpy.data.materials.get('roof_metal') or material('roof_metal2', (0.5, 0.52, 0.5), rough=0.45, metal=0.8)
+    wood = material('pallet_wood', (0.45, 0.33, 0.2), rough=0.85)
+    crate = material('crate', (0.3, 0.32, 0.26), rough=0.8)
+    px, py = -7.6, -12.2
+    pal = box('pallet', (1.2, 1.0, 0.14), o + Vector((px, py, 1.0)), wood, col); put(pal, z_from=o.z + 2)
+    for j, (dx, dy, sz) in enumerate(((-0.28, -0.2, 0.5), (0.3, -0.18, 0.5), (0.0, 0.25, 0.45))):
+        cr = box(f'crate{j}', (sz, sz, sz), o + Vector((px + dx, py + dy, 2)), crate, col, bevel=0.01)
+        cr.rotation_euler = (0, 0, rnd.uniform(-0.15, 0.15))
+        put(cr, z_from=o.z + 3)
+    top = box('crate_top', (0.45, 0.45, 0.45), o + Vector((px - 0.1, py - 0.2, 3)), crate, col, bevel=0.01)
+    top.rotation_euler = (0, 0, 0.3)
+    put(top, z_from=o.z + 4)
+    # satellite dish
+    dx_, dy_ = 6.5, 13.2
+    pole = cylinder('dish_pole', 0.05, 1.4, o + Vector((dx_, dy_, 2)), metal, col, verts=10); put(pole, z_from=o.z + 3)
+    bpy.ops.mesh.primitive_uv_sphere_add(radius=0.55, location=(0, 0, 0), segments=24, ring_count=12)
+    dish = bpy.context.active_object
+    dish.name = 'dish'
+    for c in list(dish.users_collection):
+        c.objects.unlink(dish)
+    col.objects.link(dish)
+    bm = bmesh.new(); bm.from_mesh(dish.data)
+    bmesh.ops.delete(bm, geom=[v for v in bm.verts if v.co.z > -0.3], context='VERTS')
+    bm.to_mesh(dish.data); bm.free()
+    dish.data.materials.append(metal)
+    dish.rotation_euler = (math.radians(120), 0, math.radians(200))
+    dish.location = Vector((o.x + dx_, o.y + dy_, pole.location.z + 0.75))
+    # electrical box on the east parapet (inner face x = 16.5) and a conduit running down and along the roof
+    eb = box('elec_box', (0.25, 0.6, 0.8), o + Vector((16.5 - 0.127, -6.0, 0.6)), material('elec', (0.55, 0.58, 0.5), rough=0.6), col)
+    put(eb, z_from=o.z + 2)
+    cd = cylinder('conduit', 0.03, 5.0, o + Vector((16.2, -6.0 - 2.8, 0)), metal, col, rot=(math.radians(90), 0, 0), verts=10)
+    put(cd, z_from=o.z + 1)
+    # skylights (glass on a curb) and a roof hatch
+    glass = material('skylight', (0.15, 0.25, 0.22), rough=0.05, metal=0.2)
+    for j, (x, y) in enumerate(((8.5, 3.5), (-9.5, 2.5))):
+        curb = box(f'skylight_curb{j}', (1.6, 1.2, 0.3), o + Vector((x, y, 1)), material('curb', (0.3, 0.3, 0.28), rough=0.8), col)
+        put(curb, z_from=o.z + 2)
+        gl = box(f'skylight_glass{j}', (1.5, 1.1, 0.02), o + Vector((x, y, 0)), glass, col)
+        gl.location.z = curb.location.z + 0.16
+    hatch = box('roof_hatch', (0.9, 0.9, 0.35), o + Vector((-3.0, 12.5, 1)), material('hatch', (0.25, 0.27, 0.25), rough=0.6, metal=0.4),
+                col, bevel=0.02)
+    put(hatch, z_from=o.z + 2)
+    return col
+
+
 def wet_floor(mat, seed=0.0):
     """Rain on a flat roof: puddles (mirror-smooth, a shade darker) between wet gravel, the puddles shimmering with drops.
     World-position noise picks the puddles; animated 4D Voronoi bumps their normal (the drops), gravel stays matte-wet."""
@@ -688,7 +1392,7 @@ def rooftop_rain(col, centre, size=(30, 30), drops=2500, seed=3):
     cloud = bpy.data.objects.new('rain_cloud', mesh)
     col.objects.link(cloud)
     cloud.location = centre
-    _drive(cloud, 'location', f'{centre.z} - ((frame + 0.5) % 11) * {6 / 11}', index=2)
+    _drive(cloud, 'location', f'{centre.z} - fmod(frame + 0.5, 11) * {6 / 11}', index=2)
     streak_m = material('rain_streak', (0.75, 0.9, 0.85), rough=0.1, emit=(0.6, 0.85, 0.75), strength=0.45)
     streak_m.node_tree.nodes['Principled BSDF'].inputs['Alpha'].default_value = 0.4   # see-through: a drop beside the lens
     streak_m.blend_method = 'BLEND'                                                   # is a faint smear, not a white bar

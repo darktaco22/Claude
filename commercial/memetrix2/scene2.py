@@ -73,6 +73,17 @@ mxsets.build_rooftop()
 sets2.build_cafe()
 sets2.build_white_room(sets2.episode1_stills(os.path.join(EP1, 'frames_jpg', '50dff5a2ee')))
 sets2.rooftop_rain(mxsets.collection('ROOFTOP'), ROOF + Vector((0, 0, 2.0)))
+sets2.dress_basement(BASE)                                         # more things, each on a real surface, then checked
+sets2.dress_cafe(sets2.ORIGIN['CAFE'])
+sets2.dress_rooftop(ROOF)
+_C = sets2.ORIGIN['CAFE']
+sets2.check_dressing({'couch': (BASE.x - 9.8, BASE.x + 9.8, BASE.y - 8.8, BASE.y + 8.8, 4.95),
+                      'shelf': (BASE.x - 9.8, BASE.x + 9.8, BASE.y - 8.8, BASE.y + 8.8, 4.95),
+                      'mini_fridge': (BASE.x - 9.8, BASE.x + 9.8, BASE.y - 8.8, BASE.y + 8.8, 4.95),
+                      'side_': (BASE.x - 9.8, BASE.x + 9.8, BASE.y - 8.8, BASE.y + 8.8, 4.95),
+                      'debris': (_C.x - 5.85, _C.x + 5.85, _C.y - 4.85, _C.y + 4.85, 4.15),
+                      'ceiling_tile': (_C.x - 5.85, _C.x + 5.85, _C.y - 4.85, _C.y + 4.85, 4.15),
+                      'elec_box': (ROOF.x - 16.5, ROOF.x + 16.5, ROOF.y - 16.5, ROOF.y + 16.5, 30)})
 for m_ in bpy.data.materials:                                     # the rooftop in rain: a wet, reflective floor
     if m_.name.startswith(('roof', 'ground_roof')) and m_.use_nodes and 'Principled BSDF' in m_.node_tree.nodes:
         m_.node_tree.nodes['Principled BSDF'].inputs['Roughness'].default_value = 0.12
@@ -591,7 +602,9 @@ line('f11', [S('fine', size='CU', bearing=10, lens=70, frame='center', fstop=1.8
 line('f12', [S('fine', size='MS', bearing=-35, lens=40, frame='left', fstop=2.8, **{'with': ['toshi']}),
              S('toshi', size='MCU', bearing=20, lens=60, frame='center', fstop=2.0)], 'CAFE', weights=[1.3, 1])
 line('t10', [S('toshi', size='MCU', bearing=-10, lens=70, frame='right', fstop=2.0)], 'CAFE')
-line('f13', [S('swordcat', size='MS', angle=-5, bearing=-55, lens=35, frame='center', fstop=2.8, move='push', amount=0.15)], 'CAFE')
+H_walk = heading_to(CAFE + Vector((4.6, -0.6, 0)), CAFE + Vector((0.3, 0.4, 0)))   # (camera held on his walk heading: as he
+line('f13', [S('swordcat', size='MS', angle=-5, bearing=-55, lens=35, frame='center', fstop=2.8, move='push', amount=0.15,  # turned
+               fixed_heading=H_walk)], 'CAFE')                    # into the walk the camera swung 1.8 m in a frame)
 # the test: Swordcat at striking distance (1.3 m); three attacks, Anon blocks, leans out (slow motion), catches the blade
 DUEL = ANIM
 swordcat.walk(DUEL - 2.8, CAFE + Vector((0.3, 0.4, 0)), speed=2.4, then='ready')   # arrives before the duel (late, he slid
@@ -723,7 +736,7 @@ anon.walk(ANIM - 0.2, WHITE + Vector((2.4, 2.3, 0)), speed=0.8)
 line('a17', [S('anon', size='MS', bearing=150, lens=35, frame='center', fstop=4.0, move='track')], 'WHITE', pad=0.6)
 line('wh15', [S('whale', size='MCU', angle=-20, bearing=0, lens=70, frame='center', fstop=2.0, dutch=-6, look_offset=(0, 0, 0.18))], 'WHITE', pad=0.4)
 anon.turn(ANIM, 200, 0.3)
-line('a18', [S('anon', size='CU', bearing=0, lens=70, frame='center', fstop=1.8)], 'WHITE', pad=0.8)
+line('a18', [S('anon', size='CU', bearing=0, lens=70, frame='center', fstop=1.8, fixed_heading=200)], 'WHITE', pad=0.8)   # (he turns as it starts)
 
 # ---------------------------------------------------------------- 5. liquidation (rooftop, rain): the save and the last look
 a = ANIM

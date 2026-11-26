@@ -1,6 +1,6 @@
 #!/bin/bash
 # Prepare a machine to build and render THE MEMETRIX II from the repo alone. Idempotent.
-#   W (work folder, default ~/mx_work).  Leaves: Blender 4.2.3, $W/chars.blend, $W/scene2.blend (a few minutes)
+#   W (work folder, default ~/mx_work).  Leaves: Blender 4.2.3, $W/chars.blend, $W/fire_sims, $W/scene2.blend (~20 min first time)
 set -e
 HERE=$(cd "$(dirname "$0")" && pwd); export W=${W:-$HOME/mx_work}; mkdir -p "$W"
 BL=${BL:-/opt/blender/blender-4.2.3-linux-x64/blender}
@@ -12,6 +12,11 @@ EP1="$HERE/../memetrix"
 for a in exchange basement metaverse; do ln -sfn ../../arena "$EP1/pack/arenas/$a/arena"; done   # episode 1's sets are reused
 cd "$HERE"
 [ -f "$W/chars.blend" ] || "$BL" -b -P ../tools/assets.py -- build ../comeback/models ../noobpro/models/units.json "$W/chars.blend" > "$W/chars.log" 2>&1
+# the café's simulated fires (firesims.py): seven fuels, baked once per machine (about 15 min, 1.7 GB; deterministic)
+for n in table booth grease paper sheet debris machine; do
+  [ -f "$W/fire_sims/$n/DONE.json" ] || "$BL" -b --factory-startup -P firesims.py -- "$W/fire_sims" $n > "$W/firesims_$n.log" 2>&1
+  [ -f "$W/fire_sims/$n/DONE.json" ] || { echo "fire bake failed: $n"; tail -5 "$W/firesims_$n.log"; exit 1; }
+done
 B="$W/scene2.blend"
 if [ ! -f "$B" ] || [ scene2.py -nt "$B" ] || [ sets2.py -nt "$B" ] || [ edl.json -nt "$B" ] || [ ../memetrix/mxsets.py -nt "$B" ] || [ ../tools/cine.py -nt "$B" ]; then
   cp edl.json "$W/edl2_repo.json"

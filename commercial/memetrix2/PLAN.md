@@ -52,6 +52,24 @@ mix) -> review at 3 fps + pop detector -> send.
   the blade. Real-look frames (fog + blur, 40 %) checked: review/look_v35.jpg. Finish checked on them.
 - RENDER_LATER.md + setup.sh / render_worker.sh / finish_all.sh: the render package (12 workers).
 
+## State (2026-11-26)
+- Fires are simulations now (firesims.py, Mantaflow, baked per machine by setup.sh): seven fuels with their own source shapes
+  and combustion (table wood, vinyl booth, counter grease, paper, a wall/curtain sheet, a debris pile, the coffee machine).
+  19 placed fires on the things that burn, each scaled, turned and started differently; each is two copies of its 8 s loop
+  half a loop apart, crossfaded (seamless). VDBs come from a fixed (non-adaptive) grid: an adaptive grid's offset is not in the
+  file. Bakes are deterministic (only metadata differs).
+- The café burns: charred materials (own colour in patches, blistered char, glowing cracks), sagging booth backs, scorch and
+  ash on the floor, soot on the ceiling, fallen ceiling tiles, charred debris under the floor fires, a knocked-over stool, a
+  half-burnt curtain on a rail, charred/melted table things, a till, a pie dome, a stopped clock, an extinguisher.
+  Fixed: the coffee machine floated behind the counter; a fire hung on the wall at 2.5 m.
+- Basement dressed (couch, side table with lamp and cans, shelf of junk, mini fridge, posters, dartboard, rug, CRT cable,
+  plate and mug); the bare bulbs got cords (they hung from nothing). Rooftop: crates on a pallet, satellite dish, electrical
+  box and conduit, skylights, hatch.
+- sets2.check_dressing: every dressed object must rest on a surface (ray), stay inside its room and not intersect anything
+  (BVH); the build prints PLACE lines.
+- Pop check (per film frame: camera and every head): fixed f13 (camera swung 1.8 m in a frame as Swordcat turned into his walk)
+  and a18 (camera whipped as Anon turned).
+
 ## Next
 1. Another full preview after the fixes -> hunt and fix.
 2. Detail passes: rooftop rain and wet reflections, white room, brawl choreography, the Whale.
