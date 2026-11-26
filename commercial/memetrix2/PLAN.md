@@ -70,8 +70,19 @@ mix) -> review at 3 fps + pop detector -> send.
 - Pop check (per film frame: camera and every head): fixed f13 (camera swung 1.8 m in a frame as Swordcat turned into his walk)
   and a18 (camera whipped as Anon turned).
 
+## State (2026-11-26, afternoon)
+- Café fires are Mantaflow simulations, one per fuel (table, booth, grease, paper, sheet/curtain, debris, coffee machine),
+  19 placed instances, each scaled, turned and started at its own point in the loop (`firesims.py`, baked by `setup.sh`).
+- Burnt café: char burns in stages (soot-dulled paint, scorched brown, black blistered char, glowing cracks where hot),
+  world-space grain; soot/ash film over the whole floor, scorch under each fire, soot on the ceiling, debris, sagging booths.
+- Dressing in the basement, café and rooftop goes through `put`/`rest_on` (everything rests on a real surface) and
+  `check_dressing`: build log must say `PLACE checked 76 problems 0`.
+- Scene build exits right after saving (Blender hung on quit until the 2-hour cap).
+- Full animatic (v48) and real-look café/duel/catch frames checked: no pops, clipping or floating props found.
+- Edit 59aee902f7 is ready; the full render waits for the user's go.
+
 ## Next
-1. Another full preview after the fixes -> hunt and fix.
+1. Render on the user's go (RENDER_LATER.md).
 2. Detail passes: rooftop rain and wet reflections, white room, brawl choreography, the Whale.
 3. RENDER_LATER-style package for episode 2 (workers, 67 % / 6 samples, fog + motion blur ON).
 
