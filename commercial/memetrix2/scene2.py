@@ -152,6 +152,8 @@ def animate(obj, path, samples, interp='LINEAR'):
 
 
 # ================================================================ actors
+FIGHT_CLIPS = ('attack1', 'attack2', 'attack3', 'hit', 'die')
+FIGHT = []                                   # (a, who, clip, speed, seconds)
 ONE_SHOT = ('attack1', 'attack2', 'attack3', 'emote', 'hit', 'die', 'ready', 'win', 'lose')
 
 
@@ -214,6 +216,9 @@ class Actor:
     def play(self, a, clip, speed=1.0, hard=False):
         base = clip.split('@')[0]
         self.items.append((a, clip if base in self.clips else 'idle', speed, hard))
+        if base in FIGHT_CLIPS and base in self.clips:            # for the sound: every blow, block and fall, timed
+            r_ = self.clips[base].frame_range
+            FIGHT.append((a, self.name, clip, speed, (r_[1] - r_[0]) / 30.0 / speed))   # (clips are 30 fps)
 
     def lean(self, a, deg):
         self.tilts.append((a, deg))
@@ -777,7 +782,18 @@ anon.play(FALL_T, 'die', 1.6)
 anon.hold(FALL_T + 0.6)
 anon.pos = anon.pos - Vector((0, 0, 0.27))                       # lying on his back the tail props him up: lower him onto the
 anon.keys.append([FALL_T + 0.95, *anon.pos, anon.H, 0])          # roof while the tail swings flat (below)
+michi.play(FALL_T + 0.3, 'hit', 0.8)                             # she flinches as he goes down
+NEAR = michi.pos + (anon.pos - michi.pos).normalized() * 0.3
+michi.walk(FALL_T + 0.75, NEAR, speed=0.9)                       # and steps in to him
+michi.turn(FALL_T + 1.45, heading_to(NEAR, anon.pos), 0.4)    # (after the step lands)
 shot('collapse', 1.8, S('anon', size='WS', angle=40, bearing=160, lens=35, frame='center', fstop=4.0, **{'with': ['michi']}), 'ROOFTOP')
+ALIVE_T = ANIM                                                   # close on him: still. Then the tail lifts off the roof, weakly.
+TWITCH_T = ALIVE_T + 1.0                                         # (he is spent, not dead)
+shot('still_here', 2.4, S('anon', size='MS', angle=14, bearing=160, lens=45, frame='center', fstop=2.4, move='push', amount=0.08),
+     'ROOFTOP')
+GREEN_T = ANIM + 0.35                                            # every candle in the city turns green, in a wave out from the roof
+shot('city_green', 2.6, S('anon', size='EWS', angle=10, bearing=200, lens=24, frame='center', fstop=5.6, move='crane', amount=4, look_offset=(0, 0, 3.0),
+                          **{'with': ['michi']}), 'ROOFTOP')
 shot('last_jean', 2.4, S('jean', size='CU', bearing=-10, lens=85, frame='center', fstop=1.8, move='push', amount=0.15), 'ROOFTOP')
 END_FILM, END_A = FILM, ANIM
 
@@ -857,7 +873,41 @@ if not DRY:
     hk.matrix_inverse = hook_e.matrix_world.inverted() @ body.matrix_world   # identity until the hook turns
     hk.center = base
     ident = (1.0, 0.0, 0.0, 0.0)
-    animate(hook_e, 'rotation_quaternion', [(F(0), ident), (F(FALL_T + 0.3), ident), (F(FALL_T + 0.9), tuple(q))], 'BEZIER')
+    # alive: a beat after the close-up starts the tail tip lifts off the roof and settles again
+    d_ = q @ (tipc - base)                                         # the tail as it lies; turn it about the axis that raises its tip
+    lift = (Quaternion(d_.cross(Vector((0, 0, 1))).normalized(), math.radians(55)) @ q).normalized()
+    animate(hook_e, 'rotation_quaternion', [(F(0), ident), (F(FALL_T + 0.3), ident), (F(FALL_T + 0.9), tuple(q)),
+                                            (F(TWITCH_T), tuple(q)), (F(TWITCH_T + 0.45), tuple(lift)),
+                                            (F(TWITCH_T + 1.3), tuple(q))], 'BEZIER')
+    # every candle in the city turns green: the lit windows flip from warm to green in a wave out from the roof,
+    # then the streets far below, and the bounce light coming up over the parapet
+    green_ = (0.3, 1.0, 0.42, 1.0)
+    flipped = 0
+    for ob in bpy.data.objects:
+        if not (ob.name.startswith('city') and ob.type == 'MESH' and ob.data.materials and ob.data.materials[0]):
+            continue
+        m_ = ob.data.materials[0]
+        br = next((n for n in m_.node_tree.nodes if n.type == 'TEX_BRICK'), None) if m_.use_nodes else None
+        if br is None:
+            continue
+        t_ = GREEN_T + 0.9 * max(0.0, ((ob.location.xy - ROOF.xy).length - 70) / 350)
+        c1 = br.inputs['Color1']
+        c1.keyframe_insert('default_value', frame=F(t_))
+        c1.default_value = green_
+        c1.keyframe_insert('default_value', frame=F(t_ + 0.12))
+        flipped += 1
+    st_ = bpy.data.materials.get('street_glow')
+    if st_ is not None and st_.use_nodes:
+        ec = st_.node_tree.nodes['Principled BSDF'].inputs['Emission Color']
+        ec.keyframe_insert('default_value', frame=F(GREEN_T + 0.5))
+        ec.default_value = (0.25, 1.0, 0.4, 1.0)
+        ec.keyframe_insert('default_value', frame=F(GREEN_T + 0.9))
+    for ob in bpy.data.objects:
+        if ob.type == 'LIGHT' and ob.name.startswith('city_bounce'):
+            ob.data.keyframe_insert('color', frame=F(GREEN_T + 0.4))
+            ob.data.color = (0.45, 1.0, 0.55)
+            ob.data.keyframe_insert('color', frame=F(GREEN_T + 0.9))
+    print('GREEN city windows', flipped, 'street', st_ is not None)
     print('TAIL base', tuple(round(v, 2) for v in base), 'tip', tuple(round(v, 2) for v in tipc), 'swing', round(math.degrees(q.angle)), 'deg')
 
     # the bull cracks: a glowing red fissure drawn over its side (points found by rays, so it lies on the surface), growing
@@ -936,6 +986,16 @@ if not DRY:
         fc.keyframe_points.insert(f_, v_)
     for actor in A.values():
         actor.finish(END_A + 2.0)
+    # and the clear sign he is alive: his paw lifts weakly off the roof towards Michi, holds, and sinks back
+    # (a layer over the fallen pose on the upper arm; the bone's own axes, measured on the lying rig)
+    reach = Quaternion((1, 0, 0), math.radians(-90)) @ Quaternion((0, 0, 1), math.radians(50))
+    alive = bpy.data.actions.new('anon_alive')
+    for i_ in range(4):
+        fc_ = alive.fcurves.new('pose.bones["mixamorig:LeftArm"].rotation_quaternion', index=i_, action_group='mixamorig:LeftArm')
+        for fr_, qq_ in ((0, Quaternion()), (20, reach), (36, reach), (58, Quaternion())):
+            fc_.keyframe_points.insert(fr_, qq_[i_])
+    st_ = A['anon'].arm.animation_data.nla_tracks.new().strips.new('anon_alive', int(F(TWITCH_T)), alive)
+    st_.blend_type, st_.extrapolation = 'COMBINE', 'NOTHING'
     # the clones become Jeanphil one by one: hidden (scale) until their moment
     for k, n in enumerate(CLONES):
         rig_ = A[n].rig
@@ -1111,9 +1171,23 @@ def film_of(a):
 
 
 EVENTS = {'duel': DUEL + 0.55, 'swing2': DUEL + 1.3, 'catch': EVENTS_CATCH, 'clones': CLONE_T, 'wave': WAVE_T, 'launch': LAUNCH,
-          'doors': DOORS_T, 'liquidation': LIQ, 'save': SAVE_T}
+          'doors': DOORS_T, 'liquidation': LIQ, 'save': SAVE_T, 'fall': FALL_T + 0.9, 'twitch': TWITCH_T, 'green': GREEN_T}
 EVENTS = {k: film_of(v) for k, v in EVENTS.items()}
 EVENTS['lightning'] = [film_of(t_ + 0.2) for t_ in FLASHES]
+
+
+def fight_sound(a, who, clip, speed, length):
+    """When a move is heard: the swing's whoosh, the blow landing, the body hitting the roof (film time, and the shot's speed)."""
+    base, _, frac = clip.partition('@')
+    hit_a = a + (0.08 if frac else 0.03 if base == 'hit' else 0.72 * length if base == 'die' else 0.42 * length)
+    f_ = film_of(hit_a)
+    if f_ is None:
+        return None
+    s0_ = next((s_['s0'] for s_ in SHOTS if s_['t0'] - 1e-6 <= f_ < s_['t1']), 1.0)
+    return [f_, who, base, 'pose' if frac else 'move', round(length / s0_, 3), s0_]
+
+
+EVENTS['fight'] = [e_ for e_ in (fight_sound(*x) for x in sorted(FIGHT, key=lambda x: x[0])) if e_]
 cue_rows = [dict(id=i, f=t, dur=VO[i]['dur'], who=VO[i]['who'], sub=VO[i]['sub']) for i, t in CUES]
 edl = dict(fps=FPS, title=TITLE, events=EVENTS, cue_rows=cue_rows, end=round(END_FILM, 4), last=int(round(END_FILM * FPS)), shots=SHOTS, cues=CUES, tracks=tracks,
            eyes=cine.EYES, eye_fwd=cine.EYE_FWD, frame_scale=cine.FRAME_SCALE, notes=NOTES)

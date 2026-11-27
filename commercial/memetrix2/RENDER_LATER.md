@@ -72,3 +72,13 @@ Delete branches claude/memetrix2-r1..r12, archive the worker sessions.
 
 ## Done (2026-11-27)
 Rendered all 3406 frames of edit 59aee902f7 (12 workers) and finished them: `output/meme-royale-memetrix-2-liquidation.mp4`, 169.4 s, 4066 frames, 97.3 MB. Reviewed at 3 frames a second, no glitches. Fixed in finish.py: the liquidation bar crashed on a negative width 0.2 s before it starts.
+
+## Ending and fight sounds (edit 6ab963c055, 2026-11-27)
+- The ending no longer reads as a death. Michi flinches and steps in. A new close-up ("still_here") shows Anon's paw lifting
+  toward her and his tail twitching. A new wide shot ("city_green") shows every window in the city turning green in a wave
+  (SCRIPT §5). Shots before the collapse are unchanged, so only frames 3426-3646 were re-rendered; 121-3425 are hard links to edit 59aee902f7.
+- Fight sounds come from the animation itself. scene2.py logs every attack, hit and fall (EVENTS['fight']). finish.py
+  turns each one into a swish, punch or body fall, with blade rings on the sword clash and catch. The ending gets a
+  heartbeat, a breath and a swell.
+- Output: 174.4 s, 4186 frames, 4200k video. If the disk fills during finish.py, resume with its ONLY list, then run
+  with SOUND_ONLY=1.

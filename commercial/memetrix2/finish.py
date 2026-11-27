@@ -795,6 +795,108 @@ def impact(t, gain=0.5):
     put('fx', mono(sub * 0.9 + boom), t, gain)
 
 
+def pitched(x, r):
+    """Resample by r (r > 1: higher and shorter; r < 1: lower and longer, as in slow motion)."""
+    i = np.arange(0, len(x) - 1, r)
+    return np.stack([np.interp(i, np.arange(len(x)), x[:, c]) for c in range(x.shape[1])], 1).astype(np.float32)
+
+
+def panned(x, pan):
+    """Constant-power pan, -1 left .. 1 right."""
+    a = (pan + 1) * np.pi / 4
+    return np.stack([x[:, 0] * np.cos(a) * 1.41, x[:, 1] * np.sin(a) * 1.41], 1).astype(np.float32)
+
+
+def highpass(x, k):
+    return x - lowpass(x, k)
+
+
+FIGHT_RNG = np.random.default_rng(57)
+PUNCH, SWING = game('punch_heavy'), game('swing')
+
+
+def punch(t, gain=0.4, slow=1.0, pan=0.0):
+    """A blow landing: the game's punch at a random pitch, a body thump under it and a cloth slap on top."""
+    r = FIGHT_RNG.uniform(0.88, 1.12) * slow
+    x = np.arange(int(0.35 * SR)) / SR
+    thump = np.sin(2 * np.pi * np.cumsum(55 + 70 * np.exp(-x / 0.03)) / SR) * np.exp(-x / 0.09)
+    slap = highpass(FIGHT_RNG.normal(0, 1, len(x)), 6) * np.exp(-x / 0.012) * 0.5
+    body = pitched(mono(thump * 0.9 + slap), slow)
+    put('fx', panned(pitched(PUNCH, r), pan), t - 0.02 / slow, gain * 0.8)
+    put('fx', panned(body, pan), t, gain)
+
+
+def swish(t, gain=0.3, slow=1.0, pan=0.0):
+    """A swing through the air, peaking at t."""
+    r = FIGHT_RNG.uniform(0.92, 1.15) * slow
+    sw = pitched(SWING, r)
+    peak = int(np.argmax(np.abs(sw).sum(1)))
+    put('fx', panned(sw, pan), t - peak / SR, gain)
+
+
+def blade_ring(t, gain=0.2, slow=1.0, seed=0):
+    """Steel ringing: inharmonic partials over a sharp click (slowed: lower and longer)."""
+    r_ = np.random.default_rng(300 + seed)
+    x = np.arange(int(1.6 / slow * SR)) / SR
+    f0 = r_.uniform(1050, 1250) * slow
+    sig = sum(a * np.sin(2 * np.pi * f0 * m * x + r_.uniform(0, 6)) * np.exp(-x * slow / d)
+              for m, a, d in ((1.0, 1.0, 0.7), (2.76, 0.6, 0.45), (5.40, 0.35, 0.25), (8.93, 0.2, 0.12)))
+    click = highpass(r_.normal(0, 1, len(x)), 4) * np.exp(-x * slow / 0.006)
+    put('fx', mono(sig * 0.5 + click * 0.6), t, gain)
+
+
+def body_fall(t, gain=0.35, slow=1.0, pan=0.0):
+    """A body hitting a wet roof: a low thud, a small bounce, a slap of water."""
+    x = np.arange(int(0.6 * SR)) / SR
+    thud = np.sin(2 * np.pi * np.cumsum(45 + 40 * np.exp(-x / 0.04)) / SR) * np.exp(-x / 0.12)
+    bounce = np.roll(thud * 0.35, int(0.11 * SR))
+    bounce[:int(0.11 * SR)] = 0
+    splash = highpass(FIGHT_RNG.normal(0, 1, len(x)), 3) * np.exp(-x / 0.07) * 0.35
+    put('fx', panned(pitched(mono(thud + bounce + splash), FIGHT_RNG.uniform(0.9, 1.1) * slow), pan), t, gain)
+
+
+def heartbeat(t, gain=0.4):
+    """Lub-dub."""
+    x = np.arange(int(0.25 * SR)) / SR
+    beat = np.sin(2 * np.pi * np.cumsum(48 + 25 * np.exp(-x / 0.02)) / SR) * np.exp(-x / 0.06)
+    put('fx', mono(beat), t, gain)
+    put('fx', mono(beat), t + 0.22, gain * 0.65)
+
+
+def breath(t, gain=0.2):
+    """A weak breath out: band-limited noise swelling and fading."""
+    x = np.arange(int(1.1 * SR)) / SR
+    u = x / 1.1
+    air = lowpass(highpass(FIGHT_RNG.normal(0, 1, len(x)), 12), 5) * np.sin(np.pi * u ** 0.6) ** 2
+    put('fx', mono(air * 1.5), t, gain)
+
+
+def fight_sounds(events):
+    """Every blow, swing and fall the animation plays (from the edit: film time of the moment it lands, who, the clip,
+    a move or a held pose, its length on screen, the shot's speed)."""
+    seen = {}
+    for f_, who, base, kind, length, s0 in events:
+        slow = min(1.0, s0)
+        pan = FIGHT_RNG.uniform(-0.35, 0.35)
+        k = 0
+        if who == 'michi':                                       # (her flinch as Anon goes down is not a blow)
+            continue
+        if base.startswith('attack') and kind == 'move':
+            if who == 'swordcat' and slow < 0.6:                  # (the slow-motion slash has its own long whoosh)
+                continue
+            swish(f_, 0.6 if who == 'swordcat' else 0.4, slow, pan)
+        elif base in ('hit', 'die'):
+            k = seen.get((base, round(f_, 1)), 0)                  # the agents are all thrown at once: stagger and thin them
+            seen[(base, round(f_, 1))] = k + 1
+            if k > 5:
+                continue
+        if base == 'hit':
+            punch(f_ + 0.04 * k / slow, 0.42 / (1 + 0.35 * k), slow, pan)
+        elif base == 'die':
+            body_fall(f_ + 0.045 * k + FIGHT_RNG.uniform(0, 0.03), 0.38 / (1 + 0.25 * k) if who != 'anon' else 0.3, slow, pan)
+    print('fight sounds', len(events))
+
+
 def thunder(t, gain=0.5, seed=0):
     """Thunder for a lightning flash: a sharp crack, then a low rumble rolling away for a few seconds."""
     r_ = np.random.default_rng(100 + seed)
@@ -859,13 +961,14 @@ put('mus', seg * env[:, None], b0, 0.3)
 put('fx', game('tower_destroy'), E['shots'][0]['t0'] + 1.7, 0.35)      # the bull's chunk breaks off
 put('fx', game('swing'), EV['duel'] - 0.15, 0.4)
 put('fx', game('tower_hit'), EV['duel'], 0.35)                          # the block: steel on paw
+blade_ring(EV['duel'], 0.16, seed=1)
 whoosh(EV['swing2'], 2.2, 0.3, low=True)                                # the slow-motion slash passing
 put('fx', game('swing'), EV['catch'] - 0.2, 0.4)
 put('fx', game('tower_hit'), EV['catch'], 0.5)                          # the catch
+blade_ring(EV['catch'], 0.2, slow=0.4, seed=2)
 for k in range(11):
     zap(EV['clones'] + 0.12 * k, 0.07)                                  # each copy arrives
-for k in range(3):
-    put('fx', game('punch_heavy'), EV['clones'] + 7.0 + k * 0.7, 0.3)
+fight_sounds(EV.get('fight', []))
 impact(EV['wave'], 0.6)
 put('fx', game('rocket_explode'), EV['wave'], 0.35)
 put('fx', game('rocket_launch'), EV['launch'] - 0.1, 0.5)
@@ -876,6 +979,12 @@ put('fx', game('spell_pump'), EV['save'], 0.5)
 for k, t_ in enumerate(EV.get('lightning', [])):
     thunder(t_, 0.45, k)                                                # the flash, then the crack and the roll
 put('fx', game('level_up'), EV['save'] + 0.3, 0.25)
+if EV.get('fall') is not None:                                          # he is down: a slow heartbeat, a breath as the
+    for k in range(int((EV['green'] + 1.5 - EV['fall'] - 0.5) / 1.05)):   # tail lifts, then the city turns green
+        heartbeat(EV['fall'] + 0.5 + k * 1.05, 0.5 * min(1.0, 0.45 + 0.2 * k) * (0.55 if EV['fall'] + 0.5 + k * 1.05 > EV['green'] else 1))
+    breath(EV['twitch'] - 0.15, 0.22)
+    pad([62, 66, 69, 73], EV['green'] - 0.1, 3.4, gain=0.05, attack=0.6, release=1.6)
+    whoosh(EV['green'] + 0.1, 1.6, 0.12, low=True)
 # closing: out of the film, a whoosh per cast card, the menu music, the logo landing, the tagline typed
 zap(T_CARD, 0.14)
 menu = game('mus_menu')
