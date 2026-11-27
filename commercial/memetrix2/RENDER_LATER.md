@@ -68,3 +68,7 @@ commit it.
 
 ## After that (needs the user's OK)
 Delete branches claude/memetrix2-r1..r12, archive the worker sessions.
+
+
+## Done (2026-11-27)
+Rendered all 3406 frames of edit 59aee902f7 (12 workers) and finished them: `output/meme-royale-memetrix-2-liquidation.mp4`, 169.4 s, 4066 frames, 97.3 MB. Reviewed at 3 frames a second, no glitches. Fixed in finish.py: the liquidation bar crashed on a negative width 0.2 s before it starts.
