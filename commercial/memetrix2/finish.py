@@ -591,7 +591,7 @@ def liquidation_level(t):
     if t0 is None or ts is None or not (t0 - 0.2 <= t < ts + 1.6):
         return None
     if t < ts:
-        return (min(1.0, (t - t0) / max(0.5, ts - t0) * 1.02), False)
+        return (min(1.0, max(0.0, (t - t0) / max(0.5, ts - t0) * 1.02)), False)
     return (max(0.0, 1.0 - (t - ts) / 1.2), True)
 
 
@@ -600,7 +600,8 @@ def draw_liquidation(d, t, level, saved):
     x0, x1, y0 = W / 2 - 360, W / 2 + 360, BAR + 34
     col = (70, 255, 120) if saved else RED
     d.rounded_rectangle((x0 - 6, y0 - 6, x1 + 6, y0 + 46), 10, fill=rgba((0, 0, 0), 190), outline=rgba(col, 230), width=3)
-    d.rounded_rectangle((x0, y0, x0 + (x1 - x0) * level, y0 + 40), 6, fill=rgba(col, 235))
+    if level > 0.02:
+        d.rounded_rectangle((x0, y0, x0 + (x1 - x0) * level, y0 + 40), 6, fill=rgba(col, 235))
     label = 'MARGIN RESTORED' if saved else f'LIQUIDATION  {int(level * 100):3d}%'
     text(d, (W / 2, y0 + 21), label, rub(28, 800), rgba(WHITE), 'mm', stroke=2, stroke_fill=rgba((0, 0, 0)))
     text(d, (x0, y0 - 22), 'MICHI', rub(22, 800), rgba(col), 'lm')
