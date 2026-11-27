@@ -35,19 +35,20 @@ prompt (fill in A B N and the hash):
 > report. 4. Frames go to commercial/memetrix2/frames_jpg/HASH/ and are pushed automatically. 5. When it prints WORKER-DONE,
 > reply WORKER-DONE with the JPG count and send the same line to "@parent" with send_message.
 
-Ranges (for 121-3526; recompute if `edl.json`'s `last` changed: `python3 -c "import json;print(json.load(open('edl.json'))['last'])"`):
-- r1: `./render_worker.sh 121 404`
-- r2: `./render_worker.sh 405 688`
-- r3: `./render_worker.sh 689 972`
-- r4: `./render_worker.sh 973 1255`
-- r5: `./render_worker.sh 1256 1539`
-- r6: `./render_worker.sh 1540 1823`
-- r7: `./render_worker.sh 1824 2107`
-- r8: `./render_worker.sh 2108 2391`
-- r9: `./render_worker.sh 2392 2674`
-- r10: `./render_worker.sh 2675 2958`
-- r11: `./render_worker.sh 2959 3242`
-- r12: `./render_worker.sh 3243 3526`
+Ranges (for 121-3526, balanced by render time: café frames cost ~100 s, the others 25-40 s, ~3.9 h of rendering each;
+recompute if `edl.json`'s `last` changed: `python3 -c "import json;print(json.load(open('edl.json'))['last'])"`):
+- r1: `./render_worker.sh 121 522`
+- r2: `./render_worker.sh 523 911`
+- r3: `./render_worker.sh 912 1051`
+- r4: `./render_worker.sh 1052 1192`
+- r5: `./render_worker.sh 1193 1332`
+- r6: `./render_worker.sh 1333 1473`
+- r7: `./render_worker.sh 1474 1613`
+- r8: `./render_worker.sh 1614 1862`
+- r9: `./render_worker.sh 1863 2213`
+- r10: `./render_worker.sh 2214 2670`
+- r11: `./render_worker.sh 2671 3139`
+- r12: `./render_worker.sh 3140 3526`
 
 ## Finish (one session, after all workers are done)
 ```
