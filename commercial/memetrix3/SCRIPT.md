@@ -331,6 +331,38 @@ ANON! WHY DOES MY BANK SAY I BOUGHT FOUR THOUSAND DOLLARS OF "MOODENG"?
 
 ---
 
+---
+
+## FIGHT CHOREOGRAPHY (custom animation, not the game's clips)
+
+The game's three looping attack clips are gone. Every fight is built with `choreo.py` from **retargeted motion capture**
+(`mocap.py`, CMU mocap, around 50 clips: boxing, kicks, spin and jump kicks, flips, cartwheels, dive rolls, ducks, falls,
+get-ups and swordplay).
+
+**How the choreography works:**
+- **Contact:** each attack is placed so the fist or foot lands on the target's body part on the strike frame.
+- **Hit reactions:** every hit gets a reaction that follows the direction of the blow (spine and head whip, the body is
+  driven back, the knees dip), or a mocap fall or stumble.
+- **Spacing:** fighters keep their spacing; bodies and heads never pass through each other.
+- **Logged events:** every exchange is logged for sound, sparks and camera shake.
+
+**Each fight is written beat by beat:**
+
+| Fight | Beats |
+|---|---|
+| **Raid** (Anon vs bears) | Duck under a swipe, then uppercut and hook. A dive roll under a lunging bear, then a front kick sends a tool cart into it. Michi: a side flip over a bird, then a high kick, in slow motion as it shatters |
+| **Train roof** (Anon and Michi vs sharks and birds) | Michi and Anon back to back with alternating strikes: jab-cross into a roundhouse, a knee into a haymaker. A cartwheel-flip dodge across the car. One continuous 10-second orbit. Swordcat's swordplay set at the rear car |
+| **Shrine stairs** | Giga: slow, heavy haymakers and body shots, with bots flying down the steps. Michi and Anon back to back: a flurry, a kickflip and a jump kick. Moodeng bites |
+| **Exchange** (vs Jeanwhale) | Anon: a one-two-three and a spin kick do nothing. Jeanwhale's single haymaker sends Anon into a flip fall and a slide. Anon gets up from his back. The crew joins: Swordcat cuts a brick, Giga blocks, then Anon's flying kick |
+| **Desert** | No fight, a standoff. The power is in the stillness after three fights |
+
+**Camera grammar for the action:**
+- Impact frames: 2-frame hit-stops, shake on heavy blows, sparks at the contact point.
+- Speed ramps into slow motion on the biggest strike of each fight.
+- One long-take orbit per fight.
+
+---
+
 ## PRODUCTION NOTES
 
 ### New effects (none of these were in episodes 1-2)
