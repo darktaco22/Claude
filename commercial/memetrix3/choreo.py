@@ -361,6 +361,39 @@ def limit_pose(arm, loc):
     return out
 
 
+def arm_ik(arm, loc, mats, side, target, pole):
+    """Two-bone IK for an arm: the end of the forearm (wrist) goes to target, the elbow toward pole."""
+    nu, nl = PRE + side + 'Arm', PRE + side + 'ForeArm'
+    if nu not in mats or nl not in mats:
+        return loc
+    B = arm.data.bones
+    Mu, Ml = mats[nu], mats[nl]
+    H, K = Mu.translation, Ml.translation
+    E = Ml @ Vector((0, B[nl].length, 0))
+    a, b = (K - H).length, (E - K).length
+    d = max(abs(a - b) + 1e-3, min(a + b - 1e-3, (target - H).length))
+    u = (target - H).normalized()
+    pv = pole - H
+    v = (pv - u * pv.dot(u))
+    if v.length < 1e-5:
+        return loc
+    v.normalize()
+    ca = max(-1.0, min(1.0, (a * a + d * d - b * b) / (2 * a * d)))
+    Kn = H + u * a * ca + v * a * math.sqrt(max(0.0, 1 - ca * ca))
+    En = H + u * d
+    R1 = (K - H).normalized().rotation_difference((Kn - H).normalized()).to_matrix()
+    up3 = R1 @ Mu.to_3x3()
+    lo_old = R1 @ Ml.to_3x3()
+    R2 = (R1 @ (E - K)).normalized().rotation_difference((En - Kn).normalized()).to_matrix()
+    lo3 = R2 @ lo_old
+    bu, bl = B[nu], B[nl]
+    rel = lambda bb: (bb.parent.matrix_local.to_3x3().inverted() @ bb.matrix_local.to_3x3())
+    loc = dict(loc)
+    loc[nu] = ((mats[bu.parent.name].to_3x3() @ rel(bu)).inverted() @ up3).to_quaternion()
+    loc[nl] = ((up3 @ rel(bl)).inverted() @ lo3).to_quaternion()
+    return loc
+
+
 class Seg:
     def __init__(self, t, c, yaw, off, speed=1.0, blend=0.15, travel=1.0, i0=0):
         self.t, self.c, self.yaw, self.off, self.speed, self.blend, self.travel, self.i0 = t, c, yaw, off, speed, blend, travel, i0
@@ -386,6 +419,7 @@ class Fighter:
         self.stops = []                # hit-stop times (this fighter's blow connected)
         self.plant = True              # planted-foot IK and catch-up steps
         self.strikes = []              # connecting blows, for close_gaps()
+        self.guards = []               # (t0, t1) high-guard windows (arm IK)
         # which way local X bends the knee back / lifts the thigh forward on this rig (rest pose, facing -Y)
         self.knee_sign = [1, 1]
         for i, (bn, want_back) in enumerate((('LeftUpLeg', False), ('LeftLeg', True))):
@@ -449,7 +483,7 @@ class Fighter:
                 i0 = min(c.strike - 4, int(math.ceil((earliest - t0) * 30 * speed)))
                 t0 += i0 / 30.0 / speed
         thr, thp, tloc = target.where(t_strike)
-        tpts = fk(target.arm, thr, thp, tloc)
+        tpts = fk(target.arm, *target.final_pose(t_strike)) if blocked else fk(target.arm, thr, thp, tloc)
         if blocked:          # the blow lands on the defender's nearer forearm, at mid-length
             me0 = self.where(t0)[1] if self.segs else thp
             best = None
@@ -541,10 +575,49 @@ class Fighter:
         return s, tgt, vel.normalized()
 
     def block(self, t, hold=0.55, move='block_high'):
-        """Raise a tight guard at t (blending in over 0.15 s) and hold it."""
+        """Raise a tight guard at t and hold it: the mocap guard for the body, plus arm IK that puts both forearms
+        up in front of the face (wrists at brow height, elbows down and in), blending in over 0.12 s."""
         c = clip(self.arm, move)
         speed = max(0.25, min(1.0, (c.n - 1) / 30.0 / hold))
+        self.guards.append((t - 0.12, t + hold))
         return self.play(t - 0.15, move, speed=speed, blend=0.15)
+
+    def _guard_w(self, t):
+        w = 0.0
+        for a, b in self.guards:
+            if a - 0.12 < t < b + 0.2:
+                wi = min(1.0, (t - (a - 0.12)) / 0.12) if t < a else 1.0
+                wo = min(1.0, ((b + 0.2) - t) / 0.2) if t > b else 1.0
+                x = max(0.0, min(wi, wo))
+                w = max(w, x * x * (3 - 2 * x))
+        return w
+
+    def _apply_guard(self, t, hr, hp, loc):
+        w = self._guard_w(t)
+        if w <= 0.0:
+            return loc
+        pts = fk(self.arm, hr, hp, loc)
+        mats = dict(fk.mats)
+        hb = self.arm.data.bones.get(PRE + 'Head')
+        if hb is None:
+            return loc
+        head = pts[PRE + 'Head'][0]
+        f = look_dir(self.arm, hr, hp, loc)
+        up = Vector((0, 0, 1))
+        r = f.cross(up).normalized()
+        hl = hb.length
+        out = dict(loc)
+        for sd, sg in (('Left', -1), ('Right', 1)):
+            tgt = head + f * (0.12 + 0.6 * hl) + r * sg * 0.06 + up * (0.25 * hl)
+            pole = head + f * 0.25 - up * 0.6 + r * sg * 0.25
+            ik = arm_ik(self.arm, out, mats, sd, tgt, pole)
+            for bn in (PRE + sd + 'Arm', PRE + sd + 'ForeArm'):
+                if bn in ik and bn in out:
+                    q0 = out[bn]
+                    q1 = ik[bn] if ik[bn].dot(q0) >= 0 else -ik[bn]
+                    out[bn] = q0.slerp(q1, w)
+            # the IK needs the shoulder's world matrix after the upper arm: recompute for the next side
+        return out
 
     def hit(self, t, from_fighter=None, direction=None, power=1.0, zone='head', contact=None, lat=None):
         """Full-body procedural hit reaction, added on top of whatever the fighter is doing.
@@ -739,6 +812,7 @@ class Fighter:
                 if name in poses and name in loc:
                     P = poses[name]
                     loc[name] = loc[name] @ (P.inverted() @ eq.to_matrix() @ P).to_quaternion()
+        loc = self._apply_guard(t, hr, hp, loc)
         return hr, hp, limit_pose(self.arm, loc)
 
     # ---------------------------------------------------------------- feet
@@ -840,6 +914,7 @@ class Fighter:
                 o = push + self._sep(t)
                 o = Vector((o.x, o.y, 0))
                 loc = self._feet(t, hr, hp, loc, o, feet_state, push.z)
+            loc = self._apply_guard(t, hr, hp, loc)
             loc = limit_pose(self.arm, loc)
             for k, v in loc.items():
                 vals[k] = v
