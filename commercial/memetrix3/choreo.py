@@ -1076,13 +1076,23 @@ def _seg_seg(p1, q1, p2, q2):
     return p1 + d1 * s, p2 + d2 * t
 
 
-def overlap(A, B, t):
+def _limb_chain(limb):
+    if 'Hand' in limb:
+        sd = limb.replace('Hand', '')
+        return {PRE + sd + 'Hand', PRE + sd + 'ForeArm'}
+    sd = limb.replace('Foot', '')
+    return {PRE + sd + 'Foot', PRE + sd + 'ToeBase', PRE + sd + 'Leg'}
+
+
+def overlap(A, B, t, skip_a=(), skip_b=()):
     """Deepest capsule overlap between two fighters at time t (final pose incl. hits and spacing):
     (depth m, horizontal unit vector to move A away from B, bone of A, bone of B)."""
     ca, cb = fit_capsules(A.arm), fit_capsules(B.arm)
     pa, pb = fk(A.arm, *A.final_pose(t)), fk(B.arm, *B.final_pose(t))
     best = (0.0, Vector(), None, None)
     for na, (ra, a0, a1) in ca.items():
+        if na in skip_a:
+            continue
         h_, t_ = pa[na]
         ha, ta = h_.lerp(t_, a0), h_.lerp(t_, a1)
         for nb, (rb, b0, b1) in cb.items():
@@ -1117,7 +1127,18 @@ def resolve_contacts(fighters, t0, t1, iters=4, margin=0.008, report=True):
                 for B in fighters[i + 1:]:
                     if (A.where(t)[1] - B.where(t)[1]).length > 2.6:
                         continue
-                    d, v, na, nb = overlap(A, B, t)
+                    # a blow's own limb is meant to touch its target around the strike: close_gaps keeps
+                    # that contact on the surface, so it is left out here
+                    sa, sb = set(), set()
+                    for st in A.strikes:
+                        if st['target'] is B and abs(t - st['t']) <= 0.1:
+                            sa |= _limb_chain(st['limb'])
+                    for st in B.strikes:
+                        if st['target'] is A and abs(t - st['t']) <= 0.1:
+                            sb |= _limb_chain(st['limb'])
+                    d, v, na, nb = overlap(A, B, t, sa, sb) if not sb else overlap(B, A, t, sb, sa)
+                    if sb:
+                        v = -v
                     if d <= 0.002:
                         continue
                     n += 1
@@ -1146,36 +1167,57 @@ def resolve_contacts(fighters, t0, t1, iters=4, margin=0.008, report=True):
                     F.sep[fr] = F.sep.get(fr, Vector()) + v
 
 
-def strike_gap(A, B, t, limb):
+def strike_gap(A, B, t, limb, want_dir=False):
     """Surface gap (m) between A's striking limb and the nearest part of B at time t: 0 = touching,
     negative = inside, positive = short."""
     ca, cb = fit_capsules(A.arm), fit_capsules(B.arm)
     pa, pb = fk(A.arm, *A.final_pose(t)), fk(B.arm, *B.final_pose(t))
     names = [n for n in (PRE + limb, PRE + limb.replace('Hand', 'ForeArm'), PRE + limb.replace('Foot', 'ToeBase'),
                          PRE + limb.replace('Foot', 'Leg')) if n in ca]
-    best = 9.0
+    best, bv = 9.0, Vector((1, 0, 0))
     for na in names:
         ra, a0, a1 = ca[na]
         h_, t_ = pa[na]
         for nb, (rb, b0, b1) in cb.items():
             g_, s_ = pb[nb]
             x, y = _seg_seg(h_.lerp(t_, a0), h_.lerp(t_, a1), g_.lerp(s_, b0), g_.lerp(s_, b1))
-            best = min(best, (x - y).length - ra - rb)
+            g = (x - y).length - ra - rb
+            if g < best:
+                best, bv = g, (y - x)
+    if want_dir:
+        v = Vector((bv.x, bv.y, 0))
+        return best, (v.normalized() if v.length > 1e-5 else Vector((1, 0, 0)))
     return best
 
 
-def close_gaps(fighters, iters=4, want=0.004, tol=0.006, report=True):
+def close_gaps(fighters, iters=5, want=0.004, tol=0.006, report=True):
     """Every connecting blow must touch the body's surface on its strike frame: measure the gap between the
-    striking limb's capsule and the defender, and slide the attacker's move in or out by it (a few passes, since
-    moving one blow changes what follows)."""
+    striking limb's capsule and the defender, and slide the attacker's move in or out by it. Each step is capped
+    and kept only if it actually reduces the error (a step can change the defender's reaction and the next
+    blows), otherwise the opposite and half steps are tried."""
     for it in range(iters):
         worst = 0.0
         for F in fighters:
             for st in F.strikes:
-                g = strike_gap(F, st['target'], st['t'], st['limb'])
-                if abs(g - want) > tol:
-                    st['seg'].off = st['seg'].off + st['dir'] * (g - want)
-                worst = max(worst, abs(g - want))
+                def err():
+                    return abs(strike_gap(F, st['target'], st['t'], st['limb']) - want)
+                g, gdir = strike_gap(F, st['target'], st['t'], st['limb'], want_dir=True)
+                e0 = abs(g - want)
+                if e0 > tol:
+                    seg = st['seg']
+                    base = seg.off.copy()
+                    step = max(-0.3, min(0.3, g - want))
+                    best = (e0, base)
+                    for dv, k in ((gdir, 1.0), (st['dir'], 1.0), (gdir, 0.5), (st['dir'], -1.0), (gdir, -0.5), (gdir, 0.25)):
+                        seg.off = base + dv * (step * k)
+                        e = err()
+                        if e < best[0]:
+                            best = (e, seg.off.copy())
+                            if e <= tol:
+                                break
+                    seg.off = best[1]
+                    e0 = best[0]
+                worst = max(worst, e0)
         if report:
             print('GAPS pass %d: worst %.3f m' % (it + 1, worst))
         if worst <= tol:
