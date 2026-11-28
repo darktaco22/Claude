@@ -78,7 +78,7 @@ MOVES = {
 }
 
 # moves whose mocap root wanders (the actor drifted around the capture stage): keep most of them in place
-TRAVEL = {'block_high': 0.05, 'block_tight': 0.05, 'guard': 0.15, 'bounce': 0.2, 'feint': 0.4, 'circle': 0.5, 'duck': 0.2, 'duck_under': 0.25, 'flurry': 0.5}
+TRAVEL = {'fall_back': 0.55, 'fall_face': 0.6, 'flip_fall': 0.6, 'block_high': 0.05, 'block_tight': 0.05, 'guard': 0.15, 'bounce': 0.2, 'feint': 0.4, 'circle': 0.5, 'duck': 0.2, 'duck_under': 0.25, 'flurry': 0.5}
 
 # how each strike lands (mocap velocity at contact is noisy): sideways whip and lift, by move
 STYLE = {
@@ -398,6 +398,8 @@ class Seg:
     def __init__(self, t, c, yaw, off, speed=1.0, blend=0.15, travel=1.0, i0=0):
         self.t, self.c, self.yaw, self.off, self.speed, self.blend, self.travel, self.i0 = t, c, yaw, off, speed, blend, travel, i0
         self.t1 = t + (c.n - 1 - i0) / 30.0 / speed
+        self.anchored = False
+        self.is_attack = False
 
     def pose(self, t, warp=None):
         if warp is not None:
@@ -453,6 +455,7 @@ class Fighter:
         if travel is None:
             travel = TRAVEL.get(move, 1.0)
         s = Seg(t, c, yaw, off, speed, blend, travel)
+        s.anchored = at is None                      # continues from the previous move: moves with it
         self.segs.append(s)
         self.segs.sort(key=lambda s_: s_.t)
         return s
@@ -536,6 +539,7 @@ class Fighter:
             if step > 0.6:
                 print('CHOREO WARN %s %s at %.2f: lunges %.2f m in %.2f s (stage them closer)' % (self.name, move, t_strike, step, blend))
         s = Seg(t0, c, yaw, off, speed, blend, TRAVEL.get(move, 1.0), i0)
+        s.is_attack = True
         self.segs.append(s)
         self.segs.sort(key=lambda s_: s_.t)
         FIGHT.append((t_strike, self.name, target.name, move, 'kick' if 'Foot' in c.limb else 'punch', tuple(tgt)))
@@ -647,14 +651,15 @@ class Fighter:
             b = self.where(t)[1]
             direction = Vector((b.x - a.x, b.y - a.y, 0)).normalized()
         c = clip(self.arm, move)
-        hr, hp, _ = self.where(t)
+        hr, hp, _ = self.pose_at(t)          # not where(): the hits' push is added on top of every segment
         # the clip's own travel direction (start -> end) is aligned with the blow
         travel = c.hpos[-1] - c.hpos[0]
         if direction is not None and Vector((travel.x, travel.y)).length > 0.05:
             yaw = math.atan2(direction.y, direction.x) - math.atan2(travel.y, travel.x)
         else:
             yaw = yaw_of(self.arm, hr)
-        s = Seg(t, c, yaw, Vector((hp.x, hp.y, 0)), speed, 0.08)
+        s = Seg(t, c, yaw, Vector((hp.x, hp.y, 0)), speed, 0.08, TRAVEL.get(move, 1.0))
+        s.anchored = True
         self.segs.append(s)
         self.segs.sort(key=lambda s_: s_.t)
         FIGHT.append((t, from_fighter.name if from_fighter else '?', self.name, move, 'fall', tuple(hp)))
@@ -995,7 +1000,7 @@ def separate(fighters, t0, t1, min_d=0.55, radius=None, iters=3, head_r=None):
 CAPS = {}
 # radius caps: tails, capes and skirts are skinned to hips and thighs; the body inside them is much thinner
 CAP_MAX = {'Hips': 0.22, 'UpLeg': 0.14, 'Leg': 0.12, 'Spine': 0.24, 'Spine1': 0.24, 'Spine2': 0.24, 'Shoulder': 0.16,
-           'Neck': 0.12, 'Head': 0.27, 'Arm': 0.1, 'ForeArm': 0.08, 'Hand': 0.07, 'Foot': 0.1, 'ToeBase': 0.09}
+           'Neck': 0.12, 'Head': 0.36, 'Arm': 0.1, 'ForeArm': 0.08, 'Hand': 0.07, 'Foot': 0.1, 'ToeBase': 0.09}
 DEFAULT_R = {'ForeArm': 0.065, 'Arm': 0.08, 'Leg': 0.1, 'UpLeg': 0.12, 'Hand': 0.055, 'Spine1': 0.18, 'Neck': 0.08}
 
 
@@ -1040,7 +1045,9 @@ def fit_capsules(arm, pct=0.7):
         dist = np.array([x[0] for x in d]); us = np.array([x[1] for x in d])
         med = np.percentile(dist, 50)
         keep = dist < med * 2.5 + 0.02                       # drop strays (tails, long hair, capes)
-        r = float(np.percentile(dist[keep], pct * 100))
+        # heads carry boxes, bowls of hair and helmets: fit them to their full outline, not the average
+        hp_ = 97 if b.name.endswith('Head') else pct * 100
+        r = float(np.percentile(dist if b.name.endswith('Head') else dist[keep], hp_))
         u0, u1 = float(np.percentile(us[keep], 5)), float(np.percentile(us[keep], 95))
         caps[b.name] = (min(r, CAP_MAX.get(b.name[len(PRE):].replace('Left', '').replace('Right', ''), 0.28)), u0, u1)
     # limbs whose skin is weighted elsewhere still need a capsule (blocks land on forearms)
@@ -1100,7 +1107,7 @@ def overlap(A, B, t, skip_a=(), skip_b=()):
             hb, tb = g_.lerp(s_, b0), g_.lerp(s_, b1)
             x, y = _seg_seg(ha, ta, hb, tb)
             d = (x - y).length
-            pen = ra + rb - d
+            pen = ra + rb - d + (0.03 if (na.endswith('Head') or nb.endswith('Head')) else 0.0)   # heads: keep air
             if pen > best[0]:
                 v = Vector((x.x - y.x, x.y - y.y, 0))
                 if v.length < 1e-4:
@@ -1215,7 +1222,16 @@ def close_gaps(fighters, iters=5, want=0.004, tol=0.006, report=True):
                             best = (e, seg.off.copy())
                             if e <= tol:
                                 break
+                    delta = best[1] - base
                     seg.off = best[1]
+                    # moves that continue from this one (guards, reactions) travel with it, up to the next blow
+                    for s2 in sorted(F.segs, key=lambda x: x.t):
+                        if s2.t <= seg.t:
+                            continue
+                        if s2.is_attack:
+                            break
+                        if s2.anchored:
+                            s2.off = s2.off + delta
                     e0 = best[0]
                 worst = max(worst, e0)
         if report:
