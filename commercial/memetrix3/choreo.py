@@ -59,6 +59,8 @@ MOVES = {
     'cartwheel_flip': ('88_05', 0, 38, None, None),
     'dive_roll': ('128_10', 0, 107, None, None),
     # defence
+    'block_high': ('13_18', 186, 210, None, None),     # tight high guard: forearms in front of the face
+    'block_tight': ('15_13', 336, 352, None, None),
     'duck': ('77_09', 80, 140, None, None),
     'duck_under': ('134_01', 10, 70, None, None),
     # reactions
@@ -76,7 +78,7 @@ MOVES = {
 }
 
 # moves whose mocap root wanders (the actor drifted around the capture stage): keep most of them in place
-TRAVEL = {'guard': 0.15, 'bounce': 0.2, 'feint': 0.4, 'circle': 0.5, 'duck': 0.2, 'duck_under': 0.25, 'flurry': 0.5}
+TRAVEL = {'block_high': 0.05, 'block_tight': 0.05, 'guard': 0.15, 'bounce': 0.2, 'feint': 0.4, 'circle': 0.5, 'duck': 0.2, 'duck_under': 0.25, 'flurry': 0.5}
 
 # how each strike lands (mocap velocity at contact is noisy): sideways whip and lift, by move
 STYLE = {
@@ -134,6 +136,21 @@ class Clip:
         self.hpos = [r @ (p - p0) + Vector((0, 0, 0)) for p in self.hpos]
         for p, q in zip(self.hpos, data['hips_pos']):
             p.z = q.z
+        # collarbones and neck: the cgspeed T-pose frame holds them in a calibration pose, so their mocap rotation
+        # carries a large constant offset (30-45 deg: hunched shoulders, a craned neck). Centre them on the clip's
+        # average so the character keeps its own shoulders and neck, and only the movement around it transfers.
+        for bn in (PRE + 'LeftShoulder', PRE + 'RightShoulder', PRE + 'Neck'):
+            qs = [l[bn] for l in self.local if bn in l]
+            if not qs:
+                continue
+            acc = Quaternion((0, 0, 0, 0))
+            for q in qs:
+                acc = acc + (q if q.dot(qs[0]) >= 0 else -q)
+            mean = acc.normalized()
+            inv = mean.inverted()
+            for l in self.local:
+                if bn in l:
+                    l[bn] = inv @ l[bn]
         # airborne frames: a short-legged rig must still clear the floor by as much as the performer did (x0.8);
         # no frame may sink below the floor. The lift is smoothed so it reads as a jump, not a pop.
         lift = []
@@ -255,6 +272,95 @@ def leg_ik(arm, hr, loc, mats, targets):
     return loc
 
 
+# ---------------------------------------------------------------- anatomy: joint limits
+HINGE = {}            # arm name -> {bone: hinge axis (bone-local, positive = the natural bend)}
+LIMITS = {            # bone suffix -> (max twist about the bone, max swing), degrees
+    'Arm': (55, 150), 'UpLeg': (40, 125), 'Shoulder': (20, 35), 'Hand': (40, 70), 'Foot': (25, 55),
+    'ToeBase': (10, 40), 'Neck': (35, 45), 'Head': (45, 50), 'Spine': (25, 40), 'Spine1': (25, 40), 'Spine2': (25, 40),
+}
+HINGE_RANGE = {'ForeArm': (-6, 150, 70, 28), 'Leg': (-4, 150, 15, 12)}   # min, max bend, max twist, max off-axis
+
+
+def learn_hinges(arm):
+    """Find each elbow's and knee's hinge axis on this rig from retargeted mocap (where they bend a lot)."""
+    if arm.name in HINGE:
+        return HINGE[arm.name]
+    acc = {}
+    for mv in ('guard', 'jab_cross', 'hook', 'front_kick', 'roundhouse', 'duck', 'getup_back'):
+        try:
+            c = clip(arm, mv)
+        except Exception:
+            continue
+        for loc in c.local:
+            for bn, q in loc.items():
+                key = bn[len(PRE):]
+                if key not in ('LeftForeArm', 'RightForeArm', 'LeftLeg', 'RightLeg'):
+                    continue
+                qq = q if q.w >= 0 else -q
+                ang = qq.angle
+                if ang < math.radians(20):
+                    continue
+                ax = qq.axis
+                # remove the twist part (about the bone's own Y axis) before averaging
+                ax = Vector((ax.x, 0.0, ax.z))
+                if ax.length < 1e-3:
+                    continue
+                a0 = acc.get(bn)
+                v = ax.normalized() * ang
+                if a0 is not None and a0.dot(v) < 0 and a0.length > 0.5:
+                    v = -v
+                acc[bn] = (a0 or Vector()) + v
+    HINGE[arm.name] = {bn: v.normalized() for bn, v in acc.items() if v.length > 1e-3}
+    return HINGE[arm.name]
+
+
+def _swing_twist(q):
+    """q = swing @ twist, twist about the bone's Y axis."""
+    tw = Quaternion((q.w, 0.0, q.y, 0.0))
+    if tw.magnitude < 1e-6:
+        tw = Quaternion()
+    tw.normalize()
+    return q @ tw.inverted(), tw
+
+
+def _clamp_angle(q, maxdeg):
+    if q.w < 0:
+        q = -q
+    if q.angle <= math.radians(maxdeg):
+        return q
+    return Quaternion(q.axis, math.radians(maxdeg))
+
+
+def limit_pose(arm, loc):
+    """Keep every joint inside a natural range: elbows and knees only bend one way, in their own plane, and no
+    limb twists far enough to candy-wrap the skin."""
+    hinges = learn_hinges(arm)
+    out = dict(loc)
+    for bn, q in loc.items():
+        key = bn[len(PRE):]
+        base = key.replace('Left', '').replace('Right', '')
+        if q.w < 0:
+            q = -q
+        if base in HINGE_RANGE and bn in hinges:
+            lo, hi, tmax, omax = HINGE_RANGE[base]
+            h = hinges[bn]
+            sw, tw = _swing_twist(q)
+            rv = sw.axis * sw.angle if sw.angle > 1e-6 else Vector()
+            a = rv.dot(h)
+            off = rv - h * a
+            a = max(math.radians(lo), min(math.radians(hi), a))
+            if off.length > math.radians(omax):
+                off = off.normalized() * math.radians(omax)
+            nv = h * a + off
+            sw2 = Quaternion(nv.normalized(), nv.length) if nv.length > 1e-6 else Quaternion()
+            out[bn] = sw2 @ _clamp_angle(tw, tmax)
+        elif base in LIMITS or key in LIMITS:
+            tmax, smax = LIMITS.get(base, LIMITS.get(key))
+            sw, tw = _swing_twist(q)
+            out[bn] = _clamp_angle(sw, smax) @ _clamp_angle(tw, tmax)
+    return out
+
+
 class Seg:
     def __init__(self, t, c, yaw, off, speed=1.0, blend=0.15, travel=1.0, i0=0):
         self.t, self.c, self.yaw, self.off, self.speed, self.blend, self.travel, self.i0 = t, c, yaw, off, speed, blend, travel, i0
@@ -279,6 +385,7 @@ class Fighter:
         self.hits = []                 # dicts, see hit()
         self.stops = []                # hit-stop times (this fighter's blow connected)
         self.plant = True              # planted-foot IK and catch-up steps
+        self.strikes = []              # connecting blows, for close_gaps()
         # which way local X bends the knee back / lifts the thigh forward on this rig (rest pose, facing -Y)
         self.knee_sign = [1, 1]
         for i, (bn, want_back) in enumerate((('LeftUpLeg', False), ('LeftLeg', True))):
@@ -330,7 +437,7 @@ class Fighter:
         return yaw, off
 
     def attack(self, t_strike, move, target, bone='Head', aim=(0, 0, 0), reach=0.0, speed=1.0, blend=0.15,
-               power=None, zone=None):
+               power=None, zone=None, blocked=False):
         """Start `move` so that its strike frame lands at t_strike with the striking limb on target's bone."""
         c = clip(self.arm, move)
         t0 = t_strike - c.strike / 30.0 / speed
@@ -342,7 +449,31 @@ class Fighter:
                 i0 = min(c.strike - 4, int(math.ceil((earliest - t0) * 30 * speed)))
                 t0 += i0 / 30.0 / speed
         thr, thp, tloc = target.where(t_strike)
-        tgt = fk(target.arm, thr, thp, tloc)[PRE + bone][0] + Vector(aim)
+        tpts = fk(target.arm, thr, thp, tloc)
+        if blocked:          # the blow lands on the defender's nearer forearm, at mid-length
+            me0 = self.where(t0)[1] if self.segs else thp
+            best = None
+            for sd in ('Left', 'Right'):
+                h_, t_ = tpts[PRE + sd + 'ForeArm']
+                mid = (h_ + t_) / 2
+                dd = (Vector((mid.x, mid.y)) - Vector((me0.x, me0.y))).length
+                if best is None or dd < best[0]:
+                    best = (dd, mid, PRE + sd + 'ForeArm')
+            tgt = best[1] + Vector(aim)
+            best_bone = best[2]
+            zone = 'block'
+        else:
+            tgt = tpts[PRE + bone][0] + Vector(aim)
+        # aim at the body's surface, not its bone: back the point off toward the attacker by the target part's
+        # capsule radius plus the fist's (or foot's)
+        tcaps, mcaps = fit_capsules(target.arm), fit_capsules(self.arm)
+        tb = (best_bone if blocked else PRE + bone)
+        lb = PRE + c.limb if PRE + c.limb in mcaps else PRE + c.limb.replace('Hand', 'ForeArm').replace('Foot', 'ToeBase')
+        rr = tcaps.get(tb, (0.08,))[0] + mcaps.get(lb, (0.06,))[0] * 0.8
+        me1 = self.where(t0)[1] if self.segs else thp
+        tow = Vector((me1.x - tgt.x, me1.y - tgt.y, 0))
+        if tow.length > 1e-4:
+            tgt = tgt + tow.normalized() * rr
         # where the limb is, relative to the clip's own root, at the strike frame
         hr, hp, loc = c.at(c.strike)
         tip = limb_tip(self.arm, fk(self.arm, hr, hp, loc), c.limb)
@@ -406,7 +537,14 @@ class Fighter:
                 dirv.z = max(dirv.z, st['up'])
             target.hit(t_strike, self, direction=dirv, power=power, zone=zone, contact=tgt, lat=lat)
             self.stops.append(t_strike)
+            self.strikes.append({'t': t_strike, 'seg': s, 'target': target, 'limb': c.limb, 'dir': away.copy()})
         return s, tgt, vel.normalized()
+
+    def block(self, t, hold=0.55, move='block_high'):
+        """Raise a tight guard at t (blending in over 0.15 s) and hold it."""
+        c = clip(self.arm, move)
+        speed = max(0.25, min(1.0, (c.n - 1) / 30.0 / hold))
+        return self.play(t - 0.15, move, speed=speed, blend=0.15)
 
     def hit(self, t, from_fighter=None, direction=None, power=1.0, zone='head', contact=None, lat=None):
         """Full-body procedural hit reaction, added on top of whatever the fighter is doing.
@@ -488,6 +626,7 @@ class Fighter:
         'chest': (('Spine', 0.30), ('Spine1', 0.45), ('Spine2', 0.55), ('Neck', 0.30), ('Head', 0.45)),
         'gut': (('Spine', -0.6), ('Spine1', -0.8), ('Spine2', -0.6), ('Neck', -0.3), ('Head', 0.4)),
         'legs': (('Spine', -0.1), ('Spine1', -0.1), ('Spine2', 0.05), ('Neck', 0.1), ('Head', 0.2)),
+        'block': (('Spine', 0.08), ('Spine1', 0.12), ('Spine2', 0.18), ('Neck', 0.15), ('Head', 0.2)),
     }
 
     @staticmethod
@@ -515,7 +654,7 @@ class Fighter:
         for h in self.hits:
             dt = t - h['t']
             p, d, zone = h['p'], h['d'], h['zone']
-            kpush = 0.32 * p * (1.15 if zone == 'gut' else 0.9 if zone == 'head' else 1.0)
+            kpush = 0.32 * p * (1.15 if zone == 'gut' else 0.9 if zone == 'head' else 0.45 if zone == 'block' else 1.0)
             if dt < 0:
                 continue
             if dt > 2.5:
@@ -539,7 +678,7 @@ class Fighter:
             # arms: inertia (they trail the torso's whip, then catch up) and a flail on big hits
             lag = 0.07
             whip = pitch * (self._snap(dt) - self._snap(dt - lag)) * (1.0 if zone != 'gut' else -0.8)
-            flail = math.radians(48) * max(0.0, p - 0.55) * self._slow(dt, 18, 3.8)
+            flail = 0.0 if zone == 'block' else math.radians(40) * max(0.0, p - 0.55) * self._slow(dt, 18, 3.8)
             right = h['face'].cross(Z).normalized()          # the fighter's right
             for sd, sgn in (('Left', -1), ('Right', 1)):
                 outv = right * sgn
@@ -571,6 +710,36 @@ class Fighter:
             if dt > 0:
                 w -= 0.9 * min(dt, 0.07)
         return w
+
+    def final_pose(self, t):
+        """The pose as it will be baked (mocap + hits + spacing), minus foot IK: for contact tests."""
+        hr, hp, loc = self.pose_at(t)
+        push, extra, lextra = self._hit_offsets(t)
+        hp = hp + push + self._sep(t)
+        if lextra:
+            loc = dict(loc)
+            for bn, lq in lextra.items():
+                if PRE + bn in loc:
+                    loc[PRE + bn] = loc[PRE + bn] @ lq
+        extra = dict(extra)
+        if 'Hips' in extra:
+            hr = extra.pop('Hips').to_matrix() @ hr
+        if extra:
+            bones = self.arm.data.bones
+            poses = {}
+            for b in bones:
+                if b.parent is None:
+                    poses[b.name] = hr
+                else:
+                    lq = loc.get(b.name, Quaternion())
+                    poses[b.name] = poses[b.parent.name] @ (b.parent.matrix_local.to_3x3().inverted() @ b.matrix_local.to_3x3()) @ lq.to_matrix()
+            loc = dict(loc)
+            for bn, eq in extra.items():
+                name = PRE + bn
+                if name in poses and name in loc:
+                    P = poses[name]
+                    loc[name] = loc[name] @ (P.inverted() @ eq.to_matrix() @ P).to_quaternion()
+        return hr, hp, limit_pose(self.arm, loc)
 
     # ---------------------------------------------------------------- feet
     STEP_AT = 0.11          # m of drift before a foot steps
@@ -671,6 +840,7 @@ class Fighter:
                 o = push + self._sep(t)
                 o = Vector((o.x, o.y, 0))
                 loc = self._feet(t, hr, hp, loc, o, feet_state, push.z)
+            loc = limit_pose(self.arm, loc)
             for k, v in loc.items():
                 vals[k] = v
             for k, v in vals.items():
@@ -744,3 +914,194 @@ def separate(fighters, t0, t1, min_d=0.55, radius=None, iters=3, head_r=None):
                 if r is not None and r.length > v.length:
                     v = r
                 F.sep[fr] = F.sep.get(fr, Vector()) + Vector((v.x, v.y, 0))
+
+
+# ---------------------------------------------------------------- body capsules and contact
+CAPS = {}
+# radius caps: tails, capes and skirts are skinned to hips and thighs; the body inside them is much thinner
+CAP_MAX = {'Hips': 0.22, 'UpLeg': 0.14, 'Leg': 0.12, 'Spine': 0.24, 'Spine1': 0.24, 'Spine2': 0.24, 'Shoulder': 0.16,
+           'Neck': 0.12, 'Head': 0.27, 'Arm': 0.1, 'ForeArm': 0.08, 'Hand': 0.07, 'Foot': 0.1, 'ToeBase': 0.09}
+DEFAULT_R = {'ForeArm': 0.065, 'Arm': 0.08, 'Leg': 0.1, 'UpLeg': 0.12, 'Hand': 0.055, 'Spine1': 0.18, 'Neck': 0.08}
+
+
+def fit_capsules(arm, pct=0.7):
+    """One capsule per bone, fitted to the character's own skin (rest pose): vertices are assigned to the bone
+    that moves them most; the capsule runs along the bone axis over the span those vertices cover (5th-95th
+    percentile), and its radius holds 70 % of them. Stray far vertices (a cat's tail on the hips) are ignored.
+    -> {bone: (radius, u0, u1)} with u along the bone (0 = head, 1 = tail)."""
+    if arm.name in CAPS:
+        return CAPS[arm.name]
+    import numpy as np
+    inv = arm.matrix_world.inverted()
+    bones = arm.data.bones
+    data = {b.name: [] for b in bones}
+    for ob in arm.children_recursive:
+        if ob.type != 'MESH' or ob.hide_render:
+            continue
+        names = {g.index: g.name for g in ob.vertex_groups}
+        mw = inv @ ob.matrix_world
+        for v in ob.data.vertices:
+            if not v.groups:
+                continue
+            g = max(v.groups, key=lambda g_: g_.weight)
+            bn = names.get(g.group)
+            if bn not in data or g.weight < 0.3:
+                continue
+            bb = bones[bn]
+            p = mw @ v.co
+            a_, c_ = bb.head_local, bb.tail_local
+            ab = c_ - a_
+            L2 = max(1e-9, ab.dot(ab))
+            u = (p - a_).dot(ab) / L2
+            if u < -0.6 or u > 1.6:
+                continue
+            q = a_ + ab * u
+            data[bn].append(((p - q).length, u))
+    caps = {}
+    for b in bones:
+        d = data[b.name]
+        if len(d) < 8:
+            continue
+        dist = np.array([x[0] for x in d]); us = np.array([x[1] for x in d])
+        med = np.percentile(dist, 50)
+        keep = dist < med * 2.5 + 0.02                       # drop strays (tails, long hair, capes)
+        r = float(np.percentile(dist[keep], pct * 100))
+        u0, u1 = float(np.percentile(us[keep], 5)), float(np.percentile(us[keep], 95))
+        caps[b.name] = (min(r, CAP_MAX.get(b.name[len(PRE):].replace('Left', '').replace('Right', ''), 0.28)), u0, u1)
+    # limbs whose skin is weighted elsewhere still need a capsule (blocks land on forearms)
+    for b in bones:
+        base = b.name[len(PRE):].replace('Left', '').replace('Right', '')
+        if b.name not in caps and base in ('ForeArm', 'Arm', 'Leg', 'UpLeg', 'Hand', 'Spine1', 'Neck'):
+            caps[b.name] = (DEFAULT_R.get(base, 0.07), 0.0, 1.0)
+    CAPS[arm.name] = caps
+    return caps
+
+
+def _seg_seg(p1, q1, p2, q2):
+    """Closest points between segments p1q1 and p2q2."""
+    d1, d2, r = q1 - p1, q2 - p2, p1 - p2
+    a, e, f = d1.dot(d1), d2.dot(d2), d2.dot(r)
+    if a < 1e-9 and e < 1e-9:
+        return p1, p2
+    if a < 1e-9:
+        s, t = 0.0, max(0.0, min(1.0, f / e))
+    else:
+        c = d1.dot(r)
+        if e < 1e-9:
+            t, s = 0.0, max(0.0, min(1.0, -c / a))
+        else:
+            b = d1.dot(d2)
+            den = a * e - b * b
+            s = max(0.0, min(1.0, (b * f - c * e) / den)) if den > 1e-9 else 0.0
+            t = (b * s + f) / e
+            if t < 0:
+                t, s = 0.0, max(0.0, min(1.0, -c / a))
+            elif t > 1:
+                t, s = 1.0, max(0.0, min(1.0, (b - c) / a))
+    return p1 + d1 * s, p2 + d2 * t
+
+
+def overlap(A, B, t):
+    """Deepest capsule overlap between two fighters at time t (final pose incl. hits and spacing):
+    (depth m, horizontal unit vector to move A away from B, bone of A, bone of B)."""
+    ca, cb = fit_capsules(A.arm), fit_capsules(B.arm)
+    pa, pb = fk(A.arm, *A.final_pose(t)), fk(B.arm, *B.final_pose(t))
+    best = (0.0, Vector(), None, None)
+    for na, (ra, a0, a1) in ca.items():
+        h_, t_ = pa[na]
+        ha, ta = h_.lerp(t_, a0), h_.lerp(t_, a1)
+        for nb, (rb, b0, b1) in cb.items():
+            g_, s_ = pb[nb]
+            hb, tb = g_.lerp(s_, b0), g_.lerp(s_, b1)
+            x, y = _seg_seg(ha, ta, hb, tb)
+            d = (x - y).length
+            pen = ra + rb - d
+            if pen > best[0]:
+                v = Vector((x.x - y.x, x.y - y.y, 0))
+                if v.length < 1e-4:
+                    v = Vector((pa[PRE + 'Hips'][0].x - pb[PRE + 'Hips'][0].x, pa[PRE + 'Hips'][0].y - pb[PRE + 'Hips'][0].y, 0))
+                best = (pen, v.normalized() if v.length > 1e-6 else Vector((1, 0, 0)), na, nb)
+    return best
+
+
+def resolve_contacts(fighters, t0, t1, iters=4, margin=0.008, report=True):
+    """Wherever two fighters' bodies overlap (a fist in a face, a shin through a hip, a head through a head),
+    push them apart by the overlap plus a hair, smoothed into footwork like separate(). Blows then stop on the
+    surface of the body, and blocks stop on the forearms."""
+    f0, f1 = int(t0 * 30), int(t1 * 30)
+    for F in fighters:
+        if not hasattr(F, 'sep'):
+            F.sep = {}
+    for it in range(iters):
+        raw = {F: {} for F in fighters}
+        worst = (0.0, None)
+        n = 0
+        for fr in range(f0, f1 + 1):
+            t = fr / 30.0
+            for i, A in enumerate(fighters):
+                for B in fighters[i + 1:]:
+                    if (A.where(t)[1] - B.where(t)[1]).length > 2.6:
+                        continue
+                    d, v, na, nb = overlap(A, B, t)
+                    if d <= 0.002:
+                        continue
+                    n += 1
+                    c = (d + margin) / 2
+                    raw[A][fr] = raw[A].get(fr, Vector()) + v * c
+                    raw[B][fr] = raw[B].get(fr, Vector()) - v * c
+                    if d > worst[0]:
+                        worst = (d, (round(t, 2), A.name, na[len(PRE):], B.name, nb[len(PRE):]))
+        if report:
+            print('CONTACT pass %d: %d overlapping frames, deepest %.3f m %s' % (it + 1, n, worst[0], worst[1]))
+        if n == 0:
+            break
+        for F in fighters:
+            k = 5
+            for fr in range(f0, f1 + 1):
+                acc, ws = Vector(), 0.0
+                for j in range(-k, k + 1):
+                    w = 1 - abs(j) / (k + 1)
+                    acc += raw[F].get(fr + j, Vector()) * w
+                    ws += w
+                v = acc / ws
+                r = raw[F].get(fr)
+                if r is not None and r.length > v.length:
+                    v = r
+                if v.length > 1e-6:
+                    F.sep[fr] = F.sep.get(fr, Vector()) + v
+
+
+def strike_gap(A, B, t, limb):
+    """Surface gap (m) between A's striking limb and the nearest part of B at time t: 0 = touching,
+    negative = inside, positive = short."""
+    ca, cb = fit_capsules(A.arm), fit_capsules(B.arm)
+    pa, pb = fk(A.arm, *A.final_pose(t)), fk(B.arm, *B.final_pose(t))
+    names = [n for n in (PRE + limb, PRE + limb.replace('Hand', 'ForeArm'), PRE + limb.replace('Foot', 'ToeBase'),
+                         PRE + limb.replace('Foot', 'Leg')) if n in ca]
+    best = 9.0
+    for na in names:
+        ra, a0, a1 = ca[na]
+        h_, t_ = pa[na]
+        for nb, (rb, b0, b1) in cb.items():
+            g_, s_ = pb[nb]
+            x, y = _seg_seg(h_.lerp(t_, a0), h_.lerp(t_, a1), g_.lerp(s_, b0), g_.lerp(s_, b1))
+            best = min(best, (x - y).length - ra - rb)
+    return best
+
+
+def close_gaps(fighters, iters=4, want=0.004, tol=0.006, report=True):
+    """Every connecting blow must touch the body's surface on its strike frame: measure the gap between the
+    striking limb's capsule and the defender, and slide the attacker's move in or out by it (a few passes, since
+    moving one blow changes what follows)."""
+    for it in range(iters):
+        worst = 0.0
+        for F in fighters:
+            for st in F.strikes:
+                g = strike_gap(F, st['target'], st['t'], st['limb'])
+                if abs(g - want) > tol:
+                    st['seg'].off = st['seg'].off + st['dir'] * (g - want)
+                worst = max(worst, abs(g - want))
+        if report:
+            print('GAPS pass %d: worst %.3f m' % (it + 1, worst))
+        if worst <= tol:
+            break

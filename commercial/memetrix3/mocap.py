@@ -20,6 +20,8 @@ from mathutils import Matrix, Quaternion, Vector
 C = Matrix(((1, 0, 0), (0, 0, -1), (0, 1, 0)))          # BVH (Y-up, +Z fwd) -> Blender (Z-up, -Y fwd)
 CI = C.transposed()
 
+AXIAL = ('Hips', 'Spine', 'Spine1', 'Spine2', 'Neck', 'Head', 'LeftShoulder', 'RightShoulder')
+
 # target bone -> (source joint whose rotation drives it, segment start, segment end) for the T-pose direction
 MAP = {
     'Hips': ('Hips', 'Hips', 'Spine1'),
@@ -132,7 +134,12 @@ def sample(arm, bvh_path, start=0, end=None, fps=30, tpose_frame=0, jump_scale=0
         if d.length < 1e-6:
             continue
         rest = b.matrix_local.to_3x3()
-        tref[b.name] = (rest.col[1].normalized().rotation_difference(d.normalized()).to_matrix() @ rest)
+        if b.name[len(pre):] in AXIAL:
+            # torso, collarbones, neck, head: the character's own posture stands for the performer's T pose, so
+            # only the performer's movement transfers, not their build (a human's forward neck, sloped shoulders)
+            tref[b.name] = rest
+        else:
+            tref[b.name] = (rest.col[1].normalized().rotation_difference(d.normalized()).to_matrix() @ rest)
     toes = [n for n in ('LeftToeBase', 'RightToeBase') if n in idx]
     # the floor: low percentile of the lowest toe over the whole capture (frame 0 is not always standing on it)
     floor = float(np.percentile(np.minimum(*[P[:, idx[n], 1] for n in toes]), 1)) - 0.0
