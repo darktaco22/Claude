@@ -1,25 +1,23 @@
 # THE MEMETRIX III: CAPITULATION
-*A Meme Royale parody, episode 3 (the trilogy finale). Target length 2:50 (16:9, letterboxed 2.2:1). Original script; only
-genre tropes are borrowed.*
+*A Meme Royale parody, episode 3 (the trilogy finale). Target length 3:30 (16:9, letterboxed 2.2:1). Original script; only
+genre tropes are borrowed. Draft 2: all-new locations, about three times the action, new effects, and assets sourced from
+open-licensed libraries (see `ASSETS.md`).*
 
 **Logline:** The city turned green, but the Whale isn't gone. He's hiding inside Agent Jeanphil, and he has one move
-left: **capitulation**. He wants to make everyone in the Memetrix give up and sell at the bottom at the same moment. Anon
-learned in episode 1 not to sell, and in episode 2 what holding costs. Now he learns that nobody can hold alone.
+left: **capitulation**. He wants to make everyone in the Memetrix give up and sell at the bottom at the same moment. To stop
+him, Anon has to:
+- escape a raid on a new hideout;
+- win a fight on top of a speeding maglev;
+- find a legend in a neon shrine;
+- fly through a sky-dock dogfight;
+- break a wall of sell orders inside the Exchange;
+- finish it one-on-one in a desert of crystals.
 
-**Picks up from episode 2:**
-- **The cliffhanger:** Jeanphil's glasses reflected the Whale, and the opening pays that off.
-- **Anon's collapse:** he wakes up in the basement.
-- **Michi's rescue:** she stayed by him all night.
-- **The SELL and HOLD doors** come back as the final choice, turned on their head. The answer is not SELL or HOLD but BUY, and buying together.
+He learns that nobody can hold alone.
 
-**Why it's bigger than episode 2:**
-- **A villain inside a returning character:** Jeanphil possessed by the Whale, called JEANWHALE in this script.
-- **A crowd that turns:** a street of grey panic-sellers.
-- **A new set that is itself the antagonist:** a growing red **Sell Wall**.
-- **The whole cast in the final fight.**
-- **A collapse effect:** the wall breaks apart in a rigid-body simulation.
-- **Smoke:** the Whale is driven out of Jeanphil as a Mantaflow smoke whale.
-- **A sunrise ending.**
+**Rule for this episode: no old sets.** The basement, rooftop, café, white room and trading floor do not appear. Every
+location is new, dressed with assets sourced from open libraries plus new procedural builds. The only links back to the
+earlier episodes are the characters and the story.
 
 ---
 
@@ -27,315 +25,359 @@ learned in episode 1 not to sell, and in episode 2 what holding costs. Now he le
 | Character | Model | Role in episode 3 | New? |
 |---|---|---|---|
 | ANON | zcat | Learns that holding alone isn't enough. Leads the buy | returning |
-| MICHI | michi | Stayed by Anon's side all night. Fights beside him at the wall | returning |
-| SLERF | slerf | Mentor. Gets the one big laugh line in the finale | returning |
-| MENSA | mensa | Operator. Spots that the Whale is "inside the order book" | returning |
-| AGENT JEANPHIL / JEANWHALE | jeanphil | Possessed: his glasses turn white and he speaks with two voices. Freed at the end | returning |
-| SWORDCAT | swordcat | Two words again. Cuts the first brick out of the wall | returning |
-| TOSHI | toshi | Opens the way into the Exchange with her key | returning |
-| THE WHALE | whale | Seen only as a reflection, a voice, and in the end as a smoke whale | returning |
-| MOM | voice | The post-credits button | returning |
-| **WOJAK** | wojak | An ordinary holder at the end of his rope. The first one to break, and the first one to buy back | **new** |
-| **GIGA** | giga | A legend who has held through every cycle. Says almost nothing. Arrives when all seems lost | **new** |
+| MICHI | michi | Stayed by Anon all night. Fights on the train and at the wall | returning |
+| SLERF | slerf | Mentor. Drives the maglev (slowly, at 400 km/h). The big laugh line in the finale | returning |
+| MENSA | mensa | Operator. Runs the raid escape from a laptop; hacks the train | returning |
+| JEANPHIL / JEANWHALE | jeanphil | Possessed: white glasses, two voices. Freed at the end | returning |
+| SWORDCAT | swordcat | Holds the train's rear car alone. Cuts the first brick from the wall | returning |
+| TOSHI | toshi | Her key opens the sky-dock gate | returning |
+| THE WHALE | whale | Reflection, then voice, then a smoke whale, and in the desert, himself | returning |
+| MOM | voice | Post-credits button | returning |
+| **WOJAK** | wojak | An ordinary holder at the end of his rope. First to break, first to buy back | **new** |
+| **GIGA** | giga | A legend who has held through every cycle. Lives in the neon shrine. One word at a time | **new** |
 | **MOODENG** | moodeng | Giga's tiny, furious sidekick. Bites things | **new** |
+| **THE LIQUIDATORS** | Polygonal Mind *xyz* creatures (CC0, rigged) | The Whale's army: geometric bots (a hexagon bear, a rectangle shark, a triangle bird, an octopus "Octozilla"), each with a red sell-order eye | **new** |
+
+---
+
+## LOCATIONS (all new)
+| # | Location | Built from | Look |
+|---|---|---|---|
+| A | **The Server Farm** (new hideout) | Poly Haven CC0 industrial props (flood lights, overhead crane, generators, tool carts, steel shelves, airducts, fluorescent lights), Quaternius sci-fi details, procedural server racks with blinking LEDs | Cold blue LEDs, steam, morning light through high slatted windows |
+| B | **The Maglev** | Polygonal Mind *transit* (Tower Station, Train 01/02, track, elevator, sponsor rings) plus a procedural sky-city flyby | A train blasting through towers at dusk, a motion-blurred world, sparks off the rail |
+| C | **The Neon Shrine** | Polygonal Mind *tomb-chaser-2* (neonwave pagoda: temple base, beams, roofs, glitch floor, neon ads, electric posts, mist) | Magenta and cyan neon in rain, hanging mist, a glitching floor |
+| D | **The Sky Docks** | Polygonal Mind *aero-system* (floating islands, airship, station rings, hexagon ground, lamp posts) | Golden-hour clouds, floating islands, airships, a dogfight |
+| E | **The Exchange** | Quaternius Modular Sci-Fi pack (CC0 .blend walls, columns, platforms, pipes, details), hologram order books, **the Sell Wall** | A cathedral-sized dark hall, red and green holograms, volumetric light shafts |
+| F | **The Crystal Desert** | Polygonal Mind *crystal-crossroads* (crystals, arches, columns, stairs, tiled ruins, dunes) plus a Poly Haven sky HDRI | A Moebius-style surreal desert at sunrise, giant crystals, long shadows |
+| - | **Capitulation Street** (short) | Poly Haven street props (street lamps, fire hydrant, payphone, road barriers, trash bags, manhole, bus bench) on a new procedural street | Grey dawn, drains steaming, a crowd turning grey |
 
 ---
 
 ## STRUCTURE AND RUNNING TIME
-| # | Sequence | Set | Time | Length |
+| # | Sequence | Location | Time | Length |
 |---|---|---|---|---|
-| 0 | Cold open: the reflection + titles | rooftop (rain) + 2D | 0:00-0:16 | 16 s |
-| 1 | The dead-cat bounce (briefing) | Mom's basement (morning) | 0:16-0:40 | 24 s |
-| 2 | Capitulation Street | **new: city street at dawn** | 0:40-1:10 | 30 s |
-| 3 | The Sell Wall | **new: the Exchange** | 1:10-1:48 | 38 s |
-| 4 | Buy together | the Exchange | 1:48-2:20 | 32 s |
-| 5 | Sunrise | rooftop (dawn, after the rain) | 2:20-2:36 | 16 s |
-| - | Closing titles + post-credits button | 2D + basement | 2:36-2:50 | 14 s |
+| 0 | Cold open: the white glasses + titles | Capitulation Street (night) + 2D | 0:00-0:14 | 14 s |
+| 1 | The raid | A: Server Farm | 0:14-0:44 | 30 s |
+| 2 | The maglev fight | B: Maglev | 0:44-1:20 | 36 s |
+| 3 | The legend | C: Neon Shrine | 1:20-1:46 | 26 s |
+| 4 | Capitulation | Capitulation Street | 1:46-2:04 | 18 s |
+| 5 | The dogfight | D: Sky Docks | 2:04-2:24 | 20 s |
+| 6 | The Sell Wall / Buy Together | E: Exchange | 2:24-3:00 | 36 s |
+| 7 | The duel and the sunrise | F: Crystal Desert | 3:00-3:18 | 18 s |
+| - | Closing + post-credits | 2D | 3:18-3:30 | 12 s |
 
 ---
 
-## 0. COLD OPEN (0:00-0:16)
+## 0. COLD OPEN (0:00-0:14)
 
-**EXT. ROOFTOP - NIGHT, RAIN (3D, 0:00-0:08).** This is the last shot of episode 2, from the other side. In the dark
-behind the stair house, AGENT JEANPHIL stands alone in the rain. Slow push in on his face. His black glasses go
-**white**, from the edges in, like frost. In the reflection, the Whale's eye opens.
+**EXT. CAPITULATION STREET - NIGHT, RAIN (3D, 0:00-0:07).** A new street: wet asphalt, a lone street lamp, steam from a
+manhole. AGENT JEANPHIL walks under the lamp and stops. Slow push in. His black glasses frost **white** from the edges in.
+In the reflection, the Whale's eye opens. Every street lamp down the block goes out, one after another, toward camera.
 
-**JEANPHIL / THE WHALE** *(two voices at once: Jeanphil's dry one on top, the Whale's deep one underneath)*
+**JEANWHALE** *(two voices: Jeanphil's dry one on top, the Whale's deep one underneath)*
 Hello... again.
 
-**2D, finish.py (0:08-0:16).** A price chart draws itself left to right, green and rising, then rolls over: it loses
-support and **sinks below the bottom of the frame**. As it falls, the letters of the title drop into place like candles
-closing: **THE MEMETRIX III**, in chrome as before. Under it, the word **CAPITULATION** sinks into place, letter by letter,
-heavy, each one landing with a low boom.
+**2D (0:07-0:14).** A price chart draws itself, rolls over and **sinks below the frame**. **THE MEMETRIX III** in chrome.
+**CAPITULATION** sinks into place under it letter by letter, each one landing with a low boom, while ash-grey particles
+fall upward.
 
 ---
 
-## 1. THE DEAD-CAT BOUNCE (0:16-0:40)
+## 1. THE RAID (0:14-0:44)
 
-**INT. MOM'S BASEMENT - MORNING.** It's the same set, but for the first time there is daylight: a thin, cold shaft
-through the high window, with dust in it. ANON is asleep on the couch under a blanket, with a strip of tape on his bag.
-MICHI is asleep in a chair pulled up next to him, her head on her arm. SLERF is in the gaming chair, MENSA at the CRT.
+**INT. THE SERVER FARM - MORNING.** **New set.** The crew's new hideout is a decommissioned crypto-mining server farm:
+- rows of racks with blinking blue LEDs;
+- tangled cable trays;
+- an overhead gantry crane;
+- steam from cooling pipes;
+- slatted morning light cutting through the steam (volumetric god rays).
 
-*Anon wakes. He sees Michi. A small beat between them as she wakes too.*
+ANON wakes on a camp bed between two racks, a strip of tape on his bag. MICHI is asleep in a folding chair beside him.
+MENSA at a wall of monitors, SLERF in a hammock strung between two racks.
 
-**MICHI**
+**MICHI** *(waking)*
 You were out for nine hours.
 
-**ANON**
-Did we... win?
+**MENSA** *(not turning; one monitor shows the city green, the next shows the price sliding back down)*
+It's a dead-cat bounce. He's not gone. He's in Jeanphil. And he's going for **capitulation**.
 
-**MENSA** *(not turning round; on the CRT, a chart with one big green candle, then the price drifting back down)*
-The city went green. For a night. *(turns)* It's a dead-cat bounce.
+**SLERF** *(slowly)*
+...Capitu... what?
 
-**SLERF** *(slowly, offended)*
-...A... what... kind... of... cat?
+*Every LED in the room turns **red** at once. An alarm. The steel shutters on the far wall bulge, then burst inward.*
 
-**MENSA**
-The Whale's not gone. He's in Jeanphil. And he's not going for a rug this time. He's going for **capitulation**. When
-everyone gives up and sells at the bottom at once, the Memetrix belongs to him.
+**THE RAID (0:28-0:44):**
+- **LIQUIDATORS** pour in: geometric bots, a hexagon bear, a rectangle shark crawling on its fins, triangle birds
+  swooping under the gantry. Each one has a single glowing red eye with a sell price scrolling across it.
+- **Anon** kicks a tool cart into the first bear and vaults a rack. The cart hits and the bear bursts into red polygon
+  shards (a fracture simulation).
+- **Michi** fights two birds in the god rays; slow motion as one shatters inches from her face.
+- **Mensa** yanks a lever. The overhead crane drops a pallet of mining rigs on to three bots (rigid-body crash, sparks,
+  dust).
+- **Slerf** falls out of the hammock exactly as a bird flies through where his head was. He hasn't noticed.
+- **The racks explode** in a chain down the row (fire and smoke simulation, sparks, flying circuit boards) as the crew
+  runs for a hatch in the floor.
 
-*On the CRT: a street camera. A tired guy on a bench, phone in hand, thumb over a red SELL button: WOJAK.*
-
-**MENSA**
-It starts with one.
-
-**ANON** *(already pulling the blanket off)*
-Then it stops with one.
-
----
-
-## 2. CAPITULATION STREET (0:40-1:10)
-
-**EXT. CITY STREET - DAWN.** **New set.** This is the street from below the rooftop: wet asphalt, steam from the drains,
-shop fronts, a bus stop, and the towers above with their windows still green from episode 2. Grey early light. As the
-scene goes on, the windows go back to warm and then red, **one floor at a time** (the same window material and wave as
-episode 2's ending, played in reverse).
-
-WOJAK sits at the bus stop, phone in his lap. Anon sits down next to him, Michi a few steps back.
-
-**WOJAK** *(without looking up)*
-Everyone's selling.
-
-**ANON**
-I'm not everyone.
-
-**WOJAK**
-I held through all of it. The rug, the crash... I can't anymore. I just want it to stop hurting.
-
-*Anon has no answer for that. A beat.*
-
-*Footsteps. JEANWHALE walks out of the steam, glasses white. He puts one hand on Wojak's shoulder. Wojak's colour drains
-to grey from the hand outward (the same grey-code look as Michi's liquidation). His thumb presses SELL.*
-
-**JEANWHALE** *(two voices)*
-See? It doesn't hurt... at all.
-
-*Up and down the street, doors open. People step out with their phones, every one of them a grey Wojak. Twenty of them.
-They turn and walk all together toward the end of the street, where a huge building glows red: THE EXCHANGE.*
-
-**ANON**
-Michi. Get the others.
-
-**MICHI**
-Where are you going?
-
-**ANON** *(walking into the grey crowd, against the flow)*
-Where they're going.
+**MENSA** *(sliding down the ladder)*
+Platform 9! The maglev!
 
 ---
 
-## 3. THE SELL WALL (1:10-1:48)
+## 2. THE MAGLEV FIGHT (0:44-1:20)
 
-**INT. THE EXCHANGE.** **New set.** It's a vast, dark trading hall, as tall as a cathedral. Order-book ladders glow on
-the walls (red asks above, green bids below). In the middle is **THE SELL WALL**: hundreds of glowing red bricks, each one
-a sell order with a price on it. As each grey Wojak walks up and pushes his phone into the wall, a new brick slides into
-place with a hollow *clunk*, and the wall grows taller. JEANWHALE stands on top of it.
+**EXT. TOWER STATION / THE MAGLEV - DUSK.** **New set.** A tall retro-futuristic station tower: elevator, sponsor
+rings, track on stilts. The crew sprint up the platform as the sleek maglev slides in. Liquidators swarm the stairs
+behind them.
 
-**JEANWHALE**
-Every cycle ends the same way, Anon. Not with a crash. With a *shrug*. They just... give up.
+*They make it. The doors close on a bear's claw, which drops on the platform as the train hits full speed.*
 
-**ANON**
-Not all of them.
+**INSIDE THE CAB.** SLERF at the controls, pushing the throttle all the way forward, very slowly.
 
-**THE FIGHT (1:22-1:36).** Anon climbs the wall's steps. Jeanwhale fights like the Whale: slow, heavy, unstoppable. Every
-blow lands with a deep bass hit, and a ripple runs through the wall.
-- Anon gets in two fast hits (the Swordcat training pays off), but Jeanwhale doesn't even move.
-- Jeanwhale hits him once. Anon flies back down the steps and slides across the floor in slow motion.
-- He gets up. He gets knocked down again. The grey crowd walks past him without looking.
+**SLERF**
+...Hold... on...
 
-**JEANWHALE**
-You can't out-hold a whale.
-
-*The door behind the crowd bursts open: MICHI, SLERF, MENSA, SWORDCAT, TOSHI. Swordcat cuts a single brick out of the
-wall in one stroke. The brick falls and shatters.*
+**ON THE ROOF (0:56-1:16).** This is the episode's big action set piece:
+- Triangle birds dive-bomb the train, and the shark bots climb up the sides.
+- **Anon and Michi fight on the roof** in a gale: motion-blurred towers whip past, sparks spray off the rail, speed
+  lines, cloth and fur flutter in the wind.
+- One continuous orbiting camera takes them through a 10-second fight: block, duck, throw. A bot is kicked off and
+  shatters against a passing sponsor ring.
+- **Swordcat** holds the rear car alone against six bots. Slow-motion blade arcs; each bot falls apart along a clean
+  cut line.
 
 **SWORDCAT**
 Still. Here.
 
-*They fight their way to Anon. It isn't enough. The wall keeps growing, and Jeanwhale pushes all of them back toward the
-edge of the hall.*
+- **Octozilla**, a giant octopus Liquidator, rises off a building ahead and reaches its tentacles across the track.
+- **MENSA** *(on his laptop)*: "Slerf. Faster." **SLERF**: "...This... IS... faster."
+- Anon grabs the green candle from his belt, the one from episode 2. He jumps, ignites it, and **flies straight at
+  Octozilla's eye**. The eye explodes into red glass. The train blasts through the gap as Octozilla collapses into the
+  street in slow motion.
 
-*Then the floor shakes. A slow, heavy footstep. Another. GIGA walks in through the main doors, calm, enormous, with tiny
-MOODENG trotting at his heel.*
-
-**GIGA**
-*(looks up at the wall; one word)*
-Yes.
-
-*Moodeng charges and **bites Jeanwhale's ankle**. Jeanwhale stumbles for the first time. It's a laugh beat.*
+**Smash cut** to the train sliding to a stop in a cloud of steam at a neon-lit station: the Shrine District.
 
 ---
 
-## 4. BUY TOGETHER (1:48-2:20)
+## 3. THE LEGEND (1:20-1:46)
 
-*With Giga holding the line, Anon finally understands. He climbs on to a fallen brick and turns, not to the Whale but to
-the grey crowd.*
+**EXT. THE NEON SHRINE - NIGHT, RAIN.** **New set.**
+- A neonwave pagoda at the top of glowing stairs: temple beams, curled roofs, electric posts trailing wires.
+- Holographic ads flicker in the rain, in magenta and cyan. Mist hangs at knee height.
+- The floor in front of the shrine **glitches**: tiles jump and scramble like corrupted data.
 
-**ANON**
-I can't hold this for you. Nobody can hold forever. *(beat)* He's right.
-
-*Jeanwhale smiles.*
-
-**ANON**
-But we don't need forever. We need **one more candle**. All of us. At the same time.
-
-*He holds out his phone. On the screen there are two buttons, SELL and HOLD, the two doors from episode 2. He swipes them
-away. Underneath is a third button, green: **BUY**.*
-
-*He presses it. One green brick appears in the air in front of the wall. Tiny.*
-
-*Silence. Then WOJAK, still grey, looks at his own phone. His thumb shakes. He presses BUY. His colour comes back, from
-his thumb outward. A second green brick.*
-
-*Then the rest, all of them in a wave: grey to colour, one after another, BUY, BUY, BUY. The green bricks stack up into a
-**green wall of bids** that pushes against the red one.*
-
-**JEANWHALE** *(both voices cracking)*
-Nobody... holds...
+The crew climb the stairs. At the top, in the shrine doorway, sits GIGA, perfectly still, meditating. MOODENG sleeps on
+his knee.
 
 **ANON**
-We're not holding.
+They say you've held through every cycle.
 
-**WOJAK, MICHI, SLERF, everyone**
+**GIGA**
+*(opens one eye)*
+Yes.
+
+**ANON**
+How?
+
+*Giga stands, slowly. He's enormous. He walks past Anon to the edge of the stairs and looks down at the city, where block
+after block of windows is turning red.*
+
+**GIGA**
+*(a long beat)*
+Never... alone.
+
+*Below, a red glow climbs the stairs: a horde of Liquidators. Giga cracks his neck. Moodeng wakes up angry.*
+
+**THE STAIR FIGHT (1:36-1:46).** This is a short, brutal montage in rain and neon:
+- Giga fights like a mountain: one punch sends a bear tumbling down forty steps.
+- Moodeng bites a shark bot's fin and won't let go.
+- Michi and Anon fight back to back, their silhouettes against a giant flickering hologram.
+
+The last bot falls. In the hologram behind them, a broadcast cuts in: JEANWHALE on every screen.
+
+**JEANWHALE** *(two voices)*
+Look outside, Anon.
+
+---
+
+## 4. CAPITULATION (1:46-2:04)
+
+**EXT. CAPITULATION STREET - DAWN.** The street from the cold open, now in grey early light. WOJAK sits at a bus bench,
+phone in his lap, thumb over a red SELL button. Anon has run here and sits down beside him, out of breath.
+
+**WOJAK** *(without looking up)*
+Everyone's selling. I held through all of it. I just want it to stop hurting.
+
+*JEANWHALE walks out of the manhole steam and puts one hand on Wojak's shoulder. Wojak's colour drains to grey from the
+hand outward. His thumb presses SELL.*
+
+**JEANWHALE**
+See? It doesn't hurt... at all.
+
+*Up and down the street, doors open. Twenty grey Wojaks step out, phones in hand, and walk together toward the horizon,
+where a colossal building glows red above the clouds: **THE EXCHANGE**, floating, reachable only from the Sky Docks.*
+
+**TOSHI** *(holding up her key)*
+I know a way up.
+
+---
+
+## 5. THE DOGFIGHT (2:04-2:24)
+
+**EXT. THE SKY DOCKS - GOLDEN HOUR.** **New set.** Floating islands with hexagon platforms, station rings glowing pink
+and yellow, airships moored at the docks. Toshi turns her key in the air; a station ring lights up and an airship's
+engines fire.
+
+**THE DOGFIGHT:**
+- The airship powers between floating islands while a **swarm of triangle birds** pours after it (a boids particle
+  swarm, hundreds strong).
+- Mensa on the deck gun fires **green laser tracers**; birds burst into red shards against the clouds.
+- Swordcat and Giga hold the railings as birds strafe the deck.
+- Slerf at the wheel: "...Barrel... roll..." The whole airship rolls 360 degrees and the camera rolls with it.
+- They clear the last island. Ahead, through the clouds: **THE EXCHANGE**, a floating fortress glowing red.
+
+---
+
+## 6. THE SELL WALL / BUY TOGETHER (2:24-3:00)
+
+**INT. THE EXCHANGE.** **New set.** A vast sci-fi hall, cathedral-tall, built from modular panels, columns and pipes.
+Hologram order books scroll up the walls. In the middle stands **THE SELL WALL**: hundreds of glowing red bricks, each one
+a sell order. Grey Wojaks walk up in a line and press their phones to it; with each, a new brick slides into place with a
+hollow *clunk* and the wall grows. JEANWHALE stands on top.
+
+**JEANWHALE**
+Every cycle ends the same way. Not with a crash. With a *shrug*.
+
+**THE BATTLE (2:30-2:42):**
+- The whole crew charges.
+- Swordcat cuts a brick out of the wall in one stroke.
+- Giga holds back a falling section with both arms while Moodeng bites Jeanwhale's ankle.
+- Jeanwhale fights like the Whale: every blow is a bass shockwave that ripples the wall. He hits Anon once, and Anon
+  slides across the floor in slow motion.
+
+**JEANWHALE**
+You can't out-hold a whale.
+
+**ANON** *(getting up; to the grey crowd, not to the Whale)*
+He's right. Nobody holds forever. *(beat)* But we don't need forever. We need **one more candle**. All of us. Together.
+
+*He holds up his phone. There are two buttons, SELL and HOLD. He swipes them away. Underneath is a third, green: **BUY**.
+He presses it. One small green brick forms out of light.*
+
+*WOJAK, still grey, looks at his own phone. His thumb shakes. He presses BUY. His colour comes back from his thumb
+outward.*
+
+*Then the whole crowd, in a wave: grey to colour, BUY, BUY, BUY. Green bricks stack up into a **green wall of bids** that
+pushes into the red one.*
+
+**EVERYONE**
 We're buying.
 
-**THE BREAK (2:06-2:16).** The red wall cracks at the base, and the camera goes into slow motion as the whole Sell Wall
-**collapses** in a rigid-body simulation, with hundreds of red bricks tumbling and shattering into embers. A white smoke
-whale tears itself out of Jeanphil, swims once around the hall in smoke and light, and **dissolves** into the dawn light
-pouring through the Exchange's high windows.
+**THE BREAK (2:50-3:00).** In slow motion, the Sell Wall collapses in a full rigid-body simulation: hundreds of red
+bricks tumble and shatter into embers. A white **smoke whale** tears out of Jeanphil, swims once around the hall, and
+bursts out through the Exchange's dome. Jeanphil drops to his knees, his glasses cracked, black again.
 
-*Jeanphil drops to his knees. His glasses are cracked, black again. He looks at his hands.*
-
-**JEANPHIL** *(one voice, his own, confused)*
+**JEANPHIL** *(one voice, his own)*
 ...Me?
 
-**ANON** *(offers him a paw up)*
+**ANON** *(offers a paw up)*
 Just you.
 
 ---
 
-## 5. SUNRISE (2:20-2:36)
+## 7. THE DUEL AND THE SUNRISE (3:00-3:18)
 
-**EXT. ROOFTOP - DAWN.** It's the rooftop from episodes 1 and 2, after the rain: puddles reflecting a peach-and-green
-sunrise, steam rising off the helipad. The whole crew sits along the ledge, legs dangling over the city: Anon, Michi,
-Slerf, Mensa, Toshi, Swordcat, Wojak, and at the end Giga, with Moodeng asleep in his lap. Jeanphil stands a little apart,
-then sits down at the end of the row too.
+**EXT. THE CRYSTAL DESERT - SUNRISE.** **New set.** The smoke whale crashes down into a surreal desert of giant pink
+and teal crystals, ruined arches and tiled stairs. It solidifies into **THE WHALE** himself, out of hiding at last. Anon
+lands with the green candle burning down to its last centimetre.
 
-Far below, the city's windows are turning green again, slowly and steadily this time.
+**THE WHALE**
+One small cat.
+
+**ANON**
+Never alone.
+
+*Behind Anon, over the dune: Michi, Giga, Swordcat, Wojak, and the whole un-greyed crowd, as far as the eye can see.*
+
+*The Whale looks at them for a long moment. Then he **laughs**, a deep, warm, surprised laugh, and dissolves into
+glittering green dust that blows away across the crystals.*
+
+*Wide shot: the crew on the crystal ridge, silhouetted against the sunrise. The crystals catch the light and glow
+green.*
 
 **WOJAK**
 Is it over?
 
 **GIGA**
-*(a long beat)*
 No.
 
-**SLERF** *(slowly, contentedly, the biggest laugh line of the trilogy)*
+**SLERF** *(slowly, contentedly)*
 ...Good.
 
-*Michi leans her head on Anon's shoulder. Anon looks out at the city.*
-
-**ANON**
+**ANON / MICHI** *(together)*
 Bought the dip.
-
-**MICHI**
-Bought the dip.
-
-*Wide shot: the row of silhouettes on the ledge against the sunrise, as the camera cranes up and away into the sky.*
 
 **CUT TO BLACK.**
 
 ---
 
-## CLOSING (2:36-2:50)
-Cast cards as before, with new cards for WOJAK, GIGA and MOODENG. The logo builds, then the tagline: **"NOBODY HOLDS
-ALONE."** The call to action follows as before.
+## CLOSING (3:18-3:30)
+Cast cards, with new cards for WOJAK, GIGA, MOODENG and THE LIQUIDATORS. Tagline: **"NOBODY HOLDS ALONE."** Then
+**asset credits** (Polygonal Mind, Quaternius, Poly Haven, Meta Open Sound / Oculus Audio Pack, CC-BY 4.0).
 
-**POST-CREDITS (3 s).** **INT. MOM'S BASEMENT.** It's empty and quiet, and the CRT is still on.
+**POST-CREDITS:** a black screen.
 
-**MOM** *(from upstairs)*
+**MOM** *(far away, upstairs somewhere)*
 ANON! WHY DOES MY BANK SAY I BOUGHT FOUR THOUSAND DOLLARS OF "MOODENG"?
-
-*Smash cut to black.*
 
 ---
 
 ## PRODUCTION NOTES
 
-### New builds
-- **Sets:**
-  - **Capitulation Street (dawn):** wet asphalt, steam, shop fronts and a bus stop. It reuses the episode 2 city towers
-    and their window material, with the window wave played in reverse (green to warm to red).
-  - **The Exchange:** a tall dark hall with order-book ladders on the walls, and **the Sell Wall**, a stack of instanced
-    emissive bricks, each with a price.
-  - **The rooftop at dawn:** episode 2's rooftop with the rain stopped and a sunrise sky.
-  - **The basement in morning light:** a window light shaft with dust.
-- **New effects:**
-  - Glasses frosting to white, with the Whale reflected in them.
-  - The grey-out spreading from a touch, and the colour coming back from the thumb (reuses the liquidation grey).
-  - Bricks sliding into the wall.
-  - **The rigid-body collapse of the wall**, baked like the fire sims.
-  - The smoke whale (Mantaflow smoke guided along a path).
-  - Green bricks forming from light.
-- **The crowd:** twenty Wojaks, done like episode 2's Jeanphil clones: the same model with a grey material, out of sync on
-  walk and idle.
-- **New voices:**
-  - Wojak (tired and soft).
-  - Giga (very deep, one word).
-  - Jeanwhale (Jeanphil's voice layered over the Whale's, pitched down).
-  - Moodeng (squeaks and a bite, no words).
-- **Music:**
-  - A low drone and heartbeat on the street.
-  - The game's battle music for the wall fight.
-  - It drops out for Anon's speech, then rebuilds into a full swell for the break.
-  - A quiet sunrise theme.
-- **Sound:** fight sounds driven by animation events, as in episode 2, plus brick clunks, the wall's rumble and crack,
-  and a deep whale song when the smoke whale leaves.
+### New effects (none of these were in episodes 1-2)
+1. **Fracture:** Liquidators shatter into polygon shards (Cell Fracture of each bot, rigid bodies, emissive red edges
+   fading out).
+2. **Destruction:** exploding server racks (Mantaflow fire and smoke plus sparks and flying circuit boards) and the
+   crane's pallet drop (rigid body).
+3. **Volumetric god rays:** through the server-farm slats and the Exchange dome.
+4. **Speed:** motion-blurred city flyby, rail sparks, speed lines, wind on cloth and fur (wind force plus cloth sim on
+   capes).
+5. **Clean-cut slicing:** Swordcat's cuts split the mesh along the blade plane with a boolean, and the halves slide apart.
+6. **Boids swarm:** hundreds of instanced triangle birds in the dogfight, with laser tracers and bursts.
+7. **Glitch floor shader:** tiles jumping in the shrine.
+8. **Rain on neon:** reflections and holographic ads with scanlines.
+9. **Grey-out and colour-return spreading from a touch** (a driven gradient mask).
+10. **Bricks forming from light, and the rigid-body collapse of the Sell Wall.**
+11. **The smoke whale:** Mantaflow smoke along a guide path.
+12. **Dissolve to green dust:** particles emitted from the Whale's mesh.
+13. **Airship barrel roll** with a camera roll.
+
+### Sound
+- **Real recorded effects:** Meta Open Sound's Oculus Audio Pack (CC-BY 4.0): punches, kicks, swooshes, glass, metal,
+  train pass-bys and doors, laser UI, crowd, creepy drones, giant laughs (the Whale's last laugh).
+- **Kept from episode 2:** fight sounds driven by animation events, with real samples replacing the synthesized ones.
+
+### Assets
+Every set is built from downloaded open-licensed packs (see `ASSETS.md`: source, licence and attribution for each). They
+are fetched by `fetch_assets.py` into the work folder, not committed.
 
 ### Applied from episodes 1 and 2 (non-negotiable)
-1. Measure eye heights and face depth for each new character (Wojak, Giga, Moodeng) before fitting any props.
-2. **Props on bodies:**
-   - Glue props (phones especially) to arm-weighted skin vertices on the held pose.
-   - Build poses the clips don't have from existing clips, or use IK with a pole.
-3. **Hand-offs:** heights matched to within 3 cm, approached from the side, with a closest-distance check. This applies to
-   the paw up to Jeanphil.
-4. **Cameras:**
-   - No cameras inside characters.
-   - Use `with=[...]` for two-shots and `cam_at` for inserts.
-   - Give the ledge row in the sunrise a wide lens.
+1. Measure eye heights and face depth for each new character before fitting any props.
+2. Glue props to arm-weighted skin vertices; build any missing poses from existing clips, or use IK with a pole.
+3. Hand-offs: heights matched to within 3 cm, with a closest-distance check.
+4. **Cameras:** none inside characters; use `with=[...]` for two-shots and `cam_at` for inserts.
 5. **Fights:**
    - Measure striking distance; struck characters move with the blow.
-   - Fallen characters lie on the floor, checked for floating and tail clipping.
+   - Fallen characters lie on the floor.
    - Fight sounds come from the logged events.
-6. **Endings must read clearly:** whatever a character's state, it must be unambiguous on screen (episode 2 lesson: a
-   collapse read as a death).
-7. Check every unusual word in Kokoro's phonemes ("capitulation", "Moodeng", "Wojak").
+6. **Endings must read clearly:** whatever a character's state, it must be unambiguous on screen.
+7. Check every unusual word in Kokoro's phonemes ("capitulation", "Moodeng", "Wojak", "maglev").
 8. **Review:**
    - Check frames for every shot.
    - Make before/after sheets.
    - Review the full film at 3 frames a second, plus the pop detector, before sending.
    - The real render keeps the fog, lights and motion blur.
 9. **Disk:**
-   - Delete old scene builds as you go.
-   - Hard-link unchanged frames instead of copying them.
+   - Fetch only the assets a set uses.
+   - Delete old builds.
+   - Hard-link unchanged frames.
    - The finish needs about 2.5 GB free.
