@@ -141,7 +141,7 @@ def sample(arm, bvh_path, start=0, end=None, fps=30, tpose_frame=0, jump_scale=0
     src_hip = src_pos(idx['Hips'], tpose_frame).z - feet0         # standing hip height (T pose)
     hb = bones[pre + 'Hips']
     k = hb.head_local.z / max(1e-6, src_hip)
-    out = {'hips_rot': [], 'hips_pos': [], 'local': []}
+    out = {'hips_rot': [], 'hips_pos': [], 'local': [], 'src_low': []}
     prevq = {}
     for f in frames:
         pose = {}
@@ -167,6 +167,8 @@ def sample(arm, bvh_path, start=0, end=None, fps=30, tpose_frame=0, jump_scale=0
         kz = max(k, jump_scale * 0.95 / max(1e-6, src_hip)) if dz > 0 else k   # 0.95 m: a human hip        # short-legged rigs still jump high; crouches fit their legs
         out['hips_pos'].append(Vector((hb.head_local.x + pw.x * k, hb.head_local.y + pw.y * k, hb.head_local.z + dz * kz)))
         out['local'].append(loc)
+        low = min(src_pos(j, f).z for j in range(len(names))) - floor     # lowest joint above the floor (source units)
+        out['src_low'].append(max(0.0, low) * 0.95 / max(1e-6, src_hip))   # in metres, for a human-sized body
     return out
 
 

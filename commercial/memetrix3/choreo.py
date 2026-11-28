@@ -109,6 +109,19 @@ class Clip:
         self.hpos = [r @ (p - p0) + Vector((0, 0, 0)) for p in self.hpos]
         for p, q in zip(self.hpos, data['hips_pos']):
             p.z = q.z
+        # airborne frames: a short-legged rig must still clear the floor by as much as the performer did (x0.8);
+        # no frame may sink below the floor. The lift is smoothed so it reads as a jump, not a pop.
+        lift = []
+        for i in range(self.n):
+            pts = fk(arm, self.hrot[i], self.hpos[i], self.local[i])
+            low = min(min(h.z, tl.z) for h, tl in pts.values())
+            sl = data['src_low'][i]
+            want = 0.8 * sl if sl > 0.08 else 0.0
+            lift.append(max(0.0, want - low, -low))
+        k = 3
+        for i in range(self.n):
+            win = lift[max(0, i - k):i + k + 1]
+            self.hpos[i].z += max(lift[i], sum(win) / len(win))
 
     def at(self, i):
         i = max(0, min(self.n - 1, i))
@@ -401,7 +414,8 @@ def separate(fighters, t0, t1, min_d=0.55, radius=None, iters=3, head_r=None):
                 hr, hp, loc = F.pose_at(t)
                 push, _ = F._hit_offsets(t)
                 o = push + F._sep(t)
-                hd = fk(F.arm, hr, hp, loc)[PRE + 'Head'][0] + o
+                hh = fk(F.arm, hr, hp, loc)[PRE + 'Head']
+                hd = (hh[0] + hh[1]) / 2 + o
                 p = hp + o
                 pos[F] = (Vector((p.x, p.y)), Vector((hd.x, hd.y)))
             for i, A in enumerate(fighters):
